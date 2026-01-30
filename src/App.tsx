@@ -12,6 +12,13 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
+// Public Pages
+import CoursesPage from "./pages/courses/CoursesPage";
+import CourseDetailPage from "./pages/courses/CourseDetailPage";
+import CourseCheckoutPage from "./pages/courses/CourseCheckoutPage";
+import JobsPage from "./pages/jobs/JobsPage";
+import InstitutesPage from "./pages/institutes/InstitutesPage";
+
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
 import AdminLayout from "./layouts/AdminLayout";
@@ -56,6 +63,13 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            
+            {/* Public Landing Pages */}
+            <Route path="/courses" element={<CoursesPage />} />
+            <Route path="/courses/:id" element={<CourseDetailPage />} />
+            <Route path="/courses/:id/checkout" element={<CourseCheckoutPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/institutes" element={<InstitutesPage />} />
 
             {/* Protected Dashboard Routes */}
             <Route
