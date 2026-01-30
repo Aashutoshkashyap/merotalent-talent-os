@@ -1,0 +1,119 @@
+import { Trophy, Users, GraduationCap, Briefcase, Star, Zap, Target, TrendingUp } from "lucide-react";
+
+const features = [
+  {
+    icon: Trophy,
+    title: "Compete & Prove",
+    description: "Participate in hackathons, coding challenges, case studies, and innovation contests to showcase your real skills.",
+    color: "primary",
+  },
+  {
+    icon: Star,
+    title: "Build Your Profile",
+    description: "Create a performance-based talent profile that highlights your achievements, rankings, and verified skills.",
+    color: "secondary",
+  },
+  {
+    icon: Users,
+    title: "Learn from Mentors",
+    description: "Connect with industry experts for 1:1 mentorship sessions and accelerate your career growth.",
+    color: "accent",
+  },
+  {
+    icon: Briefcase,
+    title: "Get Hired",
+    description: "Let companies discover you through your performance. Get hired based on what you can do, not just degrees.",
+    color: "primary",
+  },
+  {
+    icon: GraduationCap,
+    title: "Upskill Yourself",
+    description: "Access bootcamps, courses, and learning paths designed by industry experts.",
+    color: "secondary",
+  },
+  {
+    icon: Target,
+    title: "Track Progress",
+    description: "Monitor your growth with detailed analytics, leaderboards, and personalized insights.",
+    color: "accent",
+  },
+];
+
+const Features = () => {
+  return (
+    <section id="features" className="py-24 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-hero-pattern opacity-50" />
+      
+      <div className="container mx-auto px-4 relative z-10">
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
+            <Zap className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium text-accent">Powerful Features</span>
+          </div>
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
+            Everything You Need to{" "}
+            <span className="gradient-text">Grow Your Career</span>
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            A complete ecosystem for talent discovery, skill development, and career advancement.
+          </p>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {features.map((feature, index) => (
+            <div
+              key={feature.title}
+              className="group relative bg-card rounded-2xl p-8 border border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              {/* Icon */}
+              <div className={`w-14 h-14 rounded-2xl mb-6 flex items-center justify-center transition-transform group-hover:scale-110 ${
+                feature.color === 'primary' ? 'bg-primary/10' :
+                feature.color === 'secondary' ? 'bg-secondary/10' : 'bg-accent/10'
+              }`}>
+                <feature.icon className={`w-7 h-7 ${
+                  feature.color === 'primary' ? 'text-primary' :
+                  feature.color === 'secondary' ? 'text-secondary' : 'text-accent'
+                }`} />
+              </div>
+
+              {/* Content */}
+              <h3 className="font-display text-xl font-bold mb-3 group-hover:text-primary transition-colors">
+                {feature.title}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {feature.description}
+              </p>
+
+              {/* Hover Gradient */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Stats */}
+        <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
+          {[
+            { value: "50K+", label: "Students Registered", icon: Users },
+            { value: "250+", label: "Active Competitions", icon: Trophy },
+            { value: "100+", label: "Partner Companies", icon: Briefcase },
+            { value: "500+", label: "Expert Mentors", icon: TrendingUp },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center p-6 rounded-2xl bg-muted/50 border border-border">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <stat.icon className="w-6 h-6 text-primary" />
+              </div>
+              <p className="font-display text-3xl font-bold text-foreground mb-1">{stat.value}</p>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Features;
