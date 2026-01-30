@@ -21,11 +21,21 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import Profile from "./pages/dashboard/Profile";
 import Competitions from "./pages/dashboard/Competitions";
 import Mentors from "./pages/dashboard/Mentors";
+import Learning from "./pages/dashboard/Learning";
+import Jobs from "./pages/dashboard/Jobs";
+import Badges from "./pages/dashboard/Badges";
+import Sessions from "./pages/dashboard/Sessions";
+import Settings from "./pages/dashboard/Settings";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCompetitions from "./pages/admin/AdminCompetitions";
+import AdminInstitutions from "./pages/admin/AdminInstitutions";
+import AdminCompanies from "./pages/admin/AdminCompanies";
+import AdminMentors from "./pages/admin/AdminMentors";
+import AdminBadges from "./pages/admin/AdminBadges";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -55,11 +65,11 @@ const App = () => (
               <Route path="profile" element={<Profile />} />
               <Route path="competitions" element={<Competitions />} />
               <Route path="mentors" element={<Mentors />} />
-              <Route path="learning" element={<Dashboard />} />
-              <Route path="jobs" element={<Dashboard />} />
-              <Route path="badges" element={<Dashboard />} />
-              <Route path="sessions" element={<Dashboard />} />
-              <Route path="settings" element={<Dashboard />} />
+              <Route path="learning" element={<Learning />} />
+              <Route path="jobs" element={<Jobs />} />
+              <Route path="badges" element={<Badges />} />
+              <Route path="sessions" element={<Sessions />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
 
             {/* Protected Admin Routes */}
@@ -74,11 +84,11 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="competitions" element={<AdminCompetitions />} />
-              <Route path="institutions" element={<AdminDashboard />} />
-              <Route path="companies" element={<AdminDashboard />} />
-              <Route path="mentors" element={<AdminDashboard />} />
-              <Route path="badges" element={<AdminDashboard />} />
-              <Route path="settings" element={<AdminDashboard />} />
+              <Route path="institutions" element={<AdminInstitutions />} />
+              <Route path="companies" element={<AdminCompanies />} />
+              <Route path="mentors" element={<AdminMentors />} />
+              <Route path="badges" element={<AdminBadges />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
 
             {/* Catch-all */}
