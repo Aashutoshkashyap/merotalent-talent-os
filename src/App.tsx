@@ -36,6 +36,11 @@ import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminMentors from "./pages/admin/AdminMentors";
 import AdminBadges from "./pages/admin/AdminBadges";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminLMS from "./pages/admin/AdminLMS";
+import AdminJobs from "./pages/admin/AdminJobs";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminQueries from "./pages/admin/AdminQueries";
+import AdminManagement from "./pages/admin/AdminManagement";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +93,11 @@ const App = () => (
               <Route path="companies" element={<AdminCompanies />} />
               <Route path="mentors" element={<AdminMentors />} />
               <Route path="badges" element={<AdminBadges />} />
+              <Route path="lms" element={<AdminLMS />} />
+              <Route path="jobs" element={<AdminJobs />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="queries" element={<AdminQueries />} />
+              <Route path="admins" element={<AdminManagement />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 

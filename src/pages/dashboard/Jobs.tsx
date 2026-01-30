@@ -15,9 +15,9 @@ import {
   BookmarkCheck,
   ExternalLink,
   Users,
-  Zap,
-  Filter
+  Zap
 } from "lucide-react";
+import JobApplicationWizard from "@/components/jobs/JobApplicationWizard";
 
 interface Job {
   id: string;
@@ -30,6 +30,7 @@ interface Job {
   postedAt: string;
   description: string;
   skills: string[];
+  requirements: string[];
   applicants: number;
   isSaved?: boolean;
   isApplied?: boolean;
@@ -38,6 +39,8 @@ interface Job {
 const Jobs = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set(["1", "3"]));
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const jobs: Job[] = [
     {
@@ -51,6 +54,12 @@ const Jobs = () => {
       postedAt: "2 days ago",
       description: "We're looking for a skilled frontend developer to join our team and build modern web applications using React and TypeScript.",
       skills: ["React", "TypeScript", "Tailwind CSS", "Next.js"],
+      requirements: [
+        "3+ years of experience with React",
+        "Strong TypeScript skills",
+        "Experience with state management",
+        "Familiarity with testing frameworks"
+      ],
       applicants: 45,
       isSaved: true,
     },
@@ -65,6 +74,12 @@ const Jobs = () => {
       postedAt: "1 week ago",
       description: "Join our design team to create beautiful and intuitive user experiences for our clients across various industries.",
       skills: ["Figma", "Adobe XD", "Prototyping", "User Research"],
+      requirements: [
+        "2+ years of UX design experience",
+        "Strong portfolio showcasing design work",
+        "Experience with design systems",
+        "User research skills"
+      ],
       applicants: 78,
     },
     {
@@ -78,6 +93,12 @@ const Jobs = () => {
       postedAt: "3 days ago",
       description: "Work on cutting-edge AI/ML projects and help build intelligent systems that solve real-world problems.",
       skills: ["Python", "TensorFlow", "PyTorch", "MLOps"],
+      requirements: [
+        "MS/PhD in Computer Science or related field",
+        "Experience with deep learning frameworks",
+        "Published research is a plus",
+        "Strong mathematical foundations"
+      ],
       applicants: 23,
       isSaved: true,
     },
@@ -92,6 +113,12 @@ const Jobs = () => {
       postedAt: "5 days ago",
       description: "Lead product strategy and development for our flagship SaaS platform serving businesses across South Asia.",
       skills: ["Product Strategy", "Agile", "Data Analysis", "Stakeholder Management"],
+      requirements: [
+        "3+ years of product management experience",
+        "Experience with SaaS products",
+        "Strong analytical skills",
+        "Excellent communication skills"
+      ],
       applicants: 34,
     },
     {
@@ -105,6 +132,12 @@ const Jobs = () => {
       postedAt: "1 day ago",
       description: "Great opportunity for students to gain hands-on experience in backend development with Node.js and PostgreSQL.",
       skills: ["Node.js", "PostgreSQL", "REST APIs", "Git"],
+      requirements: [
+        "Currently pursuing CS degree",
+        "Basic knowledge of JavaScript",
+        "Eager to learn",
+        "Available for 3+ months"
+      ],
       applicants: 156,
     },
     {
@@ -118,6 +151,12 @@ const Jobs = () => {
       postedAt: "4 days ago",
       description: "Help us build and maintain scalable cloud infrastructure using AWS and Kubernetes.",
       skills: ["AWS", "Docker", "Kubernetes", "Terraform"],
+      requirements: [
+        "Experience with AWS services",
+        "Container orchestration knowledge",
+        "CI/CD pipeline experience",
+        "Infrastructure as code skills"
+      ],
       applicants: 28,
     },
   ];
@@ -134,6 +173,11 @@ const Jobs = () => {
     });
   };
 
+  const handleApply = (job: Job) => {
+    setSelectedJob(job);
+    setIsWizardOpen(true);
+  };
+
   const filteredJobs = jobs.filter(
     (job) =>
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -142,7 +186,6 @@ const Jobs = () => {
   );
 
   const savedJobsList = jobs.filter((job) => savedJobs.has(job.id));
-  const appliedJobs = jobs.filter((job) => job.isApplied);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -237,7 +280,7 @@ const Jobs = () => {
               <ExternalLink className="w-4 h-4 mr-1" />
               View
             </Button>
-            <Button variant="hero" size="sm">
+            <Button variant="hero" size="sm" onClick={() => handleApply(job)}>
               <Zap className="w-4 h-4 mr-1" />
               Apply
             </Button>
@@ -368,6 +411,26 @@ const Jobs = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Job Application Wizard */}
+      {selectedJob && (
+        <JobApplicationWizard
+          isOpen={isWizardOpen}
+          onClose={() => {
+            setIsWizardOpen(false);
+            setSelectedJob(null);
+          }}
+          job={{
+            id: selectedJob.id,
+            title: selectedJob.title,
+            company: selectedJob.company,
+            location: selectedJob.location,
+            salary: selectedJob.salary,
+            requirements: selectedJob.requirements,
+            skills: selectedJob.skills,
+          }}
+        />
+      )}
     </div>
   );
 };
