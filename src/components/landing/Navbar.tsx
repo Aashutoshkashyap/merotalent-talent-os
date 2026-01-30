@@ -8,9 +8,10 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Courses", href: "#courses" },
+    { name: "Jobs", href: "#jobs" },
     { name: "Competitions", href: "#competitions" },
+    { name: "Institutes", href: "#institutes" },
     { name: "Mentorship", href: "#mentorship" },
-    { name: "For Companies", href: "#companies" },
   ];
 
   return (
