@@ -280,8 +280,38 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
                   placeholder="Tell the employer why you're a great fit for this role..."
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
-                  rows={8}
+                  rows={6}
                 />
+              </div>
+
+              {/* Cover Letter File Upload */}
+              <div className="space-y-2">
+                <Label>Or upload a cover letter file</Label>
+                <div
+                  className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                >
+                  <Label htmlFor="cover-letter-upload" className="cursor-pointer block">
+                    <div className="flex flex-col items-center gap-2">
+                      <FileText className="w-8 h-8 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Click to upload PDF, DOC, or DOCX (max 5MB)
+                      </p>
+                    </div>
+                    <input
+                      id="cover-letter-upload"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Handle file upload - for now just show toast
+                          console.log("Cover letter file:", file.name);
+                        }
+                      }}
+                    />
+                  </Label>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   A personalized cover letter can significantly improve your chances.
                 </p>

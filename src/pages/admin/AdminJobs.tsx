@@ -1,138 +1,351 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   Briefcase, Plus, Search, Building2, MapPin, Clock, Users, Eye, Pencil, Trash2,
-  FileText, CheckCircle, XCircle, AlertCircle, DollarSign
+  FileText, CheckCircle, XCircle, AlertCircle, DollarSign, Loader2, ExternalLink
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-const mockJobs = [
-  {
-    id: "1",
-    title: "Senior Frontend Developer",
-    company: "TechCorp Inc.",
-    location: "San Francisco, CA",
-    type: "Full-time",
-    salary: "$120K - $150K",
-    applications: 45,
-    status: "active",
-    posted: "2 days ago",
-  },
-  {
-    id: "2",
-    title: "Product Designer",
-    company: "Design Studio",
-    location: "Remote",
-    type: "Full-time",
-    salary: "$90K - $120K",
-    applications: 32,
-    status: "active",
-    posted: "5 days ago",
-  },
-  {
-    id: "3",
-    title: "Data Analyst Intern",
-    company: "Analytics Co.",
-    location: "New York, NY",
-    type: "Internship",
-    salary: "$25/hr",
-    applications: 78,
-    status: "closed",
-    posted: "2 weeks ago",
-  },
-];
-
-const mockApplications = [
-  {
-    id: "1",
-    candidate: "John Smith",
-    job: "Senior Frontend Developer",
-    company: "TechCorp Inc.",
-    status: "screening",
-    matchScore: 92,
-    applied: "1 day ago",
-  },
-  {
-    id: "2",
-    candidate: "Sarah Johnson",
-    job: "Product Designer",
-    company: "Design Studio",
-    status: "interview",
-    matchScore: 88,
-    applied: "3 days ago",
-  },
-  {
-    id: "3",
-    candidate: "Mike Brown",
-    job: "Senior Frontend Developer",
-    company: "TechCorp Inc.",
-    status: "submitted",
-    matchScore: 75,
-    applied: "5 days ago",
-  },
-];
-
-const getStatusBadge = (status: string) => {
-  const styles: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; icon: typeof CheckCircle }> = {
-    submitted: { variant: "secondary", icon: FileText },
-    screening: { variant: "outline", icon: AlertCircle },
-    interview: { variant: "default", icon: CheckCircle },
-    offered: { variant: "default", icon: CheckCircle },
-    rejected: { variant: "destructive", icon: XCircle },
-  };
-  const style = styles[status] || styles.submitted;
-  return (
-    <Badge variant={style.variant} className="gap-1 capitalize">
-      <style.icon className="w-3 h-3" />
-      {status}
-    </Badge>
-  );
-};
+interface Job {
+  id: string;
+  title: string;
+  description: string | null;
+  company_id: string | null;
+  location: string | null;
+  job_type: string | null;
+  experience_level: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  skills_required: string[] | null;
+  requirements: string[] | null;
+  is_active: boolean | null;
+  is_remote: boolean | null;
+  external_link: string | null;
+  application_deadline: string | null;
+  created_at: string;
+}
 
 const AdminJobs = () => {
+  const { toast } = useToast();
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    location: "",
+    job_type: "full-time",
+    experience_level: "entry",
+    salary_min: "",
+    salary_max: "",
+    skills_required: "",
+    requirements: "",
+    is_active: true,
+    is_remote: false,
+    external_link: "",
+  });
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    const { data } = await supabase
+      .from("jobs")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (data) setJobs(data);
+    setIsLoading(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.title.trim()) {
+      toast({ variant: "destructive", title: "Title required" });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const jobData = {
+      title: formData.title,
+      description: formData.description || null,
+      location: formData.location || null,
+      job_type: formData.job_type,
+      experience_level: formData.experience_level,
+      salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
+      salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
+      skills_required: formData.skills_required ? formData.skills_required.split(",").map(s => s.trim()) : null,
+      requirements: formData.requirements ? formData.requirements.split("\n").filter(r => r.trim()) : null,
+      is_active: formData.is_active,
+      is_remote: formData.is_remote,
+      external_link: formData.external_link || null,
+    };
+
+    let error;
+    if (editingJob) {
+      const result = await supabase.from("jobs").update(jobData).eq("id", editingJob.id);
+      error = result.error;
+    } else {
+      const result = await supabase.from("jobs").insert(jobData);
+      error = result.error;
+    }
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } else {
+      toast({ title: editingJob ? "Job updated!" : "Job posted!" });
+      resetForm();
+      fetchJobs();
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("jobs").delete().eq("id", id);
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } else {
+      toast({ title: "Job deleted" });
+      fetchJobs();
+    }
+  };
+
+  const toggleActive = async (id: string, currentStatus: boolean | null) => {
+    const { error } = await supabase.from("jobs").update({ is_active: !currentStatus }).eq("id", id);
+    if (!error) {
+      toast({ title: currentStatus ? "Job deactivated" : "Job activated" });
+      fetchJobs();
+    }
+  };
+
+  const openEdit = (job: Job) => {
+    setEditingJob(job);
+    setFormData({
+      title: job.title,
+      description: job.description || "",
+      location: job.location || "",
+      job_type: job.job_type || "full-time",
+      experience_level: job.experience_level || "entry",
+      salary_min: job.salary_min?.toString() || "",
+      salary_max: job.salary_max?.toString() || "",
+      skills_required: job.skills_required?.join(", ") || "",
+      requirements: job.requirements?.join("\n") || "",
+      is_active: job.is_active ?? true,
+      is_remote: job.is_remote ?? false,
+      external_link: job.external_link || "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      location: "",
+      job_type: "full-time",
+      experience_level: "entry",
+      salary_min: "",
+      salary_max: "",
+      skills_required: "",
+      requirements: "",
+      is_active: true,
+      is_remote: false,
+      external_link: "",
+    });
+    setEditingJob(null);
+    setIsDialogOpen(false);
+  };
+
+  const filteredJobs = jobs.filter(
+    (job) =>
+      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.location && job.location.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const stats = [
+    { label: "Active Jobs", value: jobs.filter(j => j.is_active).length, icon: Briefcase, color: "text-primary" },
+    { label: "Total Posted", value: jobs.length, icon: FileText, color: "text-secondary" },
+    { label: "Remote Jobs", value: jobs.filter(j => j.is_remote).length, icon: MapPin, color: "text-green-500" },
+    { label: "Closed", value: jobs.filter(j => !j.is_active).length, icon: XCircle, color: "text-muted-foreground" },
+  ];
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Job Board Management</h1>
-          <p className="text-muted-foreground">Manage job listings and review applications</p>
+          <p className="text-muted-foreground">Post and manage job listings</p>
         </div>
-        <Dialog>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); else setIsDialogOpen(open); }}>
           <DialogTrigger asChild>
             <Button variant="hero">
               <Plus className="w-4 h-4 mr-2" />
               Post New Job
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Post New Job</DialogTitle>
+              <DialogTitle>{editingJob ? "Edit Job" : "Post New Job"}</DialogTitle>
+              <DialogDescription>
+                {editingJob ? "Update job details" : "Create a new job listing"}
+              </DialogDescription>
             </DialogHeader>
-            <p className="text-muted-foreground">
-              Job posting form would go here with fields for title, description, requirements, etc.
-            </p>
+
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label>Job Title *</Label>
+                <Input
+                  placeholder="e.g., Senior Frontend Developer"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  placeholder="Job description..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input
+                    placeholder="e.g., Kathmandu, Nepal"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>External Application Link</Label>
+                  <Input
+                    placeholder="https://company.com/apply"
+                    value={formData.external_link}
+                    onChange={(e) => setFormData({ ...formData, external_link: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Job Type</Label>
+                  <Select value={formData.job_type} onValueChange={(v) => setFormData({ ...formData, job_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full-time">Full-time</SelectItem>
+                      <SelectItem value="part-time">Part-time</SelectItem>
+                      <SelectItem value="contract">Contract</SelectItem>
+                      <SelectItem value="internship">Internship</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Experience Level</Label>
+                  <Select value={formData.experience_level} onValueChange={(v) => setFormData({ ...formData, experience_level: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="entry">Entry Level</SelectItem>
+                      <SelectItem value="mid">Mid Level</SelectItem>
+                      <SelectItem value="senior">Senior Level</SelectItem>
+                      <SelectItem value="lead">Lead/Manager</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Salary Min (NPR)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 50000"
+                    value={formData.salary_min}
+                    onChange={(e) => setFormData({ ...formData, salary_min: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Salary Max (NPR)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 100000"
+                    value={formData.salary_max}
+                    onChange={(e) => setFormData({ ...formData, salary_max: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Required Skills (comma-separated)</Label>
+                <Input
+                  placeholder="React, TypeScript, Node.js"
+                  value={formData.skills_required}
+                  onChange={(e) => setFormData({ ...formData, skills_required: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Requirements (one per line)</Label>
+                <Textarea
+                  placeholder="3+ years experience&#10;Strong communication skills&#10;..."
+                  value={formData.requirements}
+                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                  rows={4}
+                />
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.is_active}
+                    onCheckedChange={(v) => setFormData({ ...formData, is_active: v })}
+                  />
+                  <Label>Active</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.is_remote}
+                    onCheckedChange={(v) => setFormData({ ...formData, is_remote: v })}
+                  />
+                  <Label>Remote</Label>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={resetForm}>Cancel</Button>
+              <Button variant="hero" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving...</> : (editingJob ? "Update Job" : "Post Job")}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Stats */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Active Jobs", value: "18", icon: Briefcase, color: "text-primary" },
-          { label: "Total Applications", value: "324", icon: FileText, color: "text-secondary" },
-          { label: "Interviews Scheduled", value: "12", icon: Users, color: "text-green-500" },
-          { label: "Positions Filled", value: "8", icon: CheckCircle, color: "text-amber-500" },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="flex items-center gap-4 p-4">
               <div className={`w-12 h-12 rounded-xl bg-muted flex items-center justify-center ${stat.color}`}>
@@ -147,157 +360,93 @@ const AdminJobs = () => {
         ))}
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="jobs">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
-            <TabsTrigger value="jobs" className="gap-2">
-              <Briefcase className="w-4 h-4" />
-              Job Listings
-            </TabsTrigger>
-            <TabsTrigger value="applications" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Applications
-            </TabsTrigger>
-          </TabsList>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search jobs..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
 
-        <TabsContent value="jobs">
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Salary</TableHead>
-                  <TableHead>Applications</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockJobs.map((job) => (
-                  <TableRow key={job.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{job.title}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {job.type}
-                          </Badge>
-                          <span>{job.posted}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-muted-foreground" />
-                        {job.company}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        {job.location}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4 text-green-500" />
-                        {job.salary}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                        {job.applications}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={job.status === "active" ? "default" : "secondary"}>
-                        {job.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="applications">
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Candidate</TableHead>
-                  <TableHead>Applied For</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Match Score</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Applied</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockApplications.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell className="font-medium">{app.candidate}</TableCell>
-                    <TableCell>{app.job}</TableCell>
-                    <TableCell>{app.company}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${app.matchScore}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium">{app.matchScore}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(app.status)}</TableCell>
-                    <TableCell className="text-muted-foreground">{app.applied}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-green-600">
-                          Advance
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Jobs Table */}
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Position</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Salary</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredJobs.map((job) => (
+              <TableRow key={job.id}>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{job.title}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <Badge variant="outline" className="text-xs capitalize">{job.job_type}</Badge>
+                      {job.is_remote && <Badge variant="secondary" className="text-xs">Remote</Badge>}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                    {job.location || "-"}
+                  </div>
+                </TableCell>
+                <TableCell className="capitalize">{job.experience_level}</TableCell>
+                <TableCell>
+                  {job.salary_min && job.salary_max ? (
+                    <span className="text-sm">
+                      NPR {(job.salary_min / 1000).toFixed(0)}K - {(job.salary_max / 1000).toFixed(0)}K
+                    </span>
+                  ) : "-"}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={job.is_active ? "default" : "secondary"}>
+                    {job.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    {job.external_link && (
+                      <Button variant="ghost" size="icon" asChild>
+                        <a href={job.external_link} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(job)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => toggleActive(job.id, job.is_active)}>
+                      {job.is_active ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(job.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filteredJobs.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  {isLoading ? "Loading..." : "No jobs found"}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 };

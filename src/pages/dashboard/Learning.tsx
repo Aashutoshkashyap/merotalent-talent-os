@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +12,17 @@ import {
   Clock, 
   Star, 
   Search, 
-  Filter,
   CheckCircle,
   Trophy,
   Zap,
   Code,
   Palette,
   TrendingUp,
-  Users
+  Users,
+  Video,
+  ExternalLink
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Course {
   id: string;
@@ -33,9 +36,13 @@ interface Course {
   thumbnail: string;
   level: "Beginner" | "Intermediate" | "Advanced";
   isEnrolled?: boolean;
+  liveClassLink?: string;
+  nextLiveClass?: string;
 }
 
 const Learning = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -60,6 +67,8 @@ const Learning = () => {
       thumbnail: "🐍",
       level: "Beginner",
       isEnrolled: true,
+      liveClassLink: "https://meet.google.com/abc-def-ghi",
+      nextLiveClass: "Feb 2, 2026 - 3:00 PM",
     },
     {
       id: "2",
@@ -73,6 +82,8 @@ const Learning = () => {
       thumbnail: "🎨",
       level: "Intermediate",
       isEnrolled: true,
+      liveClassLink: "https://zoom.us/j/123456789",
+      nextLiveClass: "Feb 5, 2026 - 2:00 PM",
     },
     {
       id: "3",
@@ -169,6 +180,30 @@ const Learning = () => {
     }
   };
 
+  const handleContinueLearning = (courseId: string) => {
+    navigate(`/courses/${courseId}`);
+  };
+
+  const handleEnrollCourse = (course: Course) => {
+    navigate(`/courses/${course.id}/checkout`);
+  };
+
+  const handleJoinLiveClass = (link?: string, className?: string) => {
+    if (link) {
+      window.open(link, "_blank");
+      toast({
+        title: "Joining Live Class",
+        description: `Opening ${className} live session...`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "No Live Class",
+        description: "No live class is currently scheduled for this course.",
+      });
+    }
+  };
+
   const CourseCard = ({ course, showProgress = false }: { course: Course; showProgress?: boolean }) => (
     <Card className="border-border/50 overflow-hidden hover:shadow-lg transition-all duration-300 group">
       <div className="h-32 bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 flex items-center justify-center text-5xl">
@@ -208,13 +243,42 @@ const Learning = () => {
               <span className="font-medium">{course.progress}%</span>
             </div>
             <Progress value={course.progress} className="h-2" />
-            <Button className="w-full" variant="hero">
+            
+            {/* Live Class Button */}
+            {course.liveClassLink && (
+              <div className="p-2 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="w-4 h-4 text-primary" />
+                    <span className="text-muted-foreground">{course.nextLiveClass}</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleJoinLiveClass(course.liveClassLink, course.title)}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Join
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <Button 
+              className="w-full" 
+              variant="hero"
+              onClick={() => handleContinueLearning(course.id)}
+            >
               <Play className="w-4 h-4 mr-2" />
               Continue Learning
             </Button>
           </div>
         ) : (
-          <Button className="w-full" variant={course.isEnrolled ? "outline" : "hero"}>
+          <Button 
+            className="w-full" 
+            variant={course.isEnrolled ? "outline" : "hero"}
+            onClick={() => course.isEnrolled ? handleContinueLearning(course.id) : handleEnrollCourse(course)}
+          >
             {course.isEnrolled ? (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Star, Clock, Calendar, MessageCircle } from "lucide-react";
+import BookingDialog from "@/components/mentors/BookingDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface Mentor {
   id: string;
@@ -25,9 +27,17 @@ interface Mentor {
 }
 
 const Mentors = () => {
+  const { toast } = useToast();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMentor, setSelectedMentor] = useState<{
+    id: string;
+    name: string;
+    hourlyRate: number;
+    expertise: string[];
+  } | null>(null);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   useEffect(() => {
     fetchMentors();
@@ -40,7 +50,6 @@ const Mentors = () => {
       .eq("is_available", true);
     
     if (data) {
-      // Fetch profiles separately
       const userIds = data.map(m => m.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -119,6 +128,23 @@ const Mentors = () => {
       mentor.expertise.some((e) => e.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const handleBookSession = (mentor: Mentor) => {
+    setSelectedMentor({
+      id: mentor.id,
+      name: mentor.profile?.full_name || "Mentor",
+      hourlyRate: mentor.hourly_rate || 0,
+      expertise: mentor.expertise,
+    });
+    setIsBookingOpen(true);
+  };
+
+  const handleMessage = (mentorName: string) => {
+    toast({
+      title: "Message sent",
+      description: `Opening chat with ${mentorName}...`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -194,11 +220,19 @@ const Mentors = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleMessage(mentor.profile?.full_name || "Mentor")}
+                >
                   <MessageCircle className="w-4 h-4 mr-2" />
                   Message
                 </Button>
-                <Button variant="hero" className="flex-1">
+                <Button 
+                  variant="hero" 
+                  className="flex-1"
+                  onClick={() => handleBookSession(mentor)}
+                >
                   <Calendar className="w-4 h-4 mr-2" />
                   Book
                 </Button>
@@ -212,6 +246,18 @@ const Mentors = () => {
         <div className="text-center py-12">
           <p className="text-muted-foreground">No mentors found matching your search.</p>
         </div>
+      )}
+
+      {/* Booking Dialog */}
+      {selectedMentor && (
+        <BookingDialog
+          isOpen={isBookingOpen}
+          onClose={() => {
+            setIsBookingOpen(false);
+            setSelectedMentor(null);
+          }}
+          mentor={selectedMentor}
+        />
       )}
     </div>
   );

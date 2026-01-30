@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -14,69 +15,94 @@ import {
 } from "@/components/ui/table";
 import {
   BookOpen, Plus, Sparkles, Loader2, Play, FileText, HelpCircle, Pencil, Trash2, Eye,
-  GraduationCap, Users, Clock, Video, BookMarked, LayoutList
+  GraduationCap, Users, Clock, Video, BookMarked, LayoutList, Image, ExternalLink, Tag
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface GeneratedContent {
-  description: string;
-  syllabus: string;
-  learning_outcomes: string[];
+interface Course {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  difficulty_level: string | null;
+  duration_hours: number | null;
+  price: number | null;
+  thumbnail_url: string | null;
+  redirect_url: string | null;
+  learning_outcomes: string[] | null;
+  syllabus: string | null;
+  is_published: boolean | null;
+  created_at: string;
 }
 
-const mockCourses = [
-  {
-    id: "1",
-    title: "Full Stack Web Development",
-    category: "Development",
-    modules: 12,
-    lessons: 48,
-    enrolled: 1234,
-    is_published: true,
-    created_at: "2025-01-15",
-  },
-  {
-    id: "2",
-    title: "UI/UX Design Masterclass",
-    category: "Design",
-    modules: 8,
-    lessons: 32,
-    enrolled: 876,
-    is_published: true,
-    created_at: "2025-01-10",
-  },
-  {
-    id: "3",
-    title: "Data Science Fundamentals",
-    category: "Data Science",
-    modules: 15,
-    lessons: 72,
-    enrolled: 654,
-    is_published: false,
-    created_at: "2025-01-20",
-  },
-];
+interface Quiz {
+  id: string;
+  title: string;
+  description: string | null;
+  course_id: string | null;
+  duration_minutes: number | null;
+  passing_score: number | null;
+  is_published: boolean | null;
+  created_at: string;
+}
 
 const AdminLMS = () => {
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [courseTitle, setCourseTitle] = useState("");
-  const [courseCategory, setCourseCategory] = useState("");
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const { toast } = useToast();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCourseDialogOpen, setIsCourseDialogOpen] = useState(false);
+  const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+
+  const [courseForm, setCourseForm] = useState({
+    title: "",
+    description: "",
+    category: "Development",
+    difficulty_level: "beginner",
+    duration_hours: "",
+    price: "",
+    thumbnail_url: "",
+    redirect_url: "",
+    learning_outcomes: "",
+    syllabus: "",
+    is_published: false,
+  });
+
+  const [quizForm, setQuizForm] = useState({
+    title: "",
+    description: "",
+    course_id: "",
+    duration_minutes: "30",
+    passing_score: "60",
+    is_published: false,
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    const [coursesRes, quizzesRes] = await Promise.all([
+      supabase.from("courses").select("*").order("created_at", { ascending: false }),
+      supabase.from("quizzes").select("*").order("created_at", { ascending: false }),
+    ]);
+    
+    if (coursesRes.data) setCourses(coursesRes.data);
+    if (quizzesRes.data) setQuizzes(quizzesRes.data);
+    setIsLoading(false);
+  };
 
   const generateCourseContent = async () => {
-    if (!courseTitle.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Title required",
-        description: "Please enter a course title first.",
-      });
+    if (!courseForm.title.trim()) {
+      toast({ variant: "destructive", title: "Title required" });
       return;
     }
 
     setIsGenerating(true);
-
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
@@ -87,79 +113,248 @@ const AdminLMS = () => {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
-            messages: [
-              {
-                role: "user",
-                content: `Generate comprehensive course content for: "${courseTitle}"${courseCategory ? ` in the ${courseCategory} category` : ""}`,
-              },
-            ],
+            messages: [{ role: "user", content: `Generate course content for: "${courseForm.title}"` }],
             type: "course-builder",
           }),
         }
       );
 
-      if (!response.ok) throw new Error("Failed to generate content");
-
+      if (!response.ok) throw new Error("Failed to generate");
       const data = await response.json();
-      setGeneratedContent(data);
-
-      toast({
-        title: "Content generated!",
-        description: "AI has created your course description, syllabus, and learning outcomes.",
-      });
+      
+      setCourseForm(prev => ({
+        ...prev,
+        description: data.description || prev.description,
+        syllabus: data.syllabus || prev.syllabus,
+        learning_outcomes: data.learning_outcomes?.join("\n") || prev.learning_outcomes,
+      }));
+      toast({ title: "Content generated!" });
     } catch (error) {
-      console.error("Error generating content:", error);
-      toast({
-        variant: "destructive",
-        title: "Generation failed",
-        description: "Please try again later.",
-      });
+      toast({ variant: "destructive", title: "Generation failed" });
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const handleCourseSubmit = async () => {
+    if (!courseForm.title.trim()) {
+      toast({ variant: "destructive", title: "Title required" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const courseData = {
+      title: courseForm.title,
+      description: courseForm.description || null,
+      category: courseForm.category,
+      difficulty_level: courseForm.difficulty_level,
+      duration_hours: courseForm.duration_hours ? parseInt(courseForm.duration_hours) : null,
+      price: courseForm.price ? parseFloat(courseForm.price) : 0,
+      thumbnail_url: courseForm.thumbnail_url || null,
+      redirect_url: courseForm.redirect_url || null,
+      learning_outcomes: courseForm.learning_outcomes ? courseForm.learning_outcomes.split("\n").filter(o => o.trim()) : null,
+      syllabus: courseForm.syllabus || null,
+      is_published: courseForm.is_published,
+    };
+
+    let error;
+    if (editingCourse) {
+      const result = await supabase.from("courses").update(courseData).eq("id", editingCourse.id);
+      error = result.error;
+    } else {
+      const result = await supabase.from("courses").insert(courseData);
+      error = result.error;
+    }
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } else {
+      toast({ title: editingCourse ? "Course updated!" : "Course created!" });
+      resetCourseForm();
+      fetchData();
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleQuizSubmit = async () => {
+    if (!quizForm.title.trim()) {
+      toast({ variant: "destructive", title: "Title required" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const quizData = {
+      title: quizForm.title,
+      description: quizForm.description || null,
+      course_id: quizForm.course_id || null,
+      duration_minutes: parseInt(quizForm.duration_minutes),
+      passing_score: parseInt(quizForm.passing_score),
+      is_published: quizForm.is_published,
+    };
+
+    let error;
+    if (editingQuiz) {
+      const result = await supabase.from("quizzes").update(quizData).eq("id", editingQuiz.id);
+      error = result.error;
+    } else {
+      const result = await supabase.from("quizzes").insert(quizData);
+      error = result.error;
+    }
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } else {
+      toast({ title: editingQuiz ? "Quiz updated!" : "Quiz created!" });
+      resetQuizForm();
+      fetchData();
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleDeleteCourse = async (id: string) => {
+    const { error } = await supabase.from("courses").delete().eq("id", id);
+    if (!error) { toast({ title: "Course deleted" }); fetchData(); }
+  };
+
+  const handleDeleteQuiz = async (id: string) => {
+    const { error } = await supabase.from("quizzes").delete().eq("id", id);
+    if (!error) { toast({ title: "Quiz deleted" }); fetchData(); }
+  };
+
+  const openEditCourse = (course: Course) => {
+    setEditingCourse(course);
+    setCourseForm({
+      title: course.title,
+      description: course.description || "",
+      category: course.category || "Development",
+      difficulty_level: course.difficulty_level || "beginner",
+      duration_hours: course.duration_hours?.toString() || "",
+      price: course.price?.toString() || "",
+      thumbnail_url: course.thumbnail_url || "",
+      redirect_url: course.redirect_url || "",
+      learning_outcomes: course.learning_outcomes?.join("\n") || "",
+      syllabus: course.syllabus || "",
+      is_published: course.is_published ?? false,
+    });
+    setIsCourseDialogOpen(true);
+  };
+
+  const openEditQuiz = (quiz: Quiz) => {
+    setEditingQuiz(quiz);
+    setQuizForm({
+      title: quiz.title,
+      description: quiz.description || "",
+      course_id: quiz.course_id || "",
+      duration_minutes: quiz.duration_minutes?.toString() || "30",
+      passing_score: quiz.passing_score?.toString() || "60",
+      is_published: quiz.is_published ?? false,
+    });
+    setIsQuizDialogOpen(true);
+  };
+
+  const resetCourseForm = () => {
+    setCourseForm({ title: "", description: "", category: "Development", difficulty_level: "beginner", duration_hours: "", price: "", thumbnail_url: "", redirect_url: "", learning_outcomes: "", syllabus: "", is_published: false });
+    setEditingCourse(null);
+    setIsCourseDialogOpen(false);
+  };
+
+  const resetQuizForm = () => {
+    setQuizForm({ title: "", description: "", course_id: "", duration_minutes: "30", passing_score: "60", is_published: false });
+    setEditingQuiz(null);
+    setIsQuizDialogOpen(false);
+  };
+
+  const stats = [
+    { label: "Total Courses", value: courses.length, icon: BookOpen, color: "text-primary" },
+    { label: "Published", value: courses.filter(c => c.is_published).length, icon: Eye, color: "text-success" },
+    { label: "Quizzes", value: quizzes.length, icon: HelpCircle, color: "text-secondary" },
+    { label: "Free Courses", value: courses.filter(c => !c.price || c.price === 0).length, icon: GraduationCap, color: "text-amber-500" },
+  ];
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">LMS Management</h1>
-          <p className="text-muted-foreground">Create and manage courses, modules, and lessons</p>
+          <p className="text-muted-foreground">Create and manage courses, quizzes, and certificates</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Course
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" />
-                Create New Course
-              </DialogTitle>
-            </DialogHeader>
+        <div className="flex gap-2">
+          <Dialog open={isQuizDialogOpen} onOpenChange={(open) => { if (!open) resetQuizForm(); else setIsQuizDialogOpen(open); }}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                Create Quiz
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingQuiz ? "Edit Quiz" : "Create New Quiz"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Quiz Title *</Label>
+                  <Input value={quizForm.title} onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })} placeholder="e.g., JavaScript Fundamentals Quiz" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea value={quizForm.description} onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })} rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Associated Course</Label>
+                  <Select value={quizForm.course_id} onValueChange={(v) => setQuizForm({ ...quizForm, course_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select course (optional)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No course</SelectItem>
+                      {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Duration (minutes)</Label>
+                    <Input type="number" value={quizForm.duration_minutes} onChange={(e) => setQuizForm({ ...quizForm, duration_minutes: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Passing Score (%)</Label>
+                    <Input type="number" value={quizForm.passing_score} onChange={(e) => setQuizForm({ ...quizForm, passing_score: e.target.value })} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={quizForm.is_published} onCheckedChange={(v) => setQuizForm({ ...quizForm, is_published: v })} />
+                  <Label>Published</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={resetQuizForm}>Cancel</Button>
+                <Button variant="hero" onClick={handleQuizSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {editingQuiz ? "Update Quiz" : "Create Quiz"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-            <div className="space-y-6 py-4">
-              {/* Basic Info */}
-              <div className="grid gap-4">
+          <Dialog open={isCourseDialogOpen} onOpenChange={(open) => { if (!open) resetCourseForm(); else setIsCourseDialogOpen(open); }}>
+            <DialogTrigger asChild>
+              <Button variant="hero">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Course
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingCourse ? "Edit Course" : "Create New Course"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Course Title</Label>
-                    <Input
-                      placeholder="e.g., Advanced Machine Learning"
-                      value={courseTitle}
-                      onChange={(e) => setCourseTitle(e.target.value)}
-                    />
+                    <Label>Course Title *</Label>
+                    <Input value={courseForm.title} onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })} placeholder="e.g., Advanced Machine Learning" />
                   </div>
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select value={courseCategory} onValueChange={setCourseCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
+                    <Select value={courseForm.category} onValueChange={(v) => setCourseForm({ ...courseForm, category: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Development">Development</SelectItem>
                         <SelectItem value="Design">Design</SelectItem>
@@ -171,89 +366,30 @@ const AdminLMS = () => {
                   </div>
                 </div>
 
-                {/* AI Generate Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-dashed border-2"
-                  onClick={generateCourseContent}
-                  disabled={isGenerating || !courseTitle.trim()}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Generating with AI...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2 text-primary" />
-                      Generate Description, Syllabus & Outcomes with AI
-                    </>
-                  )}
+                <Button type="button" variant="outline" className="w-full border-dashed border-2" onClick={generateCourseContent} disabled={isGenerating || !courseForm.title.trim()}>
+                  {isGenerating ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</> : <><Sparkles className="w-4 h-4 mr-2 text-primary" />Generate with AI</>}
                 </Button>
 
-                {/* Generated Content Preview */}
-                {generatedContent && (
-                  <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                        AI Generated Content
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Description</Label>
-                        <Textarea
-                          value={generatedContent.description}
-                          onChange={(e) =>
-                            setGeneratedContent({ ...generatedContent, description: e.target.value })
-                          }
-                          rows={4}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Syllabus</Label>
-                        <Textarea
-                          value={generatedContent.syllabus}
-                          onChange={(e) =>
-                            setGeneratedContent({ ...generatedContent, syllabus: e.target.value })
-                          }
-                          rows={6}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Learning Outcomes</Label>
-                        <div className="space-y-2 mt-2">
-                          {generatedContent.learning_outcomes.map((outcome, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <Badge variant="outline" className="shrink-0">
-                                {index + 1}
-                              </Badge>
-                              <Input
-                                value={outcome}
-                                onChange={(e) => {
-                                  const newOutcomes = [...generatedContent.learning_outcomes];
-                                  newOutcomes[index] = e.target.value;
-                                  setGeneratedContent({ ...generatedContent, learning_outcomes: newOutcomes });
-                                }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea value={courseForm.description} onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })} rows={4} />
+                </div>
 
-                {/* Additional Settings */}
+                <div className="space-y-2">
+                  <Label>Learning Outcomes (one per line)</Label>
+                  <Textarea value={courseForm.learning_outcomes} onChange={(e) => setCourseForm({ ...courseForm, learning_outcomes: e.target.value })} rows={4} placeholder="Understand machine learning basics&#10;Build predictive models&#10;..." />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Syllabus</Label>
+                  <Textarea value={courseForm.syllabus} onChange={(e) => setCourseForm({ ...courseForm, syllabus: e.target.value })} rows={4} />
+                </div>
+
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Difficulty</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select level" />
-                      </SelectTrigger>
+                    <Select value={courseForm.difficulty_level} onValueChange={(v) => setCourseForm({ ...courseForm, difficulty_level: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="beginner">Beginner</SelectItem>
                         <SelectItem value="intermediate">Intermediate</SelectItem>
@@ -263,35 +399,45 @@ const AdminLMS = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Duration (hours)</Label>
-                    <Input type="number" placeholder="e.g., 40" />
+                    <Input type="number" value={courseForm.duration_hours} onChange={(e) => setCourseForm({ ...courseForm, duration_hours: e.target.value })} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Price ($)</Label>
-                    <Input type="number" placeholder="0 for free" />
+                    <Label>Price (NPR)</Label>
+                    <Input type="number" value={courseForm.price} onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })} placeholder="0 for free" />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Switch id="publish" />
-                    <Label htmlFor="publish">Publish immediately</Label>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Image className="w-4 h-4" />Thumbnail URL</Label>
+                    <Input value={courseForm.thumbnail_url} onChange={(e) => setCourseForm({ ...courseForm, thumbnail_url: e.target.value })} placeholder="https://..." />
                   </div>
-                  <Button variant="hero">Create Course</Button>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><ExternalLink className="w-4 h-4" />Redirect URL</Label>
+                    <Input value={courseForm.redirect_url} onChange={(e) => setCourseForm({ ...courseForm, redirect_url: e.target.value })} placeholder="External course link" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch checked={courseForm.is_published} onCheckedChange={(v) => setCourseForm({ ...courseForm, is_published: v })} />
+                  <Label>Publish immediately</Label>
                 </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={resetCourseForm}>Cancel</Button>
+                <Button variant="hero" onClick={handleCourseSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {editingCourse ? "Update Course" : "Create Course"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total Courses", value: "24", icon: BookOpen, color: "text-primary" },
-          { label: "Total Lessons", value: "342", icon: Video, color: "text-secondary" },
-          { label: "Enrolled Students", value: "5,432", icon: Users, color: "text-green-500" },
-          { label: "Completion Rate", value: "78%", icon: GraduationCap, color: "text-amber-500" },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="flex items-center gap-4 p-4">
               <div className={`w-12 h-12 rounded-xl bg-muted flex items-center justify-center ${stat.color}`}>
@@ -309,18 +455,8 @@ const AdminLMS = () => {
       {/* Tabs */}
       <Tabs defaultValue="courses">
         <TabsList>
-          <TabsTrigger value="courses" className="gap-2">
-            <BookOpen className="w-4 h-4" />
-            Courses
-          </TabsTrigger>
-          <TabsTrigger value="modules" className="gap-2">
-            <LayoutList className="w-4 h-4" />
-            Modules
-          </TabsTrigger>
-          <TabsTrigger value="lessons" className="gap-2">
-            <Video className="w-4 h-4" />
-            Lessons
-          </TabsTrigger>
+          <TabsTrigger value="courses" className="gap-2"><BookOpen className="w-4 h-4" />Courses</TabsTrigger>
+          <TabsTrigger value="quizzes" className="gap-2"><HelpCircle className="w-4 h-4" />Quizzes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="courses" className="mt-4">
@@ -330,32 +466,31 @@ const AdminLMS = () => {
                 <TableRow>
                   <TableHead>Course</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Content</TableHead>
-                  <TableHead>Enrolled</TableHead>
+                  <TableHead>Level</TableHead>
+                  <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockCourses.map((course) => (
+                {courses.map((course) => (
                   <TableRow key={course.id}>
-                    <TableCell className="font-medium">{course.title}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{course.category}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <BookMarked className="w-3.5 h-3.5" />
-                          {course.modules}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Play className="w-3.5 h-3.5" />
-                          {course.lessons}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        {course.thumbnail_url ? (
+                          <img src={course.thumbnail_url} alt="" className="w-10 h-10 rounded object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center"><BookOpen className="w-5 h-5 text-muted-foreground" /></div>
+                        )}
+                        <div>
+                          <p className="font-medium">{course.title}</p>
+                          {course.duration_hours && <p className="text-xs text-muted-foreground">{course.duration_hours} hours</p>}
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{course.enrolled.toLocaleString()}</TableCell>
+                    <TableCell><Badge variant="outline">{course.category}</Badge></TableCell>
+                    <TableCell className="capitalize">{course.difficulty_level}</TableCell>
+                    <TableCell>{course.price ? `NPR ${course.price}` : "Free"}</TableCell>
                     <TableCell>
                       <Badge variant={course.is_published ? "default" : "secondary"}>
                         {course.is_published ? "Published" : "Draft"}
@@ -363,43 +498,58 @@ const AdminLMS = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEditCourse(course)}><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteCourse(course.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
+                {courses.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{isLoading ? "Loading..." : "No courses yet"}</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
         </TabsContent>
 
-        <TabsContent value="modules" className="mt-4">
-          <Card className="p-8 text-center">
-            <LayoutList className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">Module Management</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select a course to view and manage its modules
-            </p>
-            <Button variant="outline">Select Course</Button>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="lessons" className="mt-4">
-          <Card className="p-8 text-center">
-            <Video className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">Lesson Management</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Create and manage videos, PDFs, quizzes, and assignments
-            </p>
-            <Button variant="outline">Select Module</Button>
+        <TabsContent value="quizzes" className="mt-4">
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Quiz</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Passing Score</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {quizzes.map((quiz) => (
+                  <TableRow key={quiz.id}>
+                    <TableCell className="font-medium">{quiz.title}</TableCell>
+                    <TableCell>{courses.find(c => c.id === quiz.course_id)?.title || "-"}</TableCell>
+                    <TableCell>{quiz.duration_minutes} min</TableCell>
+                    <TableCell>{quiz.passing_score}%</TableCell>
+                    <TableCell>
+                      <Badge variant={quiz.is_published ? "default" : "secondary"}>
+                        {quiz.is_published ? "Published" : "Draft"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEditQuiz(quiz)}><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteQuiz(quiz.id)}><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {quizzes.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{isLoading ? "Loading..." : "No quizzes yet"}</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
       </Tabs>
