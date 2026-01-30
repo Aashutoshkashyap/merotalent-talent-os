@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          amount: number | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          meeting_link: string | null
+          mentor_id: string
+          notes: string | null
+          payment_status: string | null
+          scheduled_date: string
+          scheduled_time: string
+          status: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          meeting_link?: string | null
+          mentor_id: string
+          notes?: string | null
+          payment_status?: string | null
+          scheduled_date: string
+          scheduled_time: string
+          status?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          meeting_link?: string | null
+          mentor_id?: string
+          notes?: string | null
+          payment_status?: string | null
+          scheduled_date?: string
+          scheduled_time?: string
+          status?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badges: {
         Row: {
           category: string | null
@@ -40,6 +96,44 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      certificates: {
+        Row: {
+          certificate_number: string
+          course_id: string
+          id: string
+          issued_at: string
+          pdf_url: string | null
+          template_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          certificate_number: string
+          course_id: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+          template_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          certificate_number?: string
+          course_id?: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+          template_data?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       companies: {
         Row: {
@@ -126,6 +220,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "competition_participants_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_registrations: {
+        Row: {
+          competition_id: string
+          id: string
+          registered_at: string
+          reminder_sent: boolean | null
+          team_name: string | null
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          id?: string
+          registered_at?: string
+          reminder_sent?: boolean | null
+          team_name?: string | null
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          id?: string
+          registered_at?: string
+          reminder_sent?: boolean | null
+          team_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_registrations_competition_id_fkey"
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
@@ -311,6 +440,36 @@ export type Database = {
           },
         ]
       }
+      course_tags: {
+        Row: {
+          course_id: string
+          tag_id: string
+        }
+        Insert: {
+          course_id: string
+          tag_id: string
+        }
+        Update: {
+          course_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tags_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           category: string | null
@@ -323,7 +482,9 @@ export type Database = {
           is_published: boolean | null
           learning_outcomes: string[] | null
           price: number | null
+          redirect_url: string | null
           syllabus: string | null
+          thumbnail_file_url: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -339,7 +500,9 @@ export type Database = {
           is_published?: boolean | null
           learning_outcomes?: string[] | null
           price?: number | null
+          redirect_url?: string | null
           syllabus?: string | null
+          thumbnail_file_url?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -355,10 +518,116 @@ export type Database = {
           is_published?: boolean | null
           learning_outcomes?: string[] | null
           price?: number | null
+          redirect_url?: string | null
           syllabus?: string | null
+          thumbnail_file_url?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      institute_notices: {
+        Row: {
+          attachment_url: string | null
+          content: string | null
+          created_at: string
+          id: string
+          institute_id: string
+          is_pinned: boolean | null
+          notice_type: string | null
+          published_at: string
+          title: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          institute_id: string
+          is_pinned?: boolean | null
+          notice_type?: string | null
+          published_at?: string
+          title: string
+        }
+        Update: {
+          attachment_url?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          institute_id?: string
+          is_pinned?: boolean | null
+          notice_type?: string | null
+          published_at?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institute_notices_institute_id_fkey"
+            columns: ["institute_id"]
+            isOneToOne: false
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutes: {
+        Row: {
+          admission_deadline: string | null
+          admission_status: string | null
+          available_seats: number | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_verified: boolean | null
+          location: string | null
+          logo_url: string | null
+          name: string
+          short_name: string | null
+          total_seats: number | null
+          type: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          admission_deadline?: string | null
+          admission_status?: string | null
+          available_seats?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          location?: string | null
+          logo_url?: string | null
+          name: string
+          short_name?: string | null
+          total_seats?: number | null
+          type?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          admission_deadline?: string | null
+          admission_status?: string | null
+          available_seats?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          location?: string | null
+          logo_url?: string | null
+          name?: string
+          short_name?: string | null
+          total_seats?: number | null
+          type?: string | null
+          updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -408,6 +677,7 @@ export type Database = {
         Row: {
           applied_at: string
           cover_letter: string | null
+          cover_letter_file_url: string | null
           id: string
           job_id: string
           notes: string | null
@@ -421,6 +691,7 @@ export type Database = {
         Insert: {
           applied_at?: string
           cover_letter?: string | null
+          cover_letter_file_url?: string | null
           id?: string
           job_id: string
           notes?: string | null
@@ -434,6 +705,7 @@ export type Database = {
         Update: {
           applied_at?: string
           cover_letter?: string | null
+          cover_letter_file_url?: string | null
           id?: string
           job_id?: string
           notes?: string | null
@@ -461,6 +733,7 @@ export type Database = {
           created_at: string
           description: string | null
           experience_level: string | null
+          external_link: string | null
           id: string
           is_active: boolean | null
           is_remote: boolean | null
@@ -479,6 +752,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           experience_level?: string | null
+          external_link?: string | null
           id?: string
           is_active?: boolean | null
           is_remote?: boolean | null
@@ -497,6 +771,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           experience_level?: string | null
+          external_link?: string | null
           id?: string
           is_active?: boolean | null
           is_remote?: boolean | null
@@ -563,8 +838,11 @@ export type Database = {
           duration_minutes: number | null
           id: string
           is_preview: boolean | null
+          live_class_link: string | null
+          live_class_scheduled_at: string | null
           module_id: string
           order_index: number | null
+          pdf_attachment_url: string | null
           title: string
           updated_at: string
         }
@@ -576,8 +854,11 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           is_preview?: boolean | null
+          live_class_link?: string | null
+          live_class_scheduled_at?: string | null
           module_id: string
           order_index?: number | null
+          pdf_attachment_url?: string | null
           title: string
           updated_at?: string
         }
@@ -589,8 +870,11 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           is_preview?: boolean | null
+          live_class_link?: string | null
+          live_class_scheduled_at?: string | null
           module_id?: string
           order_index?: number | null
+          pdf_attachment_url?: string | null
           title?: string
           updated_at?: string
         }
@@ -729,6 +1013,51 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          id: string
+          metadata: Json | null
+          payment_method: string | null
+          payment_type: string
+          reference_id: string
+          status: string | null
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_method?: string | null
+          payment_type: string
+          reference_id: string
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_method?: string | null
+          payment_type?: string
+          reference_id?: string
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -738,9 +1067,12 @@ export type Database = {
           full_name: string | null
           id: string
           location: string | null
+          onboarding_completed: boolean | null
           phone: string | null
           updated_at: string
           user_id: string
+          whatsapp_number: string | null
+          whatsapp_verified: boolean | null
         }
         Insert: {
           avatar_url?: string | null
@@ -750,9 +1082,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           location?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           updated_at?: string
           user_id: string
+          whatsapp_number?: string | null
+          whatsapp_verified?: boolean | null
         }
         Update: {
           avatar_url?: string | null
@@ -762,13 +1097,179 @@ export type Database = {
           full_name?: string | null
           id?: string
           location?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           updated_at?: string
           user_id?: string
+          whatsapp_number?: string | null
+          whatsapp_verified?: boolean | null
         }
         Relationships: []
       }
+      quiz_attempts: {
+        Row: {
+          answers: Json | null
+          completed_at: string | null
+          id: string
+          passed: boolean | null
+          quiz_id: string
+          score: number | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string | null
+          id?: string
+          passed?: boolean | null
+          quiz_id: string
+          score?: number | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string | null
+          id?: string
+          passed?: boolean | null
+          quiz_id?: string
+          score?: number | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          id: string
+          options: Json | null
+          order_index: number | null
+          points: number | null
+          question: string
+          question_type: string | null
+          quiz_id: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          id?: string
+          options?: Json | null
+          order_index?: number | null
+          points?: number | null
+          question: string
+          question_type?: string | null
+          quiz_id: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          id?: string
+          options?: Json | null
+          order_index?: number | null
+          points?: number | null
+          question?: string
+          question_type?: string | null
+          quiz_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_published: boolean | null
+          module_id: string | null
+          passing_score: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_published?: boolean | null
+          module_id?: string | null
+          passing_score?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_published?: boolean | null
+          module_id?: string | null
+          passing_score?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      tags: {
         Row: {
           category: string | null
           created_at: string

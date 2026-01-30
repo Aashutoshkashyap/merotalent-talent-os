@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, roles, isLoading } = useAuth();
+  const { user, roles, isLoading, isAdmin } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -23,7 +23,13 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requiredRole && !roles.includes(requiredRole)) {
+  // If this is the admin route and user is not admin, redirect to dashboard
+  if (requiredRole === "admin" && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // For other required roles, check if user has the role
+  if (requiredRole && requiredRole !== "admin" && !roles.includes(requiredRole)) {
     return <Navigate to="/dashboard" replace />;
   }
 

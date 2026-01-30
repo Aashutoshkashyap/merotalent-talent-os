@@ -5,15 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Mail, Lock, GraduationCap, Shield } from "lucide-react";
+import { Sparkles, Loader2, Mail, Lock, GraduationCap } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [loginType, setLoginType] = useState<"student" | "admin">("student");
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,12 +37,9 @@ const Login = () => {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      // Navigate based on login type
-      if (loginType === "admin") {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate(from, { replace: true });
-      }
+      // The AuthContext will determine routing based on roles
+      // Navigation will be handled by ProtectedRoute
+      navigate(from, { replace: true });
     }
   };
 
@@ -67,29 +62,16 @@ const Login = () => {
           </div>
         </CardHeader>
 
-        {/* Login Type Tabs */}
-        <Tabs value={loginType} onValueChange={(v) => setLoginType(v as "student" | "admin")} className="px-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="student" className="gap-2">
-              <GraduationCap className="w-4 h-4" />
-              Student Login
-            </TabsTrigger>
-            <TabsTrigger value="admin" className="gap-2">
-              <Shield className="w-4 h-4" />
-              Super Admin
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Student Login Badge */}
+        <div className="px-6 pb-4">
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-center flex items-center justify-center gap-2">
+            <GraduationCap className="w-4 h-4 text-primary" />
+            <span className="font-medium">Student Portal</span>
+          </div>
+        </div>
         
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4 pt-6">
-            {loginType === "admin" && (
-              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-center">
-                <Shield className="w-4 h-4 inline-block mr-2 text-primary" />
-                Super Admin access requires elevated privileges
-              </div>
-            )}
-            
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -97,7 +79,7 @@ const Login = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder={loginType === "admin" ? "admin@merotalent.com" : "you@example.com"}
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -131,18 +113,16 @@ const Login = () => {
                   Signing in...
                 </>
               ) : (
-                `Sign In as ${loginType === "admin" ? "Super Admin" : "Student"}`
+                "Sign In"
               )}
             </Button>
             
-            {loginType === "student" && (
-              <p className="text-sm text-center text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline font-medium">
-                  Sign up
-                </Link>
-              </p>
-            )}
+            <p className="text-sm text-center text-muted-foreground">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-primary hover:underline font-medium">
+                Sign up
+              </Link>
+            </p>
           </CardFooter>
         </form>
       </Card>
