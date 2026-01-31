@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,11 @@ import {
   Users,
   Video,
   ExternalLink,
-  Shield
+  Shield,
+  FileQuestion,
+  Calendar,
+  PlayCircle,
+  Radio
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,11 +45,45 @@ interface Course {
   nextLiveClass?: string;
 }
 
+interface LiveClass {
+  id: string;
+  courseTitle: string;
+  lessonTitle: string;
+  instructor: string;
+  scheduledAt: string;
+  duration: number;
+  meetingLink: string;
+  status: "upcoming" | "live" | "completed";
+}
+
+interface Quiz {
+  id: string;
+  courseTitle: string;
+  quizTitle: string;
+  totalQuestions: number;
+  duration: number;
+  passingScore: number;
+  attempts: number;
+  bestScore?: number;
+  status: "not_started" | "in_progress" | "completed";
+}
+
+interface RecordedLesson {
+  id: string;
+  courseTitle: string;
+  lessonTitle: string;
+  duration: number;
+  progress: number;
+  thumbnail: string;
+  instructor: string;
+}
+
 const Learning = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [contentTab, setContentTab] = useState("recorded");
 
   const categories = [
     { id: "all", label: "All Courses", icon: BookOpen },
@@ -53,6 +91,126 @@ const Learning = () => {
     { id: "design", label: "Design", icon: Palette },
     { id: "business", label: "Business", icon: TrendingUp },
     { id: "leadership", label: "Leadership", icon: Users },
+  ];
+
+  // Mock data for recorded lessons
+  const recordedLessons: RecordedLesson[] = [
+    {
+      id: "r1",
+      courseTitle: "Complete Python Bootcamp",
+      lessonTitle: "Variables and Data Types",
+      duration: 25,
+      progress: 100,
+      thumbnail: "🐍",
+      instructor: "Dr. Aarav Sharma",
+    },
+    {
+      id: "r2",
+      courseTitle: "Complete Python Bootcamp",
+      lessonTitle: "Control Flow Statements",
+      duration: 35,
+      progress: 60,
+      thumbnail: "🐍",
+      instructor: "Dr. Aarav Sharma",
+    },
+    {
+      id: "r3",
+      courseTitle: "UI/UX Design Masterclass",
+      lessonTitle: "Color Theory Fundamentals",
+      duration: 40,
+      progress: 0,
+      thumbnail: "🎨",
+      instructor: "Priya Thapa",
+    },
+    {
+      id: "r4",
+      courseTitle: "Machine Learning Fundamentals",
+      lessonTitle: "Introduction to ML",
+      duration: 30,
+      progress: 45,
+      thumbnail: "🤖",
+      instructor: "Bikash Gurung",
+    },
+  ];
+
+  // Mock data for live classes
+  const liveClasses: LiveClass[] = [
+    {
+      id: "l1",
+      courseTitle: "Complete Python Bootcamp",
+      lessonTitle: "Live Q&A Session",
+      instructor: "Dr. Aarav Sharma",
+      scheduledAt: "Feb 2, 2026 - 3:00 PM",
+      duration: 60,
+      meetingLink: "https://meet.google.com/abc-def-ghi",
+      status: "upcoming",
+    },
+    {
+      id: "l2",
+      courseTitle: "UI/UX Design Masterclass",
+      lessonTitle: "Design Critique Session",
+      instructor: "Priya Thapa",
+      scheduledAt: "Feb 5, 2026 - 2:00 PM",
+      duration: 90,
+      meetingLink: "https://zoom.us/j/123456789",
+      status: "upcoming",
+    },
+    {
+      id: "l3",
+      courseTitle: "Machine Learning Fundamentals",
+      lessonTitle: "Project Review",
+      instructor: "Bikash Gurung",
+      scheduledAt: "Feb 1, 2026 - 4:00 PM",
+      duration: 45,
+      meetingLink: "https://meet.google.com/xyz-abc-123",
+      status: "live",
+    },
+  ];
+
+  // Mock data for quizzes
+  const quizzes: Quiz[] = [
+    {
+      id: "q1",
+      courseTitle: "Complete Python Bootcamp",
+      quizTitle: "Python Basics Quiz",
+      totalQuestions: 20,
+      duration: 30,
+      passingScore: 70,
+      attempts: 2,
+      bestScore: 85,
+      status: "completed",
+    },
+    {
+      id: "q2",
+      courseTitle: "Complete Python Bootcamp",
+      quizTitle: "Data Structures Quiz",
+      totalQuestions: 15,
+      duration: 25,
+      passingScore: 70,
+      attempts: 0,
+      status: "not_started",
+    },
+    {
+      id: "q3",
+      courseTitle: "UI/UX Design Masterclass",
+      quizTitle: "Design Principles Assessment",
+      totalQuestions: 25,
+      duration: 40,
+      passingScore: 75,
+      attempts: 1,
+      bestScore: 68,
+      status: "in_progress",
+    },
+    {
+      id: "q4",
+      courseTitle: "Machine Learning Fundamentals",
+      quizTitle: "ML Concepts Quiz",
+      totalQuestions: 30,
+      duration: 45,
+      passingScore: 80,
+      attempts: 0,
+      status: "not_started",
+    },
   ];
 
   const myCourses: Course[] = [
@@ -139,30 +297,6 @@ const Learning = () => {
       thumbnail: "👔",
       level: "Advanced",
     },
-    {
-      id: "7",
-      title: "Figma for Professionals",
-      instructor: "Maya Rai",
-      category: "design",
-      duration: "24 hours",
-      progress: 0,
-      rating: 4.9,
-      enrolled: 2156,
-      thumbnail: "✏️",
-      level: "Intermediate",
-    },
-    {
-      id: "8",
-      title: "Data Structures & Algorithms",
-      instructor: "Dr. Aarav Sharma",
-      category: "coding",
-      duration: "48 hours",
-      progress: 0,
-      rating: 4.7,
-      enrolled: 1876,
-      thumbnail: "🧮",
-      level: "Advanced",
-    },
   ];
 
   const filteredCourses = allCourses.filter((course) => {
@@ -181,6 +315,24 @@ const Learning = () => {
     }
   };
 
+  const getQuizStatusColor = (status: Quiz["status"]) => {
+    switch (status) {
+      case "completed": return "bg-success/10 text-success";
+      case "in_progress": return "bg-warning/10 text-warning";
+      case "not_started": return "bg-muted text-muted-foreground";
+      default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const getLiveStatusColor = (status: LiveClass["status"]) => {
+    switch (status) {
+      case "live": return "bg-destructive/10 text-destructive animate-pulse";
+      case "upcoming": return "bg-primary/10 text-primary";
+      case "completed": return "bg-muted text-muted-foreground";
+      default: return "bg-muted text-muted-foreground";
+    }
+  };
+
   const handleContinueLearning = (courseId: string) => {
     navigate(`/courses/${courseId}`);
   };
@@ -189,20 +341,28 @@ const Learning = () => {
     navigate(`/courses/${course.id}/checkout`);
   };
 
-  const handleJoinLiveClass = (link?: string, className?: string) => {
-    if (link) {
-      window.open(link, "_blank");
-      toast({
-        title: "Joining Live Class",
-        description: `Opening ${className} live session...`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "No Live Class",
-        description: "No live class is currently scheduled for this course.",
-      });
-    }
+  const handleJoinLiveClass = (link: string, className: string) => {
+    window.open(link, "_blank");
+    toast({
+      title: "Joining Live Class",
+      description: `Opening ${className} live session...`,
+    });
+  };
+
+  const handleStartQuiz = (quizId: string, quizTitle: string) => {
+    toast({
+      title: "Starting Quiz",
+      description: `Loading ${quizTitle}...`,
+    });
+    // Navigate to quiz page when implemented
+  };
+
+  const handleWatchLesson = (lessonId: string, lessonTitle: string) => {
+    toast({
+      title: "Loading Video",
+      description: `Opening ${lessonTitle}...`,
+    });
+    // Navigate to lesson page when implemented
   };
 
   const CourseCard = ({ course, showProgress = false }: { course: Course; showProgress?: boolean }) => (
@@ -244,27 +404,6 @@ const Learning = () => {
               <span className="font-medium">{course.progress}%</span>
             </div>
             <Progress value={course.progress} className="h-2" />
-            
-            {/* Live Class Button */}
-            {course.liveClassLink && (
-              <div className="p-2 rounded-lg bg-primary/5 border border-primary/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Video className="w-4 h-4 text-primary" />
-                    <span className="text-muted-foreground">{course.nextLiveClass}</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleJoinLiveClass(course.liveClassLink, course.title)}
-                  >
-                    <ExternalLink className="w-3 h-3 mr-1" />
-                    Join
-                  </Button>
-                </div>
-              </div>
-            )}
-            
             <Button 
               className="w-full" 
               variant="hero"
@@ -299,16 +438,16 @@ const Learning = () => {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-display font-bold">Learning Hub</h1>
-            <p className="text-muted-foreground">Build skills that matter for your career</p>
-          </div>
-          <Badge variant="outline" className="gap-1">
-            <Shield className="w-3 h-3" />
-            Content Protected
-          </Badge>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Learning Hub</h1>
+          <p className="text-muted-foreground">Build skills that matter for your career</p>
         </div>
+        <Badge variant="outline" className="gap-1">
+          <Shield className="w-3 h-3" />
+          Content Protected
+        </Badge>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -350,18 +489,187 @@ const Learning = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="my-courses" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="my-courses">My Courses</TabsTrigger>
-          <TabsTrigger value="browse">Browse All</TabsTrigger>
+      <Tabs defaultValue="my-learning" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="my-learning">My Learning</TabsTrigger>
+          <TabsTrigger value="browse">Browse Courses</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my-courses" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myCourses.map((course) => (
-              <CourseCard key={course.id} course={course} showProgress />
-            ))}
-          </div>
+        <TabsContent value="my-learning" className="space-y-6">
+          {/* Content Type Tabs */}
+          <Tabs value={contentTab} onValueChange={setContentTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="recorded" className="gap-2">
+                <PlayCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Recorded</span>
+              </TabsTrigger>
+              <TabsTrigger value="live" className="gap-2">
+                <Radio className="w-4 h-4" />
+                <span className="hidden sm:inline">Live Classes</span>
+              </TabsTrigger>
+              <TabsTrigger value="quizzes" className="gap-2">
+                <FileQuestion className="w-4 h-4" />
+                <span className="hidden sm:inline">Quizzes</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Recorded Content */}
+            <TabsContent value="recorded" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Recorded Lessons</h3>
+                <Badge variant="secondary">{recordedLessons.length} lessons</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recordedLessons.map((lesson) => (
+                  <Card key={lesson.id} className="border-border/50 hover:shadow-md transition-all">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-2xl shrink-0">
+                          {lesson.thumbnail}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground mb-1">{lesson.courseTitle}</p>
+                          <h4 className="font-medium text-sm line-clamp-2 mb-2">{lesson.lessonTitle}</h4>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                            <Clock className="w-3 h-3" />
+                            <span>{lesson.duration} min</span>
+                            <span>•</span>
+                            <span>{lesson.instructor}</span>
+                          </div>
+                          {lesson.progress > 0 && (
+                            <div className="space-y-1">
+                              <Progress value={lesson.progress} className="h-1" />
+                              <p className="text-xs text-muted-foreground">{lesson.progress}% complete</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <Button 
+                        className="w-full mt-3" 
+                        size="sm"
+                        variant={lesson.progress === 100 ? "outline" : "default"}
+                        onClick={() => handleWatchLesson(lesson.id, lesson.lessonTitle)}
+                      >
+                        <Play className="w-3 h-3 mr-2" />
+                        {lesson.progress === 100 ? "Rewatch" : lesson.progress > 0 ? "Continue" : "Start"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* Live Classes */}
+            <TabsContent value="live" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Live Classes</h3>
+                <Badge variant="secondary">{liveClasses.filter(c => c.status !== "completed").length} upcoming</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {liveClasses.map((liveClass) => (
+                  <Card key={liveClass.id} className="border-border/50 hover:shadow-md transition-all">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <Badge className={getLiveStatusColor(liveClass.status)}>
+                          {liveClass.status === "live" && <Radio className="w-3 h-3 mr-1" />}
+                          {liveClass.status.replace("_", " ").toUpperCase()}
+                        </Badge>
+                        <div className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {liveClass.duration} min
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-1">{liveClass.courseTitle}</p>
+                      <h4 className="font-semibold mb-2">{liveClass.lessonTitle}</h4>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <Users className="w-4 h-4" />
+                        <span>{liveClass.instructor}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm mb-4 p-2 bg-muted/50 rounded-lg">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        <span>{liveClass.scheduledAt}</span>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        variant={liveClass.status === "live" ? "destructive" : "default"}
+                        disabled={liveClass.status === "completed"}
+                        onClick={() => handleJoinLiveClass(liveClass.meetingLink, liveClass.lessonTitle)}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        {liveClass.status === "live" ? "Join Now" : liveClass.status === "upcoming" ? "Set Reminder" : "Completed"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {liveClasses.length === 0 && (
+                <div className="text-center py-12">
+                  <Video className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No live classes scheduled</p>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Quizzes */}
+            <TabsContent value="quizzes" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Quizzes & Assessments</h3>
+                <Badge variant="secondary">{quizzes.filter(q => q.status === "completed").length}/{quizzes.length} completed</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {quizzes.map((quiz) => (
+                  <Card key={quiz.id} className="border-border/50 hover:shadow-md transition-all">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <Badge className={getQuizStatusColor(quiz.status)}>
+                          {quiz.status === "completed" && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {quiz.status.replace("_", " ").toUpperCase()}
+                        </Badge>
+                        {quiz.bestScore !== undefined && (
+                          <div className={`text-sm font-semibold ${quiz.bestScore >= quiz.passingScore ? "text-success" : "text-warning"}`}>
+                            Best: {quiz.bestScore}%
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-1">{quiz.courseTitle}</p>
+                      <h4 className="font-semibold mb-3">{quiz.quizTitle}</h4>
+                      <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                        <div className="p-2 bg-muted/50 rounded-lg">
+                          <p className="text-lg font-bold">{quiz.totalQuestions}</p>
+                          <p className="text-xs text-muted-foreground">Questions</p>
+                        </div>
+                        <div className="p-2 bg-muted/50 rounded-lg">
+                          <p className="text-lg font-bold">{quiz.duration}</p>
+                          <p className="text-xs text-muted-foreground">Minutes</p>
+                        </div>
+                        <div className="p-2 bg-muted/50 rounded-lg">
+                          <p className="text-lg font-bold">{quiz.passingScore}%</p>
+                          <p className="text-xs text-muted-foreground">To Pass</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+                        <span>Attempts: {quiz.attempts}</span>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        variant={quiz.status === "completed" ? "outline" : "default"}
+                        onClick={() => handleStartQuiz(quiz.id, quiz.quizTitle)}
+                      >
+                        <FileQuestion className="w-4 h-4 mr-2" />
+                        {quiz.status === "not_started" ? "Start Quiz" : quiz.status === "in_progress" ? "Continue Quiz" : "Retake Quiz"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {quizzes.length === 0 && (
+                <div className="text-center py-12">
+                  <FileQuestion className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No quizzes available yet</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="browse" className="space-y-6">
