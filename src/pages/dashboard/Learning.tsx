@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
 import { 
   BookOpen, 
   Play, 
@@ -299,8 +298,7 @@ const Learning = () => {
   );
 
   return (
-    <ContentProtectionProvider enabled={true} showWarnings={true}>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold">Learning Hub</h1>
@@ -409,7 +407,6 @@ const Learning = () => {
         </TabsContent>
       </Tabs>
     </div>
-    </ContentProtectionProvider>
   );
 };
 
