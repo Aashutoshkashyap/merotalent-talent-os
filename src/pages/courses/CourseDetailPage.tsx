@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
 import {
   BookOpen, Clock, Users, Star, Play, FileText, HelpCircle, CheckCircle,
-  GraduationCap, Award, Video, ShoppingCart, ArrowLeft
+  GraduationCap, Award, Video, ShoppingCart, ArrowLeft, Shield
 } from "lucide-react";
 
 // Mock course data
@@ -114,8 +115,9 @@ const CourseDetailPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <ContentProtectionProvider enabled={true} showWarnings={true}>
+      <div className="min-h-screen bg-background">
+        <Navbar />
       
       <main className="pt-20">
         {/* Hero Section */}
@@ -233,6 +235,10 @@ const CourseDetailPage = () => {
                           <Award className="w-4 h-4" />
                           Certificate of completion
                         </div>
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          Content protection enabled
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -337,8 +343,9 @@ const CourseDetailPage = () => {
         </section>
       </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </ContentProtectionProvider>
   );
 };
 
