@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
 import { 
   BookOpen, 
   Play, 
@@ -20,7 +21,8 @@ import {
   TrendingUp,
   Users,
   Video,
-  ExternalLink
+  ExternalLink,
+  Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -297,11 +299,18 @@ const Learning = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Learning Hub</h1>
-        <p className="text-muted-foreground">Build skills that matter for your career</p>
-      </div>
+    <ContentProtectionProvider enabled={true} showWarnings={true}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold">Learning Hub</h1>
+            <p className="text-muted-foreground">Build skills that matter for your career</p>
+          </div>
+          <Badge variant="outline" className="gap-1">
+            <Shield className="w-3 h-3" />
+            Content Protected
+          </Badge>
+        </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -400,6 +409,7 @@ const Learning = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </ContentProtectionProvider>
   );
 };
 
