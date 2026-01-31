@@ -19,6 +19,8 @@ import CourseDetailPage from "./pages/courses/CourseDetailPage";
 import CourseCheckoutPage from "./pages/courses/CourseCheckoutPage";
 import JobsPage from "./pages/jobs/JobsPage";
 import InstitutesPage from "./pages/institutes/InstitutesPage";
+import CompetitionsPage from "./pages/competitions/CompetitionsPage";
+import MentorshipPage from "./pages/mentorship/MentorshipPage";
 
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -72,6 +74,8 @@ const App = () => (
               <Route path="/courses/:id/checkout" element={<CourseCheckoutPage />} />
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/institutes" element={<InstitutesPage />} />
+              <Route path="/competitions" element={<CompetitionsPage />} />
+              <Route path="/mentorship" element={<MentorshipPage />} />
 
               {/* Protected Dashboard Routes */}
               <Route
