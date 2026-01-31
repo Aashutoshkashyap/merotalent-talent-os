@@ -98,27 +98,9 @@ export const useContentProtection = (options: ContentProtectionOptions = {}) => 
       }
     };
 
-    // Detect DevTools opening (unreliable but adds a layer)
-    const detectDevTools = () => {
-      if (!disableDevTools) return;
-
-      const threshold = 160;
-      const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-      const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-
-      if (widthThreshold || heightThreshold) {
-        handleViolation("DevTools-open");
-      }
-    };
-
     // Add event listeners
     document.addEventListener("contextmenu", handleContextMenu);
-    document.addEventListener("keydown", handleKeyDown);
-
-    // Check for DevTools periodically
-    const devToolsInterval = disableDevTools
-      ? setInterval(detectDevTools, 1000)
-      : null;
+    document.addEventListener("keydown", handleKeyDown, true);
 
     // Disable text selection if requested
     if (disableTextSelection) {
@@ -128,8 +110,7 @@ export const useContentProtection = (options: ContentProtectionOptions = {}) => 
 
     return () => {
       document.removeEventListener("contextmenu", handleContextMenu);
-      document.removeEventListener("keydown", handleKeyDown);
-      if (devToolsInterval) clearInterval(devToolsInterval);
+      document.removeEventListener("keydown", handleKeyDown, true);
       if (disableTextSelection) {
         document.body.style.userSelect = "";
         document.body.style.webkitUserSelect = "";
