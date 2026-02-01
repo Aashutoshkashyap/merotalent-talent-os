@@ -13,6 +13,12 @@ interface Profile {
   phone: string | null;
   bio: string | null;
   location: string | null;
+  linkedin_url: string | null;
+  education: string | null;
+  experience_level: string | null;
+  skills: string[] | null;
+  resume_url: string | null;
+  onboarding_completed: boolean | null;
 }
 
 interface AuthContextType {
