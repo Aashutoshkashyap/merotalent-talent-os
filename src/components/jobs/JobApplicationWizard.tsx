@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,8 +41,10 @@ const steps = [
 ];
 
 const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProps) => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeUrl, setResumeUrl] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -49,19 +53,37 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
 
   const progress = (currentStep / steps.length) * 100;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          variant: "destructive",
-          title: "File too large",
-          description: "Please upload a file smaller than 5MB",
-        });
-        return;
-      }
-      setResumeFile(file);
+    if (!file || !user) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Please upload a file smaller than 5MB",
+      });
+      return;
     }
+
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${user.id}/resume-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('resumes')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: uploadError.message,
+      });
+      return;
+    }
+
+    setResumeFile(file);
+    setResumeUrl(filePath);
   };
 
   const toggleSkill = (skill: string) => {
@@ -76,9 +98,38 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Login required",
+        description: "Please login to submit your application.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    const { error } = await supabase
+      .from('job_applications')
+      .insert({
+        user_id: user.id,
+        job_id: job.id,
+        resume_url: resumeUrl,
+        cover_letter: coverLetter,
+        portfolio_url: portfolioUrl,
+        skills_match_score: calculateMatchScore(),
+        status: 'pending',
+      });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Submission failed",
+        description: error.message,
+      });
+      setIsSubmitting(false);
+      return;
+    }
     
     toast({
       title: "Application submitted!",
@@ -90,6 +141,7 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
     // Reset form
     setCurrentStep(1);
     setResumeFile(null);
+    setResumeUrl("");
     setCoverLetter("");
     setPortfolioUrl("");
     setSelectedSkills([]);

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +45,7 @@ const timeSlots = [
 
 const BookingDialog = ({ isOpen, onClose, mentor }: BookingDialogProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState("");
@@ -79,10 +82,40 @@ const BookingDialog = ({ isOpen, onClose, mentor }: BookingDialogProps) => {
   };
 
   const handlePayment = async () => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Login required",
+        description: "Please login to book a session.",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const { error } = await supabase
+      .from('appointments')
+      .insert({
+        student_id: user.id,
+        mentor_id: mentor.id,
+        scheduled_date: format(selectedDate!, "yyyy-MM-dd"),
+        scheduled_time: selectedTime,
+        duration_minutes: parseInt(duration),
+        notes: `Topic: ${topic}\n${notes}`,
+        amount: totalAmount,
+        status: 'pending',
+        payment_status: 'pending',
+      });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Booking failed",
+        description: error.message,
+      });
+      setIsProcessing(false);
+      return;
+    }
     
     toast({
       title: "Booking confirmed!",

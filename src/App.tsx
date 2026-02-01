@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Onboarding from "./pages/Onboarding";
 
 // Public Pages
 import CoursesPage from "./pages/courses/CoursesPage";
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/onboarding" element={<Onboarding />} />
               
               {/* Public Landing Pages */}
               <Route path="/courses" element={<CoursesPage />} />
