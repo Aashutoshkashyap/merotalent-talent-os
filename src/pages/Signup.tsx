@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Mail, Lock, User } from "lucide-react";
+import { Sparkles, Loader2, Mail, Lock, User, Chrome } from "lucide-react";
 
 const Signup = () => {
   const [fullName, setFullName] = useState("");
@@ -14,9 +16,26 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    const { error } = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Google sign-in failed",
+        description: error.message,
+      });
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +72,9 @@ const Signup = () => {
     } else {
       toast({
         title: "Account created!",
-        description: "Welcome to Merotalent. You can now sign in.",
+        description: "Please check your email to verify your account.",
       });
-      navigate("/dashboard");
+      navigate("/onboarding");
     }
   };
 
@@ -78,8 +97,34 @@ const Signup = () => {
           </div>
         </CardHeader>
         
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Google Sign Up Button */}
+          <Button 
+            variant="outline" 
+            className="w-full h-11 gap-2"
+            onClick={handleGoogleSignUp}
+            disabled={isGoogleLoading}
+          >
+            {isGoogleLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Chrome className="w-5 h-5" />
+            )}
+            Continue with Google
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                Or continue with email
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <div className="relative">
@@ -143,9 +188,7 @@ const Signup = () => {
                 />
               </div>
             </div>
-          </CardContent>
-          
-          <CardFooter className="flex flex-col gap-4">
+
             <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -156,15 +199,17 @@ const Signup = () => {
                 "Create Account"
               )}
             </Button>
-            
-            <p className="text-sm text-center text-muted-foreground">
-              Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
+          </form>
+        </CardContent>
+          
+        <CardFooter className="flex flex-col gap-4">
+          <p className="text-sm text-center text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary hover:underline font-medium">
+              Sign in
+            </Link>
+          </p>
+        </CardFooter>
       </Card>
     </div>
   );

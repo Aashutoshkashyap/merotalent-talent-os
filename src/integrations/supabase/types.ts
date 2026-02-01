@@ -1063,12 +1063,17 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          education: string | null
           email: string
+          experience_level: string | null
           full_name: string | null
           id: string
+          linkedin_url: string | null
           location: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          resume_url: string | null
+          skills: string[] | null
           updated_at: string
           user_id: string
           whatsapp_number: string | null
@@ -1078,12 +1083,17 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          education?: string | null
           email: string
+          experience_level?: string | null
           full_name?: string | null
           id?: string
+          linkedin_url?: string | null
           location?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          resume_url?: string | null
+          skills?: string[] | null
           updated_at?: string
           user_id: string
           whatsapp_number?: string | null
@@ -1093,12 +1103,17 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          education?: string | null
           email?: string
+          experience_level?: string | null
           full_name?: string | null
           id?: string
+          linkedin_url?: string | null
           location?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          resume_url?: string | null
+          skills?: string[] | null
           updated_at?: string
           user_id?: string
           whatsapp_number?: string | null

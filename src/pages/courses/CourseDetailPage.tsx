@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
@@ -91,18 +93,46 @@ const CourseDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isEnrolling, setIsEnrolling] = useState(false);
 
-  const handleEnroll = () => {
+  const handleEnroll = async () => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Login required",
+        description: "Please login to enroll in this course.",
+      });
+      navigate("/login", { state: { from: { pathname: `/courses/${id}` } } });
+      return;
+    }
+
     if (courseData.price === 0) {
       setIsEnrolling(true);
-      setTimeout(() => {
-        toast({
-          title: "Enrolled successfully!",
-          description: "You can now access all course content.",
+      
+      const { error } = await supabase
+        .from('course_enrollments')
+        .insert({
+          user_id: user.id,
+          course_id: id!,
+          progress_percentage: 0,
         });
-        navigate("/dashboard/learning");
-      }, 1500);
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Enrollment failed",
+          description: error.message,
+        });
+        setIsEnrolling(false);
+        return;
+      }
+
+      toast({
+        title: "Enrolled successfully!",
+        description: "You can now access all course content.",
+      });
+      navigate("/dashboard/learning");
     } else {
       navigate(`/courses/${id}/checkout`);
     }
