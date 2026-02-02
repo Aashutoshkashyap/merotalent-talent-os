@@ -334,7 +334,7 @@ const Learning = () => {
   };
 
   const handleContinueLearning = (courseId: string) => {
-    navigate(`/courses/${courseId}`);
+    navigate(`/dashboard/learn/${courseId}`);
   };
 
   const handleEnrollCourse = (course: Course) => {
@@ -350,19 +350,11 @@ const Learning = () => {
   };
 
   const handleStartQuiz = (quizId: string, quizTitle: string) => {
-    toast({
-      title: "Starting Quiz",
-      description: `Loading ${quizTitle}...`,
-    });
-    // Navigate to quiz page when implemented
+    navigate(`/dashboard/quiz/${quizId}`);
   };
 
-  const handleWatchLesson = (lessonId: string, lessonTitle: string) => {
-    toast({
-      title: "Loading Video",
-      description: `Opening ${lessonTitle}...`,
-    });
-    // Navigate to lesson page when implemented
+  const handleWatchLesson = (lessonId: string, courseId: string) => {
+    navigate(`/dashboard/learn/${courseId}/${lessonId}`);
   };
 
   const CourseCard = ({ course, showProgress = false }: { course: Course; showProgress?: boolean }) => (

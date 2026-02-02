@@ -367,6 +367,51 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          mentee_id: string
+          mentor_id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          mentee_id: string
+          mentor_id: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          mentee_id?: string
+          mentor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           completed_at: string | null
@@ -470,6 +515,41 @@ export type Database = {
           },
         ]
       }
+      course_videos: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          lesson_id: string
+          uploaded_by: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lesson_id: string
+          uploaded_by: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lesson_id?: string
+          uploaded_by?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_videos_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           category: string | null
@@ -526,6 +606,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      institute_admins: {
+        Row: {
+          can_edit_profile: boolean | null
+          can_manage_courses: boolean | null
+          can_post_notices: boolean | null
+          created_at: string
+          id: string
+          institute_id: string
+          user_id: string
+        }
+        Insert: {
+          can_edit_profile?: boolean | null
+          can_manage_courses?: boolean | null
+          can_post_notices?: boolean | null
+          created_at?: string
+          id?: string
+          institute_id: string
+          user_id: string
+        }
+        Update: {
+          can_edit_profile?: boolean | null
+          can_manage_courses?: boolean | null
+          can_post_notices?: boolean | null
+          created_at?: string
+          id?: string
+          institute_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institute_admins_institute_id_fkey"
+            columns: ["institute_id"]
+            isOneToOne: false
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       institute_notices: {
         Row: {
@@ -888,6 +1006,85 @@ export type Database = {
           },
         ]
       }
+      mentor_trial_settings: {
+        Row: {
+          created_at: string
+          free_trial_duration_minutes: number | null
+          free_trial_enabled: boolean | null
+          free_trial_type: string | null
+          id: string
+          mentor_id: string
+          trial_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          free_trial_duration_minutes?: number | null
+          free_trial_enabled?: boolean | null
+          free_trial_type?: string | null
+          id?: string
+          mentor_id: string
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          free_trial_duration_minutes?: number | null
+          free_trial_enabled?: boolean | null
+          free_trial_type?: string | null
+          id?: string
+          mentor_id?: string
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_trial_settings_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: true
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_trial_usage: {
+        Row: {
+          created_at: string
+          id: string
+          mentor_id: string
+          trial_ended_at: string | null
+          trial_started_at: string | null
+          trial_used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mentor_id: string
+          trial_ended_at?: string | null
+          trial_started_at?: string | null
+          trial_used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mentor_id?: string
+          trial_ended_at?: string | null
+          trial_started_at?: string | null
+          trial_used?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_trial_usage_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentors: {
         Row: {
           created_at: string
@@ -973,6 +1170,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -1411,7 +1638,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "talent" | "institution" | "company" | "mentor"
+      app_role:
+        | "admin"
+        | "talent"
+        | "institution"
+        | "company"
+        | "mentor"
+        | "instructor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1539,7 +1772,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "talent", "institution", "company", "mentor"],
+      app_role: [
+        "admin",
+        "talent",
+        "institution",
+        "company",
+        "mentor",
+        "instructor",
+      ],
     },
   },
 } as const

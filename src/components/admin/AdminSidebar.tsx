@@ -40,6 +40,7 @@ const AdminSidebar = () => {
   const systemItems = [
     { icon: Bell, label: "Notifications", href: "/admin/notifications", badge: 3 },
     { icon: MessageSquare, label: "Queries", href: "/admin/queries", badge: 5 },
+    { icon: Shield, label: "Role Management", href: "/admin/roles" },
     { icon: UserCog, label: "Admin Management", href: "/admin/admins" },
     { icon: Settings, label: "Settings", href: "/admin/settings" },
   ];
