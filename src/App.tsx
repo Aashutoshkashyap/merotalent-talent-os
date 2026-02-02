@@ -33,9 +33,12 @@ import Profile from "./pages/dashboard/Profile";
 import Competitions from "./pages/dashboard/Competitions";
 import Mentors from "./pages/dashboard/Mentors";
 import Learning from "./pages/dashboard/Learning";
+import LessonPlayer from "./pages/dashboard/LessonPlayer";
+import QuizPage from "./pages/dashboard/QuizPage";
 import Jobs from "./pages/dashboard/Jobs";
 import Badges from "./pages/dashboard/Badges";
 import Sessions from "./pages/dashboard/Sessions";
+import Messages from "./pages/dashboard/Messages";
 import Settings from "./pages/dashboard/Settings";
 
 // Admin Pages
@@ -52,6 +55,11 @@ import AdminJobs from "./pages/admin/AdminJobs";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminQueries from "./pages/admin/AdminQueries";
 import AdminManagement from "./pages/admin/AdminManagement";
+import AdminRoleManagement from "./pages/admin/AdminRoleManagement";
+
+// Institute Pages
+import InstituteDashboard from "./pages/institute/InstituteDashboard";
+import InstituteNotices from "./pages/institute/InstituteNotices";
 
 const queryClient = new QueryClient();
 
@@ -88,14 +96,18 @@ const App = () => (
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Dashboard />} />
+              <Route index element={<Dashboard />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="competitions" element={<Competitions />} />
                 <Route path="mentors" element={<Mentors />} />
                 <Route path="learning" element={<Learning />} />
+                <Route path="learn/:courseId" element={<LessonPlayer />} />
+                <Route path="learn/:courseId/:lessonId" element={<LessonPlayer />} />
+                <Route path="quiz/:quizId" element={<QuizPage />} />
                 <Route path="jobs" element={<Jobs />} />
                 <Route path="badges" element={<Badges />} />
                 <Route path="sessions" element={<Sessions />} />
+                <Route path="messages" element={<Messages />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 
@@ -120,8 +132,27 @@ const App = () => (
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="queries" element={<AdminQueries />} />
                 <Route path="admins" element={<AdminManagement />} />
+                <Route path="roles" element={<AdminRoleManagement />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
+
+              {/* Protected Institute Routes */}
+              <Route
+                path="/institute"
+                element={
+                  <ProtectedRoute requiredRole="institution">
+                    <InstituteDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institute/notices"
+                element={
+                  <ProtectedRoute requiredRole="institution">
+                    <InstituteNotices />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />

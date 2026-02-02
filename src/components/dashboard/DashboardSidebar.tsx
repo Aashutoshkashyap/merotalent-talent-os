@@ -15,6 +15,7 @@ import {
   Calendar,
   Award,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -35,6 +36,7 @@ const DashboardSidebar = () => {
     { icon: User, label: "My Profile", href: "/dashboard/profile" },
     { icon: Award, label: "My Badges", href: "/dashboard/badges" },
     { icon: Calendar, label: "My Sessions", href: "/dashboard/sessions" },
+    { icon: MessageCircle, label: "Messages", href: "/dashboard/messages" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
 
