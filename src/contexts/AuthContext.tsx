@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const applyPendingRole = async (userId: string) => {
-    const pendingRole = window.sessionStorage.getItem(
+    const pendingRole = window.localStorage.getItem(
       "merotalent.pending-account-type",
     ) as Exclude<AppRole, "admin"> | null;
     const allowedRoles: Array<Exclude<AppRole, "admin">> = [
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
     }
 
-    window.sessionStorage.removeItem("merotalent.pending-account-type");
+    window.localStorage.removeItem("merotalent.pending-account-type");
   };
 
   const fetchProfile = async (userId: string) => {
@@ -161,6 +161,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fullName: string,
     accountType: Exclude<AppRole, "admin">,
   ) => {
+    window.localStorage.setItem(
+      "merotalent.pending-account-type",
+      accountType,
+    );
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -172,6 +177,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       },
     });
+
+    if (error) {
+      window.localStorage.removeItem("merotalent.pending-account-type");
+    }
+
     return { error };
   };
 
@@ -208,7 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     provider: "google" | "apple",
     accountType: Exclude<AppRole, "admin"> = "talent",
   ) => {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "merotalent.pending-account-type",
       accountType,
     );
@@ -230,7 +240,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     if (error) {
-      window.sessionStorage.removeItem("merotalent.pending-account-type");
+      window.localStorage.removeItem("merotalent.pending-account-type");
     }
 
     return { error };
