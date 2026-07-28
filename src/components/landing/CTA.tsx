@@ -1,60 +1,40 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const CTA = () => {
-  return (
-    <section className="py-24 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent" />
-      <div className="absolute inset-0 bg-hero-pattern opacity-10" />
-      
-      {/* Floating Elements */}
-      <div className="absolute top-10 left-10 w-32 h-32 bg-primary-foreground/10 rounded-full blur-2xl" />
-      <div className="absolute bottom-10 right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl" />
-
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 mb-8">
-            <Sparkles className="w-4 h-4 text-primary-foreground" />
-            <span className="text-sm font-medium text-primary-foreground">Join 50,000+ Talents</span>
-          </div>
-
-          {/* Headline */}
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-primary-foreground mb-6 leading-tight">
-            Ready to Unlock Your{" "}
-            <span className="text-secondary">True Potential?</span>
-          </h2>
-
-          {/* Description */}
-          <p className="text-lg sm:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
-            Stop waiting for opportunities. Start creating them. Join Merotalent today and take the first step towards a performance-driven career.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="secondary" size="xl" className="w-full sm:w-auto group" asChild>
-              <Link to="/signup">
-                Get Started Free
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-            <Button variant="hero-outline" size="xl" className="w-full sm:w-auto">
-              Talk to Our Team
-            </Button>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-primary-foreground/60 text-sm">
-            <span>✓ Free to join</span>
-            <span>✓ No credit card required</span>
-            <span>✓ 10,000+ active competitions</span>
-          </div>
+const CTA = () => (
+  <section className="bg-white px-4 py-16 sm:px-6 sm:py-20">
+    <div className="relative mx-auto max-w-[1240px] overflow-hidden rounded-[28px] bg-[#1a1930] px-6 py-12 text-white shadow-[0_28px_70px_rgba(34,31,72,0.20)] sm:px-10 lg:px-14 lg:py-16">
+      <div className="relative z-10 max-w-2xl">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#9ce6cf]">
+          <Sparkles className="h-3.5 w-3.5" />
+          Your next chapter can start small
+        </div>
+        <h2 className="mt-5 text-balance font-display text-3xl font-bold leading-tight sm:text-5xl">
+          Make one skill visible. Let the right opportunity find it.
+        </h2>
+        <p className="mt-4 max-w-xl text-sm leading-6 text-white/60 sm:text-base">
+          Create a free account, choose your path and build momentum from real work.
+        </p>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Button className="h-11 rounded-xl bg-[#8ce1c7] px-5 text-[#1b1932] hover:bg-[#76d6b9]" asChild>
+            <Link to="/signup">
+              Create your account
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button className="h-11 rounded-xl border border-white/15 bg-white/5 px-5 text-white hover:bg-white/10" asChild>
+            <Link to="/jobs">Browse opportunities</Link>
+          </Button>
         </div>
       </div>
-    </section>
-  );
-};
+      <div className="absolute -right-16 -top-24 h-80 w-80 rounded-full border-[52px] border-[#625ce7]/30" />
+      <div className="absolute -bottom-36 right-36 h-72 w-72 rounded-full bg-[#625ce7]/25 blur-3xl" />
+      <svg className="absolute bottom-0 right-0 h-full w-1/2 opacity-25" viewBox="0 0 600 400" fill="none" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M40 360C160 180 245 330 330 140C390 7 494 125 630 30" stroke="white" strokeWidth="2" />
+      </svg>
+    </div>
+  </section>
+);
 
 export default CTA;

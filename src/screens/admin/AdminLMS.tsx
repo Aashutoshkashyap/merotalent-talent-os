@@ -103,37 +103,23 @@ const AdminLMS = () => {
     }
 
     setIsGenerating(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            messages: [{ role: "user", content: `Generate course content for: "${courseForm.title}"` }],
-            type: "course-builder",
-          }),
-        }
-      );
+    const title = courseForm.title.trim();
+    const category = courseForm.category || "Professional skills";
 
-      if (!response.ok) throw new Error("Failed to generate");
-      const data = await response.json();
-      
-      setCourseForm(prev => ({
-        ...prev,
-        description: data.description || prev.description,
-        syllabus: data.syllabus || prev.syllabus,
-        learning_outcomes: data.learning_outcomes?.join("\n") || prev.learning_outcomes,
-      }));
-      toast({ title: "Content generated!" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Generation failed" });
-    } finally {
-      setIsGenerating(false);
-    }
+    setCourseForm((previous) => ({
+      ...previous,
+      description:
+        previous.description ||
+        `${title} is a practical ${category.toLowerCase()} course built around guided examples, focused practice, and a portfolio-ready final outcome. Learners move from core ideas to confident real-world application.`,
+      syllabus:
+        previous.syllabus ||
+        `## Module 1 — Foundations\n- Core concepts and vocabulary\n- Tools and working setup\n\n## Module 2 — Guided practice\n- Worked examples\n- Common patterns and pitfalls\n\n## Module 3 — Applied project\n- Project brief and milestones\n- Review, iteration, and delivery\n\n## Module 4 — Career application\n- Presenting the work\n- Next-step learning plan`,
+      learning_outcomes:
+        previous.learning_outcomes ||
+        `Explain the core principles of ${title}\nApply a repeatable workflow to a practical brief\nEvaluate work using clear quality criteria\nComplete and present a portfolio-ready project\nCreate a focused plan for continued growth`,
+    }));
+    setIsGenerating(false);
+    toast({ title: "Starter content created" });
   };
 
   const handleCourseSubmit = async () => {

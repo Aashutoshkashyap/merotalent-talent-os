@@ -2,136 +2,154 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
-  Users,
-  Trophy,
-  Building2,
-  Briefcase,
-  GraduationCap,
-  Settings,
-  LogOut,
-  Shield,
   Award,
-  ArrowLeft,
-  BookOpen,
   Bell,
-  MessageSquare,
+  BookOpen,
+  BriefcaseBusiness,
+  Building2,
+  ChevronLeft,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  MessageSquareText,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
   UserCog,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
-const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onNavigate?: () => void;
+}
+
+const primaryItems = [
+  { icon: LayoutDashboard, label: "Overview", href: "/admin" },
+  { icon: Users, label: "People", href: "/admin/users" },
+  { icon: BookOpen, label: "Learning", href: "/admin/lms" },
+  { icon: BriefcaseBusiness, label: "Jobs", href: "/admin/jobs" },
+  { icon: Trophy, label: "Competitions", href: "/admin/competitions" },
+  { icon: GraduationCap, label: "Mentors", href: "/admin/mentors" },
+  { icon: Building2, label: "Institutions", href: "/admin/institutions" },
+  { icon: Award, label: "Companies & badges", href: "/admin/companies" },
+];
+
+const systemItems = [
+  { icon: Bell, label: "Notifications", href: "/admin/notifications", badge: 3 },
+  { icon: MessageSquareText, label: "Support queries", href: "/admin/queries", badge: 5 },
+  { icon: ShieldCheck, label: "Roles & access", href: "/admin/roles" },
+  { icon: UserCog, label: "Admin team", href: "/admin/admins" },
+  { icon: Settings, label: "Settings", href: "/admin/settings" },
+];
+
+const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
   const { signOut, profile } = useAuth();
   const location = useLocation();
 
-  const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-    { icon: Users, label: "Users", href: "/admin/users" },
-    { icon: BookOpen, label: "LMS / Courses", href: "/admin/lms" },
-    { icon: Briefcase, label: "Jobs", href: "/admin/jobs" },
-    { icon: Trophy, label: "Competitions", href: "/admin/competitions" },
-    { icon: GraduationCap, label: "Mentors", href: "/admin/mentors" },
-    { icon: Building2, label: "Institutions", href: "/admin/institutions" },
-    { icon: Award, label: "Companies", href: "/admin/companies" },
-    { icon: Award, label: "Badges", href: "/admin/badges" },
-  ];
+  const NavItem = ({
+    icon: Icon,
+    label,
+    href,
+    badge,
+  }: {
+    icon: typeof LayoutDashboard;
+    label: string;
+    href: string;
+    badge?: number;
+  }) => {
+    const isActive =
+      href === "/admin"
+        ? location.pathname === href
+        : location.pathname.startsWith(href);
 
-  const systemItems = [
-    { icon: Bell, label: "Notifications", href: "/admin/notifications", badge: 3 },
-    { icon: MessageSquare, label: "Queries", href: "/admin/queries", badge: 5 },
-    { icon: Shield, label: "Role Management", href: "/admin/roles" },
-    { icon: UserCog, label: "Admin Management", href: "/admin/admins" },
-    { icon: Settings, label: "Settings", href: "/admin/settings" },
-  ];
-
-  const NavItem = ({ icon: Icon, label, href, badge }: { icon: typeof LayoutDashboard; label: string; href: string; badge?: number }) => {
-    const isActive = location.pathname === href;
     return (
       <Link
         to={href}
+        onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+          "group flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all",
           isActive
-            ? "bg-primary text-primary-foreground shadow-md"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            ? "bg-[#625ce7] text-white shadow-[0_8px_20px_rgba(98,92,231,0.24)]"
+            : "text-[#737087] hover:bg-[#f0effb] hover:text-[#35324d]",
         )}
       >
-        <Icon className="w-5 h-5" />
-        <span className="flex-1">{label}</span>
-        {badge && badge > 0 && (
-          <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.9} />
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        {badge ? (
+          <span
+            className={cn(
+              "grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px]",
+              isActive ? "bg-white/20 text-white" : "bg-[#ecebfa] text-[#625ce7]",
+            )}
+          >
             {badge}
-          </Badge>
-        )}
+          </span>
+        ) : null}
       </Link>
     );
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-card border-r border-border flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 flex items-center justify-center shadow-lg">
-            <Shield className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-display text-xl font-bold tracking-tight">
-            <span className="text-primary">Super</span>
-            <span className="text-muted-foreground">Admin</span>
+    <aside className="flex h-full w-[272px] flex-col bg-white">
+      <div className="flex h-[72px] items-center border-b border-[#efeff5] px-5">
+        <Link to="/" onClick={onNavigate} className="flex items-center gap-2.5">
+          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#625ce7] text-white shadow-lg shadow-[#625ce7]/20">
+            <Sparkles className="h-[18px] w-[18px]" />
+          </span>
+          <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
+            Mero<span className="text-[#625ce7]">talent</span>
           </span>
         </Link>
+        <span className="ml-auto rounded-full bg-[#f0effe] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#625ce7]">
+          Admin
+        </span>
       </div>
 
-      {/* Admin Info */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-semibold">
-            {profile?.full_name?.charAt(0) || "A"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{profile?.full_name || "Admin"}</p>
-            <p className="text-xs text-muted-foreground">Super Admin</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-        <div className="space-y-1">
-          <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Content Management
+      <div className="flex items-center gap-3 border-b border-[#efeff5] px-5 py-4">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#ddf5eb] text-sm font-bold text-[#27745b]">
+          {profile?.full_name?.charAt(0) || "A"}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold text-[#29263d]">
+            {profile?.full_name || "Platform admin"}
           </p>
-          {navItems.map((item) => (
-            <NavItem key={item.href} {...item} />
-          ))}
+          <p className="truncate text-[11px] text-[#9592a6]">
+            {profile?.email || "Operations workspace"}
+          </p>
         </div>
+      </div>
 
-        <div className="space-y-1">
-          <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+      <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-5">
+        <div>
+          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
+            Workspace
+          </p>
+          <div className="space-y-1">{primaryItems.map((item) => <NavItem key={item.href} {...item} />)}</div>
+        </div>
+        <div>
+          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
             System
           </p>
-          {systemItems.map((item) => (
-            <NavItem key={item.href} {...item} />
-          ))}
+          <div className="space-y-1">{systemItems.map((item) => <NavItem key={item.href} {...item} />)}</div>
         </div>
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-border space-y-2">
-        <Button variant="ghost" className="w-full justify-start gap-3" asChild>
-          <Link to="/dashboard">
-            <ArrowLeft className="w-5 h-5" />
-            Back to Student Dashboard
+      <div className="space-y-1 border-t border-[#efeff5] p-4">
+        <Button variant="ghost" className="w-full justify-start rounded-xl text-xs text-[#77748a]" asChild>
+          <Link to="/dashboard" onClick={onNavigate}>
+            <ChevronLeft className="h-4 w-4" />
+            Talent workspace
           </Link>
         </Button>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+          className="w-full justify-start rounded-xl text-xs text-[#77748a] hover:text-red-600"
           onClick={signOut}
         >
-          <LogOut className="w-5 h-5" />
-          Sign Out
+          <LogOut className="h-4 w-4" />
+          Sign out
         </Button>
       </div>
     </aside>

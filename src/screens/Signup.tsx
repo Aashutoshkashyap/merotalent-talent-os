@@ -1,31 +1,79 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { lovable } from "@/integrations/lovable";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Mail, Lock, User, Chrome } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  Mail,
+  Lock,
+  User,
+  Chrome,
+  Building2,
+  BriefcaseBusiness,
+  UserRoundSearch,
+} from "lucide-react";
+
+type SignupRole = Exclude<AppRole, "admin">;
+
+const accountTypes: Array<{
+  value: SignupRole;
+  label: string;
+  description: string;
+  icon: typeof User;
+}> = [
+  {
+    value: "talent",
+    label: "Talent",
+    description: "Learn, compete and get hired",
+    icon: User,
+  },
+  {
+    value: "mentor",
+    label: "Mentor",
+    description: "Guide the next generation",
+    icon: UserRoundSearch,
+  },
+  {
+    value: "company",
+    label: "Company",
+    description: "Discover proven talent",
+    icon: BriefcaseBusiness,
+  },
+  {
+    value: "institution",
+    label: "Institution",
+    description: "Enable student outcomes",
+    icon: Building2,
+  },
+];
 
 const Signup = () => {
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get("role") as SignupRole | null;
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [accountType, setAccountType] = useState<SignupRole>(
+    requestedRole && accountTypes.some((type) => type.value === requestedRole)
+      ? requestedRole
+      : "talent",
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleGoogleSignUp = async () => {
     setIsGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    const { error } = await signInWithOAuth("google", accountType);
     
     if (error) {
       toast({
@@ -60,7 +108,7 @@ const Signup = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName, accountType);
 
     if (error) {
       toast({
@@ -82,7 +130,7 @@ const Signup = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <div className="absolute inset-0 bg-grid-pattern opacity-5" />
       
-      <Card className="w-full max-w-md relative z-10 border-border/50 shadow-xl">
+      <Card className="w-full max-w-xl relative z-10 border-border/50 shadow-xl">
         <CardHeader className="text-center space-y-4">
           <Link to="/" className="flex items-center justify-center gap-2 group">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center shadow-lg">
@@ -98,6 +146,37 @@ const Signup = () => {
         </CardHeader>
         
         <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <Label>I’m joining as</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {accountTypes.map((type) => {
+                const Icon = type.icon;
+                const active = accountType === type.value;
+                return (
+                  <button
+                    key={type.value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setAccountType(type.value)}
+                    className={`rounded-xl border p-3 text-left transition-all ${
+                      active
+                        ? "border-primary bg-primary/10 shadow-sm"
+                        : "border-border bg-card hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <Icon className="h-4 w-4 text-primary" />
+                      {type.label}
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {type.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Google Sign Up Button */}
           <Button 
             variant="outline" 

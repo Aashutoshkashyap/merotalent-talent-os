@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +14,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -24,9 +23,7 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    const { error } = await signInWithOAuth("google");
     
     if (error) {
       toast({
@@ -42,7 +39,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(email, password);
+    const { error, redirectTo } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -56,7 +53,7 @@ const Login = () => {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      navigate(from, { replace: true });
+      navigate(from === "/dashboard" ? redirectTo || from : from, { replace: true });
     }
   };
 

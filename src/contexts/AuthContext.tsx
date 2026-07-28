@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "admin" | "talent" | "institution" | "company" | "mentor";
+export type AppRole = "admin" | "talent" | "institution" | "company" | "mentor";
 
 interface Profile {
   id: string;
@@ -28,8 +28,20 @@ interface AuthContextType {
   roles: AppRole[];
   isLoading: boolean;
   isAdmin: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    accountType: Exclude<AppRole, "admin">,
+  ) => Promise<{ error: Error | null }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ error: Error | null; redirectTo?: string }>;
+  signInWithOAuth: (
+    provider: "google" | "apple",
+    accountType?: Exclude<AppRole, "admin">,
+  ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -42,6 +54,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const applyPendingRole = async (userId: string) => {
+    const pendingRole = window.sessionStorage.getItem(
+      "merotalent.pending-account-type",
+    ) as Exclude<AppRole, "admin"> | null;
+    const allowedRoles: Array<Exclude<AppRole, "admin">> = [
+      "talent",
+      "mentor",
+      "company",
+      "institution",
+    ];
+
+    if (!pendingRole || !allowedRoles.includes(pendingRole)) {
+      return;
+    }
+
+    if (pendingRole !== "talent") {
+      await supabase
+        .from("user_roles")
+        .upsert(
+          { user_id: userId, role: pendingRole },
+          { onConflict: "user_id,role" },
+        );
+    }
+
+    window.sessionStorage.removeItem("merotalent.pending-account-type");
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
@@ -82,6 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           // Use setTimeout to avoid blocking the auth state change
           setTimeout(async () => {
+            await applyPendingRole(session.user.id);
             await Promise.all([
               fetchProfile(session.user.id),
               fetchRoles(session.user.id)
@@ -97,11 +137,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // THEN get the initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        await applyPendingRole(session.user.id);
         Promise.all([
           fetchProfile(session.user.id),
           fetchRoles(session.user.id)
@@ -114,7 +155,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    accountType: Exclude<AppRole, "admin">,
+  ) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -122,6 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: window.location.origin,
         data: {
           full_name: fullName,
+          account_type: accountType,
         },
       },
     });
@@ -129,10 +176,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    if (error || !data.user) {
+      return { error };
+    }
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id);
+
+    const accountRoles = roleData?.map((item) => item.role as AppRole) ?? [];
+    const redirectTo = accountRoles.includes("admin")
+      ? "/admin"
+      : accountRoles.includes("institution")
+        ? "/institute"
+        : accountRoles.includes("company")
+          ? "/company"
+          : accountRoles.includes("mentor")
+            ? "/mentor"
+            : "/dashboard";
+
+    return { error: null, redirectTo };
+  };
+
+  const signInWithOAuth = async (
+    provider: "google" | "apple",
+    accountType: Exclude<AppRole, "admin"> = "talent",
+  ) => {
+    window.sessionStorage.setItem(
+      "merotalent.pending-account-type",
+      accountType,
+    );
+
+    const redirectPath =
+      accountType === "institution"
+        ? "/institute"
+        : accountType === "company"
+          ? "/company"
+          : accountType === "mentor"
+            ? "/mentor"
+            : "/dashboard";
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}${redirectPath}`,
+      },
+    });
+
+    if (error) {
+      window.sessionStorage.removeItem("merotalent.pending-account-type");
+    }
+
     return { error };
   };
 
@@ -157,6 +257,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAdmin,
         signUp,
         signIn,
+        signInWithOAuth,
         signOut,
         refreshProfile,
       }}

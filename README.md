@@ -1,73 +1,73 @@
-# Welcome to your Lovable project
+# Merotalent Talent OS
 
-## Project info
+Merotalent is a role-based talent ecosystem for Nepal and South Asia. It brings
+opportunity discovery, competitions, learning, mentorship, institutions, hiring,
+and platform administration into one responsive web application.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Product workspaces
 
-## How can I edit this code?
+- **Talent:** proof-of-skill profile, learning, competitions, jobs, badges,
+  mentor sessions, and messages.
+- **Mentor:** sessions, mentees, availability, resources, and follow-ups.
+- **Company:** jobs, matched talent, shortlists, interviews, and hosted
+  challenges.
+- **Institution:** student programs, notices, courses, and outcomes.
+- **Admin:** people, roles, content, jobs, competitions, partners, support, and
+  platform health.
 
-There are several ways of editing your application.
+## Stack
 
-**Use Lovable**
+- Next.js App Router
+- React + TypeScript
+- Tailwind CSS and Radix UI
+- Supabase Auth, Postgres, Storage, RLS, and Edge Functions
+- TanStack Query, React Hook Form, Zod, Framer Motion, and Recharts
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Local development
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open [http://localhost:3000](http://localhost:3000).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Required public environment variables:
 
-**Use GitHub Codespaces**
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_SUPABASE_PROJECT_ID=
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Quality checks
 
-## What technologies are used for this project?
+```bash
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+```
 
-This project is built with:
+Or run the complete pipeline:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run check
+```
 
-## How can I deploy this project?
+## Role security
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Roles are stored separately from profiles in `public.user_roles` and protected
+with row-level security. Apply migrations in timestamp order. The
+`20260729023000_safe_self_service_roles.sql` migration permits self-service
+selection only for non-privileged roles; administrator access still requires an
+existing administrator.
 
-## Can I connect a custom domain to my Lovable project?
+## Deployment
 
-Yes, you can!
+The app is Vercel-ready. Configure the three `NEXT_PUBLIC_SUPABASE_*` variables
+for Production, Preview, and Development, then deploy:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+vercel --prod
+```

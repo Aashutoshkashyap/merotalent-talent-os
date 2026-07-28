@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Space Grotesk", "Inter", "system-ui", "sans-serif"],
+        sans: ["Avenir Next", "Manrope", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Avenir Next", "Manrope", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

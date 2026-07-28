@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,8 @@ const mockJobs = [
 ];
 
 const JobsPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [activeType, setActiveType] = useState("All");
   const [activeExperience, setActiveExperience] = useState("All Levels");
 

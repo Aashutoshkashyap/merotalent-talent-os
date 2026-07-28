@@ -1,3 +1,5 @@
+"use client";
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,58 +10,60 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
 
 // Pages
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Onboarding from "./pages/Onboarding";
+import Index from "./screens/Index";
+import NotFound from "./screens/NotFound";
+import Login from "./screens/Login";
+import Signup from "./screens/Signup";
+import Onboarding from "./screens/Onboarding";
 
 // Public Pages
-import CoursesPage from "./pages/courses/CoursesPage";
-import CourseDetailPage from "./pages/courses/CourseDetailPage";
-import CourseCheckoutPage from "./pages/courses/CourseCheckoutPage";
-import JobsPage from "./pages/jobs/JobsPage";
-import InstitutesPage from "./pages/institutes/InstitutesPage";
-import CompetitionsPage from "./pages/competitions/CompetitionsPage";
-import MentorshipPage from "./pages/mentorship/MentorshipPage";
+import CoursesPage from "./screens/courses/CoursesPage";
+import CourseDetailPage from "./screens/courses/CourseDetailPage";
+import CourseCheckoutPage from "./screens/courses/CourseCheckoutPage";
+import JobsPage from "./screens/jobs/JobsPage";
+import InstitutesPage from "./screens/institutes/InstitutesPage";
+import CompetitionsPage from "./screens/competitions/CompetitionsPage";
+import MentorshipPage from "./screens/mentorship/MentorshipPage";
 
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
 import AdminLayout from "./layouts/AdminLayout";
 
 // Dashboard Pages
-import Dashboard from "./pages/dashboard/Dashboard";
-import Profile from "./pages/dashboard/Profile";
-import Competitions from "./pages/dashboard/Competitions";
-import Mentors from "./pages/dashboard/Mentors";
-import Learning from "./pages/dashboard/Learning";
-import LessonPlayer from "./pages/dashboard/LessonPlayer";
-import QuizPage from "./pages/dashboard/QuizPage";
-import Jobs from "./pages/dashboard/Jobs";
-import Badges from "./pages/dashboard/Badges";
-import Sessions from "./pages/dashboard/Sessions";
-import Messages from "./pages/dashboard/Messages";
-import Settings from "./pages/dashboard/Settings";
+import Dashboard from "./screens/dashboard/Dashboard";
+import Profile from "./screens/dashboard/Profile";
+import Competitions from "./screens/dashboard/Competitions";
+import Mentors from "./screens/dashboard/Mentors";
+import Learning from "./screens/dashboard/Learning";
+import LessonPlayer from "./screens/dashboard/LessonPlayer";
+import QuizPage from "./screens/dashboard/QuizPage";
+import Jobs from "./screens/dashboard/Jobs";
+import Badges from "./screens/dashboard/Badges";
+import Sessions from "./screens/dashboard/Sessions";
+import Messages from "./screens/dashboard/Messages";
+import Settings from "./screens/dashboard/Settings";
 
 // Admin Pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminCompetitions from "./pages/admin/AdminCompetitions";
-import AdminInstitutions from "./pages/admin/AdminInstitutions";
-import AdminCompanies from "./pages/admin/AdminCompanies";
-import AdminMentors from "./pages/admin/AdminMentors";
-import AdminBadges from "./pages/admin/AdminBadges";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminLMS from "./pages/admin/AdminLMS";
-import AdminJobs from "./pages/admin/AdminJobs";
-import AdminNotifications from "./pages/admin/AdminNotifications";
-import AdminQueries from "./pages/admin/AdminQueries";
-import AdminManagement from "./pages/admin/AdminManagement";
-import AdminRoleManagement from "./pages/admin/AdminRoleManagement";
+import AdminDashboard from "./screens/admin/AdminDashboard";
+import AdminUsers from "./screens/admin/AdminUsers";
+import AdminCompetitions from "./screens/admin/AdminCompetitions";
+import AdminInstitutions from "./screens/admin/AdminInstitutions";
+import AdminCompanies from "./screens/admin/AdminCompanies";
+import AdminMentors from "./screens/admin/AdminMentors";
+import AdminBadges from "./screens/admin/AdminBadges";
+import AdminSettings from "./screens/admin/AdminSettings";
+import AdminLMS from "./screens/admin/AdminLMS";
+import AdminJobs from "./screens/admin/AdminJobs";
+import AdminNotifications from "./screens/admin/AdminNotifications";
+import AdminQueries from "./screens/admin/AdminQueries";
+import AdminManagement from "./screens/admin/AdminManagement";
+import AdminRoleManagement from "./screens/admin/AdminRoleManagement";
 
 // Institute Pages
-import InstituteDashboard from "./pages/institute/InstituteDashboard";
-import InstituteNotices from "./pages/institute/InstituteNotices";
+import InstituteDashboard from "./screens/institute/InstituteDashboard";
+import InstituteNotices from "./screens/institute/InstituteNotices";
+import RoleWorkspace from "./screens/role/RoleWorkspace";
+import LegalPage from "./screens/LegalPage";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +90,8 @@ const App = () => (
               <Route path="/institutes" element={<InstitutesPage />} />
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/mentorship" element={<MentorshipPage />} />
+              <Route path="/privacy" element={<LegalPage type="privacy" />} />
+              <Route path="/terms" element={<LegalPage type="terms" />} />
 
               {/* Protected Dashboard Routes */}
               <Route
@@ -150,6 +156,23 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRole="institution">
                     <InstituteNotices />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/company"
+                element={
+                  <ProtectedRoute requiredRole="company">
+                    <RoleWorkspace role="company" />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mentor"
+                element={
+                  <ProtectedRoute requiredRole="mentor">
+                    <RoleWorkspace role="mentor" />
                   </ProtectedRoute>
                 }
               />
