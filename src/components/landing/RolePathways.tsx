@@ -32,8 +32,8 @@ const roles = [
     icon: BriefcaseBusiness,
     href: "/signup",
     cta: "Find proven talent",
-    tone: "bg-[#fff0dd] text-[#68451e]",
-    iconTone: "bg-white/70 text-[#bd762c]",
+    tone: "bg-[#e9e7ff] text-[#3e387d]",
+    iconTone: "bg-white/70 text-[#625ce7]",
   },
   {
     title: "Institution",
@@ -41,8 +41,8 @@ const roles = [
     icon: Building2,
     href: "/signup",
     cta: "Enable your campus",
-    tone: "bg-[#f7e6ec] text-[#623542]",
-    iconTone: "bg-white/70 text-[#b75d74]",
+    tone: "bg-[#f2f1ff] text-[#403b72]",
+    iconTone: "bg-white/70 text-[#6c63ed]",
   },
 ];
 

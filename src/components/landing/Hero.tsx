@@ -120,7 +120,7 @@ const Hero = () => {
             <span className="h-8 w-px bg-[#dedde7]" />
             <div>
               <p className="flex items-center gap-1 text-lg font-bold text-[#24213a]">
-                4.9 <Star className="h-3.5 w-3.5 fill-[#f3b85f] text-[#f3b85f]" />
+                4.9 <Star className="h-3.5 w-3.5 fill-[#6c63ed] text-[#6c63ed]" />
               </p>
               <p className="text-[10px] text-[#8e8a9d]">Mentor experience</p>
             </div>
@@ -203,7 +203,7 @@ const Hero = () => {
                     <div className="rounded-2xl border border-[#ededf3] bg-white p-3">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] font-bold">Skill streak</p>
-                        <Sparkles className="h-3.5 w-3.5 text-[#e99d47]" />
+                        <Sparkles className="h-3.5 w-3.5 text-[#6c63ed]" />
                       </div>
                       <div className="mt-3 flex items-end gap-1">
                         {[32, 48, 40, 68, 55, 82, 72].map((height, index) => (
@@ -227,7 +227,7 @@ const Hero = () => {
                       <p className="text-[10px] font-bold">Best match</p>
                       <span className="rounded-full bg-[#e3f7ef] px-1.5 py-0.5 text-[7px] font-bold text-[#2d8267]">94%</span>
                     </div>
-                    <div className="mt-3 grid h-9 w-9 place-items-center rounded-xl bg-[#fff0dd] text-[#c77928]">
+                    <div className="mt-3 grid h-9 w-9 place-items-center rounded-xl bg-[#eeedff] text-[#6c63ed]">
                       <BriefcaseBusiness className="h-4 w-4" />
                     </div>
                     <p className="mt-2 text-[11px] font-bold leading-tight">Product Design Intern</p>

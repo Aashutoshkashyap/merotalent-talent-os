@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 
 interface AdminSidebarProps {
   onNavigate?: () => void;
+  compact?: boolean;
 }
 
 const primaryItems = [
@@ -44,7 +45,7 @@ const systemItems = [
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
 
-const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
+const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
   const { signOut, profile } = useAuth();
   const location = useLocation();
 
@@ -68,16 +69,19 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
       <Link
         to={href}
         onClick={onNavigate}
+        title={compact ? label : undefined}
+        aria-label={compact ? label : undefined}
         className={cn(
-          "group flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all",
+          "group flex min-h-10 items-center gap-3 rounded-xl py-2 text-[13px] font-semibold transition-all",
+          compact ? "justify-center px-2" : "px-3",
           isActive
-            ? "bg-[#625ce7] text-white shadow-[0_8px_20px_rgba(98,92,231,0.24)]"
+            ? "bg-[#6c63ed] text-white shadow-[0_8px_20px_rgba(108,99,237,0.28)]"
             : "text-[#737087] hover:bg-[#f0effb] hover:text-[#35324d]",
         )}
       >
         <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.9} />
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-        {badge ? (
+        {!compact ? <span className="min-w-0 flex-1 truncate">{label}</span> : null}
+        {badge && !compact ? (
           <span
             className={cn(
               "grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px]",
@@ -92,64 +96,81 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
   };
 
   return (
-    <aside className="flex h-full w-[272px] flex-col bg-white">
-      <div className="flex h-[72px] items-center border-b border-[#efeff5] px-5">
+    <aside className={cn("flex h-full flex-col bg-white", compact ? "w-[84px]" : "w-[272px]")}>
+      <div className={cn("flex h-[72px] items-center border-b border-[#efeff5]", compact ? "justify-center px-3" : "px-5")}>
         <Link to="/" onClick={onNavigate} className="flex items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#625ce7] text-white shadow-lg shadow-[#625ce7]/20">
+          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#6c63ed] text-white shadow-lg shadow-[#6c63ed]/20">
             <Sparkles className="h-[18px] w-[18px]" />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
-            Mero<span className="text-[#625ce7]">talent</span>
-          </span>
+          {!compact ? (
+            <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
+              Mero<span className="text-[#6c63ed]">talent</span>
+            </span>
+          ) : null}
         </Link>
-        <span className="ml-auto rounded-full bg-[#f0effe] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#625ce7]">
-          Admin
-        </span>
+        {!compact ? (
+          <span className="ml-auto rounded-full bg-[#f0effe] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#6c63ed]">
+            Admin
+          </span>
+        ) : null}
       </div>
 
-      <div className="flex items-center gap-3 border-b border-[#efeff5] px-5 py-4">
+      <div className={cn("flex items-center border-b border-[#efeff5] py-4", compact ? "justify-center px-3" : "gap-3 px-5")}>
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#ddf5eb] text-sm font-bold text-[#27745b]">
           {profile?.full_name?.charAt(0) || "A"}
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-[#29263d]">
-            {profile?.full_name || "Platform admin"}
-          </p>
-          <p className="truncate text-[11px] text-[#9592a6]">
-            {profile?.email || "Operations workspace"}
-          </p>
-        </div>
+        {!compact ? (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-[#29263d]">
+              {profile?.full_name || "Platform admin"}
+            </p>
+            <p className="truncate text-[11px] text-[#9592a6]">
+              {profile?.email || "Operations workspace"}
+            </p>
+          </div>
+        ) : null}
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-5">
+      <nav className={cn("flex-1 space-y-6 overflow-y-auto py-5", compact ? "px-3" : "px-4")}>
         <div>
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
-            Workspace
-          </p>
+          {!compact ? (
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
+              Workspace
+            </p>
+          ) : null}
           <div className="space-y-1">{primaryItems.map((item) => <NavItem key={item.href} {...item} />)}</div>
         </div>
         <div>
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
-            System
-          </p>
+          {!compact ? (
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
+              System
+            </p>
+          ) : null}
           <div className="space-y-1">{systemItems.map((item) => <NavItem key={item.href} {...item} />)}</div>
         </div>
       </nav>
 
-      <div className="space-y-1 border-t border-[#efeff5] p-4">
-        <Button variant="ghost" className="w-full justify-start rounded-xl text-xs text-[#77748a]" asChild>
+      <div className={cn("space-y-1 border-t border-[#efeff5]", compact ? "p-3" : "p-4")}>
+        <Button
+          variant="ghost"
+          className={cn("w-full rounded-xl text-xs text-[#77748a]", compact ? "justify-center px-0" : "justify-start")}
+          title={compact ? "Talent workspace" : undefined}
+          asChild
+        >
           <Link to="/dashboard" onClick={onNavigate}>
             <ChevronLeft className="h-4 w-4" />
-            Talent workspace
+            {!compact ? "Talent workspace" : null}
           </Link>
         </Button>
         <Button
           variant="ghost"
-          className="w-full justify-start rounded-xl text-xs text-[#77748a] hover:text-red-600"
+          className={cn("w-full rounded-xl text-xs text-[#77748a] hover:text-red-600", compact ? "justify-center px-0" : "justify-start")}
           onClick={signOut}
+          title={compact ? "Sign out" : undefined}
+          aria-label={compact ? "Sign out" : undefined}
         >
           <LogOut className="h-4 w-4" />
-          Sign out
+          {!compact ? "Sign out" : null}
         </Button>
       </div>
     </aside>

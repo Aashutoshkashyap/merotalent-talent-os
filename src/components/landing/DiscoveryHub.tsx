@@ -110,7 +110,7 @@ const DiscoveryHub = () => {
               className="group relative overflow-hidden rounded-[22px] border border-[#e9e8f0] bg-[#fbfbfd] p-5 transition hover:-translate-y-1 hover:border-[#cbc8f2] hover:bg-white hover:shadow-[0_20px_45px_rgba(58,54,107,0.10)]"
             >
               <div className="flex items-start justify-between">
-                <span className={`grid h-11 w-11 place-items-center rounded-[14px] ${["bg-[#efedff] text-[#625ce7]", "bg-[#e4f7f0] text-[#2d8568]", "bg-[#fff0de] text-[#c57a2d]"][index]}`}>
+                <span className={`grid h-11 w-11 place-items-center rounded-[14px] ${["bg-[#efedff] text-[#625ce7]", "bg-[#e4f7f0] text-[#2d8568]", "bg-[#e9e7ff] text-[#5f58cf]"][index]}`}>
                   <ActiveIcon className="h-5 w-5" />
                 </span>
                 <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#686579] shadow-sm">

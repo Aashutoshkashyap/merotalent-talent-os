@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const CTA = () => (
   <section className="bg-white px-4 py-16 sm:px-6 sm:py-20">
-    <div className="relative mx-auto max-w-[1240px] overflow-hidden rounded-[28px] bg-[#1a1930] px-6 py-12 text-white shadow-[0_28px_70px_rgba(34,31,72,0.20)] sm:px-10 lg:px-14 lg:py-16">
+    <div className="relative mx-auto max-w-[1240px] overflow-hidden rounded-[28px] bg-[#6c63ed] px-6 py-12 text-white shadow-[0_28px_70px_rgba(73,65,180,0.24)] sm:px-10 lg:px-14 lg:py-16">
       <div className="relative z-10 max-w-2xl">
         <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#9ce6cf]">
           <Sparkles className="h-3.5 w-3.5" />
@@ -17,7 +17,7 @@ const CTA = () => (
           Create a free account, choose your path and build momentum from real work.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
-          <Button className="h-11 rounded-xl bg-[#8ce1c7] px-5 text-[#1b1932] hover:bg-[#76d6b9]" asChild>
+          <Button className="h-11 rounded-xl bg-white px-5 text-[#514bc5] hover:bg-[#f3f2ff]" asChild>
             <Link to="/signup">
               Create your account
               <ArrowRight className="h-4 w-4" />
@@ -28,8 +28,8 @@ const CTA = () => (
           </Button>
         </div>
       </div>
-      <div className="absolute -right-16 -top-24 h-80 w-80 rounded-full border-[52px] border-[#625ce7]/30" />
-      <div className="absolute -bottom-36 right-36 h-72 w-72 rounded-full bg-[#625ce7]/25 blur-3xl" />
+      <div className="absolute -right-16 -top-24 h-80 w-80 rounded-full border-[52px] border-white/10" />
+      <div className="absolute -bottom-36 right-36 h-72 w-72 rounded-full bg-[#312b9f]/35 blur-3xl" />
       <svg className="absolute bottom-0 right-0 h-full w-1/2 opacity-25" viewBox="0 0 600 400" fill="none" preserveAspectRatio="none" aria-hidden="true">
         <path d="M40 360C160 180 245 330 330 140C390 7 494 125 630 30" stroke="white" strokeWidth="2" />
       </svg>
