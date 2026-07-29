@@ -26,13 +26,28 @@ const AdminLayout = () => {
   return (
     <div className="h-dvh w-full overflow-hidden bg-white">
       <div className="h-full w-full overflow-hidden bg-white">
-        <div className="fixed inset-y-0 left-0 z-40 hidden w-[84px] border-r border-[#eee7e1] bg-white lg:block">
-          <AdminSidebar compact onNavigate={scrollWorkspaceToTop} />
+        <div className="fixed inset-y-0 left-0 z-40 hidden w-[84px] border-r border-[#173769] bg-[#071a3d] lg:block xl:hidden">
+          <AdminSidebar
+            compact
+            motionScope="desktop-compact"
+            onNavigate={scrollWorkspaceToTop}
+          />
+        </div>
+
+        <div className="fixed inset-y-0 left-0 z-40 hidden w-[288px] border-r border-[#173769] bg-[#071a3d] xl:block">
+          <AdminSidebar
+            motionScope="desktop-expanded"
+            onNavigate={scrollWorkspaceToTop}
+          />
         </div>
 
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="w-[272px] border-0 p-0">
+          <SheetContent
+            side="left"
+            className="w-[288px] border-0 bg-[#071a3d] p-0 text-white [&>button]:right-3 [&>button]:top-4 [&>button]:grid [&>button]:h-10 [&>button]:w-10 [&>button]:place-items-center [&>button]:rounded-xl [&>button]:text-[#bfdbfe] [&>button]:ring-offset-[#071a3d] [&>button:hover]:bg-white/10 [&>button:hover]:text-white"
+          >
             <AdminSidebar
+              motionScope="mobile"
               onNavigate={() => {
                 setSidebarOpen(false);
                 scrollWorkspaceToTop();
@@ -41,7 +56,7 @@ const AdminLayout = () => {
           </SheetContent>
         </Sheet>
 
-        <div className="flex h-full min-w-0 flex-col lg:pl-[84px]">
+        <div className="flex h-full min-w-0 flex-col lg:pl-[84px] xl:pl-[288px]">
           <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
           <main
             ref={mainRef}

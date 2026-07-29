@@ -20,13 +20,21 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DashboardSidebarProps {
   compact?: boolean;
+  fixed?: boolean;
+  motionScope?: string;
   onNavigate?: () => void;
 }
 
-const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps) => {
+const DashboardSidebar = ({
+  compact = false,
+  fixed = false,
+  motionScope = compact ? "compact" : "expanded",
+  onNavigate,
+}: DashboardSidebarProps) => {
   const { roles, signOut, profile } = useAuth();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
@@ -63,30 +71,29 @@ const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps
 
   const NavItem = ({ icon: Icon, label, href }: { icon: typeof Home; label: string; href: string }) => {
     const isActive =
-      href === "/dashboard"
+      href === "/dashboard" || href === "/admin"
         ? location.pathname === href
         : location.pathname === href || location.pathname.startsWith(`${href}/`);
 
-    return (
+    const navLink = (
       <Link
         to={`${href}${previewSuffix}`}
         onClick={onNavigate}
-        title={compact ? label : undefined}
         aria-label={label}
         aria-current={isActive ? "page" : undefined}
         className={cn(
-          "group relative isolate flex items-center rounded-2xl text-base font-semibold transition-colors duration-200",
-          compact ? "h-11 w-11 justify-center" : "gap-3 px-3.5 py-3",
+          "group relative isolate flex min-h-12 items-center rounded-xl text-base font-semibold outline-none transition-[color,background-color,box-shadow,transform] duration-200 focus-visible:ring-2 focus-visible:ring-[#93c5fd] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071a3d] active:scale-[0.97]",
+          compact ? "w-12 justify-center" : "gap-3 px-3 py-2",
           isActive
             ? "text-white"
-            : "text-[#777286] hover:bg-[#fff1e5] hover:text-[#c2410c]"
+            : "text-[#c5d8f3] hover:bg-white/10 hover:text-white"
         )}
       >
         {isActive && (
           <motion.span
-            layoutId="talent-active-nav-item"
+            layoutId={`talent-active-nav-item-${motionScope}`}
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-0 rounded-2xl bg-[#c2410c] shadow-[0_10px_24px_rgba(194,65,12,0.3)]"
+            className="pointer-events-none absolute inset-0 z-0 rounded-xl bg-[#2563eb] shadow-[0_10px_24px_rgba(37,99,235,0.36)] ring-1 ring-inset ring-[#60a5fa]/60"
             transition={
               reduceMotion
                 ? { duration: 0 }
@@ -95,79 +102,92 @@ const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps
           />
         )}
         <Icon
-          className="relative z-10 h-[19px] w-[19px]"
-          strokeWidth={isActive ? 2.4 : 1.8}
+          className="relative z-10 h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110"
+          strokeWidth={isActive ? 2.3 : 1.9}
         />
         {!compact && (
           <>
-            <span className="relative z-10 flex-1">{label}</span>
-            <ChevronRight className="relative z-10 h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
+            <span className="relative z-10 min-w-0 flex-1 truncate">{label}</span>
+            <ChevronRight className="relative z-10 h-4 w-4 opacity-0 transition-opacity duration-200 group-hover:opacity-70" />
           </>
         )}
-        {compact && (
-          <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-xl bg-[#19172b] px-3 py-2 text-sm font-semibold text-white shadow-xl group-hover:block">
-            {label}
-          </span>
-        )}
       </Link>
+    );
+
+    if (!compact) return navLink;
+
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{navLink}</TooltipTrigger>
+        <TooltipContent
+          side="right"
+          sideOffset={12}
+          className="border-[#31548a] bg-[#10264a] px-3 py-2 text-sm font-bold text-white shadow-xl"
+        >
+          {label}
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
   return (
-    <LayoutGroup id={compact ? "talent-desktop-nav" : "talent-mobile-nav"}>
+    <LayoutGroup id={`talent-nav-${motionScope}`}>
       <aside
         className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden bg-white",
-          compact
-            ? "sticky top-0 h-[100dvh] w-[74px] border-r border-[#eee7e1]"
-            : "h-[calc(100dvh-1.5rem)] w-full rounded-[28px] border border-[#f2e3d6]"
+          "flex h-full min-h-0 flex-col overflow-hidden bg-[#071a3d] text-white",
+          compact ? "w-[84px]" : "w-[288px]",
+          fixed && "fixed inset-y-0 left-0 z-40 h-[100dvh] border-r border-[#173769]"
         )}
+        aria-label="Talent workspace navigation"
       >
-        <div className={cn("flex items-center", compact ? "justify-center px-3 py-4" : "gap-3 px-5 py-5")}>
-          <Link to="/" onClick={onNavigate} className="group flex items-center gap-2.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#c2410c] shadow-[0_12px_28px_rgba(249,115,22,0.28)] transition-transform group-hover:-rotate-3 group-hover:scale-105">
+        <div className={cn("flex h-[72px] items-center border-b border-white/10", compact ? "justify-center px-3" : "px-5")}>
+          <Link
+            to="/"
+            onClick={onNavigate}
+            className="group flex items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#93c5fd] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071a3d]"
+            aria-label={compact ? "MeroTalent home" : undefined}
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#2563eb] shadow-[0_10px_24px_rgba(37,99,235,0.4)] ring-1 ring-inset ring-[#60a5fa]/70 transition-transform group-hover:-rotate-3 group-hover:scale-105">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             {!compact && (
-              <span className="font-display text-2xl font-black tracking-[-0.04em] text-[#19172b]">
-                mero<span className="text-[#c2410c]">talent</span>
+              <span className="font-display text-xl font-bold tracking-tight text-white">
+                Mero<span className="text-[#93c5fd]">talent</span>
               </span>
             )}
           </Link>
         </div>
 
-        <div className={cn("border-y border-[#f4e7dc]", compact ? "px-3 py-4" : "px-4 py-4")}>
-          <div className={cn("flex items-center", compact ? "justify-center" : "gap-3 rounded-2xl bg-[#fff8f1] p-2.5")}>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#19172b] text-base font-bold text-white">
-              {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || "U"}
-            </div>
-            {!compact && (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-bold text-[#19172b]">{profile?.full_name || "Talent"}</p>
-                <p className="truncate text-sm text-[#898391]">{profile?.email}</p>
-              </div>
-            )}
+        <div className={cn("flex items-center border-b border-white/10 py-4", compact ? "justify-center px-3" : "gap-3 px-5")}>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#dbeafe] text-base font-bold text-[#1d4ed8] ring-2 ring-[#60a5fa]/25">
+            {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || "U"}
           </div>
+          {!compact && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base font-bold text-white">{profile?.full_name || "Talent"}</p>
+              <p className="truncate text-sm text-[#9ebbe2]">{profile?.email || "Talent workspace"}</p>
+            </div>
+          )}
         </div>
 
-        <nav className={cn("flex-1 overflow-y-auto", compact ? "space-y-5 px-3 py-4" : "space-y-6 px-4 py-5")}>
+        <nav className={cn("flex-1 space-y-6 overflow-y-auto py-5", compact ? "px-[18px]" : "px-4")}>
           <div className={cn("space-y-1.5", compact && "flex flex-col items-center")}>
-            {!compact && <p className="px-3 text-sm font-bold uppercase tracking-[0.16em] text-[#a39ca8]">Explore</p>}
+            {!compact && <p className="px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#7fa4d7]">Explore</p>}
             {mainNavItems.map((item) => (
               <NavItem key={item.href} {...item} />
             ))}
           </div>
 
-          <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-[#f4e7dc] pt-5")}>
-            {!compact && <p className="px-3 text-sm font-bold uppercase tracking-[0.16em] text-[#a39ca8]">My space</p>}
+          <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-white/10 pt-5")}>
+            {!compact && <p className="px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#7fa4d7]">My space</p>}
             {userNavItems.map((item) => (
               <NavItem key={item.href} {...item} />
             ))}
           </div>
 
           {isAdmin && (
-            <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-[#f4e7dc] pt-5")}>
-              {!compact && <p className="px-3 text-sm font-bold uppercase tracking-[0.16em] text-[#a39ca8]">Admin</p>}
+            <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-white/10 pt-5")}>
+              {!compact && <p className="px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#7fa4d7]">Admin</p>}
               {adminNavItems.map((item) => (
                 <NavItem key={item.href} {...item} />
               ))}
@@ -175,14 +195,14 @@ const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps
           )}
         </nav>
 
-        <div className={cn("border-t border-[#f4e7dc]", compact ? "p-3" : "p-4")}>
+        <div className={cn("border-t border-white/10 bg-[#061734]", compact ? "p-3" : "p-4")}>
           <Button
             variant="ghost"
             title={compact ? "Sign out" : undefined}
             aria-label="Sign out"
             className={cn(
-              "text-base text-[#8a8490] hover:bg-red-50 hover:text-red-600",
-              compact ? "h-11 w-11 rounded-2xl p-0" : "w-full justify-start gap-3 rounded-2xl"
+              "w-full rounded-xl text-[15px] font-semibold text-[#c5d8f3] outline-none hover:bg-[#7f1d1d]/25 hover:text-[#fecaca] focus-visible:ring-2 focus-visible:ring-[#93c5fd] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071a3d]",
+              compact ? "h-11 justify-center px-0" : "justify-start gap-3"
             )}
             onClick={signOut}
           >

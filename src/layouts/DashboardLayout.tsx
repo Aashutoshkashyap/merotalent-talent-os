@@ -49,16 +49,32 @@ const DashboardLayout = () => {
       }
     >
       <div className="flex h-full min-h-0 w-full overflow-hidden">
-        <div className="hidden h-[100dvh] w-[74px] shrink-0 md:block">
-          <DashboardSidebar compact onNavigate={handleSidebarNavigate} />
+        <div className="hidden h-[100dvh] w-[84px] shrink-0 md:block xl:hidden">
+          <DashboardSidebar
+            compact
+            fixed
+            motionScope="desktop-compact"
+            onNavigate={handleSidebarNavigate}
+          />
+        </div>
+
+        <div className="hidden h-[100dvh] w-[288px] shrink-0 xl:block">
+          <DashboardSidebar
+            fixed
+            motionScope="desktop-expanded"
+            onNavigate={handleSidebarNavigate}
+          />
         </div>
 
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="w-[292px] border-none bg-transparent p-3 shadow-none"
+            className="w-[288px] border-0 bg-[#071a3d] p-0 text-white [&>button]:right-3 [&>button]:top-4 [&>button]:grid [&>button]:h-10 [&>button]:w-10 [&>button]:place-items-center [&>button]:rounded-xl [&>button]:text-[#bfdbfe] [&>button]:ring-offset-[#071a3d] [&>button:hover]:bg-white/10 [&>button:hover]:text-white"
           >
-            <DashboardSidebar onNavigate={handleSidebarNavigate} />
+            <DashboardSidebar
+              motionScope="mobile"
+              onNavigate={handleSidebarNavigate}
+            />
           </SheetContent>
         </Sheet>
 

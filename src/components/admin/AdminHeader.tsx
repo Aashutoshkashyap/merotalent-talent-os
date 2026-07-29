@@ -78,9 +78,9 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
         <Menu className="h-5 w-5" />
       </Button>
 
-      <div className="hidden sm:block">
+      <div className="hidden shrink-0 sm:block">
         <p className="text-sm font-bold text-[#25233c]">Command center</p>
-        <p className="text-xs text-[#9996a9]">One calm view of the platform</p>
+        <p className="hidden text-xs text-[#9996a9] xl:block">One calm view of the platform</p>
       </div>
 
       <form onSubmit={runCommand} className="relative mx-auto w-full max-w-xl">
