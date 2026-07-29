@@ -75,21 +75,21 @@ const Hero = () => {
       >
         <header className="flex h-[62px] items-center gap-4 border-b border-[#f0ebe7] px-4 sm:px-6 lg:pl-[104px] lg:pr-8">
           <div className="flex items-center gap-2 lg:hidden">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#c2410c] text-white">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#2563eb] text-white shadow-sm shadow-[#2563eb]/25">
               <Sparkles className="h-3.5 w-3.5" />
             </span>
             <span className="text-xs font-black text-[#172039]">Talent OS</span>
           </div>
           <div className="hidden items-center gap-5 lg:flex">
-            <span className="flex items-center gap-1.5 border-b-2 border-[#c2410c] py-5 text-xs font-black text-[#172039]">
+            <span className="flex items-center gap-1.5 border-b-2 border-[#2563eb] py-5 text-xs font-black text-[#172039]">
               <LayoutGrid className="h-3.5 w-3.5" />
               My space
             </span>
-            <Link to="/jobs" className="flex items-center gap-1.5 text-xs font-bold text-[#8d8793] transition hover:text-[#c2410c]">
+            <Link to="/jobs" className="flex items-center gap-1.5 text-xs font-bold text-[#8d8793] transition hover:text-[#2563eb]">
               <Compass className="h-3.5 w-3.5" />
               Discover
             </Link>
-            <Link to="/mentorship" className="flex items-center gap-1.5 text-xs font-bold text-[#8d8793] transition hover:text-[#c2410c]">
+            <Link to="/mentorship" className="flex items-center gap-1.5 text-xs font-bold text-[#8d8793] transition hover:text-[#2563eb]">
               <Users className="h-3.5 w-3.5" />
               Community
             </Link>
@@ -112,23 +112,34 @@ const Hero = () => {
           </div>
         </header>
 
-        <aside className="absolute bottom-7 left-5 top-[86px] z-10 hidden w-[58px] flex-col items-center rounded-[22px] bg-[#c2410c] py-4 text-white shadow-[0_18px_38px_rgba(249,115,22,0.26)] lg:flex">
-          <span className="grid h-9 w-9 place-items-center rounded-[12px] bg-white text-[#c2410c]">
+        <aside
+          aria-label="Quick navigation"
+          className="absolute bottom-7 left-5 top-[86px] z-10 hidden w-[58px] flex-col items-center rounded-[22px] bg-[#071a3d] py-4 text-white shadow-[0_18px_38px_rgba(7,26,61,0.3)] ring-1 ring-inset ring-[#2563eb]/30 lg:flex"
+        >
+          <Link
+            to="/dashboard"
+            aria-label="Open dashboard"
+            className="grid h-9 w-9 place-items-center rounded-[12px] bg-[#2563eb] text-white shadow-[0_8px_18px_rgba(37,99,235,0.38)] transition hover:-translate-y-0.5 hover:bg-[#3b82f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
             <LayoutGrid className="h-4 w-4" />
-          </span>
+          </Link>
           <div className="mt-4 flex flex-1 flex-col items-center gap-1.5">
             {[Compass, Trophy, BookOpen, CalendarDays, MessageCircle, Bell].map((Icon, index) => (
               <Link
                 key={index}
                 to={["/jobs", "/competitions", "/courses", "/mentorship", "/login", "/login"][index]}
                 aria-label={["Jobs", "Competitions", "Courses", "Mentorship", "Messages", "Notifications"][index]}
-                className="grid h-9 w-9 place-items-center rounded-xl text-white/65 transition hover:bg-white/15 hover:text-white"
+                className="grid h-9 w-9 place-items-center rounded-xl text-[#b8cff1] transition hover:-translate-y-0.5 hover:bg-[#2563eb] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               >
                 <Icon className="h-4 w-4" />
               </Link>
             ))}
           </div>
-          <Link to="/signup" aria-label="Create account" className="grid h-9 w-9 place-items-center rounded-xl bg-[#dff7ef] text-[#237c61]">
+          <Link
+            to="/signup"
+            aria-label="Create account"
+            className="grid h-9 w-9 place-items-center rounded-xl bg-[#dbeafe] text-[#1d4ed8] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
             <CircleUserRound className="h-4 w-4" />
           </Link>
         </aside>
