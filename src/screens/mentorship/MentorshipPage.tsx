@@ -103,7 +103,7 @@ const MentorshipPage = () => {
                   <benefit.icon className="h-4 w-4" />
                 </div>
                 <h3 className="mt-3 text-xs font-black text-[#2a3044]">{benefit.title}</h3>
-                <p className="mt-1 text-xs leading-4 text-[#8f8790]">{benefit.description}</p>
+                <p className="mt-1 text-xs leading-5 text-[#8f8790]">{benefit.description}</p>
               </div>
             ))}
           </div>
@@ -118,7 +118,7 @@ const MentorshipPage = () => {
                 variant={selectedExpertise === area.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedExpertise(area.id)}
-                className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${selectedExpertise === area.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                className={`h-10 rounded-full border-[#ece3de] px-4 text-xs font-black ${selectedExpertise === area.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
               >
                 {area.label}
               </Button>
@@ -200,7 +200,7 @@ const MentorshipPage = () => {
                         </div>
                       </div>
 
-                      <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]" asChild>
+                      <Button className="h-10 w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]" asChild>
                         <Link to="/login">
                           <Video className="w-4 h-4 mr-2" />
                           Book Session

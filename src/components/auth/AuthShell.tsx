@@ -42,7 +42,7 @@ const AuthShell = ({
             <span className="workspace-dot" />
             {eyebrow}
           </div>
-          <h1 className="workspace-heading mt-4 max-w-md text-4xl sm:text-[46px]">{title}</h1>
+          <h1 className="workspace-heading mt-4 max-w-xl text-4xl sm:text-[52px]">{title}</h1>
           <p className="mt-4 max-w-md text-sm leading-6 text-[#8b8592]">{description}</p>
           <div className="mt-8 max-w-md">{children}</div>
         </div>

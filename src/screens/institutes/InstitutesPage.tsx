@@ -272,7 +272,7 @@ const InstitutesPage = () => {
                           </div>
                         )}
 
-                        <Button variant="outline" size="sm" className="h-9 w-full rounded-xl border-[#e9dfda] text-xs font-black text-[#c2410c] hover:border-[#fdba74] hover:bg-[#fff0e7]" asChild>
+                        <Button variant="outline" size="sm" className="h-10 w-full rounded-xl border-[#e9dfda] text-xs font-black text-[#c2410c] hover:border-[#fdba74] hover:bg-[#fff0e7]" asChild>
                           <a href={institute.website} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Visit Website

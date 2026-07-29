@@ -115,7 +115,7 @@ const CompetitionsPage = () => {
                 variant={selectedType === type.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedType(type.id)}
-                className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${selectedType === type.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                className={`h-10 rounded-full border-[#ece3de] px-4 text-xs font-black ${selectedType === type.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
               >
                 <type.icon className="mr-1 h-3.5 w-3.5" />
                 {type.label}
@@ -185,7 +185,7 @@ const CompetitionsPage = () => {
                       </div>
                     )}
 
-                    <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]" asChild>
+                    <Button className="h-10 w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]" asChild>
                       <Link to="/login">
                         <Zap className="w-4 h-4 mr-2" />
                         Register Now

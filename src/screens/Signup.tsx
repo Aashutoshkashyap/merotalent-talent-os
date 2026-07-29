@@ -164,7 +164,7 @@ const Signup = () => {
                       </span>
                       {type.label}
                     </span>
-                    <span className="mt-1.5 block pl-9 text-xs leading-4 text-muted-foreground">
+                    <span className="mt-1.5 block pl-9 text-xs leading-5 text-muted-foreground">
                       {type.description}
                     </span>
                   </button>

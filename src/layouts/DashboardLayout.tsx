@@ -1,15 +1,37 @@
-import { useState, type CSSProperties } from "react";
-import { Outlet } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useLocation, useOutlet } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainScrollRef = useRef<HTMLElement>(null);
+  const location = useLocation();
+  const outlet = useOutlet();
+  const shouldReduceMotion = useReducedMotion();
+
+  const scrollMainToTop = useCallback(() => {
+    mainScrollRef.current?.scrollTo({
+      top: 0,
+      behavior: shouldReduceMotion ? "auto" : "smooth",
+    });
+  }, [shouldReduceMotion]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(scrollMainToTop);
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.pathname, scrollMainToTop]);
+
+  const handleSidebarNavigate = () => {
+    scrollMainToTop();
+    setSidebarOpen(false);
+  };
 
   return (
     <div
-      className="min-h-screen w-full overflow-hidden bg-white text-[#19172b]"
+      className="h-[100dvh] min-h-0 w-full overflow-hidden bg-white text-[#19172b]"
       style={
         {
           "--background": "0 0% 100%",
@@ -26,9 +48,9 @@ const DashboardLayout = () => {
         } as CSSProperties
       }
     >
-      <div className="flex min-h-screen w-full">
-        <div className="hidden md:block">
-          <DashboardSidebar compact />
+      <div className="flex h-full min-h-0 w-full overflow-hidden">
+        <div className="hidden h-[100dvh] w-[74px] shrink-0 md:block">
+          <DashboardSidebar compact onNavigate={handleSidebarNavigate} />
         </div>
 
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -36,16 +58,32 @@ const DashboardLayout = () => {
             side="left"
             className="w-[292px] border-none bg-transparent p-3 shadow-none"
           >
-            <DashboardSidebar onNavigate={() => setSidebarOpen(false)} />
+            <DashboardSidebar onNavigate={handleSidebarNavigate} />
           </SheetContent>
         </Sheet>
 
-        <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
+        <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
           <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
-          <main className="flex-1 overflow-auto px-4 pb-8 pt-2 sm:px-5 md:px-6 md:pb-6 lg:px-8">
-            <div className="w-full">
-              <Outlet />
-            </div>
+          <main
+            ref={mainScrollRef}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain scroll-smooth px-4 pb-8 pt-2 sm:px-5 md:px-6 md:pb-6 lg:px-8"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={location.pathname}
+                className="w-full"
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -14 }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+                }
+              >
+                {outlet}
+              </motion.div>
+            </AnimatePresence>
           </main>
         </section>
       </div>

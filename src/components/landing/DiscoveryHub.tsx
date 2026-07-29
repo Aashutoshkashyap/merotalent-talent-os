@@ -184,7 +184,7 @@ const DiscoveryHub = () => {
               </span>
               <div>
                 <p className="text-xs font-black text-[#272d41]">{title}</p>
-                <p className="mt-0.5 text-xs leading-4 text-[#918990]">{copy}</p>
+                <p className="mt-0.5 text-xs leading-5 text-[#918990]">{copy}</p>
               </div>
             </div>
           ))}

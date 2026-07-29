@@ -101,12 +101,12 @@ const Hero = () => {
               onChange={(event) => setQuery(event.target.value)}
               aria-label="Search opportunities"
               placeholder="Search or type a skill"
-              className="h-9 w-full rounded-xl border border-[#eee8e4] bg-[#faf7f5] pl-9 pr-3 text-xs text-[#2b3247] outline-none transition focus:border-[#fdba74] focus:bg-white"
+              className="h-11 w-full rounded-xl border border-[#eee8e4] bg-[#faf7f5] pl-9 pr-3 text-xs text-[#2b3247] outline-none transition focus:border-[#fdba74] focus:bg-white"
             />
           </form>
           <div className="ml-auto flex items-center gap-2 sm:ml-0">
             <Link to="/login" className="hidden text-xs font-bold text-[#696575] sm:block">Sign in</Link>
-            <Button className="h-9 rounded-xl bg-[#c2410c] px-3 text-xs font-bold shadow-md shadow-[#c2410c]/15 hover:bg-[#9a3412]" asChild>
+            <Button className="h-11 rounded-xl bg-[#c2410c] px-4 text-xs font-bold shadow-md shadow-[#c2410c]/15 hover:bg-[#9a3412]" asChild>
               <Link to="/signup">Join free <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
           </div>
@@ -134,13 +134,13 @@ const Hero = () => {
         </aside>
 
         <div className="p-3 sm:p-5 lg:pl-[104px] lg:pr-7 lg:pt-6">
-          <div className="grid gap-3 lg:grid-cols-[0.84fr_1.6fr]">
-            <div className="flex min-h-[168px] flex-col justify-center rounded-[22px] bg-[#fffaf7] p-5 sm:p-6">
+          <div className="grid min-w-0 gap-3 lg:grid-cols-[1.05fr_1.55fr]">
+            <div className="flex min-h-[210px] flex-col justify-center rounded-[22px] bg-[#fffaf7] p-5 sm:p-6">
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#fed7aa] bg-white px-2.5 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#c2410c]">
                 <Sparkles className="h-3 w-3" />
                 Built for ambitious talent
               </span>
-              <h1 className="mt-4 max-w-[450px] text-balance font-display text-[30px] font-black leading-[1.02] tracking-[-0.04em] text-[#172039] sm:text-[38px]">
+              <h1 className="mt-4 max-w-[560px] text-balance font-display text-[36px] font-black leading-[1.02] tracking-[-0.04em] text-[#172039] sm:text-[48px] lg:text-[52px]">
                 Hi, future you. What will you <span className="text-[#c2410c]">prove today?</span>
               </h1>
               <p className="mt-3 max-w-md text-xs leading-5 text-[#7b7480] sm:text-xs">
@@ -148,7 +148,7 @@ const Hero = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid min-w-0 max-w-full snap-x snap-mandatory auto-cols-[minmax(220px,82vw)] grid-flow-col gap-2.5 overflow-x-auto pb-2 sm:auto-cols-auto sm:grid-flow-row sm:grid-cols-3 sm:overflow-visible sm:pb-0">
               {quickActions.map((action, index) => {
                 const Icon = action.icon;
                 return (
@@ -157,16 +157,17 @@ const Hero = () => {
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.18 + index * 0.08 }}
+                    className="snap-start"
                   >
                     <Link
                       to={action.href}
-                      className="group flex h-full min-h-[168px] flex-col rounded-[22px] border border-[#f0ebe7] bg-white p-3 transition hover:-translate-y-1 hover:border-[#fdba74] hover:shadow-[0_18px_35px_rgba(85,52,32,0.09)] sm:p-4"
+                      className="group flex h-full min-h-[210px] flex-col rounded-[22px] border border-[#f0ebe7] bg-white p-3 transition hover:-translate-y-1 hover:border-[#fdba74] hover:shadow-[0_18px_35px_rgba(85,52,32,0.09)] sm:p-4"
                     >
                       <span className={`grid h-10 w-10 place-items-center rounded-[13px] sm:h-12 sm:w-12 ${action.tone}`}>
                         <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                       </span>
                       <h2 className="mt-auto text-xs font-black leading-tight text-[#172039] sm:text-sm">{action.title}</h2>
-                      <p className="mt-1 hidden text-xs leading-4 text-[#9a9299] sm:block">{action.copy}</p>
+                      <p className="mt-1 hidden text-xs leading-5 text-[#9a9299] sm:block">{action.copy}</p>
                       <ChevronRight className="mt-2 h-3.5 w-3.5 text-[#c1b8bb] transition group-hover:translate-x-1 group-hover:text-[#c2410c]" />
                     </Link>
                   </motion.div>
@@ -175,10 +176,10 @@ const Hero = () => {
             </div>
           </div>
 
-          <div className="mt-3 grid gap-3 lg:grid-cols-12">
-            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
+          <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-12">
+            <div className="min-w-0 rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-black text-[#172039]">Opportunity inbox</h2>
+                <h2 className="text-base font-black text-[#172039]">Opportunity inbox</h2>
                 <Link to="/jobs" className="text-xs font-bold text-[#c2410c]">View all</Link>
               </div>
               <div className="mt-3 rounded-[16px] border border-[#f3e5dc] bg-[#fffaf7] p-3 shadow-[0_9px_20px_rgba(85,52,32,0.06)]">
@@ -210,9 +211,9 @@ const Hero = () => {
               </div>
             </div>
 
-            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
+            <div className="min-w-0 rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-black text-[#172039]">Featured challenge</h2>
+                <h2 className="text-base font-black text-[#172039]">Featured challenge</h2>
                 <span className="rounded-full bg-[#fff0e7] px-2 py-1 text-xs font-black text-[#c2410c]">8 days left</span>
               </div>
               <div className="mt-4 flex items-start gap-3">
@@ -238,9 +239,9 @@ const Hero = () => {
               </div>
             </div>
 
-            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
+            <div className="min-w-0 rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-black text-[#172039]">Your week</h2>
+                <h2 className="text-base font-black text-[#172039]">Your week</h2>
                 <div className="flex gap-1">
                   <span className="grid h-6 w-6 place-items-center rounded-lg bg-[#faf8f6] text-xs text-[#948d95]">‹</span>
                   <span className="grid h-6 w-6 place-items-center rounded-lg bg-[#faf8f6] text-xs text-[#948d95]">›</span>
@@ -275,11 +276,11 @@ const Hero = () => {
             </div>
           </div>
 
-          <div className="mt-3 grid gap-3 lg:grid-cols-12">
-            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-6">
+          <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-12">
+            <div className="min-w-0 rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-black text-[#172039]">Today&apos;s momentum</h2>
+                  <h2 className="text-base font-black text-[#172039]">Today&apos;s momentum</h2>
                   <span className="rounded-full bg-[#e8f7f1] px-2 py-1 text-xs font-black text-[#268267]">3 actions</span>
                 </div>
                 <Link to="/signup" className="text-xs font-bold text-[#c2410c]">Open workspace</Link>
@@ -315,7 +316,7 @@ const Hero = () => {
               </span>
             </Link>
 
-            <div className="grid gap-3 lg:col-span-3">
+            <div className="grid min-w-0 gap-3 lg:col-span-3">
               <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4">
                 <div className="flex items-center gap-3">
                   <div className="relative grid h-12 w-12 place-items-center rounded-full bg-[conic-gradient(#56c7a3_0_82%,#f0ebe7_82%_100%)]">

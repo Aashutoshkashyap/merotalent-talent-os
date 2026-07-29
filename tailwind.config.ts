@@ -17,6 +17,18 @@ export default {
         sans: ["var(--font-inter)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         display: ["var(--font-outfit)", "Outfit", "var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
+      fontSize: {
+        xs: ["0.875rem", { lineHeight: "1.25rem" }],
+        sm: ["1rem", { lineHeight: "1.5rem" }],
+        base: ["1.0625rem", { lineHeight: "1.625rem" }],
+        lg: ["1.25rem", { lineHeight: "1.75rem" }],
+        xl: ["1.5rem", { lineHeight: "2rem" }],
+        "2xl": ["1.75rem", { lineHeight: "2.125rem" }],
+        "3xl": ["2.125rem", { lineHeight: "2.5rem" }],
+        "4xl": ["2.625rem", { lineHeight: "3rem" }],
+        "5xl": ["3.25rem", { lineHeight: "3.5rem" }],
+        "6xl": ["4rem", { lineHeight: "4.25rem" }],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

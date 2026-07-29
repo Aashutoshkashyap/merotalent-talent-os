@@ -127,7 +127,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           aria-label="Notifications"
         >
           <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#68c9ad] text-xs font-black text-[#19172b] ring-2 ring-[#fffaf6]">
+          <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#68c9ad] text-xs font-black text-[#19172b] ring-2 ring-white">
             3
           </span>
         </Button>

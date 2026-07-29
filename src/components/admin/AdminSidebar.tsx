@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
@@ -49,6 +50,12 @@ const systemItems = [
 const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
   const { signOut, profile } = useAuth();
   const location = useLocation();
+  const reduceMotion = useReducedMotion();
+  const previewSuffix =
+    process.env.NODE_ENV === "development" &&
+    new URLSearchParams(location.search).get("preview") === "ui"
+      ? "?preview=ui"
+      : "";
 
   const NavItem = ({
     icon: Icon,
@@ -68,24 +75,36 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
 
     return (
       <Link
-        to={href}
+        to={`${href}${previewSuffix}`}
         onClick={onNavigate}
         title={compact ? label : undefined}
         aria-label={compact ? label : undefined}
+        aria-current={isActive ? "page" : undefined}
         className={cn(
-          "group flex min-h-10 items-center gap-3 rounded-xl py-2 text-[13px] font-semibold transition-all",
+          "group relative isolate flex min-h-11 items-center gap-3 overflow-hidden rounded-xl py-2 text-[15px] font-semibold transition-colors",
           compact ? "justify-center px-2" : "px-3",
           isActive
-            ? "bg-[#c2410c] text-white shadow-[0_8px_20px_rgba(249,115,22,0.28)]"
+            ? "text-white"
             : "text-[#737087] hover:bg-[#fff7ed] hover:text-[#35324d]",
         )}
       >
-        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.9} />
-        {!compact ? <span className="min-w-0 flex-1 truncate">{label}</span> : null}
+        {isActive ? (
+          <motion.span
+            layoutId={`admin-sidebar-active-${compact ? "compact" : "expanded"}`}
+            className="absolute inset-0 z-0 rounded-xl bg-[#c2410c] shadow-[0_8px_20px_rgba(194,65,12,0.24)]"
+            transition={
+              reduceMotion
+                ? { duration: 0 }
+                : { type: "spring", stiffness: 440, damping: 36, mass: 0.72 }
+            }
+          />
+        ) : null}
+        <Icon className="relative z-10 h-5 w-5 shrink-0" strokeWidth={1.9} />
+        {!compact ? <span className="relative z-10 min-w-0 flex-1 truncate">{label}</span> : null}
         {badge && !compact ? (
           <span
             className={cn(
-              "grid h-5 min-w-5 place-items-center rounded-full px-1 text-xs",
+              "relative z-10 grid h-5 min-w-5 place-items-center rounded-full px-1 text-xs",
               isActive ? "bg-white/20 text-white" : "bg-[#fff1e8] text-[#c2410c]",
             )}
           >
@@ -97,7 +116,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
   };
 
   return (
-    <aside className={cn("flex h-full flex-col bg-white", compact ? "w-[84px]" : "w-[272px]")}>
+    <aside className={cn("flex h-full min-h-0 flex-col bg-white", compact ? "w-[84px]" : "w-[272px]")}>
       <div className={cn("flex h-[72px] items-center border-b border-[#f0e9e4]", compact ? "justify-center px-3" : "px-5")}>
         <Link to="/" onClick={onNavigate} className="flex items-center gap-2.5">
           <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#c2410c] text-white shadow-lg shadow-[#c2410c]/20">
@@ -122,10 +141,10 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
         </span>
         {!compact ? (
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-[#29263d]">
+            <p className="truncate text-base font-bold text-[#29263d]">
               {profile?.full_name || "Platform admin"}
             </p>
-            <p className="truncate text-xs text-[#9592a6]">
+            <p className="truncate text-sm text-[#77748a]">
               {profile?.email || "Operations workspace"}
             </p>
           </div>
@@ -135,7 +154,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
       <nav className={cn("flex-1 space-y-6 overflow-y-auto py-5", compact ? "px-3" : "px-4")}>
         <div>
           {!compact ? (
-            <p className="mb-2 px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
+            <p className="mb-2 px-3 text-sm font-bold uppercase tracking-[0.14em] text-[#898598]">
               Workspace
             </p>
           ) : null}
@@ -143,7 +162,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
         </div>
         <div>
           {!compact ? (
-            <p className="mb-2 px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
+            <p className="mb-2 px-3 text-sm font-bold uppercase tracking-[0.14em] text-[#898598]">
               System
             </p>
           ) : null}
@@ -154,7 +173,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
       <div className={cn("space-y-1 border-t border-[#f0e9e4]", compact ? "p-3" : "p-4")}>
         <Button
           variant="ghost"
-          className={cn("w-full rounded-xl text-xs text-[#77748a]", compact ? "justify-center px-0" : "justify-start")}
+          className={cn("w-full rounded-xl text-sm text-[#77748a]", compact ? "justify-center px-0" : "justify-start")}
           title={compact ? "Talent workspace" : undefined}
           asChild
         >
@@ -165,7 +184,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
         </Button>
         <Button
           variant="ghost"
-          className={cn("w-full rounded-xl text-xs text-[#77748a] hover:text-red-600", compact ? "justify-center px-0" : "justify-start")}
+          className={cn("w-full rounded-xl text-sm text-[#77748a] hover:text-red-600", compact ? "justify-center px-0" : "justify-start")}
           onClick={signOut}
           title={compact ? "Sign out" : undefined}
           aria-label={compact ? "Sign out" : undefined}

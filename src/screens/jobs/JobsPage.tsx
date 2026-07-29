@@ -165,14 +165,14 @@ const JobsPage = () => {
                     variant={activeType === type ? "default" : "outline"}
                     size="sm"
                     onClick={() => setActiveType(type)}
-                    className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${activeType === type ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                    className={`h-10 rounded-full border-[#ece3de] px-4 text-xs font-black ${activeType === type ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
                   >
                     {type}
                   </Button>
                 ))}
               </div>
               <Select value={activeExperience} onValueChange={setActiveExperience}>
-                <SelectTrigger className="h-9 w-40 rounded-xl border-[#ece3de] bg-[#faf7f5] text-xs font-bold">
+                <SelectTrigger className="h-10 w-44 rounded-xl border-[#ece3de] bg-[#faf7f5] text-xs font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,7 +247,7 @@ const JobsPage = () => {
                         {job.applicants}
                       </span>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8 rounded-lg text-xs font-black text-[#c2410c] hover:bg-[#fff0e7] hover:text-[#c2410c]" asChild>
+                    <Button variant="ghost" size="sm" className="h-10 rounded-lg text-xs font-black text-[#c2410c] hover:bg-[#fff0e7] hover:text-[#c2410c]" asChild>
                       <Link to={`/dashboard/jobs`}>
                         Apply
                         <ArrowRight className="w-4 h-4 ml-1" />

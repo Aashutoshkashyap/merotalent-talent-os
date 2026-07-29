@@ -183,7 +183,7 @@ const AdminDashboard = () => {
             <span className="h-2 w-2 rounded-full bg-[#64c9aa]" />
             Live command centre
           </div>
-          <h1 className="mt-4 text-balance font-display text-3xl font-bold leading-[1.06] tracking-[-0.035em] sm:text-[38px]">
+          <h1 className="mt-4 text-balance font-display text-3xl font-bold leading-[1.06] tracking-[-0.035em] sm:text-[46px]">
             Hi, {profile?.full_name?.split(" ")[0] || "Admin"}.
             <span className="block text-[#6f6b89]">What are your plans today?</span>
           </h1>
@@ -221,7 +221,7 @@ const AdminDashboard = () => {
                     <Icon className="h-5 w-5" />
                   </span>
                   <h2 className="mt-auto pt-6 font-display text-base font-bold">{action.label}</h2>
-                  <p className="mt-1 text-xs leading-4 text-[#9995a7]">{action.description}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#9995a7]">{action.description}</p>
                   <ArrowRight className="mt-4 h-4 w-4 text-[#bebbc8] transition group-hover:translate-x-1 group-hover:text-[#c2410c]" />
                 </Link>
               </motion.div>
@@ -533,7 +533,7 @@ const AdminDashboard = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 flex-1 rounded-xl text-xs"
+                className="h-10 flex-1 rounded-xl text-xs"
                 onClick={() => setMeetingStatus("reschedule")}
                 disabled={meetingStatus === "accepted"}
               >
@@ -541,7 +541,7 @@ const AdminDashboard = () => {
               </Button>
               <Button
                 size="sm"
-                className="h-9 flex-1 rounded-xl bg-[#c2410c] text-xs hover:bg-[#9a3412]"
+                className="h-10 flex-1 rounded-xl bg-[#c2410c] text-xs hover:bg-[#9a3412]"
                 onClick={() => setMeetingStatus("accepted")}
                 disabled={meetingStatus === "accepted"}
               >

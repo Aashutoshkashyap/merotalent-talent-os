@@ -22,8 +22,8 @@ const DashboardPageHeader = ({
           <Sparkles className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#e8670b]">{eyebrow}</p>
-          <h1 className="mt-1 text-2xl font-black tracking-[-0.045em] text-[#19172b] sm:text-[1.7rem]">{title}</h1>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-[#e8670b]">{eyebrow}</p>
+          <h1 className="mt-1 text-3xl font-black tracking-[-0.045em] text-[#19172b] sm:text-4xl">{title}</h1>
           <p className="mt-1 max-w-2xl text-xs leading-5 text-[#827b86] sm:text-sm">{description}</p>
         </div>
       </div>

@@ -170,14 +170,14 @@ const CoursesPage = () => {
                     variant={activeCategory === category ? "default" : "outline"}
                     size="sm"
                     onClick={() => setActiveCategory(category)}
-                    className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${activeCategory === category ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                    className={`h-10 rounded-full border-[#ece3de] px-4 text-xs font-black ${activeCategory === category ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
                   >
                     {category}
                   </Button>
                 ))}
               </div>
               <Select value={activeDifficulty} onValueChange={setActiveDifficulty}>
-                <SelectTrigger className="h-9 w-40 rounded-xl border-[#ece3de] bg-[#faf7f5] text-xs font-bold">
+                <SelectTrigger className="h-10 w-44 rounded-xl border-[#ece3de] bg-[#faf7f5] text-xs font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

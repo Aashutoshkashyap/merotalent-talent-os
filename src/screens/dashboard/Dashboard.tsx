@@ -127,7 +127,7 @@ const Dashboard = () => {
               <span className="rounded-full bg-[#fff0e5] px-3 py-1.5 text-[#c2410c]">Wednesday</span>
               <span>29 July 2026</span>
             </div>
-            <h1 className="max-w-xl text-[2rem] font-black leading-[1.04] tracking-[-0.055em] text-[#19172b] sm:text-[2.6rem]">
+            <h1 className="max-w-3xl text-[2.25rem] font-black leading-[1.04] tracking-[-0.055em] text-[#19172b] sm:text-[3rem]">
               Hi, {firstName}.
               <br />
               What will you <span className="text-[#c2410c]">achieve today?</span>
@@ -380,10 +380,10 @@ const Dashboard = () => {
               </div>
               <span className="h-2.5 w-2.5 rounded-full bg-[#68c9ad]" />
             </div>
-            <p className="mt-3 text-xs leading-4 text-[#746e79]">Session with Dr. Aarav Sharma about your AI career roadmap.</p>
+            <p className="mt-3 text-xs leading-5 text-[#746e79]">Session with Dr. Aarav Sharma about your AI career roadmap.</p>
             <div className="mt-3 flex gap-2">
-              <Button variant="outline" className="h-8 flex-1 rounded-xl border-[#eadbd0] px-2 text-xs">Reschedule</Button>
-              <Button className="h-8 flex-1 rounded-xl bg-[#c2410c] px-2 text-xs text-white hover:bg-[#9a3412]">Join</Button>
+              <Button variant="outline" className="h-10 flex-1 rounded-xl border-[#eadbd0] px-3 text-xs">Reschedule</Button>
+              <Button className="h-10 flex-1 rounded-xl bg-[#c2410c] px-3 text-xs text-white hover:bg-[#9a3412]">Join</Button>
             </div>
           </div>
         </div>

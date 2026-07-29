@@ -50,7 +50,7 @@ const CourseCheckoutPage = () => {
       
       <main className="pb-8 pt-[68px]">
         <div className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-8">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 h-9 rounded-xl text-xs font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 h-10 rounded-xl text-xs font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
