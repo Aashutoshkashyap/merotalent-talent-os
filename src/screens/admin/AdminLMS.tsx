@@ -18,6 +18,7 @@ import {
   GraduationCap, Users, Clock, Video, BookMarked, LayoutList, Image, ExternalLink, Tag
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { OperationsPage } from "./OperationsUI";
 
 interface Course {
   id: string;
@@ -258,7 +259,7 @@ const AdminLMS = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <OperationsPage>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">LMS Management</h1>
@@ -539,7 +540,7 @@ const AdminLMS = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </OperationsPage>
   );
 };
 

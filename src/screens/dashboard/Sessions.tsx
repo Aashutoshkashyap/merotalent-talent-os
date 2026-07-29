@@ -17,6 +17,13 @@ import {
   Users,
   ArrowRight
 } from "lucide-react";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardInteractiveSurface,
+  dashboardPrimaryButton,
+  dashboardSurface,
+  dashboardTabs,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Session {
   id: string;
@@ -129,12 +136,12 @@ const Sessions = () => {
   };
 
   const SessionCard = ({ session }: { session: Session }) => (
-    <Card className="border-border/50 hover:shadow-lg transition-all duration-300">
+    <Card className={dashboardInteractiveSurface}>
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
-          <Avatar className="w-12 h-12 ring-2 ring-primary/10">
+          <Avatar className="h-12 w-12 rounded-2xl ring-4 ring-[#fff0e4]">
             <AvatarImage src={session.mentorAvatar} />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
+            <AvatarFallback className="rounded-2xl bg-[#c2410c] font-bold text-white">
               {session.mentorName.split(" ").map(n => n[0]).join("")}
             </AvatarFallback>
           </Avatar>
@@ -191,7 +198,7 @@ const Sessions = () => {
 
             {session.status === "upcoming" && (
               <div className="flex gap-2 mt-4">
-                <Button variant="hero" size="sm">
+                <Button variant="hero" size="sm" className={dashboardPrimaryButton}>
                   <PlayCircle className="w-4 h-4 mr-1" />
                   Join Session
                 </Button>
@@ -207,21 +214,21 @@ const Sessions = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Mentorship Sessions</h1>
-          <p className="text-muted-foreground">Manage your 1:1 mentorship appointments</p>
-        </div>
-        <Button variant="hero">
-          <CalendarPlus className="w-4 h-4 mr-2" />
-          Book New Session
-        </Button>
-      </div>
+    <div className="space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Plan the conversation"
+        title="Mentorship sessions"
+        description="Keep every 1:1, review and follow-up organised in one calm schedule."
+        action={
+          <Button variant="hero" className={dashboardPrimaryButton}>
+            <CalendarPlus className="mr-2 h-4 w-4" />
+            Book new session
+          </Button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-border/50">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
               <Calendar className="w-5 h-5 text-primary" />
@@ -230,7 +237,7 @@ const Sessions = () => {
             <p className="text-xs text-muted-foreground">Upcoming</p>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-2">
               <CheckCircle className="w-5 h-5 text-success" />
@@ -239,7 +246,7 @@ const Sessions = () => {
             <p className="text-xs text-muted-foreground">Completed</p>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-2">
               <Clock className="w-5 h-5 text-accent" />
@@ -248,7 +255,7 @@ const Sessions = () => {
             <p className="text-xs text-muted-foreground">Total Hours</p>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-2">
               <Users className="w-5 h-5 text-warning" />
@@ -259,9 +266,8 @@ const Sessions = () => {
         </Card>
       </div>
 
-      {/* Next Session Highlight */}
       {upcomingSessions.length > 0 && (
-        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent">
+        <Card className="overflow-hidden rounded-[24px] border-[#c2410c]/25 bg-[#fff4eb] shadow-[0_18px_55px_rgba(249,115,22,0.08)]">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -271,8 +277,8 @@ const Sessions = () => {
           <CardContent>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <Avatar className="w-14 h-14 ring-2 ring-primary/20">
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold text-lg">
+                <Avatar className="h-14 w-14 rounded-[20px] ring-4 ring-white">
+                  <AvatarFallback className="rounded-[20px] bg-[#c2410c] text-lg font-bold text-white">
                     {upcomingSessions[0].mentorName.split(" ").map(n => n[0]).join("")}
                   </AvatarFallback>
                 </Avatar>
@@ -291,7 +297,7 @@ const Sessions = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="hero" size="lg">
+              <Button variant="hero" size="lg" className={dashboardPrimaryButton}>
                 <Video className="w-5 h-5 mr-2" />
                 Join Now
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -302,7 +308,7 @@ const Sessions = () => {
       )}
 
       <Tabs defaultValue="upcoming" className="space-y-6">
-        <TabsList>
+        <TabsList className={dashboardTabs}>
           <TabsTrigger value="upcoming">Upcoming ({upcomingSessions.length})</TabsTrigger>
           <TabsTrigger value="past">Past Sessions ({pastSessions.length})</TabsTrigger>
         </TabsList>

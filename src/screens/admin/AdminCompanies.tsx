@@ -30,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { OperationsPage } from "./OperationsUI";
 
 interface Company {
   id: string;
@@ -134,7 +135,7 @@ const AdminCompanies = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <OperationsPage>
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold">Companies</h1>
@@ -272,7 +273,7 @@ const AdminCompanies = () => {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </OperationsPage>
   );
 };
 

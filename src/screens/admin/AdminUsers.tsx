@@ -21,7 +21,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Search, MoreHorizontal, UserPlus, Shield, Trash2, Eye } from "lucide-react";
+import { Search, MoreHorizontal, RefreshCw, Shield, Trash2 } from "lucide-react";
+import { OperationsPage } from "./OperationsUI";
 
 interface User {
   id: string;
@@ -138,15 +139,15 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <OperationsPage>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Manage Users</h1>
           <p className="text-muted-foreground">View and manage all platform users</p>
         </div>
-        <Button>
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add User
+        <Button onClick={() => void fetchUsers()} disabled={isLoading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          Refresh
         </Button>
       </div>
 
@@ -206,17 +207,12 @@ const AdminUsers = () => {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" aria-label={`Manage roles for ${user.full_name || user.email}`}>
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuLabel>Add Role</DropdownMenuLabel>
                         {["admin", "mentor", "institution", "company"].map((role) => (
@@ -256,7 +252,7 @@ const AdminUsers = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </OperationsPage>
   );
 };
 

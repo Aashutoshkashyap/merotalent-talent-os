@@ -19,6 +19,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
+import { OperationsPage } from "./OperationsUI";
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
@@ -39,7 +40,7 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <OperationsPage>
       <div>
         <h1 className="text-2xl font-display font-bold">Platform Settings</h1>
         <p className="text-muted-foreground">Configure platform-wide settings and preferences</p>
@@ -319,7 +320,7 @@ const AdminSettings = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </OperationsPage>
   );
 };
 

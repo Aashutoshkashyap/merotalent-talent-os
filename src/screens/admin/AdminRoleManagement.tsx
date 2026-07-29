@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OperationsPage } from "./OperationsUI";
 import {
   Select,
   SelectContent,
@@ -267,7 +268,7 @@ const AdminRoleManagement = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <OperationsPage>
       <div>
         <h1 className="text-2xl font-display font-bold">Role Management</h1>
         <p className="text-muted-foreground">
@@ -569,7 +570,7 @@ const AdminRoleManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </OperationsPage>
   );
 };
 

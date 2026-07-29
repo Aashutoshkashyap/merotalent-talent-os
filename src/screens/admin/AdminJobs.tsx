@@ -18,6 +18,7 @@ import {
   FileText, CheckCircle, XCircle, AlertCircle, DollarSign, Loader2, ExternalLink
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { OperationsPage } from "./OperationsUI";
 
 interface Job {
   id: string;
@@ -188,7 +189,7 @@ const AdminJobs = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <OperationsPage>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Job Board Management</h1>
@@ -447,7 +448,7 @@ const AdminJobs = () => {
           </TableBody>
         </Table>
       </Card>
-    </div>
+    </OperationsPage>
   );
 };
 

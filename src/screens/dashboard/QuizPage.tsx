@@ -20,6 +20,10 @@ import {
   Play,
   RotateCcw,
 } from "lucide-react";
+import {
+  dashboardPrimaryButton,
+  dashboardSurface,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Question {
   id: string;
@@ -199,15 +203,15 @@ const QuizPage = () => {
   // Intro Screen
   if (quizState === "intro") {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Button variant="ghost" onClick={() => navigate("/dashboard/learning")}>
+      <div className="mx-auto max-w-2xl space-y-4 pb-3">
+        <Button className="rounded-xl text-[#6f6874] hover:bg-[#fff0e5] hover:text-[#c2410c]" variant="ghost" onClick={() => navigate("/dashboard/learning")}>
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back to Learning Hub
         </Button>
 
-        <Card className="border-border/50">
+        <Card className={dashboardSurface}>
           <CardHeader className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#fff0e5]">
               <Trophy className="w-8 h-8 text-primary" />
             </div>
             <CardTitle className="text-2xl">{quiz?.title}</CardTitle>
@@ -215,25 +219,25 @@ const QuizPage = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-muted/50 text-center">
+              <div className="rounded-2xl bg-[#fff6ef] p-4 text-center">
                 <p className="text-2xl font-bold">{questions.length}</p>
                 <p className="text-sm text-muted-foreground">Questions</p>
               </div>
-              <div className="p-4 rounded-lg bg-muted/50 text-center">
+              <div className="rounded-2xl bg-[#fff6ef] p-4 text-center">
                 <p className="text-2xl font-bold">{quiz?.duration_minutes || "∞"}</p>
                 <p className="text-sm text-muted-foreground">Minutes</p>
               </div>
-              <div className="p-4 rounded-lg bg-muted/50 text-center">
+              <div className="rounded-2xl bg-[#fff6ef] p-4 text-center">
                 <p className="text-2xl font-bold">{quiz?.passing_score || 70}%</p>
                 <p className="text-sm text-muted-foreground">Passing Score</p>
               </div>
-              <div className="p-4 rounded-lg bg-muted/50 text-center">
+              <div className="rounded-2xl bg-[#fff6ef] p-4 text-center">
                 <p className="text-2xl font-bold">1</p>
                 <p className="text-sm text-muted-foreground">Attempt</p>
               </div>
             </div>
 
-            <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
                 <div>
@@ -247,7 +251,7 @@ const QuizPage = () => {
               </div>
             </div>
 
-            <Button variant="hero" className="w-full" size="lg" onClick={startQuiz}>
+            <Button variant="hero" className={`w-full ${dashboardPrimaryButton}`} size="lg" onClick={startQuiz}>
               <Play className="w-5 h-5 mr-2" />
               Start Quiz
             </Button>
@@ -262,8 +266,8 @@ const QuizPage = () => {
     const passed = score >= (quiz?.passing_score || 70);
 
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Card className="border-border/50">
+      <div className="mx-auto max-w-2xl space-y-5 pb-3">
+        <Card className={dashboardSurface}>
           <CardHeader className="text-center">
             <div
               className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
@@ -292,19 +296,19 @@ const QuizPage = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-4 rounded-lg bg-muted/50">
+              <div className="rounded-2xl bg-[#fff6ef] p-4">
                 <p className="text-xl font-bold text-success">
                   {Object.values(answers).filter((a, i) => a === questions[i]?.correct_answer).length}
                 </p>
                 <p className="text-xs text-muted-foreground">Correct</p>
               </div>
-              <div className="p-4 rounded-lg bg-muted/50">
+              <div className="rounded-2xl bg-[#fff6ef] p-4">
                 <p className="text-xl font-bold text-destructive">
                   {questions.length - Object.values(answers).filter((a, i) => a === questions[i]?.correct_answer).length}
                 </p>
                 <p className="text-xs text-muted-foreground">Wrong</p>
               </div>
-              <div className="p-4 rounded-lg bg-muted/50">
+              <div className="rounded-2xl bg-[#fff6ef] p-4">
                 <p className="text-xl font-bold">{quiz?.passing_score || 70}%</p>
                 <p className="text-xs text-muted-foreground">Required</p>
               </div>
@@ -314,7 +318,7 @@ const QuizPage = () => {
             <div className="space-y-4">
               <h3 className="font-semibold">Review Answers</h3>
               {questions.map((q, index) => (
-                <div key={q.id} className="p-4 rounded-lg border border-border/50">
+                <div key={q.id} className="rounded-2xl border border-[#eee0d5] bg-[#fffaf6] p-4">
                   <div className="flex items-start gap-3">
                     {answers[q.id] === q.correct_answer ? (
                       <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
@@ -343,7 +347,7 @@ const QuizPage = () => {
               <Button variant="outline" className="flex-1" onClick={() => navigate("/dashboard/learning")}>
                 Back to Learning
               </Button>
-              <Button variant="hero" className="flex-1" onClick={() => {
+              <Button variant="hero" className={`flex-1 ${dashboardPrimaryButton}`} onClick={() => {
                 setQuizState("intro");
                 setAnswers({});
                 setCurrentQuestionIndex(0);
@@ -361,9 +365,8 @@ const QuizPage = () => {
 
   // Quiz In Progress
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-3xl space-y-5 pb-3">
+      <div className="flex items-center justify-between rounded-[22px] border border-[#f0e2d7] bg-white p-4 shadow-[0_14px_40px_rgba(69,42,21,0.045)]">
         <div>
           <h1 className="text-xl font-semibold">{quiz?.title}</h1>
           <p className="text-muted-foreground text-sm">
@@ -382,7 +385,7 @@ const QuizPage = () => {
       <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="h-2" />
 
       {/* Question Card */}
-      <Card className="border-border/50">
+      <Card className={dashboardSurface}>
         <CardHeader>
           <CardTitle className="text-lg">
             {currentQuestionIndex + 1}. {currentQuestion?.question}
@@ -397,10 +400,10 @@ const QuizPage = () => {
             {currentQuestion?.options.map((option, index) => (
               <div
                 key={index}
-                className={`flex items-center space-x-3 p-4 rounded-lg border transition-colors cursor-pointer ${
+                className={`flex cursor-pointer items-center space-x-3 rounded-2xl border p-4 transition-colors ${
                   answers[currentQuestion?.id] === option
-                    ? "border-primary bg-primary/5"
-                    : "border-border/50 hover:bg-muted/50"
+                    ? "border-[#c2410c] bg-[#fff0e5]"
+                    : "border-[#eee0d5] hover:bg-[#fff8f2]"
                 }`}
                 onClick={() => handleAnswerSelect(currentQuestion?.id, option)}
               >
@@ -444,7 +447,7 @@ const QuizPage = () => {
         </div>
 
         {currentQuestionIndex === questions.length - 1 ? (
-          <Button variant="hero" onClick={handleSubmitQuiz}>
+          <Button variant="hero" className={dashboardPrimaryButton} onClick={handleSubmitQuiz}>
             Submit Quiz
             <CheckCircle className="w-4 h-4 ml-2" />
           </Button>

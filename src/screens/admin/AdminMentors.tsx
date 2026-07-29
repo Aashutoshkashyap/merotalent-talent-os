@@ -28,6 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { OperationsPage } from "./OperationsUI";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Mentor {
@@ -143,7 +144,7 @@ const AdminMentors = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <OperationsPage>
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold">Mentors</h1>
@@ -289,7 +290,7 @@ const AdminMentors = () => {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </OperationsPage>
   );
 };
 

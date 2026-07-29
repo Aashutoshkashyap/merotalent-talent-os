@@ -16,10 +16,16 @@ import {
   Award,
   Sparkles,
   MessageCircle,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const DashboardSidebar = () => {
+interface DashboardSidebarProps {
+  compact?: boolean;
+  onNavigate?: () => void;
+}
+
+const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps) => {
   const { roles, signOut, profile } = useAuth();
   const location = useLocation();
   const isAdmin = roles.includes("admin");
@@ -49,79 +55,95 @@ const DashboardSidebar = () => {
   ];
 
   const NavItem = ({ icon: Icon, label, href }: { icon: typeof Home; label: string; href: string }) => {
-    const isActive = location.pathname === href;
+    const isActive =
+      href === "/dashboard"
+        ? location.pathname === href
+        : location.pathname === href || location.pathname.startsWith(`${href}/`);
+
     return (
       <Link
         to={href}
+        onClick={onNavigate}
+        title={compact ? label : undefined}
+        aria-label={label}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+          "group relative flex items-center rounded-2xl text-sm font-semibold transition-all duration-200",
+          compact ? "h-11 w-11 justify-center" : "gap-3 px-3.5 py-3",
           isActive
-            ? "bg-primary text-primary-foreground shadow-md"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            ? "bg-[#c2410c] text-white shadow-[0_10px_24px_rgba(249,115,22,0.3)]"
+            : "text-[#777286] hover:bg-[#fff1e5] hover:text-[#c2410c]"
         )}
       >
-        <Icon className="w-5 h-5" />
-        {label}
+        <Icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.4 : 1.8} />
+        {!compact && (
+          <>
+            <span className="flex-1">{label}</span>
+            <ChevronRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
+          </>
+        )}
+        {compact && (
+          <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-xl bg-[#19172b] px-3 py-2 text-xs font-semibold text-white shadow-xl group-hover:block">
+            {label}
+          </span>
+        )}
       </Link>
     );
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-card border-r border-border flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center shadow-lg">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
+    <aside
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden bg-white/95 shadow-[0_24px_70px_rgba(68,42,20,0.11)] backdrop-blur-xl",
+        compact
+          ? "sticky top-4 h-[calc(100vh-2rem)] w-[74px] rounded-[28px] border border-white lg:top-6 lg:h-[calc(100vh-3rem)]"
+          : "h-[calc(100vh-1.5rem)] w-full rounded-[28px] border border-[#f2e3d6]"
+      )}
+    >
+      <div className={cn("flex items-center", compact ? "justify-center px-3 py-4" : "gap-3 px-5 py-5")}>
+        <Link to="/" onClick={onNavigate} className="group flex items-center gap-2.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#c2410c] shadow-[0_12px_28px_rgba(249,115,22,0.28)] transition-transform group-hover:-rotate-3 group-hover:scale-105">
+            <Sparkles className="h-5 w-5 text-white" />
           </div>
-          <span className="font-display text-xl font-bold tracking-tight">
-            <span className="text-primary">Mero</span>
-            <span className="text-secondary">talent</span>
-          </span>
+          {!compact && (
+            <span className="font-display text-xl font-black tracking-[-0.04em] text-[#19172b]">
+              mero<span className="text-[#c2410c]">talent</span>
+            </span>
+          )}
         </Link>
       </div>
 
-      {/* User Info */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-semibold">
+      <div className={cn("border-y border-[#f4e7dc]", compact ? "px-3 py-4" : "px-4 py-4")}>
+        <div className={cn("flex items-center", compact ? "justify-center" : "gap-3 rounded-2xl bg-[#fff8f1] p-2.5")}>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#19172b] text-sm font-bold text-white">
             {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || "U"}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{profile?.full_name || "User"}</p>
-            <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
-          </div>
+          {!compact && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-[#19172b]">{profile?.full_name || "Talent"}</p>
+              <p className="truncate text-[11px] text-[#898391]">{profile?.email}</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-        {/* Main Navigation */}
-        <div className="space-y-1">
-          <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Main
-          </p>
+      <nav className={cn("flex-1 overflow-y-auto", compact ? "space-y-5 px-3 py-4" : "space-y-6 px-4 py-5")}>
+        <div className={cn("space-y-1.5", compact && "flex flex-col items-center")}>
+          {!compact && <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a39ca8]">Explore</p>}
           {mainNavItems.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
         </div>
 
-        {/* User Navigation */}
-        <div className="space-y-1">
-          <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Personal
-          </p>
+        <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-[#f4e7dc] pt-5")}>
+          {!compact && <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a39ca8]">My space</p>}
           {userNavItems.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
         </div>
 
-        {/* Admin Navigation */}
         {isAdmin && (
-          <div className="space-y-1">
-            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Admin
-            </p>
+          <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-[#f4e7dc] pt-5")}>
+            {!compact && <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a39ca8]">Admin</p>}
             {adminNavItems.map((item) => (
               <NavItem key={item.href} {...item} />
             ))}
@@ -129,15 +151,19 @@ const DashboardSidebar = () => {
         )}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-border">
+      <div className={cn("border-t border-[#f4e7dc]", compact ? "p-3" : "p-4")}>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+          title={compact ? "Sign out" : undefined}
+          aria-label="Sign out"
+          className={cn(
+            "text-[#8a8490] hover:bg-red-50 hover:text-red-600",
+            compact ? "h-11 w-11 rounded-2xl p-0" : "w-full justify-start gap-3 rounded-2xl"
+          )}
           onClick={signOut}
         >
-          <LogOut className="w-5 h-5" />
-          Sign Out
+          <LogOut className="h-[18px] w-[18px]" />
+          {!compact && "Sign Out"}
         </Button>
       </div>
     </aside>

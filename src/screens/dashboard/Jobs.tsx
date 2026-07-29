@@ -18,6 +18,14 @@ import {
   Zap
 } from "lucide-react";
 import JobApplicationWizard from "@/components/jobs/JobApplicationWizard";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardInteractiveSurface,
+  dashboardPrimaryButton,
+  dashboardSearch,
+  dashboardSurface,
+  dashboardTabs,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Job {
   id: string;
@@ -199,10 +207,10 @@ const Jobs = () => {
   };
 
   const JobCard = ({ job }: { job: Job }) => (
-    <Card className="border-border/50 hover:shadow-lg transition-all duration-300 hover:border-primary/30">
-      <CardHeader className="pb-3">
+    <Card className={dashboardInteractiveSurface}>
+      <CardHeader className="px-5 pb-3 pt-5">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl flex-shrink-0">
+          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[18px] bg-[#fff0e4] text-2xl ring-4 ring-[#fff8f2]">
             {job.companyLogo}
           </div>
           <div className="flex-1 min-w-0">
@@ -231,7 +239,7 @@ const Jobs = () => {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-5 pb-5">
         <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
 
         <div className="flex flex-wrap gap-2">
@@ -280,7 +288,7 @@ const Jobs = () => {
               <ExternalLink className="w-4 h-4 mr-1" />
               View
             </Button>
-            <Button variant="hero" size="sm" onClick={() => handleApply(job)}>
+            <Button variant="hero" size="sm" className={dashboardPrimaryButton} onClick={() => handleApply(job)}>
               <Zap className="w-4 h-4 mr-1" />
               Apply
             </Button>
@@ -291,15 +299,15 @@ const Jobs = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Job Opportunities</h1>
-        <p className="text-muted-foreground">Find your next career move with verified employers</p>
-      </div>
+    <div className="space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Your next move"
+        title="Job opportunities"
+        description="Explore focused roles from verified employers and keep every application organised."
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-border/50 bg-gradient-to-br from-primary/5 to-transparent">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className={`${dashboardSurface} bg-[#fff5ed]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -312,7 +320,7 @@ const Jobs = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-gradient-to-br from-accent/5 to-transparent">
+        <Card className={`${dashboardSurface} bg-[#effbf7]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
@@ -325,7 +333,7 @@ const Jobs = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-gradient-to-br from-success/5 to-transparent">
+        <Card className={`${dashboardSurface} bg-[#f3f9ff]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
@@ -338,7 +346,7 @@ const Jobs = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-gradient-to-br from-warning/5 to-transparent">
+        <Card className={`${dashboardSurface} bg-[#fff9e9]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
@@ -354,26 +362,26 @@ const Jobs = () => {
       </div>
 
       <Tabs defaultValue="browse" className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <TabsList>
+        <div className="flex flex-col justify-between gap-3 rounded-[22px] border border-[#f0e2d7] bg-white p-3 shadow-[0_14px_40px_rgba(69,42,21,0.045)] sm:flex-row">
+          <TabsList className={`${dashboardTabs} border-none bg-[#fff8f2] shadow-none`}>
             <TabsTrigger value="browse">Browse Jobs</TabsTrigger>
             <TabsTrigger value="saved">Saved ({savedJobs.size})</TabsTrigger>
             <TabsTrigger value="applied">Applied (5)</TabsTrigger>
           </TabsList>
 
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#99919a]" />
             <Input
               placeholder="Search jobs, companies, skills..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className={`${dashboardSearch} pl-10`}
             />
           </div>
         </div>
 
         <TabsContent value="browse" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {filteredJobs.map((job) => (
               <JobCard key={job.id} job={job} />
             ))}
@@ -388,7 +396,7 @@ const Jobs = () => {
 
         <TabsContent value="saved" className="space-y-6">
           {savedJobsList.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {savedJobsList.map((job) => (
                 <JobCard key={job.id} job={job} />
               ))}

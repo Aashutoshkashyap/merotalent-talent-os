@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -28,6 +26,12 @@ const EXPERIENCE_LEVELS = [
   { value: "1-3", label: "1-3 years" },
   { value: "3-5", label: "3-5 years" },
   { value: "5+", label: "5+ years" },
+];
+
+const ONBOARDING_STEPS = [
+  { title: "About you", detail: "Basic information", icon: User },
+  { title: "Your journey", detail: "Education and work", icon: Briefcase },
+  { title: "Your strengths", detail: "Skills and interests", icon: CheckCircle },
 ];
 
 const Onboarding = () => {
@@ -152,12 +156,14 @@ const Onboarding = () => {
       case 1:
         return (
           <div className="space-y-6">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <User className="w-8 h-8 text-primary" />
+            <div className="mb-7 flex items-center gap-4">
+              <div className="workspace-icon h-12 w-12 shrink-0">
+                <User className="h-5 w-5" />
               </div>
-              <h2 className="text-xl font-semibold">Basic Information</h2>
-              <p className="text-muted-foreground text-sm">Tell us a bit about yourself</p>
+              <div>
+                <h2 className="font-display text-2xl font-bold text-[#18162f]">Basic information</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Tell us a little about yourself.</p>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -172,27 +178,29 @@ const Onboarding = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+977 9800000000"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
                   <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Kathmandu, Nepal"
-                    className="pl-10"
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+977 9800000000"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Kathmandu, Nepal"
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -213,12 +221,14 @@ const Onboarding = () => {
       case 2:
         return (
           <div className="space-y-6">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Briefcase className="w-8 h-8 text-primary" />
+            <div className="mb-7 flex items-center gap-4">
+              <div className="workspace-icon h-12 w-12 shrink-0">
+                <Briefcase className="h-5 w-5" />
               </div>
-              <h2 className="text-xl font-semibold">Professional Details</h2>
-              <p className="text-muted-foreground text-sm">Help us match you with opportunities</p>
+              <div>
+                <h2 className="font-display text-2xl font-bold text-[#18162f]">Professional details</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Help us create sharper opportunity matches.</p>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -268,7 +278,7 @@ const Onboarding = () => {
 
               <div className="space-y-2">
                 <Label>Resume / CV</Label>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                <div className="rounded-[18px] border border-dashed border-[#dfd1c8] bg-[#fbf9f7] p-5 text-center transition-colors hover:border-primary/40">
                   {resumeFile ? (
                     <div className="flex items-center justify-center gap-2">
                       <FileText className="w-5 h-5 text-primary" />
@@ -310,28 +320,39 @@ const Onboarding = () => {
       case 3:
         return (
           <div className="space-y-6">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-primary" />
+            <div className="mb-7 flex items-center gap-4">
+              <div className="workspace-icon h-12 w-12 shrink-0">
+                <CheckCircle className="h-5 w-5" />
               </div>
-              <h2 className="text-xl font-semibold">Your Skills</h2>
-              <p className="text-muted-foreground text-sm">Select skills that define you</p>
+              <div>
+                <h2 className="font-display text-2xl font-bold text-[#18162f]">Your strengths</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Select the skills that best define you.</p>
+              </div>
             </div>
 
             <div className="space-y-4">
               <Label>Select your skills (choose multiple)</Label>
-              <div className="flex flex-wrap gap-2">
-                {SKILL_OPTIONS.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant={selectedSkills.includes(skill) ? "default" : "outline"}
-                    className="cursor-pointer py-2 px-3 transition-all hover:scale-105"
-                    onClick={() => toggleSkill(skill)}
-                  >
-                    {selectedSkills.includes(skill) && <CheckCircle className="w-3 h-3 mr-1" />}
-                    {skill}
-                  </Badge>
-                ))}
+              <div className="flex flex-wrap gap-2 rounded-[20px] border border-[#eee7e1] bg-[#fbf9f7] p-4">
+                {SKILL_OPTIONS.map((skill) => {
+                  const selected = selectedSkills.includes(skill);
+
+                  return (
+                    <button
+                      key={skill}
+                      type="button"
+                      aria-pressed={selected}
+                      className={`inline-flex items-center rounded-full border px-3 py-2 text-[10px] font-bold transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
+                        selected
+                          ? "border-primary bg-primary text-white"
+                          : "border-[#eadfd7] bg-white text-[#68616d] hover:border-primary/40"
+                      }`}
+                      onClick={() => toggleSkill(skill)}
+                    >
+                      {selected ? <CheckCircle className="mr-1 h-3 w-3" /> : null}
+                      {skill}
+                    </button>
+                  );
+                })}
               </div>
               {selectedSkills.length > 0 && (
                 <p className="text-sm text-muted-foreground">
@@ -348,31 +369,105 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-      
-      <Card className="w-full max-w-lg relative z-10 border-border/50 shadow-xl">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center shadow-lg">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold">Merotalent</span>
+    <div className="workspace-canvas min-h-screen p-0 sm:p-5 lg:grid lg:place-items-center lg:p-8">
+      <svg
+        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 sm:block"
+        viewBox="0 0 1500 900"
+        fill="none"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path d="M-120 610C140 390 410 700 680 430C970 145 1230 445 1600 170" stroke="white" strokeWidth="2" />
+        <circle cx="120" cy="160" r="7" stroke="#c2410c" />
+        <circle cx="1360" cy="740" r="7" fill="#66c7a8" />
+      </svg>
+
+      <div className="workspace-shell relative z-10 mx-auto grid min-h-screen w-full max-w-[1080px] overflow-hidden lg:min-h-[700px] lg:grid-cols-[0.36fr_0.64fr]">
+        <aside className="relative overflow-hidden bg-primary px-5 py-5 text-white sm:px-8 sm:py-7 lg:px-9 lg:py-10">
+          <div className="absolute -right-24 -top-24 h-60 w-60 rounded-full border-[42px] border-white/10" />
+          <div className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full border-[42px] border-white/10" />
+          <div className="relative flex items-center gap-2.5">
+            <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-white text-primary shadow-lg shadow-orange-950/10">
+              <Sparkles className="h-[18px] w-[18px]" />
+            </span>
+            <span className="font-display text-xl font-bold tracking-tight">Merotalent</span>
           </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+
+          <div className="relative mt-8 hidden lg:block">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">Set up your workspace</p>
+            <h1 className="mt-3 max-w-[240px] font-display text-3xl font-bold leading-[1.12]">
+              Give your ambition a home.
+            </h1>
+            <p className="mt-3 max-w-[240px] text-xs leading-5 text-white/65">
+              A sharper profile creates better matches, recommendations and conversations.
+            </p>
+          </div>
+
+          <div className="relative mt-6 grid grid-cols-3 gap-2 lg:mt-12 lg:grid-cols-1 lg:gap-3">
+            {ONBOARDING_STEPS.map((item, index) => {
+              const ItemIcon = item.icon;
+              const itemStep = index + 1;
+              const isActive = step === itemStep;
+              const isDone = step > itemStep;
+
+              return (
+                <button
+                  key={item.title}
+                  type="button"
+                  onClick={() => itemStep < step && setStep(itemStep)}
+                  disabled={itemStep > step}
+                  className={`flex min-w-0 items-center gap-3 rounded-[16px] p-2.5 text-left transition-colors lg:p-3 ${
+                    isActive ? "bg-white text-[#17162e]" : "text-white"
+                  } ${itemStep < step ? "cursor-pointer hover:bg-white/10" : ""}`}
+                >
+                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
+                    isActive ? "bg-[#fff1e8] text-primary" : "bg-white/12 text-white"
+                  }`}>
+                    {isDone ? <CheckCircle className="h-4 w-4" /> : <ItemIcon className="h-4 w-4" />}
+                  </span>
+                  <span className="hidden min-w-0 lg:block">
+                    <span className="block text-xs font-bold">{item.title}</span>
+                    <span className={`mt-0.5 block text-[9px] ${isActive ? "text-[#9a939b]" : "text-white/50"}`}>
+                      {item.detail}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="relative mt-5 lg:absolute lg:bottom-10 lg:left-9 lg:right-9">
+            <div className="flex items-center justify-between text-[10px] font-bold text-white/70">
               <span>Step {step} of {totalSteps}</span>
-              <span>{Math.round(progress)}% complete</span>
+              <span>{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="mt-2 h-1.5 bg-white/20 [&>div]:bg-white" />
           </div>
-        </CardHeader>
+        </aside>
 
-        <CardContent className="space-y-6">
-          {renderStep()}
+        <main className="flex min-h-0 flex-col bg-white px-5 py-7 sm:px-10 sm:py-10 lg:px-14">
+          <div className="mb-7 flex items-center justify-between">
+            <div>
+              <div className="workspace-kicker">
+                <span className="workspace-dot" />
+                Profile setup
+              </div>
+              <p className="mt-2 text-xs text-[#9b949c]">You can edit everything later.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="rounded-full border border-[#eee5df] px-3 py-1.5 text-[10px] font-bold text-[#8c858e] transition-colors hover:border-primary/40 hover:text-primary"
+            >
+              Skip setup
+            </button>
+          </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {renderStep()}
+          </div>
+
+          <div className="mt-7 flex gap-3 border-t border-[#f0e9e4] pt-5">
             {step > 1 && (
               <Button 
                 variant="outline" 
@@ -415,16 +510,8 @@ const Onboarding = () => {
               </Button>
             )}
           </div>
-
-          <Button 
-            variant="ghost" 
-            className="w-full text-muted-foreground"
-            onClick={() => navigate("/dashboard")}
-          >
-            Skip for now
-          </Button>
-        </CardContent>
-      </Card>
+        </main>
+      </div>
     </div>
   );
 };

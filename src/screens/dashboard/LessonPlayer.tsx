@@ -25,6 +25,10 @@ import {
   ArrowRight,
   Lock,
 } from "lucide-react";
+import {
+  dashboardPrimaryButton,
+  dashboardSurface,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Lesson {
   id: string;
@@ -240,7 +244,7 @@ const LessonPlayer = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-120px)]">
+    <div className="flex min-h-[calc(100vh-130px)] flex-col gap-4 pb-3 lg:h-[calc(100vh-130px)] lg:flex-row">
       {/* Main Video Area */}
       <div className="flex-1 flex flex-col">
         {/* Back Button */}
@@ -248,15 +252,15 @@ const LessonPlayer = () => {
           variant="ghost"
           size="sm"
           onClick={() => navigate("/dashboard/learning")}
-          className="w-fit mb-4"
+          className="mb-1 w-fit rounded-xl text-[#6f6874] hover:bg-[#fff0e5] hover:text-[#c2410c]"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Back to Learning Hub
         </Button>
 
         {/* Video Player */}
-        <Card className="flex-1 border-border/50 overflow-hidden">
-          <div className="relative bg-black aspect-video">
+        <Card className={`${dashboardSurface} flex-1 overflow-hidden`}>
+          <div className="relative aspect-video overflow-hidden bg-[#19172b]">
             {currentLesson?.content_type === "video" && currentLesson?.content_url ? (
               <>
                 <video
@@ -326,7 +330,7 @@ const LessonPlayer = () => {
         </Card>
 
         {/* Lesson Info & Actions */}
-        <Card className="mt-4 border-border/50">
+        <Card className={`${dashboardSurface} mt-4`}>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
@@ -347,6 +351,7 @@ const LessonPlayer = () => {
                 <Button
                   variant="hero"
                   size="sm"
+                  className={dashboardPrimaryButton}
                   onClick={markLessonComplete}
                   disabled={completedLessons.includes(currentLesson?.id || "")}
                 >
@@ -381,7 +386,7 @@ const LessonPlayer = () => {
 
       {/* Sidebar - Lesson List */}
       <div className={`w-full lg:w-80 ${showSidebar ? "" : "hidden lg:block"}`}>
-        <Card className="h-full border-border/50">
+        <Card className={`${dashboardSurface} h-full overflow-hidden`}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Course Content</CardTitle>
@@ -406,7 +411,7 @@ const LessonPlayer = () => {
             <ScrollArea className="h-[calc(100vh-320px)]">
               {modules.map((module) => (
                 <div key={module.id} className="border-b border-border/50 last:border-0">
-                  <div className="px-4 py-3 bg-muted/30">
+                  <div className="bg-[#fff6ef] px-4 py-3">
                     <h4 className="font-medium text-sm">{module.title}</h4>
                     <p className="text-xs text-muted-foreground">
                       {module.lessons.filter((l) => completedLessons.includes(l.id)).length} / {module.lessons.length} completed
@@ -420,8 +425,8 @@ const LessonPlayer = () => {
                           navigate(`/dashboard/learn/${courseId}/${lesson.id}`);
                           setCurrentLesson(lesson);
                         }}
-                        className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center gap-3 ${
-                          currentLesson?.id === lesson.id ? "bg-primary/10" : ""
+                        className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#fff8f2] ${
+                          currentLesson?.id === lesson.id ? "bg-[#fff0e5]" : ""
                         }`}
                       >
                         {completedLessons.includes(lesson.id) ? (
@@ -454,7 +459,7 @@ const LessonPlayer = () => {
       <Button
         variant="outline"
         size="icon"
-        className="fixed bottom-4 right-4 lg:hidden z-50 rounded-full shadow-lg"
+        className="fixed bottom-4 right-4 z-50 rounded-2xl border-[#c2410c]/20 bg-white text-[#c2410c] shadow-lg lg:hidden"
         onClick={() => setShowSidebar(!showSidebar)}
       >
         <List className="w-5 h-5" />

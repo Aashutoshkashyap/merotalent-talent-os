@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,13 +32,14 @@ import {
   Calendar,
   Edit,
   Trash2,
-  Eye,
   FileText,
   Megaphone,
   GraduationCap,
   PartyPopper,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { format } from "date-fns";
+import { OperationsPage } from "@/screens/admin/OperationsUI";
 
 interface Notice {
   id: string;
@@ -51,7 +52,7 @@ interface Notice {
   created_at: string;
 }
 
-const noticeTypeConfig: Record<string, { icon: any; color: string; label: string }> = {
+const noticeTypeConfig: Record<string, { icon: LucideIcon; color: string; label: string }> = {
   general: { icon: Bell, color: "bg-primary/10 text-primary", label: "General" },
   admission: { icon: GraduationCap, color: "bg-success/10 text-success", label: "Admission" },
   event: { icon: PartyPopper, color: "bg-accent/10 text-accent", label: "Event" },
@@ -60,7 +61,7 @@ const noticeTypeConfig: Record<string, { icon: any; color: string; label: string
 
 const InstituteNotices = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [instituteId, setInstituteId] = useState<string | null>(null);
@@ -73,6 +74,18 @@ const InstituteNotices = () => {
     notice_type: "general",
     is_pinned: false,
   });
+
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return;
+
+    setEditingNotice(null);
+    setFormData({ title: "", content: "", notice_type: "general", is_pinned: false });
+    setIsDialogOpen(true);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("new");
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (user) {
@@ -168,13 +181,14 @@ const InstituteNotices = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <OperationsPage>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Notices</h1>
           <p className="text-muted-foreground">Manage and publish notices for students</p>
         </div>
         <Button
+          className="rounded-xl bg-[#c2410c] text-white shadow-[0_10px_24px_rgba(249,115,22,0.24)] hover:bg-[#9a3412]"
           onClick={() => {
             setEditingNotice(null);
             setFormData({ title: "", content: "", notice_type: "general", is_pinned: false });
@@ -257,12 +271,14 @@ const InstituteNotices = () => {
                         size="icon"
                         onClick={() => togglePin(notice)}
                         title={notice.is_pinned ? "Unpin" : "Pin"}
+                        aria-label={notice.is_pinned ? `Unpin ${notice.title}` : `Pin ${notice.title}`}
                       >
                         <Pin className={`w-4 h-4 ${notice.is_pinned ? "text-primary" : ""}`} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={`Edit ${notice.title}`}
                         onClick={() => {
                           setEditingNotice(notice);
                           setFormData({
@@ -281,6 +297,7 @@ const InstituteNotices = () => {
                         size="icon"
                         className="text-destructive"
                         onClick={() => handleDelete(notice.id)}
+                        aria-label={`Delete ${notice.title}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -364,7 +381,7 @@ const InstituteNotices = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </OperationsPage>
   );
 };
 

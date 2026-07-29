@@ -45,34 +45,34 @@ const CourseCheckoutPage = () => {
   const discountPercent = Math.round((discount / course.originalPrice) * 100);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f4dfd4]">
       <Navbar />
       
-      <main className="pt-24 pb-12">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+      <main className="px-3 pb-8 pt-[84px] sm:px-5 sm:pt-[96px]">
+        <div className="mx-auto max-w-5xl rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-8">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 h-9 rounded-xl text-[10px] font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
 
-          <h1 className="text-2xl font-display font-bold mb-8">Complete Your Purchase</h1>
+          <h1 className="mb-8 font-display text-3xl font-black tracking-[-0.035em] text-[#172039]">Complete your purchase</h1>
 
           <div className="grid md:grid-cols-5 gap-8">
             {/* Payment Form */}
             <div className="md:col-span-3 space-y-6">
-              <Card>
+              <Card className="rounded-[22px] border-[#f0e8e3] shadow-none">
                 <CardHeader>
-                  <CardTitle className="text-lg">Payment Method</CardTitle>
+                  <CardTitle className="text-base font-black text-[#20273c]">Payment method</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
                     <div className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer ${
-                      paymentMethod === "khalti" ? "border-primary bg-primary/5" : "border-border"
+                      paymentMethod === "khalti" ? "border-[#fdba74] bg-[#fff7ed]" : "border-[#f0e8e3]"
                     }`}>
                       <RadioGroupItem value="khalti" id="khalti" />
                       <Label htmlFor="khalti" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                          <Wallet className="w-5 h-5 text-purple-500" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff0e7]">
+                          <Wallet className="h-5 w-5 text-[#c2410c]" />
                         </div>
                         <div>
                           <p className="font-medium">Khalti</p>
@@ -82,7 +82,7 @@ const CourseCheckoutPage = () => {
                     </div>
 
                     <div className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer ${
-                      paymentMethod === "esewa" ? "border-primary bg-primary/5" : "border-border"
+                      paymentMethod === "esewa" ? "border-[#a7ddcb] bg-[#e8f7f1]" : "border-[#f0e8e3]"
                     }`}>
                       <RadioGroupItem value="esewa" id="esewa" />
                       <Label htmlFor="esewa" className="flex items-center gap-3 cursor-pointer flex-1">
@@ -97,12 +97,12 @@ const CourseCheckoutPage = () => {
                     </div>
 
                     <div className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer ${
-                      paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border"
+                      paymentMethod === "card" ? "border-[#fdba74] bg-[#fff7ed]" : "border-[#f0e8e3]"
                     }`}>
                       <RadioGroupItem value="card" id="card" />
                       <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                          <CreditCard className="w-5 h-5 text-blue-500" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff0e7]">
+                          <CreditCard className="h-5 w-5 text-[#c2410c]" />
                         </div>
                         <div>
                           <p className="font-medium">Card Payment</p>
@@ -114,9 +114,9 @@ const CourseCheckoutPage = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="rounded-[22px] border-[#f0e8e3] shadow-none">
                 <CardHeader>
-                  <CardTitle className="text-lg">Coupon Code</CardTitle>
+                  <CardTitle className="text-base font-black text-[#20273c]">Coupon code</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
@@ -125,12 +125,12 @@ const CourseCheckoutPage = () => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                     />
-                    <Button variant="outline">Apply</Button>
+                    <Button variant="outline" className="rounded-xl border-[#fdba74] text-[10px] font-black text-[#c2410c]">Apply</Button>
                   </div>
                 </CardContent>
               </Card>
 
-              <div className="p-4 rounded-lg bg-muted/50 flex items-center gap-3">
+              <div className="flex items-center gap-3 rounded-[18px] border border-[#d9eee6] bg-[#e8f7f1] p-4">
                 <Shield className="w-5 h-5 text-green-500" />
                 <p className="text-sm text-muted-foreground">
                   Your payment is secured with 256-bit SSL encryption
@@ -140,9 +140,9 @@ const CourseCheckoutPage = () => {
 
             {/* Order Summary */}
             <div className="md:col-span-2">
-              <Card className="sticky top-24">
+              <Card className="sticky top-24 rounded-[22px] border-[#f0e8e3] shadow-[0_18px_38px_rgba(85,52,32,0.09)]">
                 <CardHeader>
-                  <CardTitle className="text-lg">Order Summary</CardTitle>
+                  <CardTitle className="text-base font-black text-[#20273c]">Order summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Course */}
@@ -181,9 +181,8 @@ const CourseCheckoutPage = () => {
                   </div>
 
                   <Button
-                    variant="hero"
                     size="lg"
-                    className="w-full"
+                    className="w-full rounded-xl bg-[#c2410c] text-[10px] font-black hover:bg-[#9a3412]"
                     onClick={handlePayment}
                     disabled={isProcessing}
                   >

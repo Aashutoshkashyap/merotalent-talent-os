@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { OperationsPage } from "./OperationsUI";
 import {
   Table,
   TableBody,
@@ -167,7 +168,7 @@ const AdminCompetitions = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <OperationsPage>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Manage Competitions</h1>
@@ -393,7 +394,7 @@ const AdminCompetitions = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </OperationsPage>
   );
 };
 

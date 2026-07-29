@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Trophy, 
   Calendar, 
@@ -18,7 +17,6 @@ import {
   Award,
   Target,
   Zap,
-  Filter
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -56,131 +54,116 @@ const CompetitionsPage = () => {
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "upcoming":
-        return <Badge className="bg-primary/10 text-primary">Upcoming</Badge>;
+        return <Badge className="rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[8px] font-black text-[#c2410c] hover:bg-[#fff7ed]">Upcoming</Badge>;
       case "active":
-        return <Badge className="bg-success/10 text-success">Live Now</Badge>;
+        return <Badge className="rounded-full bg-[#e8f7f1] text-[8px] font-black text-[#238366] hover:bg-[#e8f7f1]">Live Now</Badge>;
       case "completed":
-        return <Badge variant="secondary">Completed</Badge>;
+        return <Badge variant="secondary" className="rounded-full text-[8px] font-black">Completed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f4dfd4]">
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gradient-to-b from-primary/5 to-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <Badge variant="outline" className="mb-4">
-              <Trophy className="w-3 h-3 mr-1" />
-              Compete & Win
-            </Badge>
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Prove Your Skills in <span className="text-primary">Competitions</span>
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Join hackathons, coding challenges, and design competitions. 
-              Win prizes, earn badges, and get noticed by top companies.
-            </p>
-            
-            {/* Search */}
-            <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search competitions..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-lg"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-8 border-b">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-primary">{competitions?.length || 0}</p>
-              <p className="text-sm text-muted-foreground">Total Competitions</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-success">
-                {competitions?.filter(c => c.status === "active").length || 0}
+      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
+        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+          <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr] lg:items-end">
+            <div>
+              <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+                <Trophy className="mr-1 h-3 w-3" />
+                Compete & Win
+              </Badge>
+              <h1 className="max-w-2xl font-display text-4xl font-black tracking-[-0.045em] text-[#172039] md:text-5xl">
+                Put your skills where people can <span className="text-[#c2410c]">see them.</span>
+              </h1>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-[#817980]">
+                Join hackathons, coding challenges and design competitions. Win prizes, earn badges and get noticed.
               </p>
-              <p className="text-sm text-muted-foreground">Live Now</p>
+              <div className="relative mt-7 max-w-xl">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999096]" />
+                <Input
+                  placeholder="Search competitions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-12 rounded-[14px] border-[#ede5e0] bg-[#faf7f5] pl-11 text-sm shadow-none focus-visible:border-[#fb923c] focus-visible:ring-[#c2410c]/10"
+                />
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-warning">NPR 5L+</p>
-              <p className="text-sm text-muted-foreground">Total Prize Pool</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold">2000+</p>
-              <p className="text-sm text-muted-foreground">Participants</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                [competitions?.length || 0, "Total challenges", "orange"],
+                [competitions?.filter(c => c.status === "active").length || 0, "Live now", "mint"],
+                ["NPR 5L+", "Active prizes", "plain"],
+                ["2K+", "Participants", "plain"],
+              ].map(([value, label, tone]) => (
+                <div key={String(label)} className={`min-h-[96px] rounded-[18px] border p-4 ${tone === "mint" ? "border-[#d9eee6] bg-[#e8f7f1]" : tone === "orange" ? "border-[#f7dfd1] bg-[#fff3ec]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
+                  <p className={`text-xl font-black ${tone === "mint" ? "text-[#238366]" : tone === "orange" ? "text-[#c2410c]" : "text-[#172039]"}`}>{value}</p>
+                  <p className="mt-3 text-[9px] font-bold text-[#8e868e]">{label}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Competitions List */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          {/* Filters */}
-          <div className="flex flex-wrap gap-2 mb-8">
+        <section className="mx-auto mt-3 max-w-[1420px] rounded-[22px] border border-white/80 bg-[#fffdfb] px-4 py-4 shadow-[0_16px_38px_rgba(99,55,29,0.07)] sm:px-6">
+          <div className="flex flex-wrap gap-2">
             {competitionTypes.map((type) => (
               <Button
                 key={type.id}
                 variant={selectedType === type.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedType(type.id)}
+                className={`h-8 rounded-full border-[#ece3de] px-3 text-[9px] font-black ${selectedType === type.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
               >
-                <type.icon className="w-4 h-4 mr-1" />
+                <type.icon className="mr-1 h-3.5 w-3.5" />
                 {type.label}
               </Button>
             ))}
           </div>
+        </section>
 
+        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="h-40 bg-muted rounded-t-lg" />
+                <Card key={i} className="animate-pulse rounded-[22px] border-[#f0e8e3]">
+                  <div className="h-40 rounded-t-[22px] bg-[#f5efeb]" />
                   <CardContent className="p-4 space-y-3">
-                    <div className="h-4 bg-muted rounded w-3/4" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
+                    <div className="h-4 w-3/4 rounded bg-[#f5efeb]" />
+                    <div className="h-3 w-1/2 rounded bg-[#f5efeb]" />
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : filteredCompetitions && filteredCompetitions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12">
               {filteredCompetitions.map((competition) => (
-                <Card key={competition.id} className="overflow-hidden hover:shadow-lg transition-all group">
-                  <div className="h-40 bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 flex items-center justify-center">
-                    <Trophy className="w-16 h-16 text-primary/50 group-hover:scale-110 transition-transform" />
+                <Card key={competition.id} className="group overflow-hidden rounded-[22px] border-[#f0e8e3] bg-white shadow-none transition-all hover:-translate-y-0.5 hover:border-[#fdba74] hover:shadow-[0_16px_32px_rgba(85,52,32,0.08)] lg:col-span-4">
+                  <div className="flex h-36 items-center justify-center bg-[#fff3ec]">
+                    <span className="grid h-16 w-16 place-items-center rounded-[20px] bg-white text-[#c2410c] shadow-[0_12px_25px_rgba(249,115,22,0.14)]">
+                      <Trophy className="h-7 w-7 transition-transform group-hover:scale-110" />
+                    </span>
                   </div>
-                  <CardHeader className="pb-2">
+                  <CardHeader className="px-5 pb-2 pt-5">
                     <div className="flex items-start justify-between gap-2">
                       {getStatusBadge(competition.status)}
                       {competition.prize_pool && (
-                        <Badge variant="outline" className="text-warning">
+                        <Badge variant="outline" className="rounded-full border-[#f7dfd1] text-[8px] font-black text-[#c2410c]">
                           {competition.prize_pool}
                         </Badge>
                       )}
                     </div>
-                    <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                    <CardTitle className="line-clamp-2 text-base font-black text-[#20273c] transition-colors group-hover:text-[#c2410c]">
                       {competition.title}
                     </CardTitle>
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription className="line-clamp-2 text-[10px] leading-5 text-[#8f8790]">
                       {competition.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <CardContent className="space-y-3 px-5 pb-5">
+                    <div className="flex items-center justify-between text-[9px] text-[#8f8790]">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         {competition.start_date 
@@ -196,13 +179,13 @@ const CompetitionsPage = () => {
                     </div>
                     
                     {competition.registration_deadline && (
-                      <div className="flex items-center gap-1 text-sm text-warning">
+                      <div className="flex items-center gap-1 text-[9px] font-bold text-[#c2410c]">
                         <Clock className="w-4 h-4" />
                         Register by {format(new Date(competition.registration_deadline), "MMM d")}
                       </div>
                     )}
 
-                    <Button className="w-full" variant="hero" asChild>
+                    <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-[9px] font-black hover:bg-[#9a3412]" asChild>
                       <Link to="/login">
                         <Zap className="w-4 h-4 mr-2" />
                         Register Now
@@ -213,29 +196,26 @@ const CompetitionsPage = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Trophy className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No competitions found</h3>
-              <p className="text-muted-foreground">
+            <div className="py-14 text-center">
+              <Trophy className="mx-auto mb-4 h-14 w-14 text-[#d9cfc9]" />
+              <h3 className="mb-2 text-lg font-black text-[#20273c]">No competitions found</h3>
+              <p className="text-sm text-[#8f8790]">
                 {searchQuery ? "Try adjusting your search" : "Check back soon for new competitions"}
               </p>
             </div>
           )}
-        </div>
-      </section>
+        </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-primary/5">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to Compete?</h2>
-          <p className="text-muted-foreground mb-6">
-            Sign up to participate in competitions and showcase your talent
-          </p>
-          <Button variant="hero" size="lg" asChild>
-            <Link to="/signup">Get Started Free</Link>
+        <section className="mx-auto mt-3 flex max-w-[1420px] flex-col items-start justify-between gap-5 rounded-[26px] bg-[#c2410c] px-6 py-8 text-white shadow-[0_22px_48px_rgba(194,65,12,0.20)] sm:flex-row sm:items-center sm:rounded-[32px] sm:px-9">
+          <div>
+            <h2 className="text-xl font-black">Ready to put your talent on the board?</h2>
+            <p className="mt-1 text-xs text-white/65">Join a live challenge and create proof that travels with you.</p>
+          </div>
+          <Button className="rounded-xl bg-white text-[10px] font-black text-[#c2410c] hover:bg-[#fff7ed]" asChild>
+            <Link to="/signup">Get started free <Zap className="ml-1 h-3.5 w-3.5" /></Link>
           </Button>
-        </div>
-      </section>
+        </section>
+      </main>
 
       <Footer />
     </div>

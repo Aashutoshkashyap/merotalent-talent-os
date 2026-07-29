@@ -4,11 +4,10 @@ import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import AuthShell from "@/components/auth/AuthShell";
 import {
-  Sparkles,
   Loader2,
   Mail,
   Lock,
@@ -127,27 +126,22 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-      
-      <Card className="w-full max-w-xl relative z-10 border-border/50 shadow-xl">
-        <CardHeader className="text-center space-y-4">
-          <Link to="/" className="flex items-center justify-center gap-2 group">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center shadow-lg">
-              <Sparkles className="w-6 h-6 text-primary-foreground" />
-            </div>
+    <AuthShell
+      eyebrow="Choose your path"
+      title="Build a workspace around your ambition."
+      description="Join as talent, a mentor, a company or an institution. Every account gets a focused workspace with the tools that matter."
+      footer={
+        <p>
+          Already have an account?{" "}
+          <Link to="/login" className="font-bold text-primary hover:underline">
+            Sign in
           </Link>
-          <div>
-            <CardTitle className="text-2xl font-display">Create an account</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Join Merotalent and unlock your potential
-            </CardDescription>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
+        </p>
+      }
+    >
+      <div className="space-y-6">
           <div className="space-y-3">
-            <Label>I’m joining as</Label>
+            <Label className="text-xs font-bold">I&apos;m joining as</Label>
             <div className="grid grid-cols-2 gap-2">
               {accountTypes.map((type) => {
                 const Icon = type.icon;
@@ -158,17 +152,19 @@ const Signup = () => {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setAccountType(type.value)}
-                    className={`rounded-xl border p-3 text-left transition-all ${
+                    className={`group rounded-[15px] border p-3 text-left transition-all duration-200 ${
                       active
-                        ? "border-primary bg-primary/10 shadow-sm"
-                        : "border-border bg-card hover:border-primary/40 hover:bg-muted/50"
+                        ? "border-primary bg-[#fff1e8] shadow-[0_8px_20px_rgba(249,115,22,0.1)]"
+                        : "border-[#eee5df] bg-white hover:-translate-y-0.5 hover:border-primary/50"
                     }`}
                   >
                     <span className="flex items-center gap-2 text-sm font-semibold">
-                      <Icon className="h-4 w-4 text-primary" />
+                      <span className={`grid h-7 w-7 place-items-center rounded-[9px] ${active ? "bg-primary text-white" : "bg-[#fbf7f4] text-primary"}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
                       {type.label}
                     </span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
+                    <span className="mt-1.5 block pl-9 text-[10px] leading-4 text-muted-foreground">
                       {type.description}
                     </span>
                   </button>
@@ -180,7 +176,7 @@ const Signup = () => {
           {/* Google Sign Up Button */}
           <Button 
             variant="outline" 
-            className="w-full h-11 gap-2"
+            className="h-11 w-full gap-2"
             onClick={handleGoogleSignUp}
             disabled={isGoogleLoading}
           >
@@ -197,7 +193,7 @@ const Signup = () => {
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
+              <span className="bg-white px-2 text-[9px] font-bold tracking-[0.12em] text-muted-foreground">
                 Or continue with email
               </span>
             </div>
@@ -205,7 +201,7 @@ const Signup = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName" className="text-xs font-bold">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -221,7 +217,7 @@ const Signup = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-xs font-bold">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -237,7 +233,7 @@ const Signup = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-xs font-bold">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -253,7 +249,7 @@ const Signup = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-xs font-bold">Confirm Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -268,7 +264,7 @@ const Signup = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
+            <Button type="submit" className="h-11 w-full" variant="hero" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -279,18 +275,8 @@ const Signup = () => {
               )}
             </Button>
           </form>
-        </CardContent>
-          
-        <CardFooter className="flex flex-col gap-4">
-          <p className="text-sm text-center text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/login" className="text-primary hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
+      </div>
+    </AuthShell>
   );
 };
 

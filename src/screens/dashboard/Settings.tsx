@@ -25,6 +25,12 @@ import {
   Monitor
 } from "lucide-react";
 import { toast } from "sonner";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardPrimaryButton,
+  dashboardSurface,
+  dashboardTabs,
+} from "@/components/dashboard/dashboardStyles";
 
 const Settings = () => {
   const { profile, signOut } = useAuth();
@@ -44,14 +50,15 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account preferences</p>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Make it yours"
+        title="Settings"
+        description="Control your account, alerts, viewing preferences and security without the clutter."
+      />
 
       <Tabs defaultValue="account" className="space-y-6">
-        <TabsList className="flex flex-wrap h-auto gap-2">
+        <TabsList className={`${dashboardTabs} flex h-auto max-w-full flex-nowrap gap-1 overflow-x-auto`}>
           <TabsTrigger value="account" className="flex items-center gap-2">
             <User className="w-4 h-4" />
             Account
@@ -72,7 +79,7 @@ const Settings = () => {
 
         {/* Account Settings */}
         <TabsContent value="account" className="space-y-6">
-          <Card className="border-border/50">
+          <Card className={dashboardSurface}>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Update your personal details</CardDescription>
@@ -106,14 +113,14 @@ const Settings = () => {
                   placeholder="Tell us about yourself..."
                 />
               </div>
-              <Button variant="hero" onClick={handleSave}>
+              <Button variant="hero" className={dashboardPrimaryButton} onClick={handleSave}>
                 <Save className="w-4 h-4 mr-2" />
                 Save Changes
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className={dashboardSurface}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="w-5 h-5" />
@@ -139,7 +146,7 @@ const Settings = () => {
 
         {/* Notifications */}
         <TabsContent value="notifications" className="space-y-6">
-          <Card className="border-border/50">
+          <Card className={dashboardSurface}>
             <CardHeader>
               <CardTitle>Notification Channels</CardTitle>
               <CardDescription>Choose how you want to be notified</CardDescription>
@@ -175,7 +182,7 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className={dashboardSurface}>
             <CardHeader>
               <CardTitle>Notification Types</CardTitle>
               <CardDescription>Select what you want to be notified about</CardDescription>
@@ -206,7 +213,7 @@ const Settings = () => {
 
         {/* Appearance */}
         <TabsContent value="appearance" className="space-y-6">
-          <Card className="border-border/50">
+          <Card className={dashboardSurface}>
             <CardHeader>
               <CardTitle>Theme</CardTitle>
               <CardDescription>Customize how the app looks</CardDescription>
@@ -221,7 +228,7 @@ const Settings = () => {
                   <button
                     key={option.value}
                     onClick={() => setTheme(option.value as typeof theme)}
-                    className={`p-4 rounded-lg border-2 transition-all ${
+                    className={`rounded-2xl border-2 p-4 transition-all ${
                       theme === option.value
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/50"
@@ -240,7 +247,7 @@ const Settings = () => {
 
         {/* Security */}
         <TabsContent value="security" className="space-y-6">
-          <Card className="border-border/50">
+          <Card className={dashboardSurface}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="w-5 h-5" />
@@ -265,13 +272,13 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className={dashboardSurface}>
             <CardHeader>
               <CardTitle>Active Sessions</CardTitle>
               <CardDescription>Manage your logged-in devices</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center justify-between rounded-2xl bg-[#fff6ef] p-3">
                 <div className="flex items-center gap-3">
                   <Monitor className="w-8 h-8 text-muted-foreground" />
                   <div>
@@ -284,7 +291,7 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-destructive/50">
+          <Card className="rounded-[22px] border-red-200 bg-white shadow-[0_16px_48px_rgba(127,29,29,0.055)]">
             <CardHeader>
               <CardTitle className="text-destructive flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />

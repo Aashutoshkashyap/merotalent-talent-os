@@ -14,6 +14,12 @@ import {
   User, Mail, Phone, MapPin, Loader2, Save, Award, Trophy, 
   Linkedin, GraduationCap, Briefcase, FileText, Link2, X, CheckCircle 
 } from "lucide-react";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardPrimaryButton,
+  dashboardSurface,
+  dashboardTabs,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Skill {
   id: string;
@@ -201,18 +207,18 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">My Profile</h1>
-        <p className="text-muted-foreground">Manage your profile information and professional details</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Your talent story"
+        title="My profile"
+        description="Keep your proof of work, experience and strengths clear for mentors and employers."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Card */}
-        <Card className="lg:col-span-1 border-border/50">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className={`${dashboardSurface} lg:col-span-1`}>
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary via-accent to-secondary mx-auto flex items-center justify-center text-primary-foreground text-3xl font-bold">
+              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[30px] bg-[#c2410c] text-3xl font-black text-white shadow-[0_16px_34px_rgba(249,115,22,0.24)] ring-8 ring-[#fff2e8]">
                 {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || "U"}
               </div>
               <h3 className="mt-4 font-semibold text-lg">{profile?.full_name || "User"}</h3>
@@ -250,15 +256,14 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Edit Form with Tabs */}
-        <Card className="lg:col-span-2 border-border/50">
+        <Card className={`${dashboardSurface} lg:col-span-2`}>
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
             <CardDescription>Update your personal and professional details</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsList className={`${dashboardTabs} mb-4 grid w-full grid-cols-3`}>
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="professional">Professional</TabsTrigger>
                 <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
@@ -374,7 +379,7 @@ const Profile = () => {
 
                   <div className="space-y-2">
                     <Label>Resume / CV</Label>
-                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                    <div className="rounded-2xl border-2 border-dashed border-[#e6d5c8] bg-[#fff9f4] p-4 text-center">
                       {resumeFile || (profile as any)?.resume_url ? (
                         <div className="flex items-center justify-center gap-2">
                           <FileText className="w-5 h-5 text-primary" />
@@ -412,7 +417,7 @@ const Profile = () => {
                 </TabsContent>
 
                 <TabsContent value="linkedin" className="space-y-4">
-                  <div className="bg-muted/50 rounded-lg p-4 mb-4">
+                  <div className="mb-4 rounded-2xl bg-[#fff6ef] p-4">
                     <h4 className="font-medium flex items-center gap-2">
                       <Linkedin className="w-5 h-5 text-[#0A66C2]" />
                       Import from LinkedIn
@@ -465,7 +470,7 @@ const Profile = () => {
                 </TabsContent>
 
                 <div className="pt-4">
-                  <Button type="submit" disabled={isLoading}>
+                  <Button type="submit" className={dashboardPrimaryButton} disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -484,8 +489,7 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Skills */}
-        <Card className="lg:col-span-3 border-border/50">
+        <Card className={`${dashboardSurface} lg:col-span-3`}>
           <CardHeader>
             <CardTitle>Skills</CardTitle>
             <CardDescription>Select your skills and expertise</CardDescription>

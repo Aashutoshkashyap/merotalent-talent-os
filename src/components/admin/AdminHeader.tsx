@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Bell,
@@ -28,9 +28,46 @@ interface AdminHeaderProps {
 const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
   const { profile, signOut } = useAuth();
   const [query, setQuery] = useState("");
+  const navigate = useNavigate();
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const focusCommandSearch = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", focusCommandSearch);
+    return () => window.removeEventListener("keydown", focusCommandSearch);
+  }, []);
+
+  const runCommand = (event: FormEvent) => {
+    event.preventDefault();
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return;
+
+    const route = [
+      ["people users talent", "/admin/users"],
+      ["jobs opportunities hiring", "/admin/jobs"],
+      ["competitions challenges", "/admin/competitions"],
+      ["courses learning lms", "/admin/lms"],
+      ["mentors sessions", "/admin/mentors"],
+      ["institutions colleges", "/admin/institutions"],
+      ["companies partners", "/admin/companies"],
+      ["badges awards", "/admin/badges"],
+      ["notifications announcements", "/admin/notifications"],
+      ["queries support messages", "/admin/queries"],
+      ["settings configuration", "/admin/settings"],
+    ].find(([keywords]) => keywords.split(" ").some((keyword) => normalized.includes(keyword)))?.[1];
+
+    navigate(route || `/admin/users?search=${encodeURIComponent(query.trim())}`);
+    setQuery("");
+  };
 
   return (
-    <header className="sticky top-0 z-30 flex h-[72px] items-center gap-3 border-b border-[#e9e8f2] bg-white/90 px-4 backdrop-blur-xl sm:px-6">
+    <header className="sticky top-0 z-30 flex h-[72px] items-center gap-3 border-b border-[#eee7e1] bg-white/90 px-4 backdrop-blur-xl sm:px-6">
       <Button
         variant="ghost"
         size="icon"
@@ -46,20 +83,21 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
         <p className="text-[11px] text-[#9996a9]">One calm view of the platform</p>
       </div>
 
-      <div className="relative mx-auto w-full max-w-xl">
+      <form onSubmit={runCommand} className="relative mx-auto w-full max-w-xl">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9b98aa]" />
         <Input
+          ref={searchRef}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           type="search"
           aria-label="Search admin workspace"
           placeholder="Search people, jobs, courses or commands…"
-          className="h-10 rounded-xl border-0 bg-[#f3f2f8] pl-10 pr-11 text-sm placeholder:text-[#a9a6b7] focus-visible:ring-[#f97316]/30"
+          className="h-10 rounded-xl border-0 bg-[#f7f3ef] pl-10 pr-11 text-sm placeholder:text-[#a9a6b7] focus-visible:ring-[#c2410c]/30"
         />
         <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-md bg-white px-1.5 py-1 text-[9px] font-semibold text-[#9b98aa] shadow-sm md:flex">
           <Command className="h-3 w-3" /> K
         </span>
-      </div>
+      </form>
 
       <Button variant="ghost" size="icon" className="relative shrink-0 rounded-xl" aria-label="Notifications">
         <Bell className="h-[18px] w-[18px]" />

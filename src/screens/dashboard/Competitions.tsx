@@ -17,6 +17,14 @@ import {
 import { Label } from "@/components/ui/label";
 import { Search, Calendar, Users, Trophy, MapPin, ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardInteractiveSurface,
+  dashboardPrimaryButton,
+  dashboardSearch,
+  dashboardSurface,
+  dashboardTabs,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Competition {
   id: string;
@@ -198,29 +206,28 @@ const Competitions = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Competitions</h1>
-        <p className="text-muted-foreground">Discover and participate in exciting competitions</p>
-      </div>
+    <div className="space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Compete & grow"
+        title="Competitions"
+        description="Find a challenge that matches your strengths, build with others and turn your work into proof."
+      />
 
-      {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col gap-4 rounded-[22px] border border-[#f0e2d7] bg-white p-3 shadow-[0_14px_40px_rgba(69,42,21,0.045)] md:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#99919a]" />
           <Input
             type="search"
             placeholder="Search competitions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className={`${dashboardSearch} border-transparent bg-[#fff8f2] pl-10 shadow-none`}
           />
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList>
+        <TabsList className={dashboardTabs}>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
           <TabsTrigger value="registered">My Registrations</TabsTrigger>
@@ -228,11 +235,13 @@ const Competitions = () => {
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {displayCompetitions.map((comp) => (
-              <Card key={comp.id} className="border-border/50 overflow-hidden hover:shadow-lg transition-all duration-300 group">
-                <div className="h-40 bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 relative flex items-center justify-center">
-                  <span className="text-6xl">{getTypeIcon(comp.type)}</span>
+              <Card key={comp.id} className={`${dashboardInteractiveSurface} group overflow-hidden`}>
+                <div className="relative flex h-36 items-center justify-center overflow-hidden bg-[#fff0e4]">
+                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#ffd8bb]" />
+                  <div className="absolute bottom-5 left-7 h-3 w-3 rounded-full bg-[#68c9ad]" />
+                  <span className="relative text-5xl drop-shadow-sm transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">{getTypeIcon(comp.type)}</span>
                   <Badge className={`absolute top-3 right-3 ${getStatusColor(comp.status)}`}>
                     {comp.status}
                   </Badge>
@@ -244,8 +253,8 @@ const Competitions = () => {
                   )}
                 </div>
 
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                <CardHeader className="px-5 pb-2 pt-5">
+                  <CardTitle className="text-lg font-black tracking-[-0.025em] transition-colors group-hover:text-[#c2410c]">
                     {comp.title}
                   </CardTitle>
                   <CardDescription className="line-clamp-2">
@@ -253,7 +262,7 @@ const Competitions = () => {
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="px-5 pb-5">
                   <div className="space-y-3">
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
@@ -271,7 +280,7 @@ const Competitions = () => {
                         <Users className="w-4 h-4 text-muted-foreground" />
                         <span>{comp.max_participants || "Unlimited"} spots</span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm font-medium text-secondary">
+                      <div className="flex items-center gap-1 text-sm font-bold text-[#e76509]">
                         <Trophy className="w-4 h-4" />
                         {comp.prize_pool}
                       </div>
@@ -285,7 +294,7 @@ const Competitions = () => {
                     </div>
 
                     <Button 
-                      className="w-full mt-2" 
+                      className={`mt-2 w-full rounded-xl ${registeredIds.has(comp.id) ? "" : dashboardPrimaryButton}`}
                       variant={registeredIds.has(comp.id) ? "outline" : "hero"}
                       onClick={() => openRegistration(comp)}
                       disabled={registeredIds.has(comp.id)}
@@ -310,18 +319,18 @@ const Competitions = () => {
         </TabsContent>
 
         <TabsContent value="upcoming" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {displayCompetitions
               .filter((c) => c.status === "upcoming")
               .map((comp) => (
-                <Card key={comp.id} className="border-border/50">
+                <Card key={comp.id} className={dashboardSurface}>
                   <CardHeader>
                     <CardTitle>{comp.title}</CardTitle>
                     <CardDescription>{comp.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Button 
-                      className="w-full" 
+                      className={`w-full ${dashboardPrimaryButton}`}
                       variant="hero"
                       onClick={() => openRegistration(comp)}
                       disabled={registeredIds.has(comp.id)}
@@ -336,11 +345,11 @@ const Competitions = () => {
 
         <TabsContent value="registered" className="mt-6">
           {Array.from(registeredIds).length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
               {displayCompetitions
                 .filter((c) => registeredIds.has(c.id))
                 .map((comp) => (
-                  <Card key={comp.id} className="border-border/50 border-success/30">
+                  <Card key={comp.id} className={`${dashboardSurface} border-[#68c9ad]/60`}>
                     <CardHeader>
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-success" />
@@ -393,7 +402,7 @@ const Competitions = () => {
               </div>
             )}
 
-            <div className="p-4 rounded-lg bg-muted/50 space-y-2 text-sm">
+            <div className="space-y-2 rounded-2xl bg-[#fff6ef] p-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Competition</span>
                 <span className="font-medium">{selectedCompetition?.title}</span>
@@ -419,6 +428,7 @@ const Competitions = () => {
             </Button>
             <Button 
               variant="hero" 
+              className={dashboardPrimaryButton}
               onClick={handleRegister}
               disabled={isRegistering || (selectedCompetition?.is_team_based && !teamName.trim())}
             >

@@ -10,9 +10,8 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, roles, isLoading, isAdmin } = useAuth();
   const location = useLocation();
-  const isLocalAdminPreview =
+  const isLocalUiPreview =
     process.env.NODE_ENV === "development" &&
-    requiredRole === "admin" &&
     typeof window !== "undefined" &&
     ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
     new URLSearchParams(location.search).get("preview") === "ui";
@@ -25,17 +24,17 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user && !isLocalAdminPreview) {
+  if (!user && !isLocalUiPreview) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // If this is the admin route and user is not admin, redirect to dashboard
-  if (requiredRole === "admin" && !isAdmin && !isLocalAdminPreview) {
+  if (requiredRole === "admin" && !isAdmin && !isLocalUiPreview) {
     return <Navigate to="/dashboard" replace />;
   }
 
   // For other required roles, check if user has the role
-  if (requiredRole && requiredRole !== "admin" && !roles.includes(requiredRole)) {
+  if (requiredRole && requiredRole !== "admin" && !roles.includes(requiredRole) && !isLocalUiPreview) {
     return <Navigate to="/dashboard" replace />;
   }
 

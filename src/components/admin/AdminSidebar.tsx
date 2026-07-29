@@ -34,7 +34,8 @@ const primaryItems = [
   { icon: Trophy, label: "Competitions", href: "/admin/competitions" },
   { icon: GraduationCap, label: "Mentors", href: "/admin/mentors" },
   { icon: Building2, label: "Institutions", href: "/admin/institutions" },
-  { icon: Award, label: "Companies & badges", href: "/admin/companies" },
+  { icon: BriefcaseBusiness, label: "Companies", href: "/admin/companies" },
+  { icon: Award, label: "Badges", href: "/admin/badges" },
 ];
 
 const systemItems = [
@@ -75,7 +76,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
           "group flex min-h-10 items-center gap-3 rounded-xl py-2 text-[13px] font-semibold transition-all",
           compact ? "justify-center px-2" : "px-3",
           isActive
-            ? "bg-[#f97316] text-white shadow-[0_8px_20px_rgba(249,115,22,0.28)]"
+            ? "bg-[#c2410c] text-white shadow-[0_8px_20px_rgba(249,115,22,0.28)]"
             : "text-[#737087] hover:bg-[#fff7ed] hover:text-[#35324d]",
         )}
       >
@@ -85,7 +86,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
           <span
             className={cn(
               "grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px]",
-              isActive ? "bg-white/20 text-white" : "bg-[#fff1e8] text-[#f97316]",
+              isActive ? "bg-white/20 text-white" : "bg-[#fff1e8] text-[#c2410c]",
             )}
           >
             {badge}
@@ -97,25 +98,25 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
 
   return (
     <aside className={cn("flex h-full flex-col bg-white", compact ? "w-[84px]" : "w-[272px]")}>
-      <div className={cn("flex h-[72px] items-center border-b border-[#efeff5]", compact ? "justify-center px-3" : "px-5")}>
+      <div className={cn("flex h-[72px] items-center border-b border-[#f0e9e4]", compact ? "justify-center px-3" : "px-5")}>
         <Link to="/" onClick={onNavigate} className="flex items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#f97316] text-white shadow-lg shadow-[#f97316]/20">
+          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#c2410c] text-white shadow-lg shadow-[#c2410c]/20">
             <Sparkles className="h-[18px] w-[18px]" />
           </span>
           {!compact ? (
             <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
-              Mero<span className="text-[#f97316]">talent</span>
+              Mero<span className="text-[#c2410c]">talent</span>
             </span>
           ) : null}
         </Link>
         {!compact ? (
-          <span className="ml-auto rounded-full bg-[#fff1e8] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#f97316]">
+          <span className="ml-auto rounded-full bg-[#fff1e8] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#c2410c]">
             Admin
           </span>
         ) : null}
       </div>
 
-      <div className={cn("flex items-center border-b border-[#efeff5] py-4", compact ? "justify-center px-3" : "gap-3 px-5")}>
+      <div className={cn("flex items-center border-b border-[#f0e9e4] py-4", compact ? "justify-center px-3" : "gap-3 px-5")}>
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#ddf5eb] text-sm font-bold text-[#27745b]">
           {profile?.full_name?.charAt(0) || "A"}
         </span>
@@ -150,7 +151,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
         </div>
       </nav>
 
-      <div className={cn("space-y-1 border-t border-[#efeff5]", compact ? "p-3" : "p-4")}>
+      <div className={cn("space-y-1 border-t border-[#f0e9e4]", compact ? "p-3" : "p-4")}>
         <Button
           variant="ghost"
           className={cn("w-full rounded-xl text-xs text-[#77748a]", compact ? "justify-center px-0" : "justify-start")}

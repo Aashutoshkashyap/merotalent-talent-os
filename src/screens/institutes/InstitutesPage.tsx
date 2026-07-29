@@ -130,11 +130,11 @@ const InstitutesPage = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
-        return <Badge className="bg-green-500">Admissions Open</Badge>;
+        return <Badge className="rounded-full bg-[#e8f7f1] text-[8px] font-black text-[#238366] hover:bg-[#e8f7f1]">Admissions Open</Badge>;
       case "limited":
-        return <Badge className="bg-amber-500">Limited Seats</Badge>;
+        return <Badge className="rounded-full bg-[#fff7d8] text-[8px] font-black text-[#9a6500] hover:bg-[#fff7d8]">Limited Seats</Badge>;
       default:
-        return <Badge variant="secondary">Closed</Badge>;
+        return <Badge variant="secondary" className="rounded-full text-[8px] font-black">Closed</Badge>;
     }
   };
 
@@ -142,96 +142,110 @@ const InstitutesPage = () => {
     switch (type) {
       case "result": return <FileText className="w-4 h-4 text-blue-500" />;
       case "admission": return <GraduationCap className="w-4 h-4 text-green-500" />;
-      case "scholarship": return <Users className="w-4 h-4 text-purple-500" />;
+      case "scholarship": return <Users className="h-4 w-4 text-[#c2410c]" />;
       case "exam": return <Calendar className="w-4 h-4 text-amber-500" />;
       default: return <Bell className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f4dfd4]">
       <Navbar />
       
-      <main className="pt-20">
+      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
         {/* Hero Section */}
-        <section className="py-16 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
-          <div className="container mx-auto px-4 text-center">
-            <Badge variant="secondary" className="mb-4">
-              <GraduationCap className="w-3 h-3 mr-1" />
+        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+          <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr] lg:items-end">
+            <div>
+            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+              <GraduationCap className="mr-1 h-3 w-3" />
               Engineering Directory
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Engineering <span className="text-primary">Institutes</span> in Nepal
+            <h1 className="max-w-2xl font-display text-4xl font-black tracking-[-0.045em] text-[#172039] md:text-5xl">
+              Make a smarter choice about where you <span className="text-[#c2410c]">learn.</span>
             </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+            <p className="mt-4 max-w-xl text-sm leading-6 text-[#817980]">
               Track admissions, available seats, and latest notices from top engineering colleges across Nepal.
             </p>
             
-            <div className="max-w-xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <div className="relative mt-7 max-w-xl">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999096]" />
               <Input
                 placeholder="Search institutes or programs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="h-12 rounded-[14px] border-[#ede5e0] bg-[#faf7f5] pl-11 text-sm shadow-none focus-visible:border-[#fb923c] focus-visible:ring-[#c2410c]/10"
               />
+            </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                ["6", "Institutes"],
+                ["232", "Seats open"],
+                ["7", "Fresh notices"],
+              ].map(([value, label], index) => (
+                <div key={label} className={`min-h-[112px] rounded-[18px] border p-4 ${index === 1 ? "border-[#d9eee6] bg-[#e8f7f1]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
+                  <p className={`text-xl font-black ${index === 1 ? "text-[#238366]" : "text-[#172039]"}`}>{value}</p>
+                  <p className="mt-5 text-[9px] font-bold text-[#8e868e]">{label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Content */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
+        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
+          <div>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-              <TabsList className="w-full max-w-md mx-auto">
-                <TabsTrigger value="institutes" className="flex-1 gap-2">
+              <TabsList className="mx-auto w-full max-w-md rounded-[14px] border border-[#eee7e2] bg-[#faf7f5] p-1">
+                <TabsTrigger value="institutes" className="flex-1 gap-2 rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">
                   <GraduationCap className="w-4 h-4" />
                   Institutes
                 </TabsTrigger>
-                <TabsTrigger value="notices" className="flex-1 gap-2">
+                <TabsTrigger value="notices" className="flex-1 gap-2 rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">
                   <Bell className="w-4 h-4" />
                   Notices
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="institutes">
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {filteredInstitutes.map((institute) => (
-                    <Card key={institute.id} className="hover:shadow-lg transition-all duration-300">
-                      <CardHeader className="pb-3">
+                    <Card key={institute.id} className="rounded-[22px] border-[#f0e8e3] bg-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:border-[#fdba74] hover:shadow-[0_16px_32px_rgba(85,52,32,0.08)]">
+                      <CardHeader className="px-5 pb-3 pt-5">
                         <div className="flex items-start gap-4">
-                          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#fff0e7] text-xl">
                             {institute.logo}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <CardTitle className="text-lg line-clamp-1">{institute.shortName}</CardTitle>
-                            <p className="text-sm text-muted-foreground line-clamp-1">{institute.name}</p>
+                            <CardTitle className="line-clamp-1 text-base font-black text-[#20273c]">{institute.shortName}</CardTitle>
+                            <p className="mt-1 line-clamp-1 text-[9px] text-[#8f8790]">{institute.name}</p>
                           </div>
                         </div>
                       </CardHeader>
 
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-4 px-5 pb-5">
                         <div className="flex items-center justify-between">
                           {getStatusBadge(institute.admissionStatus)}
-                          <Badge variant="outline">{institute.type}</Badge>
+                          <Badge variant="outline" className="rounded-full border-[#e8e1dc] text-[8px] font-bold">{institute.type}</Badge>
                         </div>
 
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1 text-[9px] text-[#8f8790]">
                           <MapPin className="w-4 h-4" />
                           {institute.location}
                         </div>
 
                         {/* Seats Info */}
-                        <div className="p-3 rounded-lg bg-muted/50">
+                        <div className="rounded-[14px] bg-[#faf7f5] p-3">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-muted-foreground">Available Seats</span>
-                            <span className="font-semibold">
+                            <span className="text-[9px] text-[#8f8790]">Available Seats</span>
+                            <span className="text-[10px] font-black text-[#20273c]">
                               {institute.availableSeats} / {institute.totalSeats}
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#eee7e2]">
                             <div
-                              className="h-full bg-primary rounded-full"
+                              className="h-full rounded-full bg-[#c2410c]"
                               style={{ width: `${((institute.totalSeats - institute.availableSeats) / institute.totalSeats) * 100}%` }}
                             />
                           </div>
@@ -240,25 +254,25 @@ const InstitutesPage = () => {
                         {/* Programs */}
                         <div className="flex flex-wrap gap-1">
                           {institute.programs.slice(0, 4).map((program) => (
-                            <Badge key={program} variant="secondary" className="text-xs">
+                            <Badge key={program} variant="secondary" className="rounded-lg bg-[#faf7f5] text-[8px] font-bold text-[#777078]">
                               {program}
                             </Badge>
                           ))}
                           {institute.programs.length > 4 && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-[8px]">
                               +{institute.programs.length - 4}
                             </Badge>
                           )}
                         </div>
 
                         {institute.admissionDeadline && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="w-4 h-4 text-primary" />
+                          <div className="flex items-center gap-2 text-[9px] text-[#716b73]">
+                            <Calendar className="h-3.5 w-3.5 text-[#c2410c]" />
                             <span>Deadline: {new Date(institute.admissionDeadline).toLocaleDateString()}</span>
                           </div>
                         )}
 
-                        <Button variant="outline" size="sm" className="w-full" asChild>
+                        <Button variant="outline" size="sm" className="h-9 w-full rounded-xl border-[#e9dfda] text-[9px] font-black text-[#c2410c] hover:border-[#fdba74] hover:bg-[#fff0e7]" asChild>
                           <a href={institute.website} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Visit Website
@@ -271,29 +285,29 @@ const InstitutesPage = () => {
               </TabsContent>
 
               <TabsContent value="notices">
-                <Card>
+                <Card className="rounded-[22px] border-[#f0e8e3] shadow-none">
                   <CardHeader>
-                    <CardTitle>Latest Notices</CardTitle>
+                    <CardTitle className="text-lg font-black text-[#20273c]">Latest Notices</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {allNotices.map((notice) => (
                         <div
                           key={notice.id}
-                          className="flex items-start gap-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                          className="flex items-start gap-4 rounded-[16px] border border-[#f0e8e3] p-4 transition-colors hover:bg-[#fffaf7]"
                         >
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#faf7f5]">
                             {getNoticeIcon(notice.type)}
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium">{notice.title}</p>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                            <p className="text-[11px] font-black text-[#303649]">{notice.title}</p>
+                            <div className="mt-1 flex items-center gap-3 text-[9px] text-[#8f8790]">
                               <span>{notice.institute}</span>
                               <span>•</span>
                               <span>{new Date(notice.date).toLocaleDateString()}</span>
                             </div>
                           </div>
-                          <Badge variant="outline" className="capitalize">{notice.type}</Badge>
+                          <Badge variant="outline" className="rounded-full text-[8px] font-bold capitalize">{notice.type}</Badge>
                         </div>
                       ))}
                     </div>

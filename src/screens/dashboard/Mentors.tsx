@@ -7,6 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Star, Clock, Calendar, MessageCircle } from "lucide-react";
 import BookingDialog from "@/components/mentors/BookingDialog";
 import { useToast } from "@/hooks/use-toast";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardInteractiveSurface,
+  dashboardPrimaryButton,
+  dashboardSearch,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Mentor {
   id: string;
@@ -146,31 +152,31 @@ const Mentors = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Find a Mentor</h1>
-        <p className="text-muted-foreground">Connect with industry experts for personalized guidance</p>
-      </div>
+    <div className="space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Guidance, on demand"
+        title="Find a mentor"
+        description="Book focused time with experienced builders who can unblock your next career move."
+      />
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative max-w-xl rounded-[22px] border border-[#f0e2d7] bg-white p-3 shadow-[0_14px_40px_rgba(69,42,21,0.045)]">
+        <Search className="absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-[#99919a]" />
         <Input
           type="search"
           placeholder="Search by name or expertise..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className={`${dashboardSearch} border-transparent bg-[#fff8f2] pl-10 shadow-none`}
         />
       </div>
 
-      {/* Mentors Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {filteredMentors.map((mentor) => (
-          <Card key={mentor.id} className="border-border/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-            <CardHeader className="pb-4">
+          <Card key={mentor.id} className={`${dashboardInteractiveSurface} overflow-hidden`}>
+            <div className="h-1.5 bg-[#c2410c]" />
+            <CardHeader className="px-5 pb-4 pt-5">
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center text-primary-foreground text-xl font-bold flex-shrink-0">
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-[22px] bg-[#fff0e4] text-xl font-black text-[#e76509] ring-4 ring-[#fff8f2]">
                   {mentor.profile?.full_name?.charAt(0) || "M"}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -191,7 +197,7 @@ const Mentors = () => {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-5 pb-5">
               <p className="text-sm text-muted-foreground line-clamp-3">
                 {mentor.profile?.bio}
               </p>
@@ -214,7 +220,7 @@ const Mentors = () => {
                   <Clock className="w-4 h-4" />
                   {mentor.years_experience} years exp.
                 </div>
-                <div className="font-semibold text-primary">
+                <div className="font-bold text-[#e76509]">
                   NPR {mentor.hourly_rate}/hr
                 </div>
               </div>
@@ -222,7 +228,7 @@ const Mentors = () => {
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 rounded-xl border-[#e9dad0] bg-white hover:border-[#c2410c]/50 hover:bg-[#fff7f0]"
                   onClick={() => handleMessage(mentor.profile?.full_name || "Mentor")}
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
@@ -230,7 +236,7 @@ const Mentors = () => {
                 </Button>
                 <Button 
                   variant="hero" 
-                  className="flex-1"
+                  className={`flex-1 ${dashboardPrimaryButton}`}
                   onClick={() => handleBookSession(mentor)}
                 >
                   <Calendar className="w-4 h-4 mr-2" />

@@ -146,88 +146,87 @@ const CourseDetailPage = () => {
 
   return (
     <ContentProtectionProvider enabled={true} showWarnings={true}>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#f4dfd4]">
         <Navbar />
       
-      <main className="pt-20">
+      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
         {/* Hero Section */}
-        <section className="py-12 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
-          <div className="container mx-auto px-4">
-            <Button variant="ghost" onClick={() => navigate("/courses")} className="mb-6">
+        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+          <div>
+            <Button variant="ghost" onClick={() => navigate("/courses")} className="mb-6 h-9 rounded-xl text-[10px] font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Courses
             </Button>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid gap-6 lg:grid-cols-3">
               {/* Course Info */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="space-y-6 lg:col-span-2">
                 <div className="flex flex-wrap gap-2">
-                  <Badge>{courseData.category}</Badge>
-                  <Badge variant="outline">{courseData.difficulty}</Badge>
+                  <Badge className="rounded-full bg-[#c2410c] text-[8px] font-black hover:bg-[#c2410c]">{courseData.category}</Badge>
+                  <Badge variant="outline" className="rounded-full border-[#e8e1dc] text-[8px] font-black">{courseData.difficulty}</Badge>
                 </div>
 
-                <h1 className="text-3xl md:text-4xl font-display font-bold">
+                <h1 className="max-w-3xl font-display text-3xl font-black tracking-[-0.04em] text-[#172039] md:text-5xl">
                   {courseData.title}
                 </h1>
 
-                <p className="text-lg text-muted-foreground">
+                <p className="max-w-2xl text-sm leading-6 text-[#817980]">
                   {courseData.description}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-6 text-sm">
-                  <span className="flex items-center gap-1 text-amber-500">
+                <div className="flex flex-wrap items-center gap-5 text-[10px]">
+                  <span className="flex items-center gap-1 font-bold text-[#c2410c]">
                     <Star className="w-4 h-4 fill-current" />
                     {courseData.rating} ({courseData.reviews} reviews)
                   </span>
-                  <span className="flex items-center gap-1 text-muted-foreground">
+                  <span className="flex items-center gap-1 text-[#8f8790]">
                     <Users className="w-4 h-4" />
                     {courseData.enrolled.toLocaleString()} students
                   </span>
-                  <span className="flex items-center gap-1 text-muted-foreground">
+                  <span className="flex items-center gap-1 text-[#8f8790]">
                     <Clock className="w-4 h-4" />
                     {courseData.duration} hours
                   </span>
-                  <span className="flex items-center gap-1 text-muted-foreground">
+                  <span className="flex items-center gap-1 text-[#8f8790]">
                     <BookOpen className="w-4 h-4" />
                     {totalLessons} lessons
                   </span>
                 </div>
 
                 {/* Instructor */}
-                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                <div className="flex items-center gap-4 rounded-[18px] border border-[#d9eee6] bg-[#e8f7f1] p-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sm font-black text-[#238366]">
                     {courseData.instructor.avatar}
                   </div>
                   <div>
-                    <p className="font-medium">{courseData.instructor.name}</p>
-                    <p className="text-sm text-muted-foreground">{courseData.instructor.bio}</p>
+                    <p className="text-[11px] font-black text-[#263a35]">{courseData.instructor.name}</p>
+                    <p className="mt-1 text-[9px] text-[#687b75]">{courseData.instructor.bio}</p>
                   </div>
                 </div>
               </div>
 
               {/* Enrollment Card */}
               <div className="lg:col-span-1">
-                <Card className="sticky top-24">
-                  <div className="aspect-video overflow-hidden rounded-t-lg">
+                <Card className="sticky top-24 overflow-hidden rounded-[22px] border-[#f0e8e3] bg-white shadow-[0_18px_38px_rgba(85,52,32,0.09)]">
+                  <div className="aspect-video overflow-hidden">
                     <img
                       src={courseData.thumbnail}
                       alt={courseData.title}
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="text-3xl font-bold">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="text-3xl font-black text-[#172039]">
                       {courseData.price === 0 ? (
-                        <span className="text-green-500">Free</span>
+                        <span className="text-[#238366]">Free</span>
                       ) : (
                         `NPR ${courseData.price.toLocaleString()}`
                       )}
                     </div>
 
                     <Button
-                      variant="hero"
                       size="lg"
-                      className="w-full"
+                      className="w-full rounded-xl bg-[#c2410c] text-[10px] font-black hover:bg-[#9a3412]"
                       onClick={handleEnroll}
                       disabled={isEnrolling}
                     >
@@ -246,9 +245,9 @@ const CourseDetailPage = () => {
                       )}
                     </Button>
 
-                    <div className="space-y-3 text-sm">
-                      <p className="font-medium">This course includes:</p>
-                      <div className="space-y-2 text-muted-foreground">
+                    <div className="space-y-3 text-[10px]">
+                      <p className="font-black text-[#303649]">This course includes:</p>
+                      <div className="space-y-2 text-[#8f8790]">
                         <div className="flex items-center gap-2">
                           <Video className="w-4 h-4" />
                           {totalDuration} minutes of video
@@ -279,34 +278,34 @@ const CourseDetailPage = () => {
         </section>
 
         {/* Course Content */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
+        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-7">
+          <div>
             <Tabs defaultValue="curriculum" className="space-y-8">
-              <TabsList>
-                <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsList className="rounded-[14px] border border-[#eee7e2] bg-[#faf7f5] p-1">
+                <TabsTrigger value="curriculum" className="rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Curriculum</TabsTrigger>
+                <TabsTrigger value="overview" className="rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Overview</TabsTrigger>
+                <TabsTrigger value="reviews" className="rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Reviews</TabsTrigger>
               </TabsList>
 
               <TabsContent value="curriculum" className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Course Content</h2>
-                  <span className="text-sm text-muted-foreground">
+                  <h2 className="text-xl font-black text-[#20273c]">Course content</h2>
+                  <span className="text-[9px] text-[#8f8790]">
                     {courseData.modules.length} modules • {totalLessons} lessons • {Math.round(totalDuration / 60)}h total
                   </span>
                 </div>
 
                 <Accordion type="multiple" className="space-y-2">
                   {courseData.modules.map((module, index) => (
-                    <AccordionItem key={module.id} value={module.id} className="border rounded-lg px-4">
+                    <AccordionItem key={module.id} value={module.id} className="rounded-[16px] border border-[#f0e8e3] px-4">
                       <AccordionTrigger className="hover:no-underline">
                         <div className="flex items-center gap-4">
-                          <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff0e7] text-[10px] font-black text-[#c2410c]">
                             {index + 1}
                           </span>
                           <div className="text-left">
-                            <p className="font-medium">{module.title}</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-[11px] font-black text-[#303649]">{module.title}</p>
+                            <p className="text-[9px] text-[#8f8790]">
                               {module.lessons.length} lessons • {module.lessons.reduce((a, l) => a + l.duration, 0)} min
                             </p>
                           </div>
@@ -317,18 +316,18 @@ const CourseDetailPage = () => {
                           {module.lessons.map((lesson) => (
                             <div
                               key={lesson.id}
-                              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50"
+                              className="flex items-center justify-between rounded-xl p-3 hover:bg-[#fffaf7]"
                             >
                               <div className="flex items-center gap-3">
-                                {lesson.type === "video" && <Play className="w-4 h-4 text-primary" />}
-                                {lesson.type === "pdf" && <FileText className="w-4 h-4 text-secondary" />}
-                                {lesson.type === "quiz" && <HelpCircle className="w-4 h-4 text-accent" />}
-                                <span className="text-sm">{lesson.title}</span>
+                                {lesson.type === "video" && <Play className="h-4 w-4 text-[#c2410c]" />}
+                                {lesson.type === "pdf" && <FileText className="h-4 w-4 text-[#238366]" />}
+                                {lesson.type === "quiz" && <HelpCircle className="h-4 w-4 text-[#a66b00]" />}
+                                <span className="text-[10px] text-[#4d4c58]">{lesson.title}</span>
                                 {lesson.isPreview && (
-                                  <Badge variant="outline" className="text-xs">Preview</Badge>
+                                  <Badge variant="outline" className="text-[8px]">Preview</Badge>
                                 )}
                               </div>
-                              <span className="text-sm text-muted-foreground">{lesson.duration} min</span>
+                              <span className="text-[9px] text-[#8f8790]">{lesson.duration} min</span>
                             </div>
                           ))}
                         </div>

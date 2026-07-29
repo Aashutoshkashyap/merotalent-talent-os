@@ -109,40 +109,54 @@ const JobsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f4dfd4]">
       <Navbar />
       
-      <main className="pt-20">
+      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
         {/* Hero Section */}
-        <section className="py-16 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
-          <div className="container mx-auto px-4 text-center">
-            <Badge variant="secondary" className="mb-4">
-              <Briefcase className="w-3 h-3 mr-1" />
+        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+          <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr] lg:items-end">
+            <div>
+            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+              <Briefcase className="mr-1 h-3 w-3" />
               Job Board
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Find Your Dream <span className="text-primary">Job</span>
+            <h1 className="max-w-2xl font-display text-4xl font-black tracking-[-0.045em] text-[#172039] md:text-5xl">
+              Find work that values what you can <span className="text-[#c2410c]">actually do.</span>
             </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+            <p className="mt-4 max-w-xl text-sm leading-6 text-[#817980]">
               Discover opportunities from top companies in Nepal. Apply with your profile and stand out with verified skills.
             </p>
             
             {/* Search */}
-            <div className="max-w-xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <div className="relative mt-7 max-w-xl">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999096]" />
               <Input
                 placeholder="Search jobs, companies, skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="h-12 rounded-[14px] border-[#ede5e0] bg-[#faf7f5] pl-11 text-sm shadow-none focus-visible:border-[#fb923c] focus-visible:ring-[#c2410c]/10"
               />
+            </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                ["350+", "Open roles"],
+                ["84%", "Avg. match"],
+                ["42", "Hiring teams"],
+              ].map(([value, label], index) => (
+                <div key={label} className={`min-h-[112px] rounded-[18px] border p-4 ${index === 1 ? "border-[#d9eee6] bg-[#e8f7f1]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
+                  <p className={`text-xl font-black ${index === 1 ? "text-[#238366]" : "text-[#172039]"}`}>{value}</p>
+                  <p className="mt-5 text-[9px] font-bold text-[#8e868e]">{label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Filters */}
-        <section className="py-8 border-b">
-          <div className="container mx-auto px-4">
+        <section className="mx-auto mt-3 max-w-[1420px] rounded-[22px] border border-white/80 bg-[#fffdfb] px-4 py-4 shadow-[0_16px_38px_rgba(99,55,29,0.07)] sm:px-6">
+          <div>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap gap-2">
                 {jobTypes.map((type) => (
@@ -151,14 +165,14 @@ const JobsPage = () => {
                     variant={activeType === type ? "default" : "outline"}
                     size="sm"
                     onClick={() => setActiveType(type)}
-                    className="rounded-full"
+                    className={`h-8 rounded-full border-[#ece3de] px-3 text-[9px] font-black ${activeType === type ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
                   >
                     {type}
                   </Button>
                 ))}
               </div>
               <Select value={activeExperience} onValueChange={setActiveExperience}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="h-9 w-40 rounded-xl border-[#ece3de] bg-[#faf7f5] text-[10px] font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,21 +186,21 @@ const JobsPage = () => {
         </section>
 
         {/* Jobs Grid */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
+          <div>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12">
               {filteredJobs.map((job) => (
-                <Card key={job.id} className="group hover:shadow-lg transition-all duration-300 border-border/50">
-                  <CardHeader className="pb-3">
+                <Card key={job.id} className={`group rounded-[22px] border-[#f0e8e3] bg-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:border-[#fdba74] hover:shadow-[0_16px_32px_rgba(85,52,32,0.08)] ${job.id === "1" ? "md:col-span-2 lg:col-span-8" : "lg:col-span-4"}`}>
+                  <CardHeader className="pb-3 p-5">
                     <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#fff0e7] text-xl">
                         {job.logo}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg group-hover:text-primary transition-colors line-clamp-1">
+                        <h3 className="line-clamp-1 text-base font-black text-[#20273c] transition-colors group-hover:text-[#c2410c]">
                           {job.title}
                         </h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <p className="mt-1 flex items-center gap-1 text-[10px] text-[#8f8790]">
                           <Building2 className="w-3 h-3" />
                           {job.company}
                         </p>
@@ -194,36 +208,36 @@ const JobsPage = () => {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-3 px-5 pb-4">
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">{job.type}</Badge>
-                      <Badge variant="outline" className="flex items-center gap-1">
+                      <Badge variant="outline" className="rounded-full border-[#fed7aa] bg-[#fff7ed] text-[8px] font-black text-[#c2410c]">{job.type}</Badge>
+                      <Badge variant="outline" className="flex items-center gap-1 rounded-full border-[#e8e1dc] text-[8px] font-bold text-[#777078]">
                         <MapPin className="w-3 h-3" />
                         {job.location}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <DollarSign className="w-4 h-4 text-green-500" />
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-[#575362]">
+                      <DollarSign className="h-3.5 w-3.5 text-[#238366]" />
                       {job.salary}
                     </div>
 
                     <div className="flex flex-wrap gap-1.5">
                       {job.skills.slice(0, 3).map((skill) => (
-                        <Badge key={skill} variant="secondary" className="text-xs">
+                        <Badge key={skill} variant="secondary" className="rounded-lg bg-[#faf7f5] text-[8px] font-bold text-[#777078]">
                           {skill}
                         </Badge>
                       ))}
                       {job.skills.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[8px]">
                           +{job.skills.length - 3}
                         </Badge>
                       )}
                     </div>
                   </CardContent>
 
-                  <CardFooter className="pt-3 border-t border-border/50 flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <CardFooter className="flex items-center justify-between border-t border-[#f0e8e3] px-5 py-3">
+                    <div className="flex items-center gap-4 text-[8px] text-[#989097]">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         {job.postedAt}
@@ -233,7 +247,7 @@ const JobsPage = () => {
                         {job.applicants}
                       </span>
                     </div>
-                    <Button variant="ghost" size="sm" asChild>
+                    <Button variant="ghost" size="sm" className="h-8 rounded-lg text-[9px] font-black text-[#c2410c] hover:bg-[#fff0e7] hover:text-[#c2410c]" asChild>
                       <Link to={`/dashboard/jobs`}>
                         Apply
                         <ArrowRight className="w-4 h-4 ml-1" />
@@ -245,10 +259,10 @@ const JobsPage = () => {
             </div>
 
             {filteredJobs.length === 0 && (
-              <div className="text-center py-16">
-                <Briefcase className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
-                <p className="text-muted-foreground">Try adjusting your filters or search query</p>
+              <div className="py-16 text-center">
+                <Briefcase className="mx-auto mb-4 h-14 w-14 text-[#d9cfc9]" />
+                <h3 className="mb-2 text-lg font-black text-[#20273c]">No jobs found</h3>
+                <p className="text-sm text-[#8f8790]">Try adjusting your filters or search query</p>
               </div>
             )}
           </div>

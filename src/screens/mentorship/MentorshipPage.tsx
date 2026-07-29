@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,10 @@ import {
   Users, 
   Star, 
   Search, 
-  Clock, 
   Award,
   Briefcase,
   MessageSquare,
   Video,
-  CheckCircle
 } from "lucide-react";
 
 const MentorshipPage = () => {
@@ -72,83 +70,73 @@ const MentorshipPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f4dfd4]">
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gradient-to-b from-accent/5 to-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <Badge variant="outline" className="mb-4">
-              <Users className="w-3 h-3 mr-1" />
-              Learn from the Best
+      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
+      <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+        <div className="grid gap-7 lg:grid-cols-[1fr_0.95fr] lg:items-end">
+          <div>
+            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+              <Users className="mr-1 h-3 w-3" />
+              Human guidance
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Get <span className="text-primary">Mentored</span> by Industry Experts
+            <h1 className="max-w-2xl font-display text-4xl font-black tracking-[-0.045em] text-[#172039] md:text-5xl">
+              One good conversation can change your <span className="text-[#c2410c]">direction.</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Connect with experienced professionals who can guide your career, 
-              review your work, and help you achieve your goals.
+            <p className="mt-4 max-w-xl text-sm leading-6 text-[#817980]">
+              Connect with experienced people who can review your work, sharpen your choices and help you move.
             </p>
-            
-            {/* Search */}
-            <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <div className="relative mt-7 max-w-xl">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999096]" />
               <Input
                 placeholder="Search mentors by name or expertise..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="h-12 rounded-[14px] border-[#ede5e0] bg-[#faf7f5] pl-11 text-sm shadow-none focus-visible:border-[#fb923c] focus-visible:ring-[#c2410c]/10"
               />
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Benefits */}
-      <section className="py-12 border-b">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 gap-2.5">
             {benefits.map((benefit, idx) => (
-              <div key={idx} className="text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <benefit.icon className="w-6 h-6 text-primary" />
+              <div key={idx} className={`min-h-[118px] rounded-[18px] border p-4 ${idx === 1 ? "border-[#d9eee6] bg-[#e8f7f1]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
+                <div className={`grid h-9 w-9 place-items-center rounded-xl ${idx === 1 ? "bg-white/70 text-[#238366]" : "bg-[#fff0e7] text-[#c2410c]"}`}>
+                  <benefit.icon className="h-4 w-4" />
                 </div>
-                <h3 className="font-medium mb-1">{benefit.title}</h3>
-                <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                <h3 className="mt-3 text-[10px] font-black text-[#2a3044]">{benefit.title}</h3>
+                <p className="mt-1 text-[8px] leading-4 text-[#8f8790]">{benefit.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Mentors List */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          {/* Filters */}
-          <div className="flex flex-wrap gap-2 mb-8">
+      <section className="mx-auto mt-3 max-w-[1420px] rounded-[22px] border border-white/80 bg-[#fffdfb] px-4 py-4 shadow-[0_16px_38px_rgba(99,55,29,0.07)] sm:px-6">
+          <div className="flex flex-wrap gap-2">
             {expertiseAreas.map((area) => (
               <Button
                 key={area.id}
                 variant={selectedExpertise === area.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedExpertise(area.id)}
+                className={`h-8 rounded-full border-[#ece3de] px-3 text-[9px] font-black ${selectedExpertise === area.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
               >
                 {area.label}
               </Button>
             ))}
           </div>
+      </section>
 
+      <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
+                <Card key={i} className="animate-pulse rounded-[22px] border-[#f0e8e3]">
                   <CardContent className="p-6 space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-muted" />
+                      <div className="h-16 w-16 rounded-full bg-[#f5efeb]" />
                       <div className="space-y-2">
-                        <div className="h-4 bg-muted rounded w-24" />
-                        <div className="h-3 bg-muted rounded w-32" />
+                        <div className="h-4 w-24 rounded bg-[#f5efeb]" />
+                        <div className="h-3 w-32 rounded bg-[#f5efeb]" />
                       </div>
                     </div>
                   </CardContent>
@@ -156,33 +144,33 @@ const MentorshipPage = () => {
               ))}
             </div>
           ) : filteredMentors && filteredMentors.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {filteredMentors.map((mentor) => {
                 const profile = mentor.profiles as any;
                 return (
-                  <Card key={mentor.id} className="overflow-hidden hover:shadow-lg transition-all group">
+                  <Card key={mentor.id} className="group overflow-hidden rounded-[22px] border-[#f0e8e3] bg-white shadow-none transition-all hover:-translate-y-0.5 hover:border-[#fdba74] hover:shadow-[0_16px_32px_rgba(85,52,32,0.08)]">
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4 mb-4">
-                        <Avatar className="w-16 h-16 border-2 border-primary/20">
+                        <Avatar className="h-16 w-16 border-2 border-[#fed7aa]">
                           <AvatarImage src={profile?.avatar_url} />
                           <AvatarFallback className="text-lg">
                             {profile?.full_name?.charAt(0) || "M"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">
+                          <h3 className="truncate text-base font-black text-[#20273c] transition-colors group-hover:text-[#c2410c]">
                             {profile?.full_name || "Mentor"}
                           </h3>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
+                          <p className="line-clamp-1 text-[10px] text-[#8f8790]">
                             {profile?.bio || "Industry Expert"}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                            <div className="flex items-center gap-1 text-[9px]">
+                              <Star className="h-3.5 w-3.5 fill-[#c2410c] text-[#c2410c]" />
                               <span className="font-medium">{mentor.rating || 5.0}</span>
                             </div>
                             <span className="text-muted-foreground">•</span>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-[9px] text-[#8f8790]">
                               {mentor.total_sessions || 0} sessions
                             </span>
                           </div>
@@ -191,28 +179,28 @@ const MentorshipPage = () => {
 
                       <div className="flex flex-wrap gap-1 mb-4">
                         {mentor.expertise?.slice(0, 3).map((skill: string, idx: number) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
+                          <Badge key={idx} variant="secondary" className="rounded-lg bg-[#faf7f5] text-[8px] font-bold text-[#777078]">
                             {skill}
                           </Badge>
                         ))}
                         {(mentor.expertise?.length || 0) > 3 && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-[8px]">
                             +{mentor.expertise!.length - 3}
                           </Badge>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1 text-[9px] text-[#8f8790]">
                           <Briefcase className="w-4 h-4" />
                           {mentor.years_experience || 0}+ years exp.
                         </div>
-                        <div className="text-lg font-bold text-primary">
+                        <div className="text-sm font-black text-[#c2410c]">
                           NPR {mentor.hourly_rate || 1500}/hr
                         </div>
                       </div>
 
-                      <Button className="w-full" variant="hero" asChild>
+                      <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-[9px] font-black hover:bg-[#9a3412]" asChild>
                         <Link to="/login">
                           <Video className="w-4 h-4 mr-2" />
                           Book Session
@@ -224,70 +212,65 @@ const MentorshipPage = () => {
               })}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No mentors found</h3>
-              <p className="text-muted-foreground">
+            <div className="py-14 text-center">
+              <Users className="mx-auto mb-4 h-14 w-14 text-[#d9cfc9]" />
+              <h3 className="mb-2 text-lg font-black text-[#20273c]">No mentors found</h3>
+              <p className="text-sm text-[#8f8790]">
                 {searchQuery ? "Try adjusting your search" : "Check back soon for available mentors"}
               </p>
             </div>
           )}
-        </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-12">How Mentorship Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+      <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_22px_52px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-8">
+          <h2 className="text-xl font-black text-[#172039]">How mentorship works</h2>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[20px] border border-[#f0e8e3] bg-[#fffaf7] p-5">
+              <div className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#c2410c] text-sm font-black text-white">
                 1
               </div>
-              <h3 className="font-semibold mb-2">Choose a Mentor</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="mt-5 text-sm font-black text-[#20273c]">Choose a mentor</h3>
+              <p className="mt-2 text-[10px] leading-5 text-[#8f8790]">
                 Browse profiles and find a mentor who matches your goals
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+            <div className="rounded-[20px] border border-[#d9eee6] bg-[#e8f7f1] p-5">
+              <div className="grid h-10 w-10 place-items-center rounded-[13px] bg-white text-sm font-black text-[#238366]">
                 2
               </div>
-              <h3 className="font-semibold mb-2">Book a Session</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="mt-5 text-sm font-black text-[#20273c]">Book a session</h3>
+              <p className="mt-2 text-[10px] leading-5 text-[#687b75]">
                 Select a time slot and describe what you'd like to discuss
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+            <div className="rounded-[20px] border border-[#f0e8e3] bg-white p-5">
+              <div className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#fff0e7] text-sm font-black text-[#c2410c]">
                 3
               </div>
-              <h3 className="font-semibold mb-2">Get Guidance</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="mt-5 text-sm font-black text-[#20273c]">Get guidance</h3>
+              <p className="mt-2 text-[10px] leading-5 text-[#8f8790]">
                 Meet via video call and receive personalized advice
               </p>
             </div>
           </div>
-        </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to Accelerate Your Career?</h2>
-          <p className="text-muted-foreground mb-6">
-            Sign up to book sessions with industry experts
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="lg" asChild>
-              <Link to="/signup">Get Started Free</Link>
+      <section className="mx-auto mt-3 flex max-w-[1420px] flex-col items-start justify-between gap-5 rounded-[26px] bg-[#c2410c] px-6 py-8 text-white shadow-[0_22px_48px_rgba(194,65,12,0.20)] sm:flex-row sm:items-center sm:rounded-[32px] sm:px-9">
+          <div>
+            <h2 className="text-xl font-black">Your next breakthrough may be a conversation away.</h2>
+            <p className="mt-1 text-xs text-white/65">Create your account and meet someone who has been there.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button className="rounded-xl bg-white text-[10px] font-black text-[#c2410c] hover:bg-[#fff7ed]" asChild>
+              <Link to="/signup">Get started free</Link>
             </Button>
-            <Button variant="outline" size="lg" asChild>
+            <Button className="rounded-xl border border-white/20 bg-white/10 text-[10px] font-black text-white hover:bg-white/15" asChild>
               <Link to="/login">Already have an account?</Link>
             </Button>
           </div>
-        </div>
       </section>
+      </main>
 
       <Footer />
     </div>

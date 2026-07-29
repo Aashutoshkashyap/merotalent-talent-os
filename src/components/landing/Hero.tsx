@@ -3,27 +3,56 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Award,
+  Bell,
   BookOpen,
   BriefcaseBusiness,
   CalendarDays,
   Check,
   ChevronRight,
-  Code2,
+  CircleUserRound,
+  Clock3,
+  Compass,
   GraduationCap,
+  LayoutGrid,
   MapPin,
+  MessageCircle,
   Search,
   Sparkles,
-  Star,
+  Target,
   Trophy,
+  UserRoundSearch,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const roleLinks = [
-  { label: "Talent", icon: Users, href: "/signup" },
-  { label: "Mentor", icon: GraduationCap, href: "/mentorship" },
-  { label: "Recruiter", icon: BriefcaseBusiness, href: "/company" },
+const quickActions = [
+  {
+    title: "Find your fit",
+    copy: "Roles matched to your proof",
+    icon: BriefcaseBusiness,
+    href: "/jobs",
+    tone: "bg-[#fff3ec] text-[#c2410c]",
+  },
+  {
+    title: "Show your skills",
+    copy: "Live challenges this week",
+    icon: Trophy,
+    href: "/competitions",
+    tone: "bg-[#e9f8f2] text-[#238366]",
+  },
+  {
+    title: "Grow with guidance",
+    copy: "Meet a mentor who gets it",
+    icon: UserRoundSearch,
+    href: "/mentorship",
+    tone: "bg-[#fff8de] text-[#a66b00]",
+  },
+];
+
+const taskRows = [
+  { label: "Complete portfolio story", date: "Today", progress: 78 },
+  { label: "Practice product interview", date: "Tomorrow", progress: 52 },
+  { label: "Submit AI challenge concept", date: "04 Aug", progress: 24 },
 ];
 
 const Hero = () => {
@@ -37,223 +66,301 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#f8f8fc] pb-16 pt-[108px] sm:pb-20 sm:pt-[124px]">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-28 top-28 h-80 w-80 rounded-full bg-[#fed7aa]/70 blur-3xl" />
-        <div className="absolute -right-28 top-8 h-96 w-96 rounded-full bg-[#dff7ef]/70 blur-3xl" />
-        <svg className="absolute inset-x-0 bottom-0 h-64 w-full opacity-40" viewBox="0 0 1200 260" fill="none" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M-40 225C165 120 267 307 487 165C683 38 823 225 1248 40" stroke="#fdba74" strokeWidth="1.5" />
-          <circle cx="1030" cy="92" r="5" fill="#655ee8" />
-          <circle cx="175" cy="201" r="4" fill="#67c9aa" />
+    <section className="relative overflow-hidden bg-[#f4dfd4] px-3 pb-12 pt-[88px] sm:px-5 sm:pb-16 sm:pt-[104px] lg:px-8">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <svg className="absolute -left-28 top-20 h-[480px] w-[760px] opacity-60" viewBox="0 0 760 480" fill="none">
+          <path d="M-20 305C114 141 228 429 378 203C485 42 568 207 806 22" stroke="#fffaf7" strokeWidth="2" />
         </svg>
+        <svg className="absolute -bottom-36 right-[-120px] h-[520px] w-[900px] opacity-70" viewBox="0 0 900 520" fill="none">
+          <path d="M28 488C234 192 378 514 532 210C617 42 744 260 956 40" stroke="#fffaf7" strokeWidth="2" />
+        </svg>
+        <span className="absolute left-[4%] top-[22%] h-3 w-3 rounded-full bg-[#56c7a3]" />
+        <span className="absolute right-[7%] top-[14%] h-2 w-2 rounded-full bg-[#c2410c]" />
+        <span className="absolute bottom-[10%] right-[14%] h-4 w-4 rounded-full border border-[#1d2942]" />
       </div>
 
-      <div className="relative mx-auto grid max-w-[1440px] items-center gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 22 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#fed7aa] bg-white/80 px-3 py-1.5 text-[11px] font-bold text-[#5d58c9] shadow-sm">
-            <Sparkles className="h-3.5 w-3.5" />
-            Built for Nepal. Ready for South Asia.
-          </div>
-          <h1 className="mt-6 text-balance font-display text-[44px] font-bold leading-[0.98] tracking-[-0.045em] text-[#17162e] sm:text-6xl lg:text-[72px]">
-            Turn potential into{" "}
-            <span className="relative inline-block text-[#f97316]">
-              proof.
-              <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 230 16" fill="none" aria-hidden="true">
-                <path d="M4 11C58 3 154 4 226 8" stroke="#7dd8bc" strokeWidth="6" strokeLinecap="round" />
-              </svg>
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+        className="relative mx-auto max-w-[1420px] overflow-hidden rounded-[26px] border border-white/80 bg-[#fffdfb] shadow-[0_34px_90px_rgba(99,55,29,0.16)] sm:rounded-[34px]"
+      >
+        <header className="flex h-[62px] items-center gap-4 border-b border-[#f0ebe7] px-4 sm:px-6 lg:pl-[104px] lg:pr-8">
+          <div className="flex items-center gap-2 lg:hidden">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#c2410c] text-white">
+              <Sparkles className="h-3.5 w-3.5" />
             </span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-7 text-[#6f6b7f] sm:text-lg lg:mx-0">
-            Compete, learn, find mentors and get hired through work that shows what you can actually do.
-          </p>
-
-          <form
-            onSubmit={submitSearch}
-            className="mx-auto mt-7 flex max-w-xl items-center gap-2 rounded-2xl border border-[#e0dfeb] bg-white p-2 shadow-[0_18px_45px_rgba(56,52,102,0.10)] lg:mx-0"
-          >
-            <Search className="ml-2 h-5 w-5 shrink-0 text-[#918da1]" />
+            <span className="text-xs font-black text-[#172039]">Talent OS</span>
+          </div>
+          <div className="hidden items-center gap-5 lg:flex">
+            <span className="flex items-center gap-1.5 border-b-2 border-[#c2410c] py-5 text-[10px] font-black text-[#172039]">
+              <LayoutGrid className="h-3.5 w-3.5" />
+              My space
+            </span>
+            <Link to="/jobs" className="flex items-center gap-1.5 text-[10px] font-bold text-[#8d8793] transition hover:text-[#c2410c]">
+              <Compass className="h-3.5 w-3.5" />
+              Discover
+            </Link>
+            <Link to="/mentorship" className="flex items-center gap-1.5 text-[10px] font-bold text-[#8d8793] transition hover:text-[#c2410c]">
+              <Users className="h-3.5 w-3.5" />
+              Community
+            </Link>
+          </div>
+          <form onSubmit={submitSearch} className="relative ml-auto hidden w-full max-w-[300px] sm:block">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#a29aa1]" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              aria-label="Search jobs, competitions and skills"
-              placeholder="Try “UI design”, “AI” or “internship”"
-              className="h-11 min-w-0 flex-1 bg-transparent px-1 text-sm text-[#2f2c43] outline-none placeholder:text-[#a6a3b2]"
+              aria-label="Search opportunities"
+              placeholder="Search or type a skill"
+              className="h-9 w-full rounded-xl border border-[#eee8e4] bg-[#faf7f5] pl-9 pr-3 text-[10px] text-[#2b3247] outline-none transition focus:border-[#fdba74] focus:bg-white"
             />
-            <Button className="h-11 shrink-0 rounded-xl bg-[#f97316] px-4 text-xs hover:bg-[#ea580c] sm:px-5">
-              <span className="hidden sm:inline">Explore</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
           </form>
-
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-            {roleLinks.map((role) => {
-              const Icon = role.icon;
-              return (
-                <Link
-                  key={role.label}
-                  to={role.href}
-                  className="group flex items-center gap-2 rounded-full border border-[#e2e1eb] bg-white px-3 py-2 text-xs font-semibold text-[#5f5b70] transition hover:border-[#aaa6ed] hover:text-[#f97316]"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {role.label}
-                  <ChevronRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
-                </Link>
-              );
-            })}
+          <div className="ml-auto flex items-center gap-2 sm:ml-0">
+            <Link to="/login" className="hidden text-[10px] font-bold text-[#696575] sm:block">Sign in</Link>
+            <Button className="h-9 rounded-xl bg-[#c2410c] px-3 text-[10px] font-bold shadow-md shadow-[#c2410c]/15 hover:bg-[#9a3412]" asChild>
+              <Link to="/signup">Join free <ArrowRight className="h-3.5 w-3.5" /></Link>
+            </Button>
           </div>
+        </header>
 
-          <div className="mt-8 flex items-center justify-center gap-6 text-left lg:justify-start">
-            <div>
-              <p className="text-lg font-bold text-[#24213a]">10K+</p>
-              <p className="text-[10px] text-[#8e8a9d]">Growing community</p>
-            </div>
-            <span className="h-8 w-px bg-[#dedde7]" />
-            <div>
-              <p className="text-lg font-bold text-[#24213a]">5 paths</p>
-              <p className="text-[10px] text-[#8e8a9d]">One talent identity</p>
-            </div>
-            <span className="h-8 w-px bg-[#dedde7]" />
-            <div>
-              <p className="flex items-center gap-1 text-lg font-bold text-[#24213a]">
-                4.9 <Star className="h-3.5 w-3.5 fill-[#f97316] text-[#f97316]" />
+        <aside className="absolute bottom-7 left-5 top-[86px] z-10 hidden w-[58px] flex-col items-center rounded-[22px] bg-[#c2410c] py-4 text-white shadow-[0_18px_38px_rgba(249,115,22,0.26)] lg:flex">
+          <span className="grid h-9 w-9 place-items-center rounded-[12px] bg-white text-[#c2410c]">
+            <LayoutGrid className="h-4 w-4" />
+          </span>
+          <div className="mt-4 flex flex-1 flex-col items-center gap-1.5">
+            {[Compass, Trophy, BookOpen, CalendarDays, MessageCircle, Bell].map((Icon, index) => (
+              <Link
+                key={index}
+                to={["/jobs", "/competitions", "/courses", "/mentorship", "/login", "/login"][index]}
+                aria-label={["Jobs", "Competitions", "Courses", "Mentorship", "Messages", "Notifications"][index]}
+                className="grid h-9 w-9 place-items-center rounded-xl text-white/65 transition hover:bg-white/15 hover:text-white"
+              >
+                <Icon className="h-4 w-4" />
+              </Link>
+            ))}
+          </div>
+          <Link to="/signup" aria-label="Create account" className="grid h-9 w-9 place-items-center rounded-xl bg-[#dff7ef] text-[#237c61]">
+            <CircleUserRound className="h-4 w-4" />
+          </Link>
+        </aside>
+
+        <div className="p-3 sm:p-5 lg:pl-[104px] lg:pr-7 lg:pt-6">
+          <div className="grid gap-3 lg:grid-cols-[0.84fr_1.6fr]">
+            <div className="flex min-h-[168px] flex-col justify-center rounded-[22px] bg-[#fffaf7] p-5 sm:p-6">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#fed7aa] bg-white px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c]">
+                <Sparkles className="h-3 w-3" />
+                Built for ambitious talent
+              </span>
+              <h1 className="mt-4 max-w-[450px] text-balance font-display text-[30px] font-black leading-[1.02] tracking-[-0.04em] text-[#172039] sm:text-[38px]">
+                Hi, future you. What will you <span className="text-[#c2410c]">prove today?</span>
+              </h1>
+              <p className="mt-3 max-w-md text-[11px] leading-5 text-[#7b7480] sm:text-xs">
+                Turn learning, challenges and real work into opportunities people can trust.
               </p>
-              <p className="text-[10px] text-[#8e8a9d]">Mentor experience</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5">
+              {quickActions.map((action, index) => {
+                const Icon = action.icon;
+                return (
+                  <motion.div
+                    key={action.title}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.18 + index * 0.08 }}
+                  >
+                    <Link
+                      to={action.href}
+                      className="group flex h-full min-h-[168px] flex-col rounded-[22px] border border-[#f0ebe7] bg-white p-3 transition hover:-translate-y-1 hover:border-[#fdba74] hover:shadow-[0_18px_35px_rgba(85,52,32,0.09)] sm:p-4"
+                    >
+                      <span className={`grid h-10 w-10 place-items-center rounded-[13px] sm:h-12 sm:w-12 ${action.tone}`}>
+                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </span>
+                      <h2 className="mt-auto text-[10px] font-black leading-tight text-[#172039] sm:text-sm">{action.title}</h2>
+                      <p className="mt-1 hidden text-[9px] leading-4 text-[#9a9299] sm:block">{action.copy}</p>
+                      <ChevronRight className="mt-2 h-3.5 w-3.5 text-[#c1b8bb] transition group-hover:translate-x-1 group-hover:text-[#c2410c]" />
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 28 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="relative mx-auto w-full max-w-[720px]"
-        >
-          <div className="absolute -inset-4 rounded-[36px] bg-[#fed7aa]/60 blur-2xl" />
-          <div className="relative overflow-hidden rounded-[26px] border border-white/80 bg-[#eeedf8] p-3 shadow-[0_30px_80px_rgba(52,48,98,0.18)] sm:p-4">
-            <div className="overflow-hidden rounded-[21px] bg-[#fbfbfd]">
-              <div className="flex h-12 items-center gap-2 border-b border-[#eeeeF4] px-3 sm:px-4">
-                <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#f97316] text-white">
-                  <Sparkles className="h-3.5 w-3.5" />
+          <div className="mt-3 grid gap-3 lg:grid-cols-12">
+            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-black text-[#172039]">Opportunity inbox</h2>
+                <Link to="/jobs" className="text-[9px] font-bold text-[#c2410c]">View all</Link>
+              </div>
+              <div className="mt-3 rounded-[16px] border border-[#f3e5dc] bg-[#fffaf7] p-3 shadow-[0_9px_20px_rgba(85,52,32,0.06)]">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff0e7] text-[#c2410c]">
+                    <BriefcaseBusiness className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-[10px] font-black text-[#252b40]">Product Design Intern</p>
+                      <span className="h-2 w-2 rounded-full bg-[#56c7a3]" />
+                    </div>
+                    <p className="mt-0.5 text-[8px] text-[#9a9299]">Leapfrog Technology · 94% fit</p>
+                    <div className="mt-2 flex items-center gap-2 text-[8px] text-[#746e79]">
+                      <span className="flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />Lalitpur</span>
+                      <span className="flex items-center gap-1"><Clock3 className="h-2.5 w-2.5" />2h ago</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-3 rounded-[14px] bg-[#faf8f6] p-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#e8f7f1] text-[#268267]">
+                  <MessageCircle className="h-3.5 w-3.5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[9px] font-bold text-[#34394c]">A mentor replied to your question</p>
+                  <p className="mt-0.5 truncate text-[8px] text-[#a0999f]">“Your case study already has a strong hook…”</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-black text-[#172039]">Featured challenge</h2>
+                <span className="rounded-full bg-[#fff0e7] px-2 py-1 text-[8px] font-black text-[#c2410c]">8 days left</span>
+              </div>
+              <div className="mt-4 flex items-start gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#c2410c] text-white shadow-lg shadow-[#c2410c]/20">
+                  <Trophy className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-[10px] font-bold text-[#343148] sm:text-xs">Your talent workspace</p>
-                  <p className="text-[8px] text-[#a09dac] sm:text-[9px]">Proof, progress and possibilities</p>
-                </div>
-                <span className="ml-auto hidden rounded-full bg-[#e4f7f0] px-2 py-1 text-[8px] font-bold text-[#2c8267] sm:inline">
-                  Profile 82%
-                </span>
-                <div className="flex -space-x-1.5">
-                  {["A", "S", "R"].map((initial, index) => (
-                    <span key={initial} className={`grid h-6 w-6 place-items-center rounded-full border-2 border-white text-[8px] font-bold ${["bg-[#f9dbdf] text-[#9b4353]", "bg-[#dff4ed] text-[#36735f]", "bg-[#ffedd5] text-[#5c56be]"][index]}`}>
-                      {initial}
-                    </span>
-                  ))}
+                  <p className="text-sm font-black leading-tight text-[#172039]">Nepal AI Impact Challenge</p>
+                  <p className="mt-1 text-[9px] text-[#8f8791]">Build one useful tool for everyday Nepal.</p>
                 </div>
               </div>
+              <div className="mt-4 flex items-center justify-between rounded-[14px] bg-[#faf8f6] px-3 py-2.5">
+                <div>
+                  <p className="text-[8px] uppercase tracking-wide text-[#a0989f]">Prize pool</p>
+                  <p className="mt-0.5 text-[11px] font-black text-[#172039]">NPR 500,000</p>
+                </div>
+                <div className="flex -space-x-1.5">
+                  {["A", "S", "N"].map((initial, index) => (
+                    <span key={initial} className={`grid h-7 w-7 place-items-center rounded-full border-2 border-white text-[8px] font-black ${["bg-[#ffd9c2] text-[#9a3f08]", "bg-[#dff5ed] text-[#28785f]", "bg-[#f4e6d9] text-[#685445]"][index]}`}>{initial}</span>
+                  ))}
+                  <span className="grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-[#172039] text-[7px] font-black text-white">+2K</span>
+                </div>
+              </div>
+            </div>
 
-              <div className="grid gap-2.5 p-3 sm:grid-cols-[1.25fr_0.75fr] sm:p-4">
-                <div className="space-y-2.5">
-                  <div className="rounded-2xl bg-[#f97316] p-4 text-white">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-[9px] font-semibold text-white/60">GOOD MORNING, AARAV</p>
-                        <p className="mt-1 max-w-[280px] font-display text-lg font-bold leading-tight sm:text-xl">
-                          Ready to make today count?
-                        </p>
-                      </div>
-                      <Award className="h-7 w-7 text-[#9ee7d0]" />
-                    </div>
-                    <div className="mt-4 grid grid-cols-3 gap-1.5">
-                      {[
-                        [Trophy, "12", "Challenges"],
-                        [BookOpen, "4", "Courses"],
-                        [Users, "#247", "Rank"],
-                      ].map(([Icon, value, label]) => {
-                        const TileIcon = Icon as typeof Trophy;
-                        return (
-                          <div key={String(label)} className="rounded-xl bg-white/10 p-2">
-                            <TileIcon className="h-3.5 w-3.5 text-[#9ee7d0]" />
-                            <p className="mt-2 text-sm font-bold">{value as string}</p>
-                            <p className="text-[7px] text-white/60">{label as string}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
+            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-black text-[#172039]">Your week</h2>
+                <div className="flex gap-1">
+                  <span className="grid h-6 w-6 place-items-center rounded-lg bg-[#faf8f6] text-[10px] text-[#948d95]">‹</span>
+                  <span className="grid h-6 w-6 place-items-center rounded-lg bg-[#faf8f6] text-[10px] text-[#948d95]">›</span>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-7 gap-1 text-center">
+                {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
+                  <div key={`${day}-${index}`}>
+                    <p className="text-[7px] text-[#aaa3aa]">{day}</p>
+                    <span className={`mx-auto mt-1 grid h-6 w-6 place-items-center rounded-full text-[8px] font-bold ${index === 2 ? "bg-[#c2410c] text-white" : "text-[#5d5864]"}`}>
+                      {[27, 28, 29, 30, 31, 1, 2][index]}
+                    </span>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="rounded-2xl border border-[#ededf3] bg-white p-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-bold">Next challenge</p>
-                        <Code2 className="h-3.5 w-3.5 text-[#f97316]" />
-                      </div>
-                      <p className="mt-3 text-xs font-bold">Nepal AI Challenge</p>
-                      <div className="mt-1.5 flex items-center gap-1 text-[8px] text-[#9a97a6]">
-                        <CalendarDays className="h-2.5 w-2.5" /> Registration ends soon
-                      </div>
-                      <div className="mt-3 h-1 overflow-hidden rounded-full bg-[#ecebf2]">
-                        <div className="h-full w-3/4 rounded-full bg-[#f97316]" />
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-[#ededf3] bg-white p-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-bold">Skill streak</p>
-                        <Sparkles className="h-3.5 w-3.5 text-[#f97316]" />
-                      </div>
-                      <div className="mt-3 flex items-end gap-1">
-                        {[32, 48, 40, 68, 55, 82, 72].map((height, index) => (
-                          <span key={`${height}-${index}`} className="flex-1 rounded-t bg-[#ffedd5]" style={{ height: `${height / 2}px` }}>
-                            <span className="block h-full rounded-t bg-[#7dd8bc]" style={{ opacity: 0.45 + index * 0.07 }} />
-                          </span>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-[8px] text-[#9a97a6]">7 focused days in a row</p>
-                    </div>
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2 border-t border-dashed border-[#ddd4d0] pt-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#e8f7f1] text-[#268267]"><Users className="h-3.5 w-3.5" /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[9px] font-black text-[#34394c]">Portfolio review</p>
+                    <p className="text-[7px] text-[#a0999f]">10:30 – 11:00 · Online</p>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-1">
-                  <motion.div
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="rounded-2xl border border-[#ededf3] bg-white p-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold">Best match</p>
-                      <span className="rounded-full bg-[#e3f7ef] px-1.5 py-0.5 text-[7px] font-bold text-[#2d8267]">94%</span>
-                    </div>
-                    <div className="mt-3 grid h-9 w-9 place-items-center rounded-xl bg-[#fff1e8] text-[#f97316]">
-                      <BriefcaseBusiness className="h-4 w-4" />
-                    </div>
-                    <p className="mt-2 text-[11px] font-bold leading-tight">Product Design Intern</p>
-                    <p className="mt-1 flex items-center gap-1 text-[8px] text-[#9a97a6]">
-                      <MapPin className="h-2.5 w-2.5" /> Kathmandu · Hybrid
-                    </p>
-                  </motion.div>
-
-                  <div className="rounded-2xl bg-[#19182f] p-3 text-white">
-                    <p className="text-[9px] font-semibold text-white/55">MENTOR SESSION</p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="grid h-8 w-8 place-items-center rounded-full bg-[#f3dce1] text-[9px] font-bold text-[#8b4351]">PS</span>
-                      <div>
-                        <p className="text-[10px] font-bold">Priya Shrestha</p>
-                        <p className="text-[7px] text-white/50">Design leadership</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-white/10 p-2 text-[8px]">
-                      <Check className="h-3 w-3 text-[#7dd8bc]" /> Today · 4:30 PM
-                    </div>
+                <div className="flex items-center gap-2 border-t border-dashed border-[#ddd4d0] pt-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#fff0e7] text-[#c2410c]"><GraduationCap className="h-3.5 w-3.5" /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[9px] font-black text-[#34394c]">Mentor session</p>
+                    <p className="text-[7px] text-[#a0999f]">16:00 – 16:30 · Career clarity</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </motion.div>
+
+          <div className="mt-3 grid gap-3 lg:grid-cols-12">
+            <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4 lg:col-span-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xs font-black text-[#172039]">Today&apos;s momentum</h2>
+                  <span className="rounded-full bg-[#e8f7f1] px-2 py-1 text-[8px] font-black text-[#268267]">3 actions</span>
+                </div>
+                <Link to="/signup" className="text-[9px] font-bold text-[#c2410c]">Open workspace</Link>
+              </div>
+              <div className="mt-3 divide-y divide-[#f0ebe7]">
+                {taskRows.map((task) => (
+                  <div key={task.label} className="grid grid-cols-[1fr_auto] items-center gap-3 py-2.5 sm:grid-cols-[1.3fr_0.5fr_1fr]">
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-6 w-6 place-items-center rounded-lg border border-[#eadfd9] text-[#c2410c]"><Check className="h-3 w-3" /></span>
+                      <p className="truncate text-[9px] font-bold text-[#3b3f51]">{task.label}</p>
+                    </div>
+                    <p className="hidden text-[8px] text-[#9b949b] sm:block">{task.date}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-bold text-[#746e79]">{task.progress}%</span>
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f1ece9]">
+                        <span className="block h-full rounded-full bg-[#c2410c]" style={{ width: `${task.progress}%` }} />
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Link
+              to="/signup"
+              className="group relative flex min-h-[190px] flex-col overflow-hidden rounded-[22px] bg-[#c2410c] p-5 text-white shadow-[0_20px_38px_rgba(249,115,22,0.24)] lg:col-span-3"
+            >
+              <div className="absolute -right-9 -top-9 h-32 w-32 rounded-full border-[22px] border-white/10" />
+              <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-white/15"><Target className="h-5 w-5" /></span>
+              <h2 className="mt-auto max-w-[190px] text-xl font-black leading-tight">Make your next move visible.</h2>
+              <span className="mt-3 flex items-center gap-1.5 text-[9px] font-black text-white/80">
+                Build your proof profile <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
+              </span>
+            </Link>
+
+            <div className="grid gap-3 lg:col-span-3">
+              <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative grid h-12 w-12 place-items-center rounded-full bg-[conic-gradient(#56c7a3_0_82%,#f0ebe7_82%_100%)]">
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-[9px] font-black text-[#172039]">82%</span>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-wide text-[#56a98e]">Talent profile</p>
+                    <p className="mt-0.5 text-xs font-black text-[#172039]">Ready to be found</p>
+                    <p className="mt-1 text-[7px] text-[#9b949b]">Add one case study to stand out.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-[22px] border border-[#f0ebe7] bg-white p-4">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#172039] text-[9px] font-black text-white">PS</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[10px] font-black text-[#172039]">Priya is available</p>
+                    <p className="mt-0.5 text-[8px] text-[#9b949b]">Design leadership · 4:30 PM</p>
+                  </div>
+                  <Link to="/mentorship" className="rounded-lg bg-[#fff0e7] px-2 py-1.5 text-[8px] font-black text-[#c2410c]">Book</Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="relative mx-auto mt-4 flex max-w-[1420px] items-center justify-center gap-5 text-[9px] font-bold text-[#8c6653] sm:gap-8">
+        <span>10K+ learners</span>
+        <span className="h-1 w-1 rounded-full bg-[#c2410c]" />
+        <span>350+ opportunities</span>
+        <span className="h-1 w-1 rounded-full bg-[#56c7a3]" />
+        <span>Built in Nepal</span>
       </div>
     </section>
   );

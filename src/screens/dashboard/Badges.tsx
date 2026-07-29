@@ -18,6 +18,12 @@ import {
   CheckCircle,
   TrendingUp
 } from "lucide-react";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardInteractiveSurface,
+  dashboardSurface,
+  dashboardTabs,
+} from "@/components/dashboard/dashboardStyles";
 
 interface BadgeItem {
   id: string;
@@ -211,7 +217,7 @@ const Badges = () => {
   };
 
   const BadgeCard = ({ badge, type }: { badge: BadgeItem; type: "earned" | "progress" | "locked" }) => (
-    <Card className={`border-border/50 overflow-hidden transition-all duration-300 ${type === "locked" ? "opacity-60" : "hover:shadow-lg"}`}>
+    <Card className={`overflow-hidden ${type === "locked" ? `${dashboardSurface} opacity-60` : dashboardInteractiveSurface}`}>
       <div className={`h-2 bg-gradient-to-r ${getRarityColor(badge.rarity)}`} />
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
@@ -271,15 +277,15 @@ const Badges = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Achievements & Badges</h1>
-        <p className="text-muted-foreground">Track your progress and showcase your accomplishments</p>
-      </div>
+    <div className="space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Proof of progress"
+        title="Achievements & badges"
+        description="See what you have earned, what is within reach and the work that unlocks your next milestone."
+      />
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-border/50 bg-gradient-to-br from-amber-500/10 to-transparent">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className={`${dashboardSurface} bg-[#fff8ef]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
@@ -292,7 +298,7 @@ const Badges = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-gradient-to-br from-purple-500/10 to-transparent">
+        <Card className={`${dashboardSurface} bg-[#f9f5ff]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
@@ -305,7 +311,7 @@ const Badges = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-gradient-to-br from-orange-500/10 to-transparent">
+        <Card className={`${dashboardSurface} bg-[#fff3e9]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
@@ -318,7 +324,7 @@ const Badges = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-gradient-to-br from-green-500/10 to-transparent">
+        <Card className={`${dashboardSurface} bg-[#effbf7]`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
@@ -334,14 +340,14 @@ const Badges = () => {
       </div>
 
       <Tabs defaultValue="earned" className="space-y-6">
-        <TabsList>
+        <TabsList className={dashboardTabs}>
           <TabsTrigger value="earned">Earned ({earnedBadges.length})</TabsTrigger>
           <TabsTrigger value="progress">In Progress ({inProgressBadges.length})</TabsTrigger>
           <TabsTrigger value="locked">Locked ({lockedBadges.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="earned" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {earnedBadges.map((badge) => (
               <BadgeCard key={badge.id} badge={badge} type="earned" />
             ))}

@@ -28,6 +28,14 @@ import {
   Radio
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  dashboardInteractiveSurface,
+  dashboardPrimaryButton,
+  dashboardSearch,
+  dashboardSurface,
+  dashboardTabs,
+} from "@/components/dashboard/dashboardStyles";
 
 interface Course {
   id: string;
@@ -358,11 +366,13 @@ const Learning = () => {
   };
 
   const CourseCard = ({ course, showProgress = false }: { course: Course; showProgress?: boolean }) => (
-    <Card className="border-border/50 overflow-hidden hover:shadow-lg transition-all duration-300 group">
-      <div className="h-32 bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 flex items-center justify-center text-5xl">
-        {course.thumbnail}
+    <Card className={`${dashboardInteractiveSurface} group overflow-hidden`}>
+      <div className="relative flex h-32 items-center justify-center overflow-hidden bg-[#fff0e4] text-5xl">
+        <span className="absolute -right-9 -top-9 h-28 w-28 rounded-full bg-[#ffd8bb]" />
+        <span className="absolute bottom-5 left-6 h-3 w-3 rounded-full bg-[#68c9ad]" />
+        <span className="relative transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">{course.thumbnail}</span>
       </div>
-      <CardHeader className="pb-2">
+      <CardHeader className="px-5 pb-2 pt-5">
         <div className="flex items-start justify-between gap-2">
           <Badge className={getLevelColor(course.level)} variant="outline">
             {course.level}
@@ -372,12 +382,12 @@ const Learning = () => {
             <span className="font-medium">{course.rating}</span>
           </div>
         </div>
-        <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
+        <CardTitle className="line-clamp-2 text-lg font-black tracking-[-0.025em] transition-colors group-hover:text-[#c2410c]">
           {course.title}
         </CardTitle>
         <CardDescription>{course.instructor}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 px-5 pb-5">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
@@ -396,9 +406,9 @@ const Learning = () => {
               <span className="font-medium">{course.progress}%</span>
             </div>
             <Progress value={course.progress} className="h-2" />
-            <Button 
-              className="w-full" 
+            <Button
               variant="hero"
+              className={`w-full ${dashboardPrimaryButton}`}
               onClick={() => handleContinueLearning(course.id)}
             >
               <Play className="w-4 h-4 mr-2" />
@@ -406,8 +416,8 @@ const Learning = () => {
             </Button>
           </div>
         ) : (
-          <Button 
-            className="w-full" 
+          <Button
+            className={`w-full ${course.isEnrolled ? "" : dashboardPrimaryButton}`}
             variant={course.isEnrolled ? "outline" : "hero"}
             onClick={() => course.isEnrolled ? handleContinueLearning(course.id) : handleEnrollCourse(course)}
           >
@@ -429,21 +439,21 @@ const Learning = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Learning Hub</h1>
-          <p className="text-muted-foreground">Build skills that matter for your career</p>
-        </div>
-        <Badge variant="outline" className="gap-1">
-          <Shield className="w-3 h-3" />
-          Content Protected
-        </Badge>
-      </div>
+    <div className="space-y-5 pb-3">
+      <DashboardPageHeader
+        eyebrow="Learn with momentum"
+        title="Learning hub"
+        description="Short, practical lessons, live classes and assessments that move your career forward."
+        action={
+          <Badge variant="outline" className="gap-1 rounded-xl border-[#d8eee7] bg-[#effbf7] px-3 py-2 text-[#2e886f]">
+            <Shield className="h-3 w-3" />
+            Content protected
+          </Badge>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-border/50">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
               <BookOpen className="w-5 h-5 text-primary" />
@@ -452,7 +462,7 @@ const Learning = () => {
             <p className="text-xs text-muted-foreground">Courses In Progress</p>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-2">
               <CheckCircle className="w-5 h-5 text-success" />
@@ -461,7 +471,7 @@ const Learning = () => {
             <p className="text-xs text-muted-foreground">Completed Courses</p>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-2">
               <Clock className="w-5 h-5 text-accent" />
@@ -470,7 +480,7 @@ const Learning = () => {
             <p className="text-xs text-muted-foreground">Learning Time</p>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+        <Card className={dashboardSurface}>
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-2">
               <Trophy className="w-5 h-5 text-warning" />
@@ -482,7 +492,7 @@ const Learning = () => {
       </div>
 
       <Tabs defaultValue="my-learning" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+        <TabsList className={`${dashboardTabs} grid w-full grid-cols-2 lg:inline-grid lg:w-auto`}>
           <TabsTrigger value="my-learning">My Learning</TabsTrigger>
           <TabsTrigger value="browse">Browse Courses</TabsTrigger>
         </TabsList>
@@ -490,7 +500,7 @@ const Learning = () => {
         <TabsContent value="my-learning" className="space-y-6">
           {/* Content Type Tabs */}
           <Tabs value={contentTab} onValueChange={setContentTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className={`${dashboardTabs} grid w-full grid-cols-3`}>
               <TabsTrigger value="recorded" className="gap-2">
                 <PlayCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Recorded</span>
@@ -511,12 +521,12 @@ const Learning = () => {
                 <h3 className="text-lg font-semibold">Recorded Lessons</h3>
                 <Badge variant="secondary">{recordedLessons.length} lessons</Badge>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {recordedLessons.map((lesson) => (
-                  <Card key={lesson.id} className="border-border/50 hover:shadow-md transition-all">
+                  <Card key={lesson.id} className={dashboardInteractiveSurface}>
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-2xl shrink-0">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-[#fff0e4] text-2xl">
                           {lesson.thumbnail}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -537,7 +547,7 @@ const Learning = () => {
                         </div>
                       </div>
                       <Button 
-                        className="w-full mt-3" 
+                        className={`mt-3 w-full ${lesson.progress === 100 ? "" : dashboardPrimaryButton}`}
                         size="sm"
                         variant={lesson.progress === 100 ? "outline" : "default"}
                         onClick={() => handleWatchLesson(lesson.id, lesson.lessonTitle)}
@@ -559,7 +569,7 @@ const Learning = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {liveClasses.map((liveClass) => (
-                  <Card key={liveClass.id} className="border-border/50 hover:shadow-md transition-all">
+                  <Card key={liveClass.id} className={dashboardInteractiveSurface}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <Badge className={getLiveStatusColor(liveClass.status)}>
@@ -577,12 +587,12 @@ const Learning = () => {
                         <Users className="w-4 h-4" />
                         <span>{liveClass.instructor}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm mb-4 p-2 bg-muted/50 rounded-lg">
+                      <div className="mb-4 flex items-center gap-2 rounded-xl bg-[#fff6ef] p-2 text-sm">
                         <Calendar className="w-4 h-4 text-primary" />
                         <span>{liveClass.scheduledAt}</span>
                       </div>
                       <Button 
-                        className="w-full" 
+                        className={`w-full ${liveClass.status === "upcoming" ? dashboardPrimaryButton : ""}`}
                         variant={liveClass.status === "live" ? "destructive" : "default"}
                         disabled={liveClass.status === "completed"}
                         onClick={() => handleJoinLiveClass(liveClass.meetingLink, liveClass.lessonTitle)}
@@ -610,7 +620,7 @@ const Learning = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {quizzes.map((quiz) => (
-                  <Card key={quiz.id} className="border-border/50 hover:shadow-md transition-all">
+                  <Card key={quiz.id} className={dashboardInteractiveSurface}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <Badge className={getQuizStatusColor(quiz.status)}>
@@ -626,15 +636,15 @@ const Learning = () => {
                       <p className="text-xs text-muted-foreground mb-1">{quiz.courseTitle}</p>
                       <h4 className="font-semibold mb-3">{quiz.quizTitle}</h4>
                       <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                        <div className="p-2 bg-muted/50 rounded-lg">
+                        <div className="rounded-xl bg-[#fff6ef] p-2">
                           <p className="text-lg font-bold">{quiz.totalQuestions}</p>
                           <p className="text-xs text-muted-foreground">Questions</p>
                         </div>
-                        <div className="p-2 bg-muted/50 rounded-lg">
+                        <div className="rounded-xl bg-[#fff6ef] p-2">
                           <p className="text-lg font-bold">{quiz.duration}</p>
                           <p className="text-xs text-muted-foreground">Minutes</p>
                         </div>
-                        <div className="p-2 bg-muted/50 rounded-lg">
+                        <div className="rounded-xl bg-[#fff6ef] p-2">
                           <p className="text-lg font-bold">{quiz.passingScore}%</p>
                           <p className="text-xs text-muted-foreground">To Pass</p>
                         </div>
@@ -643,7 +653,7 @@ const Learning = () => {
                         <span>Attempts: {quiz.attempts}</span>
                       </div>
                       <Button 
-                        className="w-full" 
+                        className={`w-full ${quiz.status === "completed" ? "" : dashboardPrimaryButton}`}
                         variant={quiz.status === "completed" ? "outline" : "default"}
                         onClick={() => handleStartQuiz(quiz.id, quiz.quizTitle)}
                       >
@@ -666,14 +676,14 @@ const Learning = () => {
 
         <TabsContent value="browse" className="space-y-6">
           {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 rounded-[22px] border border-[#f0e2d7] bg-white p-3 shadow-[0_14px_40px_rgba(69,42,21,0.045)] sm:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#99919a]" />
               <Input
                 placeholder="Search courses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className={`${dashboardSearch} border-transparent bg-[#fff8f2] pl-10 shadow-none`}
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
@@ -683,7 +693,7 @@ const Learning = () => {
                   variant={selectedCategory === cat.id ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className="whitespace-nowrap"
+                  className={`whitespace-nowrap rounded-xl ${selectedCategory === cat.id ? dashboardPrimaryButton : "border-[#eadbd0]"}`}
                 >
                   <cat.icon className="w-4 h-4 mr-1" />
                   {cat.label}
@@ -693,7 +703,7 @@ const Learning = () => {
           </div>
 
           {/* Course Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {filteredCourses.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}

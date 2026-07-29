@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { KeyRound, Loader2, Lock, Mail, Sparkles } from "lucide-react";
+import { KeyRound, Loader2, Lock, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import AuthShell from "@/components/auth/AuthShell";
 
 const ResetPassword = () => {
   const [email, setEmail] = useState("");
@@ -99,30 +99,25 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-[#fff7ed] p-4">
-      <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-[#fed7aa]/70 blur-3xl" />
-      <div className="absolute -right-24 bottom-16 h-80 w-80 rounded-full bg-[#ffedd5] blur-3xl" />
-      <Card className="relative z-10 w-full max-w-md rounded-[26px] border-white/80 shadow-[0_28px_70px_rgba(154,52,18,0.14)]">
-        <CardHeader className="space-y-4 text-center">
-          <Link to="/" className="mx-auto grid h-12 w-12 place-items-center rounded-[15px] bg-[#f97316] text-white shadow-lg shadow-orange-500/20">
-            <Sparkles className="h-5 w-5" />
-          </Link>
-          <div>
-            <CardTitle className="font-display text-2xl">
-              {hasRecoverySession ? "Choose a new password" : "Reset your password"}
-            </CardTitle>
-            <CardDescription className="mt-2">
-              {hasRecoverySession
-                ? "Create a strong password for your Merotalent account."
-                : "We’ll send a secure recovery link to your account email."}
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
+    <AuthShell
+      eyebrow={hasRecoverySession ? "Secure your account" : "Account recovery"}
+      title={hasRecoverySession ? "Choose a new password." : "Let’s get you back in."}
+      description={
+        hasRecoverySession
+          ? "Create a strong password for your Merotalent account."
+          : "Enter your account email and we’ll send a secure recovery link."
+      }
+      footer={
+        <Link to="/login" className="font-bold text-primary hover:underline">
+          Back to login
+        </Link>
+      }
+    >
+      <div className="space-y-5">
           {hasRecoverySession ? (
             <form onSubmit={updatePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New password</Label>
+                <Label htmlFor="newPassword" className="text-xs font-bold">New password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -137,7 +132,7 @@ const ResetPassword = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+                <Label htmlFor="confirmNewPassword" className="text-xs font-bold">Confirm new password</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -159,7 +154,7 @@ const ResetPassword = () => {
           ) : (
             <form onSubmit={requestReset} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="recoveryEmail">Email</Label>
+                <Label htmlFor="recoveryEmail" className="text-xs font-bold">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -180,14 +175,11 @@ const ResetPassword = () => {
               </Button>
             </form>
           )}
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            <Link to="/login" className="font-semibold text-primary hover:underline">
-              Back to login
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="rounded-[15px] border border-[#eee5df] bg-[#fbf9f7] p-4 text-[11px] leading-5 text-muted-foreground">
+            Recovery links expire for your safety. Use the newest email if you requested more than one.
+          </div>
+      </div>
+    </AuthShell>
   );
 };
 
