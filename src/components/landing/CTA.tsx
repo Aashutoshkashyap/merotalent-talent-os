@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const CTA = () => (
   <section className="bg-white px-4 py-16 sm:px-6 sm:py-20">
-    <div className="relative mx-auto max-w-[1240px] overflow-hidden rounded-[28px] bg-[#6c63ed] px-6 py-12 text-white shadow-[0_28px_70px_rgba(73,65,180,0.24)] sm:px-10 lg:px-14 lg:py-16">
+    <div className="relative mx-auto max-w-[1240px] overflow-hidden rounded-[28px] bg-[#f97316] px-6 py-12 text-white shadow-[0_28px_70px_rgba(194,65,12,0.24)] sm:px-10 lg:px-14 lg:py-16">
       <div className="relative z-10 max-w-2xl">
         <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#9ce6cf]">
           <Sparkles className="h-3.5 w-3.5" />
@@ -17,7 +17,7 @@ const CTA = () => (
           Create a free account, choose your path and build momentum from real work.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
-          <Button className="h-11 rounded-xl bg-white px-5 text-[#514bc5] hover:bg-[#f3f2ff]" asChild>
+          <Button className="h-11 rounded-xl bg-white px-5 text-[#c2410c] hover:bg-[#fff7ed]" asChild>
             <Link to="/signup">
               Create your account
               <ArrowRight className="h-4 w-4" />

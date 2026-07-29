@@ -14,7 +14,7 @@ const roles = [
     icon: GraduationCap,
     href: "/signup",
     cta: "Build your profile",
-    tone: "bg-[#625ce7] text-white",
+    tone: "bg-[#f97316] text-white",
     iconTone: "bg-white/15 text-white",
   },
   {
@@ -32,8 +32,8 @@ const roles = [
     icon: BriefcaseBusiness,
     href: "/signup",
     cta: "Find proven talent",
-    tone: "bg-[#e9e7ff] text-[#3e387d]",
-    iconTone: "bg-white/70 text-[#625ce7]",
+    tone: "bg-[#ffedd5] text-[#7c2d12]",
+    iconTone: "bg-white/70 text-[#f97316]",
   },
   {
     title: "Institution",
@@ -41,8 +41,8 @@ const roles = [
     icon: Building2,
     href: "/signup",
     cta: "Enable your campus",
-    tone: "bg-[#f2f1ff] text-[#403b72]",
-    iconTone: "bg-white/70 text-[#6c63ed]",
+    tone: "bg-[#fff7ed] text-[#5b2c12]",
+    iconTone: "bg-white/70 text-[#f97316]",
   },
 ];
 
@@ -50,7 +50,7 @@ const RolePathways = () => (
   <section className="bg-[#f8f8fc] py-16 sm:py-20">
     <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl text-center">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#625ce7]">One ecosystem, four workspaces</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f97316]">One ecosystem, four workspaces</p>
         <h2 className="mt-3 text-balance font-display text-3xl font-bold tracking-tight text-[#1b1932] sm:text-4xl">
           A useful home for every side of talent.
         </h2>

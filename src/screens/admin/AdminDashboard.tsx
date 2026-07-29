@@ -104,7 +104,7 @@ const AdminDashboard = () => {
       description: "Review people and permissions",
       icon: ShieldCheck,
       href: "/admin/users",
-      tone: "bg-[#eeedff] text-[#6c63ed]",
+      tone: "bg-[#fff1e8] text-[#f97316]",
     },
     {
       label: "Sync programs",
@@ -118,7 +118,7 @@ const AdminDashboard = () => {
       description: "Launch a verified opportunity",
       icon: BriefcaseBusiness,
       href: "/admin/jobs",
-      tone: "bg-[#f0efff] text-[#6c63ed]",
+      tone: "bg-[#fff1e8] text-[#f97316]",
     },
   ];
 
@@ -169,7 +169,7 @@ const AdminDashboard = () => {
           transition={{ duration: 0.35 }}
           className="rounded-[24px] border border-[#ecebf3] bg-white p-5 shadow-[0_16px_35px_rgba(52,48,99,0.05)] sm:p-6"
         >
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6c63ed]">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#f97316]">
             <span className="h-2 w-2 rounded-full bg-[#64c9aa]" />
             Live command centre
           </div>
@@ -181,7 +181,7 @@ const AdminDashboard = () => {
             One calm workspace for people, programs, partners and every opportunity across Merotalent.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <Button className="rounded-xl bg-[#6c63ed] shadow-lg shadow-[#6c63ed]/20 hover:bg-[#5c54da]" asChild>
+            <Button className="rounded-xl bg-[#f97316] shadow-lg shadow-[#f97316]/20 hover:bg-[#ea580c]" asChild>
               <Link to="/admin/jobs">
                 <Plus className="h-4 w-4" />
                 New opportunity
@@ -212,7 +212,7 @@ const AdminDashboard = () => {
                   </span>
                   <h2 className="mt-auto pt-6 font-display text-base font-bold">{action.label}</h2>
                   <p className="mt-1 text-[11px] leading-4 text-[#9995a7]">{action.description}</p>
-                  <ArrowRight className="mt-4 h-4 w-4 text-[#bebbc8] transition group-hover:translate-x-1 group-hover:text-[#6c63ed]" />
+                  <ArrowRight className="mt-4 h-4 w-4 text-[#bebbc8] transition group-hover:translate-x-1 group-hover:text-[#f97316]" />
                 </Link>
               </motion.div>
             );
@@ -234,7 +234,7 @@ const AdminDashboard = () => {
           <div className="mt-5 rounded-[18px] bg-[#f1f0fb] p-2">
             <div className="rounded-[16px] bg-white p-4 shadow-[0_10px_24px_rgba(50,46,91,0.09)]">
               <div className="flex items-start gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#eeedff] text-[#6c63ed]">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff1e8] text-[#f97316]">
                   <BellRing className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -254,7 +254,7 @@ const AdminDashboard = () => {
 
           <div className="mt-3 rounded-[18px] border border-[#efedf5] p-4">
             <div className="flex items-center gap-2">
-              <MessageSquareText className="h-4 w-4 text-[#6c63ed]" />
+              <MessageSquareText className="h-4 w-4 text-[#f97316]" />
               <p className="text-xs font-bold">Message · Platform quality</p>
               <MoreHorizontal className="ml-auto h-4 w-4 text-[#aaa7b6]" />
             </div>
@@ -271,7 +271,7 @@ const AdminDashboard = () => {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-bold">Assignments</h2>
-            <Link to="/admin/jobs" className="text-[10px] font-semibold text-[#6c63ed]">Edit</Link>
+            <Link to="/admin/jobs" className="text-[10px] font-semibold text-[#f97316]">Edit</Link>
           </div>
 
           <div className="mt-5 space-y-3">
@@ -279,9 +279,9 @@ const AdminDashboard = () => {
               <Link
                 key={assignment.title}
                 to={assignment.href}
-                className="block rounded-[18px] border border-[#efedf5] p-4 transition hover:border-[#d8d5fa] hover:bg-[#fafaff]"
+                className="block rounded-[18px] border border-[#efedf5] p-4 transition hover:border-[#fed7aa] hover:bg-[#fafaff]"
               >
-                <div className="flex items-center gap-2 text-[10px] font-semibold text-[#6c63ed]">
+                <div className="flex items-center gap-2 text-[10px] font-semibold text-[#f97316]">
                   {index === 0 ? "Partner operations" : "Opportunity quality"}
                   <span className="h-1 w-1 rounded-full bg-[#64c9aa]" />
                 </div>
@@ -290,7 +290,7 @@ const AdminDashboard = () => {
                     <p className="text-sm font-bold leading-5">{assignment.title}</p>
                     <p className="mt-1 text-[10px] text-[#9995a6]">{assignment.meta}</p>
                   </div>
-                  <span className="rounded-full bg-[#eeeefe] px-2.5 py-1 text-[9px] font-bold text-[#6c63ed]">
+                  <span className="rounded-full bg-[#fff1e8] px-2.5 py-1 text-[9px] font-bold text-[#f97316]">
                     {assignment.tag}
                   </span>
                 </div>
@@ -299,7 +299,7 @@ const AdminDashboard = () => {
           </div>
 
           <Button variant="outline" className="mt-4 h-12 w-full rounded-[15px] border-dashed border-[#d9d6ed] bg-[#f8f7fd] text-xs" asChild>
-            <Link to="/admin/jobs"><Plus className="h-4 w-4 text-[#6c63ed]" /> Add assignment</Link>
+            <Link to="/admin/jobs"><Plus className="h-4 w-4 text-[#f97316]" /> Add assignment</Link>
           </Button>
         </motion.article>
 
@@ -327,7 +327,7 @@ const AdminDashboard = () => {
               <span
                 key={day}
                 className={`mx-auto grid h-8 w-8 place-items-center rounded-full text-xs font-semibold ${
-                  day === 29 ? "bg-[#6c63ed] text-white shadow-md shadow-[#6c63ed]/25" : "text-[#605c70]"
+                  day === 29 ? "bg-[#f97316] text-white shadow-md shadow-[#f97316]/25" : "text-[#605c70]"
                 }`}
               >
                 {day}
@@ -338,7 +338,7 @@ const AdminDashboard = () => {
           <div className="my-5 border-t border-dashed border-[#d8d5e3]" />
           <div className="space-y-4">
             {[
-              ["10:30–11:15 AM", "Team meeting", "Admin team", "bg-[#6c63ed]"],
+              ["10:30–11:15 AM", "Team meeting", "Admin team", "bg-[#f97316]"],
               ["02:00–03:00 PM", "Partner review", "Verification queue", "bg-[#64c9aa]"],
             ].map(([time, title, detail, tone]) => (
               <div key={title} className="grid grid-cols-[92px_1fr] gap-3">
@@ -367,14 +367,14 @@ const AdminDashboard = () => {
                 <span
                   key={initial}
                   className={`grid h-7 w-7 place-items-center rounded-full border-2 border-white text-[8px] font-bold ${
-                    ["bg-[#eeedff] text-[#6c63ed]", "bg-[#e5f7f0] text-[#378a70]", "bg-[#e8e6ff] text-[#5f58cf]"][index]
+                    ["bg-[#fff1e8] text-[#f97316]", "bg-[#e5f7f0] text-[#378a70]", "bg-[#ffedd5] text-[#c2410c]"][index]
                   }`}
                 >
                   {initial}
                 </span>
               ))}
             </div>
-            <Link to="/admin/users" className="ml-auto text-[10px] font-semibold text-[#6c63ed]">View all</Link>
+            <Link to="/admin/users" className="ml-auto text-[10px] font-semibold text-[#f97316]">View all</Link>
           </div>
 
           <div className="mt-5 space-y-2">
@@ -384,10 +384,10 @@ const AdminDashboard = () => {
                 <Link
                   key={task.title}
                   to={task.href}
-                  className="grid items-center gap-3 rounded-[16px] border border-transparent bg-[#fafafd] p-3 transition hover:border-[#dedbf7] hover:bg-[#f7f6ff] sm:grid-cols-[1.15fr_0.7fr_1fr_auto]"
+                  className="grid items-center gap-3 rounded-[16px] border border-transparent bg-[#fafafd] p-3 transition hover:border-[#fed7aa] hover:bg-[#f7f6ff] sm:grid-cols-[1.15fr_0.7fr_1fr_auto]"
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#eeedff] text-[#6c63ed]">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff1e8] text-[#f97316]">
                       <Icon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0">
@@ -398,7 +398,7 @@ const AdminDashboard = () => {
                   <span className="hidden text-[10px] text-[#9995a6] sm:block">Today</span>
                   <span className="flex items-center gap-2">
                     <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8e6ef]">
-                      <span className="block h-full rounded-full bg-[#6c63ed]" style={{ width: `${task.progress}%` }} />
+                      <span className="block h-full rounded-full bg-[#f97316]" style={{ width: `${task.progress}%` }} />
                     </span>
                     <span className="w-8 text-right text-[9px] font-bold">{task.progress}%</span>
                   </span>
@@ -412,7 +412,7 @@ const AdminDashboard = () => {
         <motion.article
           {...cardMotion}
           transition={{ duration: 0.35, delay: 0.28 }}
-          className="relative overflow-hidden rounded-[24px] bg-[#6c63ed] p-5 text-white sm:p-6 xl:col-span-2"
+          className="relative overflow-hidden rounded-[24px] bg-[#f97316] p-5 text-white sm:p-6 xl:col-span-2"
         >
           <div className="relative z-10 flex h-full min-h-[250px] flex-col">
             <span className="grid h-11 w-11 place-items-center rounded-[15px] bg-white/15">
@@ -447,12 +447,12 @@ const AdminDashboard = () => {
             </div>
             <div className="rounded-[22px] border border-[#ecebf3] bg-white p-4">
               <div className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-[#eeedff] text-[#6c63ed]">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-[#fff1e8] text-[#f97316]">
                   <Trophy className="h-4 w-4" />
                 </span>
                 <span className="text-2xl font-bold"><MetricValue value={stats.jobs + stats.competitions} isLoading={isLoading} /></span>
               </div>
-              <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#6c63ed]">Live</p>
+              <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#f97316]">Live</p>
               <p className="mt-1 text-[9px] text-[#9995a6]">Opportunities</p>
             </div>
           </motion.article>
@@ -464,10 +464,10 @@ const AdminDashboard = () => {
           >
             <div className="flex items-center justify-between">
               <h2 className="font-display text-base font-bold">Board meeting</h2>
-              <Link to="/admin/settings" className="text-[10px] font-semibold text-[#6c63ed]">Edit</Link>
+              <Link to="/admin/settings" className="text-[10px] font-semibold text-[#f97316]">Edit</Link>
             </div>
             <div className="mt-3 flex items-center gap-2 text-[9px] text-[#9995a6]">
-              <span className="h-2 w-2 rounded-full bg-[#6c63ed]" />
+              <span className="h-2 w-2 rounded-full bg-[#f97316]" />
               Today at 4:00 PM
             </div>
             <p className="mt-4 text-xs leading-5 text-[#625e72]">
@@ -475,7 +475,7 @@ const AdminDashboard = () => {
             </p>
             <div className="mt-4 flex gap-2">
               <Button variant="outline" size="sm" className="h-9 flex-1 rounded-xl text-[10px]">Reschedule</Button>
-              <Button size="sm" className="h-9 flex-1 rounded-xl bg-[#6c63ed] text-[10px] hover:bg-[#5c54da]">
+              <Button size="sm" className="h-9 flex-1 rounded-xl bg-[#f97316] text-[10px] hover:bg-[#ea580c]">
                 <CircleCheck className="h-3.5 w-3.5" /> Accept
               </Button>
             </div>
@@ -486,8 +486,8 @@ const AdminDashboard = () => {
       <section className="grid gap-3 sm:grid-cols-3">
         {[
           [Check, "Database", "Connected", "bg-[#e7f7f1] text-[#378a70]"],
-          [Building2, "Partners", stats.institutions + stats.companies, "bg-[#eeedff] text-[#6c63ed]"],
-          [Clock3, "Last refresh", "Just now", "bg-[#f2f1ff] text-[#5f58cf]"],
+          [Building2, "Partners", stats.institutions + stats.companies, "bg-[#fff1e8] text-[#f97316]"],
+          [Clock3, "Last refresh", "Just now", "bg-[#fff7ed] text-[#c2410c]"],
         ].map(([Icon, label, value, tone]) => {
           const StatusIcon = Icon as typeof Check;
           return (

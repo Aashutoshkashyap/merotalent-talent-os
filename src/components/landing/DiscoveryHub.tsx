@@ -69,7 +69,7 @@ const DiscoveryHub = () => {
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#625ce7]">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#f97316]">
               <Sparkles className="h-3.5 w-3.5" />
               Curated discovery
             </div>
@@ -90,7 +90,7 @@ const DiscoveryHub = () => {
                   onClick={() => setActive(type)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition sm:px-4 ${
                     active === type
-                      ? "bg-white text-[#625ce7] shadow-sm"
+                      ? "bg-white text-[#f97316] shadow-sm"
                       : "text-[#777389] hover:text-[#4d4960]"
                   }`}
                 >
@@ -107,10 +107,10 @@ const DiscoveryHub = () => {
             <Link
               key={item.title}
               to={activeContent.href}
-              className="group relative overflow-hidden rounded-[22px] border border-[#e9e8f0] bg-[#fbfbfd] p-5 transition hover:-translate-y-1 hover:border-[#cbc8f2] hover:bg-white hover:shadow-[0_20px_45px_rgba(58,54,107,0.10)]"
+              className="group relative overflow-hidden rounded-[22px] border border-[#e9e8f0] bg-[#fbfbfd] p-5 transition hover:-translate-y-1 hover:border-[#fdba74] hover:bg-white hover:shadow-[0_20px_45px_rgba(58,54,107,0.10)]"
             >
               <div className="flex items-start justify-between">
-                <span className={`grid h-11 w-11 place-items-center rounded-[14px] ${["bg-[#efedff] text-[#625ce7]", "bg-[#e4f7f0] text-[#2d8568]", "bg-[#e9e7ff] text-[#5f58cf]"][index]}`}>
+                <span className={`grid h-11 w-11 place-items-center rounded-[14px] ${["bg-[#fff1e8] text-[#f97316]", "bg-[#e4f7f0] text-[#2d8568]", "bg-[#ffedd5] text-[#c2410c]"][index]}`}>
                   <ActiveIcon className="h-5 w-5" />
                 </span>
                 <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#686579] shadow-sm">
@@ -124,7 +124,7 @@ const DiscoveryHub = () => {
                   {active === "Jobs" ? <MapPin className="h-3.5 w-3.5" /> : active === "Mentors" ? <Users className="h-3.5 w-3.5" /> : active === "Competitions" ? <CalendarDays className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}
                   {item.meta}
                 </span>
-                <ArrowRight className="h-4 w-4 text-[#bbb8c5] transition group-hover:translate-x-1 group-hover:text-[#625ce7]" />
+                <ArrowRight className="h-4 w-4 text-[#bbb8c5] transition group-hover:translate-x-1 group-hover:text-[#f97316]" />
               </div>
             </Link>
           ))}

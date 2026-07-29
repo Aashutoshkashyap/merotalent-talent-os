@@ -8,12 +8,12 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#d9d9ec] p-0 lg:p-5 xl:p-7">
+    <div className="relative min-h-screen overflow-hidden bg-[#f2ded1] p-0 lg:p-5 xl:p-7">
       <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-70" viewBox="0 0 1600 1000" fill="none" preserveAspectRatio="none" aria-hidden="true">
         <path d="M-80 310C210 125 385 450 665 215C930 -8 1160 260 1700 65" stroke="white" strokeWidth="2" />
         <path d="M420 1080C580 790 820 1010 980 760C1110 555 1390 785 1690 565" stroke="white" strokeWidth="2" />
-        <circle cx="78" cy="185" r="7" stroke="#6c63ed" />
-        <circle cx="1490" cy="810" r="7" fill="#6c63ed" />
+        <circle cx="78" cy="185" r="7" stroke="#f97316" />
+        <circle cx="1490" cy="810" r="7" fill="#f97316" />
         <circle cx="1375" cy="78" r="4" fill="#64c9aa" />
       </svg>
 

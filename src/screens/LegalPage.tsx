@@ -38,18 +38,18 @@ const LegalPage = ({ type }: LegalPageProps) => {
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#625ce7] text-white">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#f97316] text-white">
               <Sparkles className="h-4 w-4" />
             </span>
             Merotalent
           </Link>
-          <Link to="/" className="flex items-center gap-1.5 text-xs font-semibold text-[#625ce7]">
+          <Link to="/" className="flex items-center gap-1.5 text-xs font-semibold text-[#f97316]">
             <ArrowLeft className="h-3.5 w-3.5" /> Back home
           </Link>
         </div>
 
         <article className="mt-10 rounded-[26px] border border-[#e9e8f0] bg-white p-6 shadow-[0_20px_60px_rgba(52,48,96,0.08)] sm:p-10">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#625ce7]">Merotalent legal</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f97316]">Merotalent legal</p>
           <h1 className="mt-3 font-display text-4xl font-bold">{content.title}</h1>
           <p className="mt-4 text-sm leading-7 text-[#777389]">{content.intro}</p>
           <div className="mt-8 space-y-7">
@@ -62,7 +62,7 @@ const LegalPage = ({ type }: LegalPageProps) => {
           </div>
           <p className="mt-9 border-t border-[#ecebf2] pt-5 text-xs text-[#9996a7]">
             Last updated: 29 July 2026. Questions:{" "}
-            <a className="font-semibold text-[#625ce7]" href="mailto:hello@merotalent.com">hello@merotalent.com</a>
+            <a className="font-semibold text-[#f97316]" href="mailto:hello@merotalent.com">hello@merotalent.com</a>
           </p>
         </article>
       </div>

@@ -100,7 +100,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         </header>
 
         <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-          <section className="relative overflow-hidden rounded-[26px] bg-[#625ce7] p-6 text-white sm:p-8">
+          <section className="relative overflow-hidden rounded-[26px] bg-[#f97316] p-6 text-white sm:p-8">
             <div className="relative z-10 max-w-2xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
                 <WorkspaceIcon className="h-3.5 w-3.5" />
@@ -141,7 +141,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
                   className="rounded-2xl border border-[#ececf5] bg-white p-4 shadow-[0_10px_25px_rgba(56,53,104,0.05)] sm:p-5"
                 >
                   <div className="mb-5 flex items-center justify-between">
-                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#f0effe] text-[#625ce7]">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#fff1e8] text-[#f97316]">
                       <StatIcon className="h-4 w-4" />
                     </span>
                     <span className="text-[11px] font-medium text-[#7c7892]">{note}</span>
@@ -168,7 +168,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
                     key={title}
                     className="group flex w-full items-center gap-3 rounded-2xl border border-transparent bg-[#f8f8fc] p-4 text-left transition hover:border-[#dcdaf8] hover:bg-[#f4f3ff]"
                   >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[#625ce7] shadow-sm">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[#f97316] shadow-sm">
                       {role === "company" ? (
                         <Building2 className="h-4 w-4" />
                       ) : (
@@ -179,7 +179,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
                       <span className="block truncate text-sm font-semibold">{title}</span>
                       <span className="mt-0.5 block truncate text-xs text-[#8a879e]">{detail}</span>
                     </span>
-                    <span className="hidden text-xs font-semibold text-[#625ce7] sm:block">{action}</span>
+                    <span className="hidden text-xs font-semibold text-[#f97316] sm:block">{action}</span>
                     <ChevronRight className="h-4 w-4 text-[#aaa8b9] transition group-hover:translate-x-1" />
                   </button>
                 ))}

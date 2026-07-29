@@ -54,7 +54,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
           type="search"
           aria-label="Search admin workspace"
           placeholder="Search people, jobs, courses or commands…"
-          className="h-10 rounded-xl border-0 bg-[#f3f2f8] pl-10 pr-11 text-sm placeholder:text-[#a9a6b7] focus-visible:ring-[#625ce7]/30"
+          className="h-10 rounded-xl border-0 bg-[#f3f2f8] pl-10 pr-11 text-sm placeholder:text-[#a9a6b7] focus-visible:ring-[#f97316]/30"
         />
         <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-md bg-white px-1.5 py-1 text-[9px] font-semibold text-[#9b98aa] shadow-sm md:flex">
           <Command className="h-3 w-3" /> K

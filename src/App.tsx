@@ -15,6 +15,7 @@ import NotFound from "./screens/NotFound";
 import Login from "./screens/Login";
 import Signup from "./screens/Signup";
 import Onboarding from "./screens/Onboarding";
+import ResetPassword from "./screens/ResetPassword";
 
 // Public Pages
 import CoursesPage from "./screens/courses/CoursesPage";
@@ -80,6 +81,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
               
               {/* Public Landing Pages */}

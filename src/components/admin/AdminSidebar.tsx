@@ -75,8 +75,8 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
           "group flex min-h-10 items-center gap-3 rounded-xl py-2 text-[13px] font-semibold transition-all",
           compact ? "justify-center px-2" : "px-3",
           isActive
-            ? "bg-[#6c63ed] text-white shadow-[0_8px_20px_rgba(108,99,237,0.28)]"
-            : "text-[#737087] hover:bg-[#f0effb] hover:text-[#35324d]",
+            ? "bg-[#f97316] text-white shadow-[0_8px_20px_rgba(249,115,22,0.28)]"
+            : "text-[#737087] hover:bg-[#fff7ed] hover:text-[#35324d]",
         )}
       >
         <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.9} />
@@ -85,7 +85,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
           <span
             className={cn(
               "grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px]",
-              isActive ? "bg-white/20 text-white" : "bg-[#ecebfa] text-[#625ce7]",
+              isActive ? "bg-white/20 text-white" : "bg-[#fff1e8] text-[#f97316]",
             )}
           >
             {badge}
@@ -99,17 +99,17 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
     <aside className={cn("flex h-full flex-col bg-white", compact ? "w-[84px]" : "w-[272px]")}>
       <div className={cn("flex h-[72px] items-center border-b border-[#efeff5]", compact ? "justify-center px-3" : "px-5")}>
         <Link to="/" onClick={onNavigate} className="flex items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#6c63ed] text-white shadow-lg shadow-[#6c63ed]/20">
+          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#f97316] text-white shadow-lg shadow-[#f97316]/20">
             <Sparkles className="h-[18px] w-[18px]" />
           </span>
           {!compact ? (
             <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
-              Mero<span className="text-[#6c63ed]">talent</span>
+              Mero<span className="text-[#f97316]">talent</span>
             </span>
           ) : null}
         </Link>
         {!compact ? (
-          <span className="ml-auto rounded-full bg-[#f0effe] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#6c63ed]">
+          <span className="ml-auto rounded-full bg-[#fff1e8] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#f97316]">
             Admin
           </span>
         ) : null}
