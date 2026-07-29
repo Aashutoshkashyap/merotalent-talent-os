@@ -11,14 +11,8 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <main className="workspace-canvas grid min-h-screen place-items-center p-0 sm:p-5 lg:p-8">
-      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-70" viewBox="0 0 1500 900" fill="none" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M-100 690C190 430 430 760 730 465C1010 190 1260 430 1600 210" stroke="white" strokeWidth="2" />
-        <circle cx="115" cy="160" r="7" stroke="#c2410c" />
-        <circle cx="1375" cy="720" r="7" fill="#66c7a8" />
-      </svg>
-
-      <div className="workspace-shell relative z-10 grid min-h-screen w-full max-w-[980px] bg-white lg:min-h-[620px] lg:grid-cols-[1.05fr_0.95fr]">
+    <main className="min-h-screen w-full bg-white">
+      <div className="grid min-h-screen w-full bg-white lg:grid-cols-[1.05fr_0.95fr]">
         <section className="flex flex-col p-6 sm:p-10 lg:p-12">
           <Link to="/" className="flex w-fit items-center gap-2.5 font-display text-lg font-bold">
             <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-primary text-white">
@@ -47,12 +41,12 @@ const NotFound = () => {
           </div>
         </section>
 
-        <section className="relative hidden overflow-hidden bg-[#fff4ec] p-8 lg:grid lg:place-items-center">
+        <section className="relative hidden overflow-hidden border-l border-[#eee7e1] bg-[#faf9f8] p-8 lg:grid lg:place-items-center">
           <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full border-[40px] border-primary/10" />
           <div className="relative w-full max-w-[310px]">
             <div className="workspace-card rotate-[-3deg] p-6">
               <span className="workspace-icon"><Compass className="h-5 w-5" /></span>
-              <p className="mt-10 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Error 404</p>
+              <p className="mt-10 text-xs font-bold uppercase tracking-[0.16em] text-primary">Error 404</p>
               <h2 className="mt-2 font-display text-2xl font-bold text-[#19172f]">Try another route</h2>
               <div className="mt-6 space-y-2">
                 {[

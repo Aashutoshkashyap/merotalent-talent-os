@@ -47,11 +47,11 @@ const roles = [
 ];
 
 const RolePathways = () => (
-  <section className="bg-[#f4dfd4] px-3 py-6 sm:px-5 sm:py-8 lg:px-8">
-    <div className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_26px_70px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-7 lg:p-9">
+  <section className="w-full bg-white py-6 sm:py-8">
+    <div className="w-full border-y border-[#eee7e2] bg-[#fffdfb] p-5 sm:p-7 lg:p-9">
       <div className="grid gap-6 lg:grid-cols-[0.72fr_1.7fr] lg:items-end">
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#c2410c]">Four focused workspaces</p>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#c2410c]">Four focused workspaces</p>
           <h2 className="mt-3 text-balance font-display text-3xl font-black tracking-[-0.035em] text-[#172039] sm:text-4xl">
             Your side of the talent story.
           </h2>
@@ -72,11 +72,11 @@ const RolePathways = () => (
                   <span className={`grid h-10 w-10 place-items-center rounded-[13px] ${role.iconTone}`}>
                     <Icon className="h-[18px] w-[18px]" />
                   </span>
-                  <span className="text-[9px] font-black opacity-45">0{index + 1}</span>
+                  <span className="text-xs font-black opacity-45">0{index + 1}</span>
                 </div>
                 <h3 className="mt-8 font-display text-xl font-black">{role.title}</h3>
-                <p className="mt-2 text-[11px] leading-5 opacity-70">{role.description}</p>
-                <span className="mt-auto flex items-center gap-1.5 pt-5 text-[9px] font-black">
+                <p className="mt-2 text-xs leading-5 opacity-70">{role.description}</p>
+                <span className="mt-auto flex items-center gap-1.5 pt-5 text-xs font-black">
                   {role.cta}
                   <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </span>

@@ -114,15 +114,15 @@ const CoursesPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#f4dfd4]">
+    <div className="min-h-screen bg-white">
       <Navbar />
       
-      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
+      <main className="pb-6 pt-[68px] sm:pb-8">
         {/* Hero Section */}
-        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+        <section className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-7 lg:p-9">
           <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr] lg:items-end">
             <div>
-            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-xs font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
               <BookOpen className="mr-1 h-3 w-3" />
               Learning Platform
             </Badge>
@@ -152,7 +152,7 @@ const CoursesPage = () => {
               ].map(([value, label], index) => (
                 <div key={label} className={`min-h-[112px] rounded-[18px] border p-4 ${index === 1 ? "border-[#d9eee6] bg-[#e8f7f1]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
                   <p className={`text-xl font-black ${index === 1 ? "text-[#238366]" : "text-[#172039]"}`}>{value}</p>
-                  <p className="mt-5 text-[9px] font-bold text-[#8e868e]">{label}</p>
+                  <p className="mt-5 text-xs font-bold text-[#8e868e]">{label}</p>
                 </div>
               ))}
             </div>
@@ -160,7 +160,7 @@ const CoursesPage = () => {
         </section>
 
         {/* Filters */}
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[22px] border border-white/80 bg-[#fffdfb] px-4 py-4 shadow-[0_16px_38px_rgba(99,55,29,0.07)] sm:px-6">
+        <section className="mt-3 w-full rounded-[22px] border border-[#eee7e2] bg-[#fffdfb] px-4 py-4 shadow-[0_14px_32px_rgba(99,55,29,0.05)] sm:px-6">
           <div>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap gap-2">
@@ -170,14 +170,14 @@ const CoursesPage = () => {
                     variant={activeCategory === category ? "default" : "outline"}
                     size="sm"
                     onClick={() => setActiveCategory(category)}
-                    className={`h-8 rounded-full border-[#ece3de] px-3 text-[9px] font-black ${activeCategory === category ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                    className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${activeCategory === category ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
                   >
                     {category}
                   </Button>
                 ))}
               </div>
               <Select value={activeDifficulty} onValueChange={setActiveDifficulty}>
-                <SelectTrigger className="h-9 w-40 rounded-xl border-[#ece3de] bg-[#faf7f5] text-[10px] font-bold">
+                <SelectTrigger className="h-9 w-40 rounded-xl border-[#ece3de] bg-[#faf7f5] text-xs font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,7 +191,7 @@ const CoursesPage = () => {
         </section>
 
         {/* Course Grid */}
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
+        <section className="mt-3 w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-3 shadow-[0_18px_46px_rgba(99,55,29,0.06)] sm:rounded-[32px] sm:p-5 lg:p-7">
           <div>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12">
               {filteredCourses.map((course) => (
@@ -206,13 +206,13 @@ const CoursesPage = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-[#172039]/70 to-transparent" />
                       <Badge
                         className={cn(
-                          "absolute left-3 top-3 rounded-full border-0 text-[8px] font-black",
+                          "absolute left-3 top-3 rounded-full border-0 text-xs font-black",
                           course.price === 0 ? "bg-[#238366]" : "bg-[#c2410c]"
                         )}
                       >
                         {course.price === 0 ? "Free" : `NPR ${course.price.toLocaleString()}`}
                       </Badge>
-                      <Badge variant="secondary" className="absolute right-3 top-3 rounded-full bg-white/90 text-[8px] font-black text-[#504a53] backdrop-blur">
+                      <Badge variant="secondary" className="absolute right-3 top-3 rounded-full bg-white/90 text-xs font-black text-[#504a53] backdrop-blur">
                         {course.difficulty}
                       </Badge>
                       <div className="absolute bottom-3 left-3 flex gap-1.5">
@@ -229,7 +229,7 @@ const CoursesPage = () => {
                     </div>
 
                     <CardHeader className="px-5 pb-2 pt-5">
-                      <div className="mb-2 flex items-center gap-2 text-[8px] text-[#918990]">
+                      <div className="mb-2 flex items-center gap-2 text-xs text-[#918990]">
                         <span className="font-black text-[#c2410c]">{course.category}</span>
                         <span>•</span>
                         <span>{course.modules} modules</span>
@@ -242,13 +242,13 @@ const CoursesPage = () => {
                     </CardHeader>
 
                     <CardContent className="px-5 pb-4">
-                      <p className="line-clamp-2 text-[10px] leading-5 text-[#8f8790]">
+                      <p className="line-clamp-2 text-xs leading-5 text-[#8f8790]">
                         {course.description}
                       </p>
                     </CardContent>
 
                     <CardFooter className="border-t border-[#f0e8e3] px-5 py-3">
-                      <div className="flex w-full items-center justify-between text-[9px]">
+                      <div className="flex w-full items-center justify-between text-xs">
                         <div className="flex items-center gap-4 text-[#918990]">
                           <span className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />

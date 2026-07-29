@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 30 100% 98%;
+    --background: 0 0% 100%;
     --foreground: 246 34% 13%;
 
     --card: 0 0% 100%;
@@ -120,10 +120,32 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    letter-spacing: -0.01em;
+    font-feature-settings: "cv02" 1, "cv03" 1, "cv04" 1, "rlig" 1, "calt" 1;
+    font-optical-sizing: auto;
+    letter-spacing: normal;
+    line-height: 1.5;
     min-width: 320px;
     overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
   }
 
   ::selection {
@@ -134,33 +156,15 @@
 
 @layer components {
   .workspace-canvas {
-    @apply relative min-h-screen overflow-hidden bg-[#f2ded1];
-  }
-
-  .workspace-canvas::before,
-  .workspace-canvas::after {
-    content: "";
-    @apply pointer-events-none absolute rounded-full border border-white/80;
-  }
-
-  .workspace-canvas::before {
-    width: 42rem;
-    height: 18rem;
-    left: -9rem;
-    top: 18rem;
-    transform: rotate(-12deg);
-  }
-
-  .workspace-canvas::after {
-    width: 48rem;
-    height: 20rem;
-    right: -16rem;
-    bottom: 3rem;
-    transform: rotate(10deg);
+    @apply relative min-h-screen overflow-hidden bg-white;
   }
 
   .workspace-shell {
-    @apply relative overflow-hidden rounded-[30px] border border-white/80 bg-[#fbfaf9] shadow-[0_30px_90px_rgba(87,48,28,0.15)];
+    @apply relative w-full overflow-hidden bg-white;
+    max-width: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
 
   .workspace-card {
@@ -168,7 +172,7 @@
   }
 
   .workspace-kicker {
-    @apply inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-primary;
+    @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-primary;
   }
 
   .workspace-dot {
@@ -289,13 +293,5 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .workspace-shell {
-    border-radius: 0;
-    border-left: 0;
-    border-right: 0;
   }
 }

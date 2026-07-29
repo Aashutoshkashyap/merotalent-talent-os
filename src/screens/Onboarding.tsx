@@ -341,7 +341,7 @@ const Onboarding = () => {
                       key={skill}
                       type="button"
                       aria-pressed={selected}
-                      className={`inline-flex items-center rounded-full border px-3 py-2 text-[10px] font-bold transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
+                      className={`inline-flex items-center rounded-full border px-3 py-2 text-xs font-bold transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
                         selected
                           ? "border-primary bg-primary text-white"
                           : "border-[#eadfd7] bg-white text-[#68616d] hover:border-primary/40"
@@ -369,20 +369,8 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="workspace-canvas min-h-screen p-0 sm:p-5 lg:grid lg:place-items-center lg:p-8">
-      <svg
-        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 sm:block"
-        viewBox="0 0 1500 900"
-        fill="none"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path d="M-120 610C140 390 410 700 680 430C970 145 1230 445 1600 170" stroke="white" strokeWidth="2" />
-        <circle cx="120" cy="160" r="7" stroke="#c2410c" />
-        <circle cx="1360" cy="740" r="7" fill="#66c7a8" />
-      </svg>
-
-      <div className="workspace-shell relative z-10 mx-auto grid min-h-screen w-full max-w-[1080px] overflow-hidden lg:min-h-[700px] lg:grid-cols-[0.36fr_0.64fr]">
+    <div className="min-h-screen w-full bg-white">
+      <div className="grid min-h-screen w-full overflow-hidden lg:grid-cols-[minmax(320px,0.36fr)_minmax(0,0.64fr)]">
         <aside className="relative overflow-hidden bg-primary px-5 py-5 text-white sm:px-8 sm:py-7 lg:px-9 lg:py-10">
           <div className="absolute -right-24 -top-24 h-60 w-60 rounded-full border-[42px] border-white/10" />
           <div className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full border-[42px] border-white/10" />
@@ -394,7 +382,7 @@ const Onboarding = () => {
           </div>
 
           <div className="relative mt-8 hidden lg:block">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">Set up your workspace</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">Set up your workspace</p>
             <h1 className="mt-3 max-w-[240px] font-display text-3xl font-bold leading-[1.12]">
               Give your ambition a home.
             </h1>
@@ -427,7 +415,7 @@ const Onboarding = () => {
                   </span>
                   <span className="hidden min-w-0 lg:block">
                     <span className="block text-xs font-bold">{item.title}</span>
-                    <span className={`mt-0.5 block text-[9px] ${isActive ? "text-[#9a939b]" : "text-white/50"}`}>
+                    <span className={`mt-0.5 block text-xs ${isActive ? "text-[#9a939b]" : "text-white/50"}`}>
                       {item.detail}
                     </span>
                   </span>
@@ -437,7 +425,7 @@ const Onboarding = () => {
           </div>
 
           <div className="relative mt-5 lg:absolute lg:bottom-10 lg:left-9 lg:right-9">
-            <div className="flex items-center justify-between text-[10px] font-bold text-white/70">
+            <div className="flex items-center justify-between text-xs font-bold text-white/70">
               <span>Step {step} of {totalSteps}</span>
               <span>{Math.round(progress)}%</span>
             </div>
@@ -445,8 +433,8 @@ const Onboarding = () => {
           </div>
         </aside>
 
-        <main className="flex min-h-0 flex-col bg-white px-5 py-7 sm:px-10 sm:py-10 lg:px-14">
-          <div className="mb-7 flex items-center justify-between">
+        <main className="flex min-h-0 flex-col items-center bg-white px-5 py-7 sm:px-10 sm:py-10 lg:px-14">
+          <div className="mb-7 flex w-full max-w-3xl items-center justify-between">
             <div>
               <div className="workspace-kicker">
                 <span className="workspace-dot" />
@@ -457,17 +445,17 @@ const Onboarding = () => {
             <button
               type="button"
               onClick={() => navigate("/dashboard")}
-              className="rounded-full border border-[#eee5df] px-3 py-1.5 text-[10px] font-bold text-[#8c858e] transition-colors hover:border-primary/40 hover:text-primary"
+              className="rounded-full border border-[#eee5df] px-3 py-1.5 text-xs font-bold text-[#8c858e] transition-colors hover:border-primary/40 hover:text-primary"
             >
               Skip setup
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="min-h-0 w-full max-w-3xl flex-1 overflow-y-auto pr-1">
             {renderStep()}
           </div>
 
-          <div className="mt-7 flex gap-3 border-t border-[#f0e9e4] pt-5">
+          <div className="mt-7 flex w-full max-w-3xl gap-3 border-t border-[#f0e9e4] pt-5">
             {step > 1 && (
               <Button 
                 variant="outline" 

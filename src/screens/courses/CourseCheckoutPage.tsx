@@ -45,12 +45,12 @@ const CourseCheckoutPage = () => {
   const discountPercent = Math.round((discount / course.originalPrice) * 100);
 
   return (
-    <div className="min-h-screen bg-[#f4dfd4]">
+    <div className="min-h-screen bg-white">
       <Navbar />
       
-      <main className="px-3 pb-8 pt-[84px] sm:px-5 sm:pt-[96px]">
-        <div className="mx-auto max-w-5xl rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-8">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 h-9 rounded-xl text-[10px] font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
+      <main className="pb-8 pt-[68px]">
+        <div className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-8">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 h-9 rounded-xl text-xs font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
@@ -125,7 +125,7 @@ const CourseCheckoutPage = () => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                     />
-                    <Button variant="outline" className="rounded-xl border-[#fdba74] text-[10px] font-black text-[#c2410c]">Apply</Button>
+                    <Button variant="outline" className="rounded-xl border-[#fdba74] text-xs font-black text-[#c2410c]">Apply</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -182,7 +182,7 @@ const CourseCheckoutPage = () => {
 
                   <Button
                     size="lg"
-                    className="w-full rounded-xl bg-[#c2410c] text-[10px] font-black hover:bg-[#9a3412]"
+                    className="w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]"
                     onClick={handlePayment}
                     disabled={isProcessing}
                   >

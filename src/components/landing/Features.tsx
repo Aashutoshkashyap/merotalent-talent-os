@@ -41,11 +41,8 @@ const features = [
 
 const Features = () => {
   return (
-    <section id="features" className="py-24 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-hero-pattern opacity-50" />
-      
-      <div className="container mx-auto px-4 relative z-10">
+    <section id="features" className="relative w-full overflow-hidden bg-white py-24">
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">

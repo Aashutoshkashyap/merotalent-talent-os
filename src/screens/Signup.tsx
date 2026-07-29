@@ -164,7 +164,7 @@ const Signup = () => {
                       </span>
                       {type.label}
                     </span>
-                    <span className="mt-1.5 block pl-9 text-[10px] leading-4 text-muted-foreground">
+                    <span className="mt-1.5 block pl-9 text-xs leading-4 text-muted-foreground">
                       {type.description}
                     </span>
                   </button>
@@ -193,7 +193,7 @@ const Signup = () => {
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-[9px] font-bold tracking-[0.12em] text-muted-foreground">
+              <span className="bg-white px-2 text-xs font-bold tracking-[0.12em] text-muted-foreground">
                 Or continue with email
               </span>
             </div>

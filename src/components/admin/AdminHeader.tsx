@@ -80,7 +80,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
 
       <div className="hidden sm:block">
         <p className="text-sm font-bold text-[#25233c]">Command center</p>
-        <p className="text-[11px] text-[#9996a9]">One calm view of the platform</p>
+        <p className="text-xs text-[#9996a9]">One calm view of the platform</p>
       </div>
 
       <form onSubmit={runCommand} className="relative mx-auto w-full max-w-xl">
@@ -94,7 +94,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
           placeholder="Search people, jobs, courses or commands…"
           className="h-10 rounded-xl border-0 bg-[#f7f3ef] pl-10 pr-11 text-sm placeholder:text-[#a9a6b7] focus-visible:ring-[#c2410c]/30"
         />
-        <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-md bg-white px-1.5 py-1 text-[9px] font-semibold text-[#9b98aa] shadow-sm md:flex">
+        <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-md bg-white px-1.5 py-1 text-xs font-semibold text-[#9b98aa] shadow-sm md:flex">
           <Command className="h-3 w-3" /> K
         </span>
       </form>

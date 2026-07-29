@@ -50,7 +50,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 pb-3">
+    <div className="w-full space-y-5 pb-3">
       <DashboardPageHeader
         eyebrow="Make it yours"
         title="Settings"

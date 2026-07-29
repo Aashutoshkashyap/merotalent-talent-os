@@ -175,7 +175,7 @@ const ResetPassword = () => {
               </Button>
             </form>
           )}
-          <div className="rounded-[15px] border border-[#eee5df] bg-[#fbf9f7] p-4 text-[11px] leading-5 text-muted-foreground">
+          <div className="rounded-[15px] border border-[#eee5df] bg-[#fbf9f7] p-4 text-xs leading-5 text-muted-foreground">
             Recovery links expire for your safety. Use the newest email if you requested more than one.
           </div>
       </div>

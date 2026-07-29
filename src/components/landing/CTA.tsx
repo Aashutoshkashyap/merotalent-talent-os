@@ -3,10 +3,10 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const CTA = () => (
-  <section className="bg-[#f4dfd4] px-3 py-6 sm:px-5 sm:py-8 lg:px-8">
-    <div className="relative mx-auto max-w-[1420px] overflow-hidden rounded-[26px] bg-[#c2410c] px-6 py-12 text-white shadow-[0_28px_70px_rgba(194,65,12,0.22)] sm:rounded-[32px] sm:px-10 lg:px-14 lg:py-16">
+  <section className="w-full bg-white py-6 sm:py-8">
+    <div className="relative w-full overflow-hidden bg-[#c2410c] px-6 py-12 text-white sm:px-10 lg:px-14 lg:py-16">
       <div className="relative z-10 max-w-2xl">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#9ce6cf]">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-[#9ce6cf]">
           <Sparkles className="h-3.5 w-3.5" />
           Your next chapter can start small
         </div>

@@ -130,11 +130,11 @@ const InstitutesPage = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
-        return <Badge className="rounded-full bg-[#e8f7f1] text-[8px] font-black text-[#238366] hover:bg-[#e8f7f1]">Admissions Open</Badge>;
+        return <Badge className="rounded-full bg-[#e8f7f1] text-xs font-black text-[#238366] hover:bg-[#e8f7f1]">Admissions Open</Badge>;
       case "limited":
-        return <Badge className="rounded-full bg-[#fff7d8] text-[8px] font-black text-[#9a6500] hover:bg-[#fff7d8]">Limited Seats</Badge>;
+        return <Badge className="rounded-full bg-[#fff7d8] text-xs font-black text-[#9a6500] hover:bg-[#fff7d8]">Limited Seats</Badge>;
       default:
-        return <Badge variant="secondary" className="rounded-full text-[8px] font-black">Closed</Badge>;
+        return <Badge variant="secondary" className="rounded-full text-xs font-black">Closed</Badge>;
     }
   };
 
@@ -149,15 +149,15 @@ const InstitutesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4dfd4]">
+    <div className="min-h-screen bg-white">
       <Navbar />
       
-      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
+      <main className="pb-6 pt-[68px] sm:pb-8">
         {/* Hero Section */}
-        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+        <section className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-7 lg:p-9">
           <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr] lg:items-end">
             <div>
-            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-xs font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
               <GraduationCap className="mr-1 h-3 w-3" />
               Engineering Directory
             </Badge>
@@ -186,7 +186,7 @@ const InstitutesPage = () => {
               ].map(([value, label], index) => (
                 <div key={label} className={`min-h-[112px] rounded-[18px] border p-4 ${index === 1 ? "border-[#d9eee6] bg-[#e8f7f1]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
                   <p className={`text-xl font-black ${index === 1 ? "text-[#238366]" : "text-[#172039]"}`}>{value}</p>
-                  <p className="mt-5 text-[9px] font-bold text-[#8e868e]">{label}</p>
+                  <p className="mt-5 text-xs font-bold text-[#8e868e]">{label}</p>
                 </div>
               ))}
             </div>
@@ -194,15 +194,15 @@ const InstitutesPage = () => {
         </section>
 
         {/* Content */}
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
+        <section className="mt-3 w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-3 shadow-[0_18px_46px_rgba(99,55,29,0.06)] sm:rounded-[32px] sm:p-5 lg:p-7">
           <div>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
               <TabsList className="mx-auto w-full max-w-md rounded-[14px] border border-[#eee7e2] bg-[#faf7f5] p-1">
-                <TabsTrigger value="institutes" className="flex-1 gap-2 rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">
+                <TabsTrigger value="institutes" className="flex-1 gap-2 rounded-[10px] text-xs font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">
                   <GraduationCap className="w-4 h-4" />
                   Institutes
                 </TabsTrigger>
-                <TabsTrigger value="notices" className="flex-1 gap-2 rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">
+                <TabsTrigger value="notices" className="flex-1 gap-2 rounded-[10px] text-xs font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">
                   <Bell className="w-4 h-4" />
                   Notices
                 </TabsTrigger>
@@ -219,7 +219,7 @@ const InstitutesPage = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <CardTitle className="line-clamp-1 text-base font-black text-[#20273c]">{institute.shortName}</CardTitle>
-                            <p className="mt-1 line-clamp-1 text-[9px] text-[#8f8790]">{institute.name}</p>
+                            <p className="mt-1 line-clamp-1 text-xs text-[#8f8790]">{institute.name}</p>
                           </div>
                         </div>
                       </CardHeader>
@@ -227,10 +227,10 @@ const InstitutesPage = () => {
                       <CardContent className="space-y-4 px-5 pb-5">
                         <div className="flex items-center justify-between">
                           {getStatusBadge(institute.admissionStatus)}
-                          <Badge variant="outline" className="rounded-full border-[#e8e1dc] text-[8px] font-bold">{institute.type}</Badge>
+                          <Badge variant="outline" className="rounded-full border-[#e8e1dc] text-xs font-bold">{institute.type}</Badge>
                         </div>
 
-                        <div className="flex items-center gap-1 text-[9px] text-[#8f8790]">
+                        <div className="flex items-center gap-1 text-xs text-[#8f8790]">
                           <MapPin className="w-4 h-4" />
                           {institute.location}
                         </div>
@@ -238,8 +238,8 @@ const InstitutesPage = () => {
                         {/* Seats Info */}
                         <div className="rounded-[14px] bg-[#faf7f5] p-3">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-[9px] text-[#8f8790]">Available Seats</span>
-                            <span className="text-[10px] font-black text-[#20273c]">
+                            <span className="text-xs text-[#8f8790]">Available Seats</span>
+                            <span className="text-xs font-black text-[#20273c]">
                               {institute.availableSeats} / {institute.totalSeats}
                             </span>
                           </div>
@@ -254,25 +254,25 @@ const InstitutesPage = () => {
                         {/* Programs */}
                         <div className="flex flex-wrap gap-1">
                           {institute.programs.slice(0, 4).map((program) => (
-                            <Badge key={program} variant="secondary" className="rounded-lg bg-[#faf7f5] text-[8px] font-bold text-[#777078]">
+                            <Badge key={program} variant="secondary" className="rounded-lg bg-[#faf7f5] text-xs font-bold text-[#777078]">
                               {program}
                             </Badge>
                           ))}
                           {institute.programs.length > 4 && (
-                            <Badge variant="outline" className="text-[8px]">
+                            <Badge variant="outline" className="text-xs">
                               +{institute.programs.length - 4}
                             </Badge>
                           )}
                         </div>
 
                         {institute.admissionDeadline && (
-                          <div className="flex items-center gap-2 text-[9px] text-[#716b73]">
+                          <div className="flex items-center gap-2 text-xs text-[#716b73]">
                             <Calendar className="h-3.5 w-3.5 text-[#c2410c]" />
                             <span>Deadline: {new Date(institute.admissionDeadline).toLocaleDateString()}</span>
                           </div>
                         )}
 
-                        <Button variant="outline" size="sm" className="h-9 w-full rounded-xl border-[#e9dfda] text-[9px] font-black text-[#c2410c] hover:border-[#fdba74] hover:bg-[#fff0e7]" asChild>
+                        <Button variant="outline" size="sm" className="h-9 w-full rounded-xl border-[#e9dfda] text-xs font-black text-[#c2410c] hover:border-[#fdba74] hover:bg-[#fff0e7]" asChild>
                           <a href={institute.website} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Visit Website
@@ -300,14 +300,14 @@ const InstitutesPage = () => {
                             {getNoticeIcon(notice.type)}
                           </div>
                           <div className="flex-1">
-                            <p className="text-[11px] font-black text-[#303649]">{notice.title}</p>
-                            <div className="mt-1 flex items-center gap-3 text-[9px] text-[#8f8790]">
+                            <p className="text-xs font-black text-[#303649]">{notice.title}</p>
+                            <div className="mt-1 flex items-center gap-3 text-xs text-[#8f8790]">
                               <span>{notice.institute}</span>
                               <span>•</span>
                               <span>{new Date(notice.date).toLocaleDateString()}</span>
                             </div>
                           </div>
-                          <Badge variant="outline" className="rounded-full text-[8px] font-bold capitalize">{notice.type}</Badge>
+                          <Badge variant="outline" className="rounded-full text-xs font-bold capitalize">{notice.type}</Badge>
                         </div>
                       ))}
                     </div>

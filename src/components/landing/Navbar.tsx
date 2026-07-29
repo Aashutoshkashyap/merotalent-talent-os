@@ -34,7 +34,7 @@ const Navbar = () => {
 
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#eadfd9] bg-[#fffdfb]/92 backdrop-blur-xl">
-      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="flex h-[68px] w-full items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Merotalent home">
           <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#c2410c] text-white shadow-lg shadow-[#c2410c]/20">
             <Sparkles className="h-4 w-4" />
@@ -128,7 +128,7 @@ const Navbar = () => {
               <Link to="/signup" onClick={() => setIsOpen(false)}>Join free</Link>
             </Button>
           </div>
-          <div className="mt-3 flex gap-2 text-[11px] font-semibold text-[#777078]">
+          <div className="mt-3 flex gap-2 text-xs font-semibold text-[#777078]">
             <Link to="/company" className="flex items-center gap-1 rounded-lg px-2 py-1.5">
               <BriefcaseBusiness className="h-3.5 w-3.5" /> Company
             </Link>

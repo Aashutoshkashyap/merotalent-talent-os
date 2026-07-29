@@ -89,12 +89,12 @@ const ProgressRing = ({
             strokeDashoffset={offset}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-[#19172b]">
+        <span className="absolute inset-0 flex items-center justify-center text-xs font-black text-[#19172b]">
           {value}%
         </span>
       </div>
       <div className="min-w-0">
-        <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#a098a3]">Progress</p>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#a098a3]">Progress</p>
         <p className="truncate text-sm font-extrabold text-[#19172b]">{label}</p>
       </div>
     </div>
@@ -123,7 +123,7 @@ const Dashboard = () => {
           </div>
 
           <div className="relative max-w-2xl">
-            <div className="mb-5 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9c949e]">
+            <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#9c949e]">
               <span className="rounded-full bg-[#fff0e5] px-3 py-1.5 text-[#c2410c]">Wednesday</span>
               <span>29 July 2026</span>
             </div>
@@ -156,7 +156,7 @@ const Dashboard = () => {
         </div>
 
         <div
-          className={`${surface} relative overflow-hidden bg-[#19172b] p-5 text-white xl:col-span-3`}
+          className={`${surface} relative overflow-hidden !bg-[#19172b] p-5 text-white xl:col-span-3`}
         >
           <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[#c2410c]" />
           <div className="relative">
@@ -173,7 +173,7 @@ const Dashboard = () => {
             <div className="mt-5 flex items-end justify-between border-t border-white/10 pt-4">
               <div>
                 <span className="text-2xl font-black">14</span>
-                <span className="ml-1.5 text-[10px] text-white/55">connections</span>
+                <span className="ml-1.5 text-xs text-white/55">connections</span>
               </div>
               <Link
                 to="/dashboard/mentors"
@@ -192,9 +192,9 @@ const Dashboard = () => {
           <div className="flex items-center justify-between px-5 pb-3 pt-5">
             <div>
               <p className="text-base font-black tracking-[-0.025em]">Notifications</p>
-              <p className="text-[11px] text-[#9a939c]">Your latest activity</p>
+              <p className="text-xs text-[#9a939c]">Your latest activity</p>
             </div>
-            <button className="text-[10px] font-bold text-[#9a939c] hover:text-[#c2410c]">Clear</button>
+            <button className="text-xs font-bold text-[#9a939c] hover:text-[#c2410c]">Clear</button>
           </div>
           <div className="space-y-2.5 px-3 pb-3">
             <div className="rounded-[19px] border border-[#f0dfd2] bg-[#fff9f4] p-3.5 shadow-[0_10px_28px_rgba(69,42,21,0.05)]">
@@ -207,8 +207,8 @@ const Dashboard = () => {
                     <p className="truncate text-xs font-extrabold">AI Challenge deadline</p>
                     <Ellipsis className="h-4 w-4 text-[#99919a]" />
                   </div>
-                  <p className="mt-1 text-[10px] text-[#918a94]">Submission closes in 3 days</p>
-                  <div className="mt-2 flex items-center gap-3 text-[9px] font-semibold text-[#5e5865]">
+                  <p className="mt-1 text-xs text-[#918a94]">Submission closes in 3 days</p>
+                  <div className="mt-2 flex items-center gap-3 text-xs font-semibold text-[#5e5865]">
                     <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Fri, 31 Jul</span>
                     <span className="flex items-center gap-1"><Clock3 className="h-3 w-3" /> 11:59 PM</span>
                   </div>
@@ -221,7 +221,7 @@ const Dashboard = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold">New message from Priya</p>
-                <p className="mt-0.5 truncate text-[10px] text-[#9b949c]">Your portfolio direction is looking strong...</p>
+                <p className="mt-0.5 truncate text-xs text-[#9b949c]">Your portfolio direction is looking strong...</p>
               </div>
             </div>
           </div>
@@ -231,13 +231,13 @@ const Dashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-base font-black tracking-[-0.025em]">Today&apos;s focus</p>
-              <p className="text-[11px] text-[#9a939c]">One clear next move</p>
+              <p className="text-xs text-[#9a939c]">One clear next move</p>
             </div>
-            <span className="rounded-full bg-red-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-red-500">High</span>
+            <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-red-500">High</span>
           </div>
           <div className="my-4 h-px bg-[#f1e5dc]" />
           <div className="flex-1">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-[#c2410c]">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#c2410c]">
               <span>Competition</span>
               <span className="text-[#c3bbc1]">•</span>
               <span className="text-[#6f6976]">AI Challenge</span>
@@ -246,12 +246,12 @@ const Dashboard = () => {
               Shape the problem statement and draft your solution story.
             </p>
             <div className="mt-4 flex items-center justify-between">
-              <span className="rounded-full bg-[#e5f8f1] px-3 py-1.5 text-[9px] font-bold text-[#287f69]">Research sprint</span>
+              <span className="rounded-full bg-[#e5f8f1] px-3 py-1.5 text-xs font-bold text-[#287f69]">Research sprint</span>
               <div className="flex -space-x-2">
                 {["AS", "PT", "+2"].map((name, index) => (
                   <span
                     key={name}
-                    className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[8px] font-black ${
+                    className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black ${
                       index === 2 ? "bg-[#19172b] text-white" : "bg-[#ffdfc8] text-[#9d430c]"
                     }`}
                   >
@@ -261,7 +261,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <button className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#e7d6c8] bg-[#fff9f4] text-[11px] font-bold text-[#5f5965] hover:border-[#c2410c]/60 hover:text-[#c2410c]">
+          <button className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#e7d6c8] bg-[#fff9f4] text-xs font-bold text-[#5f5965] hover:border-[#c2410c]/60 hover:text-[#c2410c]">
             <Plus className="h-4 w-4" /> Add a focus item
           </button>
         </div>
@@ -270,18 +270,18 @@ const Dashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-base font-black tracking-[-0.025em]">July 2026</p>
-              <p className="text-[11px] text-[#9a939c]">Your week at a glance</p>
+              <p className="text-xs text-[#9a939c]">Your week at a glance</p>
             </div>
-            <div className="rounded-xl bg-[#fff1e5] px-2.5 py-1.5 text-[9px] font-black text-[#c2410c]">TODAY 29</div>
+            <div className="rounded-xl bg-[#fff1e5] px-2.5 py-1.5 text-xs font-black text-[#c2410c]">TODAY 29</div>
           </div>
           <div className="mt-4 grid grid-cols-7 gap-1">
             {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-              <span key={`${day}-${index}`} className="text-center text-[9px] font-bold text-[#aaa2aa]">{day}</span>
+              <span key={`${day}-${index}`} className="text-center text-xs font-bold text-[#aaa2aa]">{day}</span>
             ))}
             {[27, 28, 29, 30, 31, 1, 2].map((day) => (
               <span
                 key={day}
-                className={`mx-auto mt-1 flex h-7 w-7 items-center justify-center rounded-xl text-[10px] font-bold ${
+                className={`mx-auto mt-1 flex h-7 w-7 items-center justify-center rounded-xl text-xs font-bold ${
                   day === 29 ? "bg-[#c2410c] text-white shadow-[0_7px_14px_rgba(249,115,22,0.25)]" : "text-[#47414e]"
                 }`}
               >
@@ -295,7 +295,7 @@ const Dashboard = () => {
               <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#68c9ad]" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-extrabold">Mentor portfolio review</p>
-                <p className="mt-0.5 text-[9px] text-[#9b949d]">10:00–10:45 · Video call</p>
+                <p className="mt-0.5 text-xs text-[#9b949d]">10:00–10:45 · Video call</p>
               </div>
               <Ellipsis className="h-4 w-4 text-[#aaa2aa]" />
             </div>
@@ -303,7 +303,7 @@ const Dashboard = () => {
               <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#c2410c]" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-extrabold">Design sprint check-in</p>
-                <p className="mt-0.5 text-[9px] text-[#9b949d]">2:30–3:00 · Community</p>
+                <p className="mt-0.5 text-xs text-[#9b949d]">2:30–3:00 · Community</p>
               </div>
               <Ellipsis className="h-4 w-4 text-[#aaa2aa]" />
             </div>
@@ -316,11 +316,11 @@ const Dashboard = () => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-base font-black tracking-[-0.025em]">Today&apos;s tasks</p>
-              <p className="text-[11px] text-[#9a939c]">3 actions selected for momentum</p>
+              <p className="text-xs text-[#9a939c]">3 actions selected for momentum</p>
             </div>
             <div className="flex items-center gap-1 rounded-xl bg-[#f8f2ed] p-1">
-              <button className="rounded-lg bg-white px-3 py-1.5 text-[9px] font-bold text-[#c2410c] shadow-sm">List</button>
-              <button className="px-3 py-1.5 text-[9px] font-bold text-[#938b94]">Board</button>
+              <button className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-[#c2410c] shadow-sm">List</button>
+              <button className="px-3 py-1.5 text-xs font-bold text-[#938b94]">Board</button>
             </div>
           </div>
           <div className="mt-4 space-y-2">
@@ -334,10 +334,10 @@ const Dashboard = () => {
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-xs font-extrabold">{task.title}</p>
-                  <p className="mt-0.5 text-[9px] text-[#9c959d]">{task.meta}</p>
+                  <p className="mt-0.5 text-xs text-[#9c959d]">{task.meta}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-7 text-right text-[9px] font-black">{task.progress}%</span>
+                  <span className="w-7 text-right text-xs font-black">{task.progress}%</span>
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#eee7e1]">
                     <div className="h-full rounded-full bg-[#c2410c]" style={{ width: `${task.progress}%` }} />
                   </div>
@@ -357,10 +357,10 @@ const Dashboard = () => {
               <Flame className="h-5 w-5" />
             </div>
             <p className="mt-5 text-xl font-black leading-tight tracking-[-0.04em]">Keep your streak alive.</p>
-            <p className="mt-2 text-[11px] leading-5 text-white/75">You&apos;re on a 15-day learning streak.</p>
+            <p className="mt-2 text-xs leading-5 text-white/75">You&apos;re on a 15-day learning streak.</p>
             <Link
               to="/dashboard/learning"
-              className="mt-auto flex items-center justify-between rounded-2xl bg-[#19172b] px-3.5 py-3 text-[10px] font-bold text-white transition-transform hover:-translate-y-0.5"
+              className="mt-auto flex items-center justify-between rounded-2xl bg-[#19172b] px-3.5 py-3 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
             >
               Continue lesson <ArrowRight className="h-4 w-4" />
             </Link>
@@ -376,14 +376,14 @@ const Dashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-black">Career coaching</p>
-                <p className="mt-1 text-[9px] text-[#9a939c]">31 July · 11:00 AM</p>
+                <p className="mt-1 text-xs text-[#9a939c]">31 July · 11:00 AM</p>
               </div>
               <span className="h-2.5 w-2.5 rounded-full bg-[#68c9ad]" />
             </div>
-            <p className="mt-3 text-[10px] leading-4 text-[#746e79]">Session with Dr. Aarav Sharma about your AI career roadmap.</p>
+            <p className="mt-3 text-xs leading-4 text-[#746e79]">Session with Dr. Aarav Sharma about your AI career roadmap.</p>
             <div className="mt-3 flex gap-2">
-              <Button variant="outline" className="h-8 flex-1 rounded-xl border-[#eadbd0] px-2 text-[9px]">Reschedule</Button>
-              <Button className="h-8 flex-1 rounded-xl bg-[#c2410c] px-2 text-[9px] text-white hover:bg-[#9a3412]">Join</Button>
+              <Button variant="outline" className="h-8 flex-1 rounded-xl border-[#eadbd0] px-2 text-xs">Reschedule</Button>
+              <Button className="h-8 flex-1 rounded-xl bg-[#c2410c] px-2 text-xs text-white hover:bg-[#9a3412]">Join</Button>
             </div>
           </div>
         </div>
@@ -406,7 +406,7 @@ const Dashboard = () => {
             </div>
             <div className="min-w-0">
               <p className="text-lg font-black leading-none tracking-[-0.03em]">{stat.value}</p>
-              <p className="mt-1 truncate text-[9px] font-semibold text-[#98919a]">{stat.label}</p>
+              <p className="mt-1 truncate text-xs font-semibold text-[#98919a]">{stat.label}</p>
             </div>
           </Link>
         ))}

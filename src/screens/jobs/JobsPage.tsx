@@ -109,15 +109,15 @@ const JobsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#f4dfd4]">
+    <div className="min-h-screen bg-white">
       <Navbar />
       
-      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
+      <main className="pb-6 pt-[68px] sm:pb-8">
         {/* Hero Section */}
-        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+        <section className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-7 lg:p-9">
           <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr] lg:items-end">
             <div>
-            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-xs font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
               <Briefcase className="mr-1 h-3 w-3" />
               Job Board
             </Badge>
@@ -147,7 +147,7 @@ const JobsPage = () => {
               ].map(([value, label], index) => (
                 <div key={label} className={`min-h-[112px] rounded-[18px] border p-4 ${index === 1 ? "border-[#d9eee6] bg-[#e8f7f1]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
                   <p className={`text-xl font-black ${index === 1 ? "text-[#238366]" : "text-[#172039]"}`}>{value}</p>
-                  <p className="mt-5 text-[9px] font-bold text-[#8e868e]">{label}</p>
+                  <p className="mt-5 text-xs font-bold text-[#8e868e]">{label}</p>
                 </div>
               ))}
             </div>
@@ -155,7 +155,7 @@ const JobsPage = () => {
         </section>
 
         {/* Filters */}
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[22px] border border-white/80 bg-[#fffdfb] px-4 py-4 shadow-[0_16px_38px_rgba(99,55,29,0.07)] sm:px-6">
+        <section className="mt-3 w-full rounded-[22px] border border-[#eee7e2] bg-[#fffdfb] px-4 py-4 shadow-[0_14px_32px_rgba(99,55,29,0.05)] sm:px-6">
           <div>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap gap-2">
@@ -165,14 +165,14 @@ const JobsPage = () => {
                     variant={activeType === type ? "default" : "outline"}
                     size="sm"
                     onClick={() => setActiveType(type)}
-                    className={`h-8 rounded-full border-[#ece3de] px-3 text-[9px] font-black ${activeType === type ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                    className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${activeType === type ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
                   >
                     {type}
                   </Button>
                 ))}
               </div>
               <Select value={activeExperience} onValueChange={setActiveExperience}>
-                <SelectTrigger className="h-9 w-40 rounded-xl border-[#ece3de] bg-[#faf7f5] text-[10px] font-bold">
+                <SelectTrigger className="h-9 w-40 rounded-xl border-[#ece3de] bg-[#faf7f5] text-xs font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -186,7 +186,7 @@ const JobsPage = () => {
         </section>
 
         {/* Jobs Grid */}
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
+        <section className="mt-3 w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-3 shadow-[0_18px_46px_rgba(99,55,29,0.06)] sm:rounded-[32px] sm:p-5 lg:p-7">
           <div>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12">
               {filteredJobs.map((job) => (
@@ -200,7 +200,7 @@ const JobsPage = () => {
                         <h3 className="line-clamp-1 text-base font-black text-[#20273c] transition-colors group-hover:text-[#c2410c]">
                           {job.title}
                         </h3>
-                        <p className="mt-1 flex items-center gap-1 text-[10px] text-[#8f8790]">
+                        <p className="mt-1 flex items-center gap-1 text-xs text-[#8f8790]">
                           <Building2 className="w-3 h-3" />
                           {job.company}
                         </p>
@@ -210,26 +210,26 @@ const JobsPage = () => {
 
                   <CardContent className="space-y-3 px-5 pb-4">
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="rounded-full border-[#fed7aa] bg-[#fff7ed] text-[8px] font-black text-[#c2410c]">{job.type}</Badge>
-                      <Badge variant="outline" className="flex items-center gap-1 rounded-full border-[#e8e1dc] text-[8px] font-bold text-[#777078]">
+                      <Badge variant="outline" className="rounded-full border-[#fed7aa] bg-[#fff7ed] text-xs font-black text-[#c2410c]">{job.type}</Badge>
+                      <Badge variant="outline" className="flex items-center gap-1 rounded-full border-[#e8e1dc] text-xs font-bold text-[#777078]">
                         <MapPin className="w-3 h-3" />
                         {job.location}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-[#575362]">
+                    <div className="flex items-center gap-1 text-xs font-bold text-[#575362]">
                       <DollarSign className="h-3.5 w-3.5 text-[#238366]" />
                       {job.salary}
                     </div>
 
                     <div className="flex flex-wrap gap-1.5">
                       {job.skills.slice(0, 3).map((skill) => (
-                        <Badge key={skill} variant="secondary" className="rounded-lg bg-[#faf7f5] text-[8px] font-bold text-[#777078]">
+                        <Badge key={skill} variant="secondary" className="rounded-lg bg-[#faf7f5] text-xs font-bold text-[#777078]">
                           {skill}
                         </Badge>
                       ))}
                       {job.skills.length > 3 && (
-                        <Badge variant="outline" className="text-[8px]">
+                        <Badge variant="outline" className="text-xs">
                           +{job.skills.length - 3}
                         </Badge>
                       )}
@@ -237,7 +237,7 @@ const JobsPage = () => {
                   </CardContent>
 
                   <CardFooter className="flex items-center justify-between border-t border-[#f0e8e3] px-5 py-3">
-                    <div className="flex items-center gap-4 text-[8px] text-[#989097]">
+                    <div className="flex items-center gap-4 text-xs text-[#989097]">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         {job.postedAt}
@@ -247,7 +247,7 @@ const JobsPage = () => {
                         {job.applicants}
                       </span>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8 rounded-lg text-[9px] font-black text-[#c2410c] hover:bg-[#fff0e7] hover:text-[#c2410c]" asChild>
+                    <Button variant="ghost" size="sm" className="h-8 rounded-lg text-xs font-black text-[#c2410c] hover:bg-[#fff0e7] hover:text-[#c2410c]" asChild>
                       <Link to={`/dashboard/jobs`}>
                         Apply
                         <ArrowRight className="w-4 h-4 ml-1" />

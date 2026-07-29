@@ -34,14 +34,8 @@ const LegalPage = ({ type }: LegalPageProps) => {
   const content = legalContent[type];
 
   return (
-    <main className="workspace-canvas grid min-h-screen place-items-center p-0 text-[#1b1932] sm:p-5 lg:p-8">
-      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-70" viewBox="0 0 1500 900" fill="none" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M-100 300C190 120 410 430 690 190C930 -20 1190 260 1580 75" stroke="white" strokeWidth="2" />
-        <circle cx="110" cy="720" r="7" fill="#66c7a8" />
-        <circle cx="1370" cy="130" r="7" stroke="#c2410c" />
-      </svg>
-
-      <div className="workspace-shell z-10 grid w-full max-w-[1100px] lg:min-h-[700px] lg:grid-cols-[0.32fr_0.68fr]">
+    <main className="min-h-screen w-full bg-white text-[#1b1932]">
+      <div className="grid min-h-screen w-full lg:grid-cols-[minmax(300px,0.32fr)_minmax(0,0.68fr)]">
         <aside className="relative overflow-hidden bg-primary p-6 text-white sm:p-8 lg:p-10">
           <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full border-[36px] border-white/10" />
           <Link to="/" className="relative flex w-fit items-center gap-2.5 font-display text-lg font-bold">
@@ -52,7 +46,7 @@ const LegalPage = ({ type }: LegalPageProps) => {
           </Link>
 
           <div className="relative mt-10 hidden lg:block">
-            <p className="text-[10px] font-bold uppercase tracking-[0.17em] text-white/60">Clear by design</p>
+            <p className="text-xs font-bold uppercase tracking-[0.17em] text-white/60">Clear by design</p>
             <h2 className="mt-3 font-display text-3xl font-bold leading-tight">Trust belongs in the product.</h2>
             <p className="mt-3 text-xs leading-5 text-white/65">
               The essentials, written in plain language and kept in one calm workspace.
@@ -80,18 +74,19 @@ const LegalPage = ({ type }: LegalPageProps) => {
             </Link>
           </nav>
 
-          <a href="mailto:hello@merotalent.com" className="relative mt-5 flex items-center gap-2 text-[10px] font-semibold text-white/70 lg:absolute lg:bottom-10 lg:left-10">
+          <a href="mailto:hello@merotalent.com" className="relative mt-5 flex items-center gap-2 text-xs font-semibold text-white/70 lg:absolute lg:bottom-10 lg:left-10">
             <Mail className="h-3.5 w-3.5" /> hello@merotalent.com
           </a>
         </aside>
 
         <article className="bg-white p-6 sm:p-10 lg:p-12">
+          <div className="mx-auto w-full max-w-4xl">
           <div className="flex items-center justify-between gap-4">
             <div className="workspace-kicker">
               <span className="workspace-dot" />
               Merotalent legal
             </div>
-            <Link to="/" className="flex items-center gap-1.5 text-[10px] font-bold text-primary">
+            <Link to="/" className="flex items-center gap-1.5 text-xs font-bold text-primary">
               <ArrowLeft className="h-3.5 w-3.5" /> Back home
             </Link>
           </div>
@@ -101,7 +96,7 @@ const LegalPage = ({ type }: LegalPageProps) => {
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             {content.sections.map(([title, body], index) => (
               <section key={title} className="rounded-[20px] border border-[#eee7e1] bg-[#fbf9f7] p-5">
-                <span className="grid h-8 w-8 place-items-center rounded-[11px] bg-[#fff1e8] text-[10px] font-bold text-primary">
+                <span className="grid h-8 w-8 place-items-center rounded-[11px] bg-[#fff1e8] text-xs font-bold text-primary">
                   0{index + 1}
                 </span>
                 <h2 className="mt-5 font-display text-base font-bold">{title}</h2>
@@ -109,10 +104,11 @@ const LegalPage = ({ type }: LegalPageProps) => {
               </section>
             ))}
           </div>
-          <p className="mt-8 border-t border-[#ecebf2] pt-5 text-[10px] text-[#9996a7]">
+          <p className="mt-8 border-t border-[#ecebf2] pt-5 text-xs text-[#9996a7]">
             Last updated: 29 July 2026. Questions:{" "}
             <a className="font-semibold text-[#c2410c]" href="mailto:hello@merotalent.com">hello@merotalent.com</a>
           </p>
+          </div>
         </article>
       </div>
     </main>

@@ -75,11 +75,11 @@ const DiscoveryHub = () => {
   const ActiveIcon = activeContent.icon;
 
   return (
-    <section id="discover" className="bg-[#f4dfd4] px-3 py-6 sm:px-5 sm:py-8 lg:px-8">
-      <div className="mx-auto max-w-[1420px] overflow-hidden rounded-[26px] border border-white/80 bg-[#fffdfb] shadow-[0_26px_70px_rgba(99,55,29,0.10)] sm:rounded-[32px]">
+    <section id="discover" className="w-full bg-white py-6 sm:py-8">
+      <div className="w-full overflow-hidden border-y border-[#eee7e2] bg-[#fffdfb]">
         <div className="flex flex-col gap-5 border-b border-[#f0ebe7] p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between lg:px-9">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-[#c2410c]">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[#c2410c]">
               <Sparkles className="h-3.5 w-3.5" />
               Curated for forward motion
             </div>
@@ -98,7 +98,7 @@ const DiscoveryHub = () => {
                   key={type}
                   type="button"
                   onClick={() => setActive(type)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-[10px] px-3 py-2 text-[10px] font-black transition sm:px-4 ${
+                  className={`flex shrink-0 items-center gap-1.5 rounded-[10px] px-3 py-2 text-xs font-black transition sm:px-4 ${
                     active === type
                       ? "bg-[#c2410c] text-white shadow-md shadow-[#c2410c]/15"
                       : "text-[#807882] hover:bg-white hover:text-[#3e4253]"
@@ -124,11 +124,11 @@ const DiscoveryHub = () => {
             </span>
             <div className="relative mt-auto">
               <p className="text-5xl font-black tracking-[-0.06em]">{activeContent.metric}</p>
-              <p className="mt-1 text-[10px] font-bold text-white/65">{activeContent.metricLabel}</p>
+              <p className="mt-1 text-xs font-bold text-white/65">{activeContent.metricLabel}</p>
               <h3 className="mt-5 max-w-[250px] text-xl font-black leading-tight">
                 Find a next step that fits the work you want to do.
               </h3>
-              <span className="mt-5 flex items-center gap-2 text-[10px] font-black">
+              <span className="mt-5 flex items-center gap-2 text-xs font-black">
                 Explore {active.toLowerCase()}
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
               </span>
@@ -150,16 +150,16 @@ const DiscoveryHub = () => {
                   }`}>
                     <ActiveIcon className="h-4 w-4" />
                   </span>
-                  <span className="rounded-full border border-[#eee7e2] bg-white px-2.5 py-1 text-[8px] font-black text-[#6f6973]">
+                  <span className="rounded-full border border-[#eee7e2] bg-white px-2.5 py-1 text-xs font-black text-[#6f6973]">
                     {item.tag}
                   </span>
                 </div>
                 <div className={index === 0 ? "mt-5 sm:flex sm:items-end sm:justify-between" : "mt-5"}>
                   <div>
                     <h3 className="text-sm font-black text-[#20273c] sm:text-base">{item.title}</h3>
-                    <p className="mt-1 text-[10px] font-medium text-[#8f8790]">{item.subtitle}</p>
+                    <p className="mt-1 text-xs font-medium text-[#8f8790]">{item.subtitle}</p>
                   </div>
-                  <div className={`${index === 0 ? "mt-4 sm:mt-0" : "mt-4"} flex items-center justify-between gap-4 border-t border-[#f1ebe7] pt-3 text-[9px] text-[#8f8790]`}>
+                  <div className={`${index === 0 ? "mt-4 sm:mt-0" : "mt-4"} flex items-center justify-between gap-4 border-t border-[#f1ebe7] pt-3 text-xs text-[#8f8790]`}>
                     <span className="flex items-center gap-1.5">
                       {active === "Jobs" ? <MapPin className="h-3 w-3" /> : active === "Mentors" ? <Users className="h-3 w-3" /> : active === "Competitions" ? <CalendarDays className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
                       {item.meta}
@@ -183,8 +183,8 @@ const DiscoveryHub = () => {
                 <Check className="h-3 w-3" />
               </span>
               <div>
-                <p className="text-[10px] font-black text-[#272d41]">{title}</p>
-                <p className="mt-0.5 text-[8px] leading-4 text-[#918990]">{copy}</p>
+                <p className="text-xs font-black text-[#272d41]">{title}</p>
+                <p className="mt-0.5 text-xs leading-4 text-[#918990]">{copy}</p>
               </div>
             </div>
           ))}

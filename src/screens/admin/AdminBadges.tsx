@@ -329,7 +329,7 @@ const AdminBadges = () => {
     <OperationsPage>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-2xl">
-          <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#c2410c]">
+          <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#c2410c]">
             <span className="h-2 w-2 rounded-full bg-[#c2410c]" />
             Achievement system
           </div>

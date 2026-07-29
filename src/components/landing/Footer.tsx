@@ -32,8 +32,8 @@ const columns = [
 ];
 
 const Footer = () => (
-  <footer className="bg-[#f4dfd4] px-3 pb-5 pt-6 sm:px-5 lg:px-8">
-    <div className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] px-5 py-10 shadow-[0_22px_55px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:px-7 lg:px-9">
+  <footer className="w-full bg-white pt-6">
+    <div className="w-full border-t border-[#eee7e2] bg-[#fffdfb] px-5 py-10 sm:px-7 lg:px-9">
       <div className="grid gap-10 lg:grid-cols-[1.35fr_2fr]">
         <div className="max-w-sm">
           <Link to="/" className="inline-flex items-center gap-2.5">
@@ -77,7 +77,7 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="mt-10 flex flex-col gap-4 border-t border-[#eee6e1] pt-6 text-[11px] text-[#999096] sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-10 flex flex-col gap-4 border-t border-[#eee6e1] pt-6 text-xs text-[#999096] sm:flex-row sm:items-center sm:justify-between">
         <p>© {new Date().getFullYear()} Merotalent. Made with care in Nepal.</p>
         <div className="flex flex-wrap gap-5">
           <Link to="/privacy" className="hover:text-[#c2410c]">Privacy</Link>

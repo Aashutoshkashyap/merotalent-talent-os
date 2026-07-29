@@ -70,13 +70,13 @@ const MentorshipPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f4dfd4]">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
-      <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+      <main className="pb-6 pt-[68px] sm:pb-8">
+      <section className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-7 lg:p-9">
         <div className="grid gap-7 lg:grid-cols-[1fr_0.95fr] lg:items-end">
           <div>
-            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+            <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-xs font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
               <Users className="mr-1 h-3 w-3" />
               Human guidance
             </Badge>
@@ -102,15 +102,15 @@ const MentorshipPage = () => {
                 <div className={`grid h-9 w-9 place-items-center rounded-xl ${idx === 1 ? "bg-white/70 text-[#238366]" : "bg-[#fff0e7] text-[#c2410c]"}`}>
                   <benefit.icon className="h-4 w-4" />
                 </div>
-                <h3 className="mt-3 text-[10px] font-black text-[#2a3044]">{benefit.title}</h3>
-                <p className="mt-1 text-[8px] leading-4 text-[#8f8790]">{benefit.description}</p>
+                <h3 className="mt-3 text-xs font-black text-[#2a3044]">{benefit.title}</h3>
+                <p className="mt-1 text-xs leading-4 text-[#8f8790]">{benefit.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto mt-3 max-w-[1420px] rounded-[22px] border border-white/80 bg-[#fffdfb] px-4 py-4 shadow-[0_16px_38px_rgba(99,55,29,0.07)] sm:px-6">
+      <section className="mt-3 w-full rounded-[22px] border border-[#eee7e2] bg-[#fffdfb] px-4 py-4 shadow-[0_14px_32px_rgba(99,55,29,0.05)] sm:px-6">
           <div className="flex flex-wrap gap-2">
             {expertiseAreas.map((area) => (
               <Button
@@ -118,7 +118,7 @@ const MentorshipPage = () => {
                 variant={selectedExpertise === area.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedExpertise(area.id)}
-                className={`h-8 rounded-full border-[#ece3de] px-3 text-[9px] font-black ${selectedExpertise === area.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${selectedExpertise === area.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
               >
                 {area.label}
               </Button>
@@ -126,7 +126,7 @@ const MentorshipPage = () => {
           </div>
       </section>
 
-      <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
+      <section className="mt-3 w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-3 shadow-[0_18px_46px_rgba(99,55,29,0.06)] sm:rounded-[32px] sm:p-5 lg:p-7">
           {isLoading ? (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((i) => (
@@ -161,16 +161,16 @@ const MentorshipPage = () => {
                           <h3 className="truncate text-base font-black text-[#20273c] transition-colors group-hover:text-[#c2410c]">
                             {profile?.full_name || "Mentor"}
                           </h3>
-                          <p className="line-clamp-1 text-[10px] text-[#8f8790]">
+                          <p className="line-clamp-1 text-xs text-[#8f8790]">
                             {profile?.bio || "Industry Expert"}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 text-[9px]">
+                            <div className="flex items-center gap-1 text-xs">
                               <Star className="h-3.5 w-3.5 fill-[#c2410c] text-[#c2410c]" />
                               <span className="font-medium">{mentor.rating || 5.0}</span>
                             </div>
                             <span className="text-muted-foreground">•</span>
-                            <span className="text-[9px] text-[#8f8790]">
+                            <span className="text-xs text-[#8f8790]">
                               {mentor.total_sessions || 0} sessions
                             </span>
                           </div>
@@ -179,19 +179,19 @@ const MentorshipPage = () => {
 
                       <div className="flex flex-wrap gap-1 mb-4">
                         {mentor.expertise?.slice(0, 3).map((skill: string, idx: number) => (
-                          <Badge key={idx} variant="secondary" className="rounded-lg bg-[#faf7f5] text-[8px] font-bold text-[#777078]">
+                          <Badge key={idx} variant="secondary" className="rounded-lg bg-[#faf7f5] text-xs font-bold text-[#777078]">
                             {skill}
                           </Badge>
                         ))}
                         {(mentor.expertise?.length || 0) > 3 && (
-                          <Badge variant="outline" className="text-[8px]">
+                          <Badge variant="outline" className="text-xs">
                             +{mentor.expertise!.length - 3}
                           </Badge>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-1 text-[9px] text-[#8f8790]">
+                        <div className="flex items-center gap-1 text-xs text-[#8f8790]">
                           <Briefcase className="w-4 h-4" />
                           {mentor.years_experience || 0}+ years exp.
                         </div>
@@ -200,7 +200,7 @@ const MentorshipPage = () => {
                         </div>
                       </div>
 
-                      <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-[9px] font-black hover:bg-[#9a3412]" asChild>
+                      <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]" asChild>
                         <Link to="/login">
                           <Video className="w-4 h-4 mr-2" />
                           Book Session
@@ -223,7 +223,7 @@ const MentorshipPage = () => {
       </section>
 
       {/* How It Works */}
-      <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_22px_52px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-8">
+      <section className="mt-3 w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_18px_44px_rgba(99,55,29,0.06)] sm:rounded-[32px] sm:p-8">
           <h2 className="text-xl font-black text-[#172039]">How mentorship works</h2>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <div className="rounded-[20px] border border-[#f0e8e3] bg-[#fffaf7] p-5">
@@ -231,7 +231,7 @@ const MentorshipPage = () => {
                 1
               </div>
               <h3 className="mt-5 text-sm font-black text-[#20273c]">Choose a mentor</h3>
-              <p className="mt-2 text-[10px] leading-5 text-[#8f8790]">
+              <p className="mt-2 text-xs leading-5 text-[#8f8790]">
                 Browse profiles and find a mentor who matches your goals
               </p>
             </div>
@@ -240,7 +240,7 @@ const MentorshipPage = () => {
                 2
               </div>
               <h3 className="mt-5 text-sm font-black text-[#20273c]">Book a session</h3>
-              <p className="mt-2 text-[10px] leading-5 text-[#687b75]">
+              <p className="mt-2 text-xs leading-5 text-[#687b75]">
                 Select a time slot and describe what you'd like to discuss
               </p>
             </div>
@@ -249,23 +249,23 @@ const MentorshipPage = () => {
                 3
               </div>
               <h3 className="mt-5 text-sm font-black text-[#20273c]">Get guidance</h3>
-              <p className="mt-2 text-[10px] leading-5 text-[#8f8790]">
+              <p className="mt-2 text-xs leading-5 text-[#8f8790]">
                 Meet via video call and receive personalized advice
               </p>
             </div>
           </div>
       </section>
 
-      <section className="mx-auto mt-3 flex max-w-[1420px] flex-col items-start justify-between gap-5 rounded-[26px] bg-[#c2410c] px-6 py-8 text-white shadow-[0_22px_48px_rgba(194,65,12,0.20)] sm:flex-row sm:items-center sm:rounded-[32px] sm:px-9">
+      <section className="mt-3 flex w-full flex-col items-start justify-between gap-5 rounded-[26px] bg-[#c2410c] px-6 py-8 text-white shadow-[0_22px_48px_rgba(194,65,12,0.20)] sm:flex-row sm:items-center sm:rounded-[32px] sm:px-9">
           <div>
             <h2 className="text-xl font-black">Your next breakthrough may be a conversation away.</h2>
             <p className="mt-1 text-xs text-white/65">Create your account and meet someone who has been there.</p>
           </div>
           <div className="flex gap-2">
-            <Button className="rounded-xl bg-white text-[10px] font-black text-[#c2410c] hover:bg-[#fff7ed]" asChild>
+            <Button className="rounded-xl bg-white text-xs font-black text-[#c2410c] hover:bg-[#fff7ed]" asChild>
               <Link to="/signup">Get started free</Link>
             </Button>
-            <Button className="rounded-xl border border-white/20 bg-white/10 text-[10px] font-black text-white hover:bg-white/15" asChild>
+            <Button className="rounded-xl border border-white/20 bg-white/10 text-xs font-black text-white hover:bg-white/15" asChild>
               <Link to="/login">Already have an account?</Link>
             </Button>
           </div>

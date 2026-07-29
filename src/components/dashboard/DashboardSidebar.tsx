@@ -93,9 +93,9 @@ const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-white/95 shadow-[0_24px_70px_rgba(68,42,20,0.11)] backdrop-blur-xl",
+        "flex h-full min-h-0 flex-col overflow-hidden bg-white",
         compact
-          ? "sticky top-4 h-[calc(100vh-2rem)] w-[74px] rounded-[28px] border border-white lg:top-6 lg:h-[calc(100vh-3rem)]"
+          ? "sticky top-0 h-screen w-[74px] border-r border-[#eee7e1]"
           : "h-[calc(100vh-1.5rem)] w-full rounded-[28px] border border-[#f2e3d6]"
       )}
     >
@@ -120,7 +120,7 @@ const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps
           {!compact && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-[#19172b]">{profile?.full_name || "Talent"}</p>
-              <p className="truncate text-[11px] text-[#898391]">{profile?.email}</p>
+              <p className="truncate text-xs text-[#898391]">{profile?.email}</p>
             </div>
           )}
         </div>
@@ -128,14 +128,14 @@ const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps
 
       <nav className={cn("flex-1 overflow-y-auto", compact ? "space-y-5 px-3 py-4" : "space-y-6 px-4 py-5")}>
         <div className={cn("space-y-1.5", compact && "flex flex-col items-center")}>
-          {!compact && <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a39ca8]">Explore</p>}
+          {!compact && <p className="px-3 text-xs font-bold uppercase tracking-[0.18em] text-[#a39ca8]">Explore</p>}
           {mainNavItems.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
         </div>
 
         <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-[#f4e7dc] pt-5")}>
-          {!compact && <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a39ca8]">My space</p>}
+          {!compact && <p className="px-3 text-xs font-bold uppercase tracking-[0.18em] text-[#a39ca8]">My space</p>}
           {userNavItems.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
@@ -143,7 +143,7 @@ const DashboardSidebar = ({ compact = false, onNavigate }: DashboardSidebarProps
 
         {isAdmin && (
           <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-[#f4e7dc] pt-5")}>
-            {!compact && <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a39ca8]">Admin</p>}
+            {!compact && <p className="px-3 text-xs font-bold uppercase tracking-[0.18em] text-[#a39ca8]">Admin</p>}
             {adminNavItems.map((item) => (
               <NavItem key={item.href} {...item} />
             ))}

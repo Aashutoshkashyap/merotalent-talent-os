@@ -98,7 +98,7 @@ const InstituteDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f3ebe5]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#c2410c] border-t-transparent" />
       </div>
     );
@@ -106,7 +106,7 @@ const InstituteDashboard = () => {
 
   if (!institute) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f3ebe5] p-4">
+      <div className="flex min-h-screen items-center justify-center bg-white p-4">
         <Card className="max-w-md rounded-[26px] border-[#f0e3da] shadow-[0_24px_60px_rgba(79,48,30,0.12)]">
           <CardContent className="p-6 text-center">
             <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
@@ -129,10 +129,8 @@ const InstituteDashboard = () => {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f3ebe5] p-3 text-[#17162e] sm:p-5 lg:p-7">
-      <div className="pointer-events-none absolute -left-24 top-1/3 h-72 w-72 rounded-full border border-[#c2410c]/20" />
-      <div className="pointer-events-none absolute -right-16 top-16 h-44 w-44 rounded-full bg-[#ffd9bd]/60 blur-3xl" />
-      <div className="relative mx-auto min-h-[calc(100vh-3.5rem)] max-w-[1500px] overflow-hidden rounded-[30px] border border-white/80 bg-[#fffaf7] shadow-[0_32px_90px_rgba(79,48,30,0.14)]">
+    <div className="min-h-screen w-full overflow-hidden bg-white text-[#17162e]">
+      <div className="min-h-screen w-full overflow-hidden bg-white">
       {/* Header */}
       <header className="border-b border-[#f0e3da] bg-white/90 backdrop-blur">
         <div className="mx-auto px-4 py-4 sm:px-6">

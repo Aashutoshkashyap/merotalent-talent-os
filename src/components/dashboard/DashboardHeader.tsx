@@ -89,7 +89,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
       </Button>
 
       <div className="hidden min-w-[132px] lg:block">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#aaa2aa]">Talent OS</p>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#aaa2aa]">Talent OS</p>
         <p className="mt-0.5 text-lg font-black tracking-[-0.035em] text-[#19172b]">{pageTitle}</p>
       </div>
 
@@ -104,7 +104,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-11 rounded-2xl border-[#eee2d8] bg-white pl-10 pr-12 text-sm shadow-[0_8px_24px_rgba(67,42,23,0.04)] placeholder:text-[#aaa4ab] focus-visible:border-[#c2410c]/50 focus-visible:ring-[#c2410c]/15"
           />
-          <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-lg bg-[#f8f1eb] px-2 py-1 text-[10px] font-bold text-[#928b94] sm:flex">
+          <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-lg bg-[#f8f1eb] px-2 py-1 text-xs font-bold text-[#928b94] sm:flex">
             <Command className="h-3 w-3" /> K
           </div>
         </div>
@@ -127,7 +127,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           aria-label="Notifications"
         >
           <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#68c9ad] text-[9px] font-black text-[#19172b] ring-2 ring-[#fffaf6]">
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#68c9ad] text-xs font-black text-[#19172b] ring-2 ring-[#fffaf6]">
             3
           </span>
         </Button>

@@ -178,8 +178,8 @@ const Institutes = () => {
   const [activeTab, setActiveTab] = useState("admissions");
 
   return (
-    <section id="institutes" className="py-20 md:py-32">
-      <div className="container mx-auto px-4">
+    <section id="institutes" className="w-full bg-white py-20 md:py-32">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
           <Badge variant="secondary" className="mb-4">

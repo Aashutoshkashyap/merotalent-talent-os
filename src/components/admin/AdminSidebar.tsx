@@ -85,7 +85,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
         {badge && !compact ? (
           <span
             className={cn(
-              "grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px]",
+              "grid h-5 min-w-5 place-items-center rounded-full px-1 text-xs",
               isActive ? "bg-white/20 text-white" : "bg-[#fff1e8] text-[#c2410c]",
             )}
           >
@@ -110,7 +110,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
           ) : null}
         </Link>
         {!compact ? (
-          <span className="ml-auto rounded-full bg-[#fff1e8] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#c2410c]">
+          <span className="ml-auto rounded-full bg-[#fff1e8] px-2 py-1 text-xs font-bold uppercase tracking-[0.12em] text-[#c2410c]">
             Admin
           </span>
         ) : null}
@@ -125,7 +125,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
             <p className="truncate text-sm font-bold text-[#29263d]">
               {profile?.full_name || "Platform admin"}
             </p>
-            <p className="truncate text-[11px] text-[#9592a6]">
+            <p className="truncate text-xs text-[#9592a6]">
               {profile?.email || "Operations workspace"}
             </p>
           </div>
@@ -135,7 +135,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
       <nav className={cn("flex-1 space-y-6 overflow-y-auto py-5", compact ? "px-3" : "px-4")}>
         <div>
           {!compact ? (
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
+            <p className="mb-2 px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
               Workspace
             </p>
           ) : null}
@@ -143,7 +143,7 @@ const AdminSidebar = ({ onNavigate, compact = false }: AdminSidebarProps) => {
         </div>
         <div>
           {!compact ? (
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
+            <p className="mb-2 px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#aaa7ba]">
               System
             </p>
           ) : null}

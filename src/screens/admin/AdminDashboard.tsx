@@ -179,7 +179,7 @@ const AdminDashboard = () => {
           transition={{ duration: 0.35 }}
           className="rounded-[24px] border border-[#eee7e1] bg-white p-5 shadow-[0_16px_35px_rgba(77,48,31,0.05)] sm:p-6"
         >
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#c2410c]">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#c2410c]">
             <span className="h-2 w-2 rounded-full bg-[#64c9aa]" />
             Live command centre
           </div>
@@ -221,7 +221,7 @@ const AdminDashboard = () => {
                     <Icon className="h-5 w-5" />
                   </span>
                   <h2 className="mt-auto pt-6 font-display text-base font-bold">{action.label}</h2>
-                  <p className="mt-1 text-[11px] leading-4 text-[#9995a7]">{action.description}</p>
+                  <p className="mt-1 text-xs leading-4 text-[#9995a7]">{action.description}</p>
                   <ArrowRight className="mt-4 h-4 w-4 text-[#bebbc8] transition group-hover:translate-x-1 group-hover:text-[#c2410c]" />
                 </Link>
               </motion.div>
@@ -242,7 +242,7 @@ const AdminDashboard = () => {
               <button
                 type="button"
                 onClick={() => setNotificationsCleared(true)}
-                className="text-[10px] font-semibold text-[#9a96a8] transition-colors hover:text-primary"
+                className="text-xs font-semibold text-[#9a96a8] transition-colors hover:text-primary"
               >
                 Clear
               </button>
@@ -259,7 +259,7 @@ const AdminDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setNotificationsCleared(false)}
-                  className="mt-2 text-[10px] font-bold text-primary hover:underline"
+                  className="mt-2 text-xs font-bold text-primary hover:underline"
                 >
                   Restore preview
                 </button>
@@ -278,8 +278,8 @@ const AdminDashboard = () => {
                         <p className="truncate text-xs font-bold">Upcoming review</p>
                         <MoreHorizontal className="h-4 w-4 text-[#aaa7b6]" />
                       </div>
-                      <p className="mt-1 text-[10px] text-[#9995a6]">Partner onboarding · 45 min</p>
-                      <div className="mt-3 flex items-center gap-4 text-[9px] font-semibold text-[#6a667b]">
+                      <p className="mt-1 text-xs text-[#9995a6]">Partner onboarding · 45 min</p>
+                      <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#6a667b]">
                         <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Today</span>
                         <span className="flex items-center gap-1"><Clock3 className="h-3 w-3" /> 11:00 AM</span>
                       </div>
@@ -294,7 +294,7 @@ const AdminDashboard = () => {
                   <p className="text-xs font-bold">Message · Platform quality</p>
                   <MoreHorizontal className="ml-auto h-4 w-4 text-[#aaa7b6]" />
                 </div>
-                <p className="mt-2 rounded-lg bg-[#f8f3ef] px-3 py-2 text-[9px] text-[#aaa6b5]">
+                <p className="mt-2 rounded-lg bg-[#f8f3ef] px-3 py-2 text-xs text-[#aaa6b5]">
                   The weekly operations summary is ready for review…
                 </p>
               </div>
@@ -309,7 +309,7 @@ const AdminDashboard = () => {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-bold">Assignments</h2>
-            <Link to="/admin/jobs" className="text-[10px] font-semibold text-[#c2410c]">Edit</Link>
+            <Link to="/admin/jobs" className="text-xs font-semibold text-[#c2410c]">Edit</Link>
           </div>
 
           <div className="mt-5 space-y-3">
@@ -319,16 +319,16 @@ const AdminDashboard = () => {
                 to={assignment.href}
                 className="block rounded-[18px] border border-[#eee7e1] p-4 transition hover:border-[#fed7aa] hover:bg-[#fbf9f7]"
               >
-                <div className="flex items-center gap-2 text-[10px] font-semibold text-[#c2410c]">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#c2410c]">
                   {index === 0 ? "Partner operations" : "Opportunity quality"}
                   <span className="h-1 w-1 rounded-full bg-[#64c9aa]" />
                 </div>
                 <div className="mt-2 flex items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold leading-5">{assignment.title}</p>
-                    <p className="mt-1 text-[10px] text-[#9995a6]">{assignment.meta}</p>
+                    <p className="mt-1 text-xs text-[#9995a6]">{assignment.meta}</p>
                   </div>
-                  <span className="rounded-full bg-[#fff1e8] px-2.5 py-1 text-[9px] font-bold text-[#c2410c]">
+                  <span className="rounded-full bg-[#fff1e8] px-2.5 py-1 text-xs font-bold text-[#c2410c]">
                     {assignment.tag}
                   </span>
                 </div>
@@ -349,7 +349,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-display text-lg font-bold">{activeCalendar.label}</h2>
-              <p className="mt-1 text-[10px] text-[#9995a6]">Platform operations</p>
+              <p className="mt-1 text-xs text-[#9995a6]">Platform operations</p>
             </div>
             <div className="flex gap-1">
               <Button
@@ -377,7 +377,7 @@ const AdminDashboard = () => {
 
           <div className="mt-5 grid grid-cols-7 gap-1 text-center">
             {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-              <span key={`${day}-${index}`} className="text-[9px] font-semibold text-[#aaa6b6]">{day}</span>
+              <span key={`${day}-${index}`} className="text-xs font-semibold text-[#aaa6b6]">{day}</span>
             ))}
             {activeCalendar.days.map((day, index) => (
               <span
@@ -398,11 +398,11 @@ const AdminDashboard = () => {
               ["02:00–03:00 PM", "Partner review", "Verification queue", "bg-[#64c9aa]"],
             ].map(([time, title, detail, tone]) => (
               <div key={title} className="grid grid-cols-[92px_1fr] gap-3">
-                <span className="text-[9px] font-bold text-[#595568]">{time}</span>
+                <span className="text-xs font-bold text-[#595568]">{time}</span>
                 <div className="relative border-l border-dashed border-[#ded4cd] pl-4">
                   <span className={`absolute -left-1 top-1 h-2 w-2 rounded-full ${tone}`} />
                   <p className="text-xs font-bold">{title}</p>
-                  <p className="mt-1 text-[9px] text-[#9995a6]">{detail}</p>
+                  <p className="mt-1 text-xs text-[#9995a6]">{detail}</p>
                 </div>
               </div>
             ))}
@@ -422,7 +422,7 @@ const AdminDashboard = () => {
               {["A", "S", "R"].map((initial, index) => (
                 <span
                   key={initial}
-                  className={`grid h-7 w-7 place-items-center rounded-full border-2 border-white text-[8px] font-bold ${
+                  className={`grid h-7 w-7 place-items-center rounded-full border-2 border-white text-xs font-bold ${
                     ["bg-[#fff1e8] text-[#c2410c]", "bg-[#e5f7f0] text-[#378a70]", "bg-[#ffedd5] text-[#c2410c]"][index]
                   }`}
                 >
@@ -430,7 +430,7 @@ const AdminDashboard = () => {
                 </span>
               ))}
             </div>
-            <Link to="/admin/users" className="ml-auto text-[10px] font-semibold text-[#c2410c]">View all</Link>
+            <Link to="/admin/users" className="ml-auto text-xs font-semibold text-[#c2410c]">View all</Link>
           </div>
 
           <div className="mt-5 space-y-2">
@@ -448,15 +448,15 @@ const AdminDashboard = () => {
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-xs font-bold">{task.title}</span>
-                      <span className="mt-1 block truncate text-[9px] text-[#9995a6]">{task.subtitle}</span>
+                      <span className="mt-1 block truncate text-xs text-[#9995a6]">{task.subtitle}</span>
                     </span>
                   </span>
-                  <span className="hidden text-[10px] text-[#9995a6] sm:block">Today</span>
+                  <span className="hidden text-xs text-[#9995a6] sm:block">Today</span>
                   <span className="flex items-center gap-2">
                     <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#eee7e1]">
                       <span className="block h-full rounded-full bg-[#c2410c]" style={{ width: `${task.progress}%` }} />
                     </span>
-                    <span className="w-8 text-right text-[9px] font-bold">{task.progress}%</span>
+                    <span className="w-8 text-right text-xs font-bold">{task.progress}%</span>
                   </span>
                   <MoreHorizontal className="hidden h-4 w-4 text-[#b0adba] sm:block" />
                 </Link>
@@ -475,7 +475,7 @@ const AdminDashboard = () => {
               <Sparkles className="h-5 w-5" />
             </span>
             <h2 className="mt-auto pt-8 font-display text-xl font-bold">Keep the signal strong.</h2>
-            <p className="mt-2 text-[11px] leading-5 text-white/70">
+            <p className="mt-2 text-xs leading-5 text-white/70">
               Verify people, partners and proof of skill.
             </p>
             <Button className="mt-5 rounded-xl bg-[#17162f] text-xs text-white hover:bg-[#262342]" asChild>
@@ -498,8 +498,8 @@ const AdminDashboard = () => {
                 </span>
                 <span className="text-2xl font-bold"><MetricValue value={stats.users} isLoading={isLoading} /></span>
               </div>
-              <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#39896f]">People</p>
-              <p className="mt-1 text-[9px] text-[#9995a6]">Across all roles</p>
+              <p className="mt-3 text-xs font-bold uppercase tracking-[0.1em] text-[#39896f]">People</p>
+              <p className="mt-1 text-xs text-[#9995a6]">Across all roles</p>
             </div>
             <div className="rounded-[22px] border border-[#eee7e1] bg-white p-4">
               <div className="flex items-center gap-2">
@@ -508,8 +508,8 @@ const AdminDashboard = () => {
                 </span>
                 <span className="text-2xl font-bold"><MetricValue value={stats.jobs + stats.competitions} isLoading={isLoading} /></span>
               </div>
-              <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c2410c]">Live</p>
-              <p className="mt-1 text-[9px] text-[#9995a6]">Opportunities</p>
+              <p className="mt-3 text-xs font-bold uppercase tracking-[0.1em] text-[#c2410c]">Live</p>
+              <p className="mt-1 text-xs text-[#9995a6]">Opportunities</p>
             </div>
           </motion.article>
 
@@ -520,9 +520,9 @@ const AdminDashboard = () => {
           >
             <div className="flex items-center justify-between">
               <h2 className="font-display text-base font-bold">Board meeting</h2>
-              <Link to="/admin/settings" className="text-[10px] font-semibold text-[#c2410c]">Edit</Link>
+              <Link to="/admin/settings" className="text-xs font-semibold text-[#c2410c]">Edit</Link>
             </div>
-            <div className="mt-3 flex items-center gap-2 text-[9px] text-[#9995a6]">
+            <div className="mt-3 flex items-center gap-2 text-xs text-[#9995a6]">
               <span className="h-2 w-2 rounded-full bg-[#c2410c]" />
               Today at 4:00 PM
             </div>
@@ -533,7 +533,7 @@ const AdminDashboard = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 flex-1 rounded-xl text-[10px]"
+                className="h-9 flex-1 rounded-xl text-xs"
                 onClick={() => setMeetingStatus("reschedule")}
                 disabled={meetingStatus === "accepted"}
               >
@@ -541,7 +541,7 @@ const AdminDashboard = () => {
               </Button>
               <Button
                 size="sm"
-                className="h-9 flex-1 rounded-xl bg-[#c2410c] text-[10px] hover:bg-[#9a3412]"
+                className="h-9 flex-1 rounded-xl bg-[#c2410c] text-xs hover:bg-[#9a3412]"
                 onClick={() => setMeetingStatus("accepted")}
                 disabled={meetingStatus === "accepted"}
               >
@@ -566,7 +566,7 @@ const AdminDashboard = () => {
               </span>
               <span>
                 <span className="block text-xs font-bold">{label as string}</span>
-                <span className="mt-0.5 block text-[10px] text-[#9995a6]">{value as string | number}</span>
+                <span className="mt-0.5 block text-xs text-[#9995a6]">{value as string | number}</span>
               </span>
             </div>
           );

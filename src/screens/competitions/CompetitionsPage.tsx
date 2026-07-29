@@ -54,24 +54,24 @@ const CompetitionsPage = () => {
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "upcoming":
-        return <Badge className="rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[8px] font-black text-[#c2410c] hover:bg-[#fff7ed]">Upcoming</Badge>;
+        return <Badge className="rounded-full border border-[#fed7aa] bg-[#fff7ed] text-xs font-black text-[#c2410c] hover:bg-[#fff7ed]">Upcoming</Badge>;
       case "active":
-        return <Badge className="rounded-full bg-[#e8f7f1] text-[8px] font-black text-[#238366] hover:bg-[#e8f7f1]">Live Now</Badge>;
+        return <Badge className="rounded-full bg-[#e8f7f1] text-xs font-black text-[#238366] hover:bg-[#e8f7f1]">Live Now</Badge>;
       case "completed":
-        return <Badge variant="secondary" className="rounded-full text-[8px] font-black">Completed</Badge>;
+        return <Badge variant="secondary" className="rounded-full text-xs font-black">Completed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f4dfd4]">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
-        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+      <main className="pb-6 pt-[68px] sm:pb-8">
+        <section className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-7 lg:p-9">
           <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr] lg:items-end">
             <div>
-              <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-[9px] font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
+              <Badge className="mb-4 rounded-full border border-[#fed7aa] bg-[#fff7ed] text-xs font-black uppercase tracking-[0.14em] text-[#c2410c] hover:bg-[#fff7ed]">
                 <Trophy className="mr-1 h-3 w-3" />
                 Compete & Win
               </Badge>
@@ -100,14 +100,14 @@ const CompetitionsPage = () => {
               ].map(([value, label, tone]) => (
                 <div key={String(label)} className={`min-h-[96px] rounded-[18px] border p-4 ${tone === "mint" ? "border-[#d9eee6] bg-[#e8f7f1]" : tone === "orange" ? "border-[#f7dfd1] bg-[#fff3ec]" : "border-[#f0e8e3] bg-[#fffaf7]"}`}>
                   <p className={`text-xl font-black ${tone === "mint" ? "text-[#238366]" : tone === "orange" ? "text-[#c2410c]" : "text-[#172039]"}`}>{value}</p>
-                  <p className="mt-3 text-[9px] font-bold text-[#8e868e]">{label}</p>
+                  <p className="mt-3 text-xs font-bold text-[#8e868e]">{label}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[22px] border border-white/80 bg-[#fffdfb] px-4 py-4 shadow-[0_16px_38px_rgba(99,55,29,0.07)] sm:px-6">
+        <section className="mt-3 w-full rounded-[22px] border border-[#eee7e2] bg-[#fffdfb] px-4 py-4 shadow-[0_14px_32px_rgba(99,55,29,0.05)] sm:px-6">
           <div className="flex flex-wrap gap-2">
             {competitionTypes.map((type) => (
               <Button
@@ -115,7 +115,7 @@ const CompetitionsPage = () => {
                 variant={selectedType === type.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedType(type.id)}
-                className={`h-8 rounded-full border-[#ece3de] px-3 text-[9px] font-black ${selectedType === type.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
+                className={`h-8 rounded-full border-[#ece3de] px-3 text-xs font-black ${selectedType === type.id ? "bg-[#c2410c] hover:bg-[#9a3412]" : "bg-white text-[#746d75] hover:border-[#fdba74] hover:text-[#c2410c]"}`}
               >
                 <type.icon className="mr-1 h-3.5 w-3.5" />
                 {type.label}
@@ -124,7 +124,7 @@ const CompetitionsPage = () => {
           </div>
         </section>
 
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-3 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-5 lg:p-7">
+        <section className="mt-3 w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-3 shadow-[0_18px_46px_rgba(99,55,29,0.06)] sm:rounded-[32px] sm:p-5 lg:p-7">
           {isLoading ? (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((i) => (
@@ -150,7 +150,7 @@ const CompetitionsPage = () => {
                     <div className="flex items-start justify-between gap-2">
                       {getStatusBadge(competition.status)}
                       {competition.prize_pool && (
-                        <Badge variant="outline" className="rounded-full border-[#f7dfd1] text-[8px] font-black text-[#c2410c]">
+                        <Badge variant="outline" className="rounded-full border-[#f7dfd1] text-xs font-black text-[#c2410c]">
                           {competition.prize_pool}
                         </Badge>
                       )}
@@ -158,12 +158,12 @@ const CompetitionsPage = () => {
                     <CardTitle className="line-clamp-2 text-base font-black text-[#20273c] transition-colors group-hover:text-[#c2410c]">
                       {competition.title}
                     </CardTitle>
-                    <CardDescription className="line-clamp-2 text-[10px] leading-5 text-[#8f8790]">
+                    <CardDescription className="line-clamp-2 text-xs leading-5 text-[#8f8790]">
                       {competition.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3 px-5 pb-5">
-                    <div className="flex items-center justify-between text-[9px] text-[#8f8790]">
+                    <div className="flex items-center justify-between text-xs text-[#8f8790]">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         {competition.start_date 
@@ -179,13 +179,13 @@ const CompetitionsPage = () => {
                     </div>
                     
                     {competition.registration_deadline && (
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-[#c2410c]">
+                      <div className="flex items-center gap-1 text-xs font-bold text-[#c2410c]">
                         <Clock className="w-4 h-4" />
                         Register by {format(new Date(competition.registration_deadline), "MMM d")}
                       </div>
                     )}
 
-                    <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-[9px] font-black hover:bg-[#9a3412]" asChild>
+                    <Button className="h-9 w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]" asChild>
                       <Link to="/login">
                         <Zap className="w-4 h-4 mr-2" />
                         Register Now
@@ -206,12 +206,12 @@ const CompetitionsPage = () => {
           )}
         </section>
 
-        <section className="mx-auto mt-3 flex max-w-[1420px] flex-col items-start justify-between gap-5 rounded-[26px] bg-[#c2410c] px-6 py-8 text-white shadow-[0_22px_48px_rgba(194,65,12,0.20)] sm:flex-row sm:items-center sm:rounded-[32px] sm:px-9">
+        <section className="mt-3 flex w-full flex-col items-start justify-between gap-5 rounded-[26px] bg-[#c2410c] px-6 py-8 text-white shadow-[0_22px_48px_rgba(194,65,12,0.20)] sm:flex-row sm:items-center sm:rounded-[32px] sm:px-9">
           <div>
             <h2 className="text-xl font-black">Ready to put your talent on the board?</h2>
             <p className="mt-1 text-xs text-white/65">Join a live challenge and create proof that travels with you.</p>
           </div>
-          <Button className="rounded-xl bg-white text-[10px] font-black text-[#c2410c] hover:bg-[#fff7ed]" asChild>
+          <Button className="rounded-xl bg-white text-xs font-black text-[#c2410c] hover:bg-[#fff7ed]" asChild>
             <Link to="/signup">Get started free <Zap className="ml-1 h-3.5 w-3.5" /></Link>
           </Button>
         </section>

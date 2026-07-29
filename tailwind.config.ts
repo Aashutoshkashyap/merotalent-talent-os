@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Avenir Next", "Manrope", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["Avenir Next", "Manrope", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-outfit)", "Outfit", "var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

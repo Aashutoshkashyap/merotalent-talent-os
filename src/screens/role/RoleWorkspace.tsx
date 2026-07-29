@@ -111,10 +111,8 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
   const WorkspaceIcon = content.icon;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f3ebe5] p-3 text-[#17162e] sm:p-5 lg:p-7">
-      <div className="pointer-events-none absolute -left-24 top-1/3 h-72 w-72 rounded-full border border-[#c2410c]/20" />
-      <div className="pointer-events-none absolute -right-16 top-16 h-40 w-40 rounded-full bg-[#ffd9bd]/55 blur-3xl" />
-      <div className="relative mx-auto min-h-[calc(100vh-3.5rem)] max-w-[1500px] overflow-hidden rounded-[30px] border border-white/80 bg-[#fffaf7] shadow-[0_32px_90px_rgba(79,48,30,0.14)]">
+    <div className="min-h-screen w-full overflow-hidden bg-white text-[#17162e]">
+      <div className="min-h-screen w-full overflow-hidden bg-white">
         <header className="flex h-16 items-center gap-3 border-b border-[#f0e3da] bg-white/90 px-4 backdrop-blur sm:px-6">
           <Link to="/" className="flex items-center gap-2 font-display font-bold">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#c2410c] text-white shadow-[0_8px_20px_rgba(249,115,22,0.3)]">
@@ -208,7 +206,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
                     <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#fff1e8] text-[#c2410c]">
                       <StatIcon className="h-4 w-4" />
                     </span>
-                    <span className="text-[11px] font-medium text-[#8d8179]">{note}</span>
+                    <span className="text-xs font-medium text-[#8d8179]">{note}</span>
                   </div>
                   <p className="text-2xl font-bold sm:text-3xl">{value}</p>
                   <p className="mt-1 text-xs text-[#8d8179] sm:text-sm">{label}</p>

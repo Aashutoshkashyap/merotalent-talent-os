@@ -146,14 +146,14 @@ const CourseDetailPage = () => {
 
   return (
     <ContentProtectionProvider enabled={true} showWarnings={true}>
-      <div className="min-h-screen bg-[#f4dfd4]">
+      <div className="min-h-screen bg-white">
         <Navbar />
       
-      <main className="px-3 pb-6 pt-[84px] sm:px-5 sm:pb-8 sm:pt-[96px] lg:px-8">
+      <main className="pb-6 pt-[68px] sm:pb-8">
         {/* Hero Section */}
-        <section className="mx-auto max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_28px_70px_rgba(99,55,29,0.11)] sm:rounded-[32px] sm:p-7 lg:p-9">
+        <section className="w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_22px_56px_rgba(99,55,29,0.08)] sm:rounded-[32px] sm:p-7 lg:p-9">
           <div>
-            <Button variant="ghost" onClick={() => navigate("/courses")} className="mb-6 h-9 rounded-xl text-[10px] font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
+            <Button variant="ghost" onClick={() => navigate("/courses")} className="mb-6 h-9 rounded-xl text-xs font-black text-[#746d75] hover:bg-[#fff0e7] hover:text-[#c2410c]">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Courses
             </Button>
@@ -162,8 +162,8 @@ const CourseDetailPage = () => {
               {/* Course Info */}
               <div className="space-y-6 lg:col-span-2">
                 <div className="flex flex-wrap gap-2">
-                  <Badge className="rounded-full bg-[#c2410c] text-[8px] font-black hover:bg-[#c2410c]">{courseData.category}</Badge>
-                  <Badge variant="outline" className="rounded-full border-[#e8e1dc] text-[8px] font-black">{courseData.difficulty}</Badge>
+                  <Badge className="rounded-full bg-[#c2410c] text-xs font-black hover:bg-[#c2410c]">{courseData.category}</Badge>
+                  <Badge variant="outline" className="rounded-full border-[#e8e1dc] text-xs font-black">{courseData.difficulty}</Badge>
                 </div>
 
                 <h1 className="max-w-3xl font-display text-3xl font-black tracking-[-0.04em] text-[#172039] md:text-5xl">
@@ -174,7 +174,7 @@ const CourseDetailPage = () => {
                   {courseData.description}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-5 text-[10px]">
+                <div className="flex flex-wrap items-center gap-5 text-xs">
                   <span className="flex items-center gap-1 font-bold text-[#c2410c]">
                     <Star className="w-4 h-4 fill-current" />
                     {courseData.rating} ({courseData.reviews} reviews)
@@ -199,8 +199,8 @@ const CourseDetailPage = () => {
                     {courseData.instructor.avatar}
                   </div>
                   <div>
-                    <p className="text-[11px] font-black text-[#263a35]">{courseData.instructor.name}</p>
-                    <p className="mt-1 text-[9px] text-[#687b75]">{courseData.instructor.bio}</p>
+                    <p className="text-xs font-black text-[#263a35]">{courseData.instructor.name}</p>
+                    <p className="mt-1 text-xs text-[#687b75]">{courseData.instructor.bio}</p>
                   </div>
                 </div>
               </div>
@@ -226,7 +226,7 @@ const CourseDetailPage = () => {
 
                     <Button
                       size="lg"
-                      className="w-full rounded-xl bg-[#c2410c] text-[10px] font-black hover:bg-[#9a3412]"
+                      className="w-full rounded-xl bg-[#c2410c] text-xs font-black hover:bg-[#9a3412]"
                       onClick={handleEnroll}
                       disabled={isEnrolling}
                     >
@@ -245,7 +245,7 @@ const CourseDetailPage = () => {
                       )}
                     </Button>
 
-                    <div className="space-y-3 text-[10px]">
+                    <div className="space-y-3 text-xs">
                       <p className="font-black text-[#303649]">This course includes:</p>
                       <div className="space-y-2 text-[#8f8790]">
                         <div className="flex items-center gap-2">
@@ -278,19 +278,19 @@ const CourseDetailPage = () => {
         </section>
 
         {/* Course Content */}
-        <section className="mx-auto mt-3 max-w-[1420px] rounded-[26px] border border-white/80 bg-[#fffdfb] p-5 shadow-[0_24px_60px_rgba(99,55,29,0.09)] sm:rounded-[32px] sm:p-7">
+        <section className="mt-3 w-full rounded-[26px] border border-[#eee7e2] bg-[#fffdfb] p-5 shadow-[0_18px_46px_rgba(99,55,29,0.06)] sm:rounded-[32px] sm:p-7">
           <div>
             <Tabs defaultValue="curriculum" className="space-y-8">
               <TabsList className="rounded-[14px] border border-[#eee7e2] bg-[#faf7f5] p-1">
-                <TabsTrigger value="curriculum" className="rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Curriculum</TabsTrigger>
-                <TabsTrigger value="overview" className="rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Overview</TabsTrigger>
-                <TabsTrigger value="reviews" className="rounded-[10px] text-[10px] font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Reviews</TabsTrigger>
+                <TabsTrigger value="curriculum" className="rounded-[10px] text-xs font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Curriculum</TabsTrigger>
+                <TabsTrigger value="overview" className="rounded-[10px] text-xs font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Overview</TabsTrigger>
+                <TabsTrigger value="reviews" className="rounded-[10px] text-xs font-black data-[state=active]:bg-[#c2410c] data-[state=active]:text-white">Reviews</TabsTrigger>
               </TabsList>
 
               <TabsContent value="curriculum" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-black text-[#20273c]">Course content</h2>
-                  <span className="text-[9px] text-[#8f8790]">
+                  <span className="text-xs text-[#8f8790]">
                     {courseData.modules.length} modules • {totalLessons} lessons • {Math.round(totalDuration / 60)}h total
                   </span>
                 </div>
@@ -300,12 +300,12 @@ const CourseDetailPage = () => {
                     <AccordionItem key={module.id} value={module.id} className="rounded-[16px] border border-[#f0e8e3] px-4">
                       <AccordionTrigger className="hover:no-underline">
                         <div className="flex items-center gap-4">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff0e7] text-[10px] font-black text-[#c2410c]">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff0e7] text-xs font-black text-[#c2410c]">
                             {index + 1}
                           </span>
                           <div className="text-left">
-                            <p className="text-[11px] font-black text-[#303649]">{module.title}</p>
-                            <p className="text-[9px] text-[#8f8790]">
+                            <p className="text-xs font-black text-[#303649]">{module.title}</p>
+                            <p className="text-xs text-[#8f8790]">
                               {module.lessons.length} lessons • {module.lessons.reduce((a, l) => a + l.duration, 0)} min
                             </p>
                           </div>
@@ -322,12 +322,12 @@ const CourseDetailPage = () => {
                                 {lesson.type === "video" && <Play className="h-4 w-4 text-[#c2410c]" />}
                                 {lesson.type === "pdf" && <FileText className="h-4 w-4 text-[#238366]" />}
                                 {lesson.type === "quiz" && <HelpCircle className="h-4 w-4 text-[#a66b00]" />}
-                                <span className="text-[10px] text-[#4d4c58]">{lesson.title}</span>
+                                <span className="text-xs text-[#4d4c58]">{lesson.title}</span>
                                 {lesson.isPreview && (
-                                  <Badge variant="outline" className="text-[8px]">Preview</Badge>
+                                  <Badge variant="outline" className="text-xs">Preview</Badge>
                                 )}
                               </div>
-                              <span className="text-[9px] text-[#8f8790]">{lesson.duration} min</span>
+                              <span className="text-xs text-[#8f8790]">{lesson.duration} min</span>
                             </div>
                           ))}
                         </div>
