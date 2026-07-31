@@ -1,40 +1,45 @@
+"use client";
+
+import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-const CTA = () => (
-  <section className="w-full bg-white py-6 sm:py-8">
-    <div className="relative w-full overflow-hidden bg-[#c2410c] px-6 py-12 text-white sm:px-10 lg:px-14 lg:py-16">
-      <div className="relative z-10 max-w-2xl">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-[#9ce6cf]">
-          <Sparkles className="h-3.5 w-3.5" />
-          Your next chapter can start small
-        </div>
-        <h2 className="mt-5 text-balance font-display text-3xl font-black leading-tight tracking-[-0.035em] sm:text-5xl">
-          Make one skill visible. Let the right opportunity find it.
-        </h2>
-        <p className="mt-4 max-w-xl text-sm leading-6 text-white/60 sm:text-base">
-          Create a free account, choose your path and build momentum from real work.
-        </p>
-        <div className="mt-7 flex flex-wrap gap-3">
-          <Button className="h-11 rounded-xl bg-white px-5 text-[#c2410c] hover:bg-[#fff7ed]" asChild>
-            <Link to="/signup">
-              Create your account
+export default function CTA() {
+  return (
+    <section className="w-full bg-white py-12 px-6 sm:px-10 lg:px-16 max-w-7xl mx-auto">
+      <div className="relative w-full overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-[32px] px-8 py-12 text-white sm:px-12 lg:px-16 lg:py-16 shadow-xl">
+        <div className="relative z-10 max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-bold text-blue-200">
+            <Sparkles className="h-4 w-4" />
+            <span>Join Nepal&apos;s Educational Revolution</span>
+          </div>
+          <h2 className="mt-5 text-balance text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight">
+            Build your skills. Get discovered by top opportunities.
+          </h2>
+          <p className="mt-4 max-w-xl text-sm sm:text-base leading-relaxed text-blue-100 font-medium">
+            Create a free MeroTalent account to access professional courses, participate in hackathons, and connect with academic mentors in Nepal.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center px-6 py-3 bg-white hover:bg-blue-50 text-blue-700 font-bold text-sm rounded-2xl shadow-sm hover:shadow transition-all duration-200 active:scale-95 gap-2"
+            >
+              <span>Create your account</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
-          </Button>
-          <Button className="h-11 rounded-xl border border-white/15 bg-white/5 px-5 text-white hover:bg-white/10" asChild>
-            <Link to="/jobs">Browse opportunities</Link>
-          </Button>
+            <Link
+              to="/courses"
+              className="inline-flex items-center justify-center px-6 py-3 border border-white/20 bg-white/5 hover:bg-white/10 text-white font-bold text-sm rounded-2xl transition-all duration-200 active:scale-95"
+            >
+              Browse courses
+            </Link>
+          </div>
         </div>
-      </div>
-      <div className="absolute -right-16 -top-24 h-80 w-80 rounded-full border-[52px] border-white/10" />
-      <div className="absolute -bottom-36 right-36 h-72 w-72 rounded-full bg-[#bd4d05]/35 blur-3xl" />
-      <svg className="absolute bottom-0 right-0 h-full w-1/2 opacity-25" viewBox="0 0 600 400" fill="none" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M40 360C160 180 245 330 330 140C390 7 494 125 630 30" stroke="white" strokeWidth="2" />
-      </svg>
-    </div>
-  </section>
-);
 
-export default CTA;
+        {/* Decorative backgrounds */}
+        <div className="absolute -right-16 -top-24 h-80 w-80 rounded-full border-[52px] border-white/10 pointer-events-none" />
+        <div className="absolute -bottom-36 right-36 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
+      </div>
+    </section>
+  );
+}

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -133,148 +132,151 @@ const Signup = () => {
       footer={
         <p>
           Already have an account?{" "}
-          <Link to="/login" className="font-bold text-primary hover:underline">
+          <Link to="/login" className="font-black text-[#0073e6] hover:underline">
             Sign in
           </Link>
         </p>
       }
     >
       <div className="space-y-6">
-          <div className="space-y-3">
-            <Label className="text-xs font-bold">I&apos;m joining as</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {accountTypes.map((type) => {
-                const Icon = type.icon;
-                const active = accountType === type.value;
-                return (
-                  <button
-                    key={type.value}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setAccountType(type.value)}
-                    className={`group rounded-[15px] border p-3 text-left transition-all duration-200 ${
-                      active
-                        ? "border-primary bg-[#fff1e8] shadow-[0_8px_20px_rgba(249,115,22,0.1)]"
-                        : "border-[#eee5df] bg-white hover:-translate-y-0.5 hover:border-primary/50"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 text-sm font-semibold">
-                      <span className={`grid h-7 w-7 place-items-center rounded-[9px] ${active ? "bg-primary text-white" : "bg-[#fbf7f4] text-primary"}`}>
-                        <Icon className="h-3.5 w-3.5" />
-                      </span>
-                      {type.label}
+        <div className="space-y-3">
+          <Label className="text-xs font-bold text-slate-700">I&apos;m joining as</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {accountTypes.map((type) => {
+              const Icon = type.icon;
+              const active = accountType === type.value;
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setAccountType(type.value)}
+                  className={`group rounded-[15px] border p-3 text-left transition-all duration-200 cursor-pointer ${
+                    active
+                      ? "border-[#0073e6] bg-blue-50/50 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-[#0073e6]/50"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 text-xs sm:text-sm font-semibold">
+                    <span className={`grid h-7 w-7 place-items-center rounded-[9px] flex-shrink-0 ${active ? "bg-[#0073e6] text-white" : "bg-slate-50 text-slate-400"}`}>
+                      <Icon className="h-3.5 w-3.5" />
                     </span>
-                    <span className="mt-1.5 block pl-9 text-xs leading-5 text-muted-foreground">
-                      {type.description}
-                    </span>
-                  </button>
-                );
-              })}
+                    <span className="truncate text-slate-800">{type.label}</span>
+                  </span>
+                  <span className="mt-1.5 block pl-9 text-[10px] sm:text-xs leading-normal text-slate-400 font-semibold line-clamp-1">
+                    {type.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Google Sign Up Button */}
+        <button
+          onClick={handleGoogleSignUp}
+          disabled={isGoogleLoading}
+          className="h-11 w-full bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-3xs flex items-center justify-center gap-2.5 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+        >
+          {isGoogleLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+          ) : (
+            <Chrome className="w-4.5 h-4.5 text-[#0073e6]" />
+          )}
+          Continue with Google
+        </button>
+
+        {/* Separator */}
+        <div className="relative flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-[10px] uppercase font-black bg-white px-3 text-slate-400 tracking-wider">
+            Or continue with email
+          </div>
+        </div>
+
+        {/* Credentials Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="fullName" className="text-xs font-bold text-slate-700">Full Name</Label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="pl-10 h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
+                required
+              />
             </div>
           </div>
 
-          {/* Google Sign Up Button */}
-          <Button 
-            variant="outline" 
-            className="h-11 w-full gap-2"
-            onClick={handleGoogleSignUp}
-            disabled={isGoogleLoading}
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-xs font-bold text-slate-700">Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10 h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-xs font-bold text-slate-700">Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="confirmPassword" className="text-xs font-bold text-slate-700">Confirm Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="pl-10 h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="h-11 w-full bg-[#0073e6] hover:bg-[#0062c4] text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
           >
-            {isGoogleLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                Creating account...
+              </>
             ) : (
-              <Chrome className="w-5 h-5" />
+              "Create Account"
             )}
-            Continue with Google
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-xs font-bold tracking-[0.12em] text-muted-foreground">
-                Or continue with email
-              </span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-xs font-bold">Full Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-bold">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs font-bold">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-xs font-bold">Confirm Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <Button type="submit" className="h-11 w-full" variant="hero" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                "Create Account"
-              )}
-            </Button>
-          </form>
+          </button>
+        </form>
       </div>
     </AuthShell>
   );
