@@ -25,6 +25,7 @@ import JobsPage from "./screens/jobs/JobsPage";
 import InstitutesPage from "./screens/institutes/InstitutesPage";
 import CompetitionsPage from "./screens/competitions/CompetitionsPage";
 import MentorshipPage from "./screens/mentorship/MentorshipPage";
+import EventsPage from "./screens/events/EventsPage";
 
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -59,6 +60,16 @@ import AdminNotifications from "./screens/admin/AdminNotifications";
 import AdminQueries from "./screens/admin/AdminQueries";
 import AdminManagement from "./screens/admin/AdminManagement";
 import AdminRoleManagement from "./screens/admin/AdminRoleManagement";
+import AdminEvents from "./screens/admin/AdminEvents";
+import AdminPackages from "./screens/admin/AdminPackages";
+import AdminSubscriptions from "./screens/admin/AdminSubscriptions";
+import AdminPayments from "./screens/admin/AdminPayments";
+import AdminAdvertisements from "./screens/admin/AdminAdvertisements";
+import AdminFeaturedItems from "./screens/admin/AdminFeaturedItems";
+import AdminLeads from "./screens/admin/AdminLeads";
+import AdminReports from "./screens/admin/AdminReports";
+import AdminApplications from "./screens/admin/AdminApplications";
+import AdminBookings from "./screens/admin/AdminBookings";
 
 // Institute Pages
 import InstituteDashboard from "./screens/institute/InstituteDashboard";
@@ -91,6 +102,7 @@ const App = () => (
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/institutes" element={<InstitutesPage />} />
               <Route path="/competitions" element={<CompetitionsPage />} />
+              <Route path="/events" element={<EventsPage />} />
               <Route path="/mentorship" element={<MentorshipPage />} />
               <Route path="/privacy" element={<LegalPage type="privacy" />} />
               <Route path="/terms" element={<LegalPage type="terms" />} />
@@ -137,6 +149,16 @@ const App = () => (
                 <Route path="badges" element={<AdminBadges />} />
                 <Route path="lms" element={<AdminLMS />} />
                 <Route path="jobs" element={<AdminJobs />} />
+                <Route path="events" element={<AdminEvents />} />
+                <Route path="packages" element={<AdminPackages />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="payments" element={<AdminPayments />} />
+                <Route path="advertisements" element={<AdminAdvertisements />} />
+                <Route path="featured" element={<AdminFeaturedItems />} />
+                <Route path="leads" element={<AdminLeads />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="applications" element={<AdminApplications />} />
+                <Route path="bookings" element={<AdminBookings />} />
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="queries" element={<AdminQueries />} />
                 <Route path="admins" element={<AdminManagement />} />

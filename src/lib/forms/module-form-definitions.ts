@@ -1,0 +1,283 @@
+import type {
+  ModuleFormDefinition,
+  ModuleFormField,
+  ModuleFormType,
+} from "./module-form-types";
+
+const contactFields: readonly ModuleFormField[] = [
+  {
+    key: "fullName",
+    label: "Full name",
+    type: "text",
+    required: true,
+    autocomplete: "name",
+    minLength: 2,
+    maxLength: 120,
+    placeholder: "Enter your full name",
+  },
+  {
+    key: "email",
+    label: "Email address",
+    type: "email",
+    required: true,
+    autocomplete: "email",
+    maxLength: 254,
+    placeholder: "you@example.com",
+  },
+  {
+    key: "phone",
+    label: "Phone number",
+    type: "tel",
+    required: true,
+    autocomplete: "tel",
+    minLength: 7,
+    maxLength: 20,
+    placeholder: "+977 98XXXXXXXX",
+  },
+];
+
+const definitions = {
+  college_application: {
+    module: "college_application",
+    version: 1,
+    title: "Apply to this college",
+    description: "Share your details and the college will follow up with you.",
+    submitLabel: "Submit application",
+    targetField: "collegeId",
+    fields: [
+      {
+        key: "collegeId",
+        label: "College",
+        type: "hidden",
+        required: true,
+      },
+      ...contactFields,
+      {
+        key: "intendedCourse",
+        label: "Course of interest",
+        type: "text",
+        required: false,
+        maxLength: 160,
+        placeholder: "e.g. BSc Computer Science",
+      },
+      {
+        key: "preferredIntake",
+        label: "Preferred intake",
+        type: "text",
+        required: false,
+        maxLength: 80,
+        placeholder: "e.g. Fall 2027",
+      },
+      {
+        key: "currentQualification",
+        label: "Current qualification",
+        type: "text",
+        required: false,
+        maxLength: 120,
+      },
+      {
+        key: "message",
+        label: "Message",
+        type: "textarea",
+        required: false,
+        maxLength: 2_000,
+        placeholder: "Tell the admissions team what you would like to know.",
+      },
+    ],
+  },
+  job_application: {
+    module: "job_application",
+    version: 1,
+    title: "Apply for this job",
+    description: "Submit your application directly to the hiring team.",
+    submitLabel: "Submit application",
+    targetField: "jobId",
+    fields: [
+      {
+        key: "jobId",
+        label: "Job",
+        type: "hidden",
+        required: true,
+      },
+      ...contactFields,
+      {
+        key: "resumeUrl",
+        label: "Resume",
+        type: "file_reference",
+        required: true,
+        maxLength: 1_024,
+        accept: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+        helpText: "Upload a PDF, DOC or DOCX file up to 5 MB.",
+      },
+      {
+        key: "coverLetter",
+        label: "Cover letter",
+        type: "textarea",
+        required: false,
+        maxLength: 5_000,
+      },
+      {
+        key: "portfolioUrl",
+        label: "Portfolio URL",
+        type: "url",
+        required: false,
+        maxLength: 2_048,
+        placeholder: "https://your-portfolio.com",
+      },
+      {
+        key: "skills",
+        label: "Relevant skills",
+        type: "multiselect",
+        required: false,
+        max: 30,
+      },
+      {
+        key: "expectedSalary",
+        label: "Expected salary",
+        type: "number",
+        required: false,
+        min: 0,
+        max: 100_000_000,
+        step: 1,
+      },
+      {
+        key: "availableFrom",
+        label: "Available from",
+        type: "date",
+        required: false,
+      },
+    ],
+  },
+  mentor_booking: {
+    module: "mentor_booking",
+    version: 1,
+    title: "Book a mentor session",
+    description: "Choose a time and tell the mentor what you want to discuss.",
+    submitLabel: "Book session",
+    targetField: "mentorId",
+    fields: [
+      {
+        key: "mentorId",
+        label: "Mentor",
+        type: "hidden",
+        required: true,
+      },
+      ...contactFields,
+      {
+        key: "scheduledDate",
+        label: "Session date",
+        type: "date",
+        required: true,
+      },
+      {
+        key: "scheduledTime",
+        label: "Session time",
+        type: "time",
+        required: true,
+      },
+      {
+        key: "durationMinutes",
+        label: "Duration",
+        type: "select",
+        required: true,
+        options: [
+          { label: "30 minutes", value: "30" },
+          { label: "60 minutes", value: "60" },
+          { label: "90 minutes", value: "90" },
+          { label: "120 minutes", value: "120" },
+        ],
+      },
+      {
+        key: "topic",
+        label: "Session topic",
+        type: "text",
+        required: true,
+        minLength: 2,
+        maxLength: 180,
+      },
+      {
+        key: "notes",
+        label: "Notes for the mentor",
+        type: "textarea",
+        required: false,
+        maxLength: 2_000,
+      },
+      {
+        key: "paymentMethod",
+        label: "Payment method",
+        type: "select",
+        required: true,
+        options: [
+          { label: "Khalti", value: "khalti" },
+          { label: "eSewa", value: "esewa" },
+          { label: "Card", value: "card" },
+          { label: "Bank transfer", value: "bank_transfer" },
+        ],
+      },
+    ],
+  },
+  event_registration: {
+    module: "event_registration",
+    version: 1,
+    title: "Register for this event",
+    description: "Reserve your place and receive registration updates.",
+    submitLabel: "Register",
+    targetField: "eventId",
+    fields: [
+      {
+        key: "eventId",
+        label: "Event",
+        type: "hidden",
+        required: true,
+      },
+      ...contactFields,
+      {
+        key: "ticketType",
+        label: "Ticket type",
+        type: "text",
+        required: false,
+        maxLength: 100,
+      },
+      {
+        key: "attendeeCount",
+        label: "Number of attendees",
+        type: "number",
+        required: true,
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+      {
+        key: "organization",
+        label: "Organization",
+        type: "text",
+        required: false,
+        maxLength: 160,
+      },
+      {
+        key: "specialRequirements",
+        label: "Accessibility or other requirements",
+        type: "textarea",
+        required: false,
+        maxLength: 1_000,
+      },
+      {
+        key: "consent",
+        label: "I agree to the event terms and registration policy",
+        type: "checkbox",
+        required: true,
+        mustBeTrue: true,
+      },
+    ],
+  },
+} as const satisfies Record<ModuleFormType, ModuleFormDefinition>;
+
+export const isModuleFormType = (value: string): value is ModuleFormType =>
+  Object.prototype.hasOwnProperty.call(definitions, value);
+
+export const getModuleFormDefinition = (
+  module: ModuleFormType,
+): ModuleFormDefinition => definitions[module];
+
+export const listModuleFormDefinitions = (): ModuleFormDefinition[] =>
+  Object.values(definitions);

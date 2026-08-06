@@ -39,9 +39,19 @@ const primaryItems = [
   { icon: Building2, label: "Institutions", href: "/admin/institutions" },
   { icon: BriefcaseBusiness, label: "Companies", href: "/admin/companies" },
   { icon: Award, label: "Badges", href: "/admin/badges" },
+  { icon: Sparkles, label: "Events", href: "/admin/events" },
+  { icon: GraduationCap, label: "College Applications", href: "/admin/applications" },
+  { icon: UserCog, label: "Mentor Bookings", href: "/admin/bookings" },
 ];
 
 const systemItems = [
+  { icon: ShieldCheck, label: "Leads Directory", href: "/admin/leads" },
+  { icon: Sparkles, label: "Subscription Packages", href: "/admin/packages" },
+  { icon: ShieldCheck, label: "Active Subscriptions", href: "/admin/subscriptions" },
+  { icon: Settings, label: "Payments Audit", href: "/admin/payments" },
+  { icon: Sparkles, label: "Advertisements", href: "/admin/advertisements" },
+  { icon: Sparkles, label: "Featured Content", href: "/admin/featured" },
+  { icon: Settings, label: "Analytics & Reports", href: "/admin/reports" },
   { icon: Bell, label: "Notifications", href: "/admin/notifications", badge: 3 },
   { icon: MessageSquareText, label: "Support queries", href: "/admin/queries", badge: 5 },
   { icon: ShieldCheck, label: "Roles & access", href: "/admin/roles" },

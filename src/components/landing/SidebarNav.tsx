@@ -44,8 +44,8 @@ const DEFAULT_ROLES: RoleOption[] = [
 
 const TALENT_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Home", icon: Home, path: "/" },
-  { id: "courses", label: "Courses", icon: GraduationCap, path: "https://merotalent.com", isExternal: true },
-  { id: "events", label: "Events", icon: Trophy, path: "/competitions" },
+  { id: "courses", label: "Courses", icon: GraduationCap, path: "https://learn.merotalent.com", isExternal: true },
+  { id: "events", label: "Events", icon: Trophy, path: "/events" },
   { id: "mentors", label: "Mentors", icon: Users, path: "/mentorship" },
   { id: "colleges", label: "Colleges", icon: Building2, path: "/institutes" },
   { id: "jobs", label: "Jobs", icon: Briefcase, path: "/jobs" },

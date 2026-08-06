@@ -58,7 +58,7 @@ const Mentors = () => {
     if (data) {
       const userIds = data.map(m => m.user_id);
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profile_directory")
         .select("user_id, full_name, avatar_url, bio, location")
         .in("user_id", userIds);
       

@@ -150,14 +150,14 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
         data.map(async (conv) => {
           // Get mentor profile
           const { data: mentorProfile } = await supabase
-            .from("profiles")
+            .from("public_profile_directory")
             .select("full_name, avatar_url")
             .eq("user_id", conv.mentor.user_id)
             .single();
 
           // Get mentee profile
           const { data: menteeProfile } = await supabase
-            .from("profiles")
+            .from("public_profile_directory")
             .select("full_name, avatar_url")
             .eq("user_id", conv.mentee_id)
             .single();

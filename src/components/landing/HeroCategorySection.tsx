@@ -22,7 +22,7 @@ export const DEFAULT_CATEGORIES: CategoryCardData[] = [
     bgGradient: "bg-gradient-to-b from-sky-50 to-blue-100/60",
     borderColor: "border-sky-200/60",
     iconBg: "bg-sky-100/80",
-    path: "https://merotalent.com",
+    path: "https://learn.merotalent.com",
     isExternal: true,
     icon: (
       <svg className="w-10 h-10" viewBox="0 0 64 64" fill="none">
