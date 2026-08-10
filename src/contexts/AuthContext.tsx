@@ -47,6 +47,40 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const pendingOAuthRoleKey = "merotalent.pending-oauth-role";
+const oauthRoleClaimLifetimeMs = 30 * 60 * 1000;
+
+const consumePendingOAuthRole = async () => {
+  const raw = window.sessionStorage.getItem(pendingOAuthRoleKey);
+  if (!raw) return;
+
+  window.sessionStorage.removeItem(pendingOAuthRoleKey);
+  try {
+    const parsed = JSON.parse(raw) as { role?: string; createdAt?: number };
+    if (
+      !["institution", "company", "mentor"].includes(parsed.role ?? "") ||
+      typeof parsed.createdAt !== "number" ||
+      Date.now() - parsed.createdAt > oauthRoleClaimLifetimeMs
+    ) {
+      return;
+    }
+
+    const rpcClient = supabase as unknown as {
+      rpc: (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ error: { code?: string; message?: string } | null }>;
+    };
+    const { error } = await rpcClient.rpc("claim_initial_oauth_role", {
+      p_role: parsed.role,
+    });
+    if (error) {
+      console.error("[auth] OAuth role onboarding was rejected", { code: error.code });
+    }
+  } catch {
+    // Invalid or stale browser state is discarded without changing access.
+  }
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -54,33 +88,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const applyPendingRole = async (userId: string) => {
-    const pendingRole = window.localStorage.getItem(
-      "merotalent.pending-account-type",
-    ) as Exclude<AppRole, "admin"> | null;
-    const allowedRoles: Array<Exclude<AppRole, "admin">> = [
-      "talent",
-      "mentor",
-      "company",
-      "institution",
-    ];
-
-    if (!pendingRole || !allowedRoles.includes(pendingRole)) {
-      return;
-    }
-
-    if (pendingRole !== "talent") {
-      await supabase
-        .from("user_roles")
-        .upsert(
-          { user_id: userId, role: pendingRole },
-          { onConflict: "user_id,role" },
-        );
-    }
-
-    window.localStorage.removeItem("merotalent.pending-account-type");
-  };
 
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
@@ -121,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           // Use setTimeout to avoid blocking the auth state change
           setTimeout(async () => {
-            await applyPendingRole(session.user.id);
+            await consumePendingOAuthRole();
             await Promise.all([
               fetchProfile(session.user.id),
               fetchRoles(session.user.id)
@@ -142,11 +149,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await applyPendingRole(session.user.id);
-        Promise.all([
-          fetchProfile(session.user.id),
-          fetchRoles(session.user.id)
-        ]).then(() => setIsLoading(false));
+        consumePendingOAuthRole()
+          .then(() => Promise.all([
+            fetchProfile(session.user.id),
+            fetchRoles(session.user.id)
+          ]))
+          .then(() => setIsLoading(false));
       } else {
         setIsLoading(false);
       }
@@ -161,11 +169,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fullName: string,
     accountType: Exclude<AppRole, "admin">,
   ) => {
-    window.localStorage.setItem(
-      "merotalent.pending-account-type",
-      accountType,
-    );
-
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -177,10 +180,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       },
     });
-
-    if (error) {
-      window.localStorage.removeItem("merotalent.pending-account-type");
-    }
 
     return { error };
   };
@@ -195,12 +194,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error };
     }
 
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id);
-
-    const accountRoles = roleData?.map((item) => item.role as AppRole) ?? [];
+    const rpcClient = supabase as unknown as {
+      rpc: (
+        name: string,
+      ) => Promise<{ data: unknown; error: { message?: string } | null }>;
+    };
+    const { data: accessData, error: accessError } =
+      await rpcClient.rpc("get_my_access_context");
+    if (accessError) {
+      await supabase.auth.signOut();
+      return {
+        error: new Error("Your account access could not be verified. Please try again."),
+      };
+    }
+    const accessRecord =
+      accessData && typeof accessData === "object" && !Array.isArray(accessData)
+        ? accessData as { account_status?: unknown; roles?: unknown }
+        : null;
+    if (accessRecord?.account_status !== "active" || !Array.isArray(accessRecord.roles)) {
+      await supabase.auth.signOut();
+      return { error: new Error("This account is not active.") };
+    }
+    const accountRoles = accessRecord.roles.filter(
+      (role): role is AppRole =>
+        typeof role === "string" &&
+        ["admin", "talent", "institution", "company", "mentor"].includes(role),
+    );
     const redirectTo = accountRoles.includes("admin")
       ? "/admin"
       : accountRoles.includes("institution")
@@ -218,10 +237,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     provider: "google" | "apple",
     accountType: Exclude<AppRole, "admin"> = "talent",
   ) => {
-    window.localStorage.setItem(
-      "merotalent.pending-account-type",
-      accountType,
-    );
+    if (accountType === "talent") {
+      window.sessionStorage.removeItem(pendingOAuthRoleKey);
+    } else {
+      window.sessionStorage.setItem(
+        pendingOAuthRoleKey,
+        JSON.stringify({ role: accountType, createdAt: Date.now() }),
+      );
+    }
 
     const redirectPath =
       accountType === "institution"
@@ -240,7 +263,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     if (error) {
-      window.localStorage.removeItem("merotalent.pending-account-type");
+      window.sessionStorage.removeItem(pendingOAuthRoleKey);
     }
 
     return { error };

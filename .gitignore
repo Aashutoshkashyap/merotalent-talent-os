@@ -16,6 +16,9 @@ out
 *.tsbuildinfo
 *.local
 .env
+.seeds/*.json
+!.seeds/users.example.json
+supabase/.temp/
 
 # Editor directories and files
 .vscode/*

@@ -55,6 +55,27 @@ interface DRMVideoPlayerProps {
   className?: string;
 }
 
+const allowedEmbedHosts = new Set([
+  "player.vdocipher.com",
+  "player.vimeo.com",
+  "www.youtube-nocookie.com",
+]);
+
+const resolveSafeEmbedUrl = (value?: string) => {
+  if (!value) return null;
+  const iframeSource = /<iframe\b[^>]*\bsrc=["']([^"']+)["']/i.exec(value)?.[1];
+  const candidate = iframeSource ?? value.trim();
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "https:" || !allowedEmbedHosts.has(url.hostname)) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+};
+
 const DRMVideoPlayer = ({
   vdoCipherVideoId,
   vdoCipherOtp,
@@ -68,13 +89,14 @@ const DRMVideoPlayer = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [isConfigured, setIsConfigured] = useState(false);
+  const safeEmbedUrl = resolveSafeEmbedUrl(embedCode);
 
   useEffect(() => {
     // Check if DRM is configured
     const hasVdoCipher = !!(vdoCipherVideoId && vdoCipherOtp && vdoCipherPlaybackInfo);
-    const hasEmbed = !!embedCode;
+    const hasEmbed = !!safeEmbedUrl;
     setIsConfigured(hasVdoCipher || hasEmbed);
-  }, [vdoCipherVideoId, vdoCipherOtp, vdoCipherPlaybackInfo, embedCode]);
+  }, [vdoCipherVideoId, vdoCipherOtp, vdoCipherPlaybackInfo, safeEmbedUrl]);
 
   // VdoCipher Integration (uncomment when ready)
   /*
@@ -176,13 +198,20 @@ const DRMVideoPlayer = ({
   }
 
   // Render embed code if provided
-  if (embedCode) {
+  if (safeEmbedUrl) {
     return (
-      <div 
-        ref={containerRef}
-        className={className}
-        dangerouslySetInnerHTML={{ __html: embedCode }}
-      />
+      <div ref={containerRef} className={className}>
+        <iframe
+          src={safeEmbedUrl}
+          title={title ?? "Protected video"}
+          className="aspect-video h-full min-h-[360px] w-full border-0"
+          allow="encrypted-media; fullscreen; picture-in-picture"
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+        />
+      </div>
     );
   }
 

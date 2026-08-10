@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, FileSpreadsheet, FileText, BarChart3, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { OperationsPage } from "./OperationsUI";
 
 const reportsList = [
@@ -19,6 +20,7 @@ const reportsList = [
 
 export default function AdminReports() {
   const { toast } = useToast();
+  const { session } = useAuth();
   const [selectedReport, setSelectedReport] = useState("revenue");
   const [format, setFormat] = useState<"csv" | "xlsx">("csv");
   const [fromDate, setFromDate] = useState("");
@@ -35,7 +37,13 @@ export default function AdminReports() {
       if (fromDate) params.append("from", fromDate);
       if (toDate) params.append("to", toDate);
 
-      const response = await fetch(`/api/v1/admin/reports/${selectedReport}?${params.toString()}`);
+      if (!session?.access_token) {
+        throw new Error("Your administrator session has expired. Sign in again.");
+      }
+
+      const response = await fetch(`/api/v1/admin/reports/${selectedReport}?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
 
       if (!response.ok) {
         throw new Error(`Export failed with status ${response.status}`);
@@ -52,11 +60,14 @@ export default function AdminReports() {
       a.remove();
 
       toast({ title: "Report exported successfully!" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Export Failed",
-        description: err.message || "Failed to download report. Make sure you are logged in as admin.",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Failed to download report. Make sure you are logged in as admin.",
       });
     } finally {
       setIsExporting(false);

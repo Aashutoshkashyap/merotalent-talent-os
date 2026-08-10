@@ -150,14 +150,19 @@ export async function POST(request: Request, context: RouteContext) {
           args: Record<string, unknown>,
         ) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
       };
-      const { data, error } = await rpcClient.rpc("submit_module_form", {
-        p_module: rpcModuleNames[command.module],
-        p_payload: {
-          ...command.values,
-          _formVersion: command.formVersion,
-          _idempotencyKey: command.idempotencyKey ?? null,
-        },
-      });
+      const payload = {
+        ...command.values,
+        _formVersion: command.formVersion,
+        _idempotencyKey: command.idempotencyKey ?? null,
+      };
+      const { data, error } = command.module === "college_application"
+        ? await rpcClient.rpc("submit_college_application", {
+            p_payload: payload,
+          })
+        : await rpcClient.rpc("submit_module_form", {
+            p_module: rpcModuleNames[command.module],
+            p_payload: payload,
+          });
 
       if (error) {
         const wrapped = new Error("The database rejected the submission.") as Error & {

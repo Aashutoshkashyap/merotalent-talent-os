@@ -9,6 +9,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "seed:test-users": "node scripts/seed-test-users.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -60,7 +61,7 @@
     "react-hook-form": "^7.61.1",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.9",
-    "react-router-dom": "^7.18.1",
+    "react-router-dom": "^7.18.2",
     "recharts": "^2.15.4",
     "sharp": "^0.35.3",
     "sonner": "^1.7.4",
@@ -86,9 +87,13 @@
     "vitest": "^4.1.10"
   },
   "overrides": {
+    "brace-expansion@1.1.16": "1.1.18",
+    "brace-expansion@5.0.8": "5.0.9",
+    "js-yaml": "4.3.1",
     "postcss": "$postcss",
     "sharp": "$sharp",
     "lodash": "4.18.1",
+    "nanoid": "3.3.17",
     "ws": "8.21.1"
   }
 }

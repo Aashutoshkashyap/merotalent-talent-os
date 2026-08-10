@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  SignedMediaUploader,
+  type SignedMediaAsset,
+} from "@/components/media/SignedMediaUploader";
+import { resolveCollegeMediaUrl } from "@/lib/institutes/public-institutes";
+import type { Database, Json } from "@/integrations/supabase/types";
 import {
   Table,
   TableBody,
@@ -38,15 +45,13 @@ import {
   MapPin, 
   Users, 
   CheckCircle, 
-  XCircle,
-  Eye,
   MoreHorizontal,
   Plus,
-  Globe,
   GraduationCap,
   Loader2,
   Pencil,
-  Trash2
+  Trash2,
+  ShieldCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -55,24 +60,100 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Institute {
-  id: string;
+type InstituteRow = Database["public"]["Tables"]["institutes"]["Row"];
+type Institute = InstituteRow & { payment_verified: boolean };
+
+interface InstituteFormData {
   name: string;
-  short_name: string | null;
-  type: string | null;
-  description: string | null;
-  location: string | null;
-  website: string | null;
-  logo_url: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  admission_status: string | null;
-  admission_deadline: string | null;
-  total_seats: number | null;
-  available_seats: number | null;
-  is_verified: boolean | null;
-  created_at: string;
+  short_name: string;
+  type: string;
+  institution_category: "college" | "school" | "plus_two";
+  affiliation: string;
+  level: string;
+  description: string;
+  location: string;
+  website: string;
+  youtube_url: string;
+  contact_email: string;
+  contact_phone: string;
+  admission_status: string;
+  total_seats: string;
+  available_seats: string;
+  courses_offered: string;
+  logo_url: string;
+  cover_image_url: string;
+  gallery_urls: string[];
+  applications_enabled: boolean;
+  status: string;
 }
+
+const emptyFormData = (): InstituteFormData => ({
+  name: "",
+  short_name: "",
+  type: "engineering",
+  institution_category: "college",
+  affiliation: "",
+  level: "",
+  description: "",
+  location: "",
+  website: "",
+  youtube_url: "",
+  contact_email: "",
+  contact_phone: "",
+  admission_status: "closed",
+  total_seats: "",
+  available_seats: "",
+  courses_offered: "",
+  logo_url: "",
+  cover_image_url: "",
+  gallery_urls: [],
+  applications_enabled: false,
+  status: "pending",
+});
+
+const courseNames = (value: Json): string => {
+  const courses = Array.isArray(value)
+    ? value
+    : value && typeof value === "object" && Array.isArray(value.programs)
+      ? value.programs
+      : [];
+
+  return courses
+    .map((course) => {
+      if (typeof course === "string") return course;
+      if (!course || typeof course !== "object" || Array.isArray(course)) return "";
+      const name = course.name ?? course.title ?? course.program ?? course.course;
+      return typeof name === "string" ? name : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+};
+
+const MediaPreview = ({
+  value,
+  label,
+  onRemove,
+}: {
+  value: string;
+  label: string;
+  onRemove: () => void;
+}) => (
+  <div className="mt-2 flex items-center gap-3 rounded-lg border bg-muted/20 p-2">
+    <div
+      role="img"
+      aria-label={`${label} preview`}
+      className="h-14 w-20 rounded-md bg-cover bg-center"
+      style={{ backgroundImage: `url(${JSON.stringify(resolveCollegeMediaUrl(value))})` }}
+    />
+    <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={value}>
+      {value}
+    </p>
+    <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
+      <Trash2 className="h-4 w-4" />
+      <span className="sr-only">Remove {label.toLowerCase()}</span>
+    </Button>
+  </div>
+);
 
 const AdminInstitutions = () => {
   const { toast } = useToast();
@@ -83,33 +164,43 @@ const AdminInstitutions = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingInstitute, setEditingInstitute] = useState<Institute | null>(null);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    short_name: "",
-    type: "engineering",
-    description: "",
-    location: "",
-    website: "",
-    contact_email: "",
-    contact_phone: "",
-    admission_status: "closed",
-    total_seats: "",
-    available_seats: "",
-  });
+  const [formData, setFormData] = useState<InstituteFormData>(emptyFormData);
+
+  const fetchInstitutes = useCallback(async () => {
+    const [instituteResult, directoryResult] = await Promise.all([
+      supabase
+        .from("institutes")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase.from("institute_directory").select("id,payment_verified"),
+    ]);
+
+    if (instituteResult.error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to load institutes",
+        description: instituteResult.error.message,
+      });
+    } else {
+      const paymentByInstitute = new Map(
+        (directoryResult.data ?? []).map((item) => [
+          item.id,
+          item.payment_verified === true,
+        ]),
+      );
+      setInstitutes(
+        (instituteResult.data ?? []).map((institute) => ({
+          ...institute,
+          payment_verified: paymentByInstitute.get(institute.id) ?? false,
+        })),
+      );
+    }
+    setIsLoading(false);
+  }, [toast]);
 
   useEffect(() => {
-    fetchInstitutes();
-  }, []);
-
-  const fetchInstitutes = async () => {
-    const { data } = await supabase
-      .from("institutes")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (data) setInstitutes(data);
-    setIsLoading(false);
-  };
+    void fetchInstitutes();
+  }, [fetchInstitutes]);
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
@@ -123,18 +214,33 @@ const AdminInstitutions = () => {
 
     setIsSubmitting(true);
 
+    const courses = formData.courses_offered
+      .split(/[\n,]/)
+      .map((course) => course.trim())
+      .filter(Boolean);
+
     const instituteData = {
       name: formData.name,
       short_name: formData.short_name || null,
       type: formData.type,
+      institution_category: formData.institution_category,
+      affiliation: formData.affiliation || null,
+      level: formData.level || null,
       description: formData.description || null,
       location: formData.location || null,
       website: formData.website || null,
+      youtube_url: formData.youtube_url || null,
       contact_email: formData.contact_email || null,
       contact_phone: formData.contact_phone || null,
       admission_status: formData.admission_status,
       total_seats: formData.total_seats ? parseInt(formData.total_seats) : null,
       available_seats: formData.available_seats ? parseInt(formData.available_seats) : null,
+      courses_offered: courses,
+      logo_url: formData.logo_url || null,
+      cover_image_url: formData.cover_image_url || null,
+      gallery_urls: formData.gallery_urls,
+      applications_enabled: formData.applications_enabled,
+      status: formData.status,
     };
 
     let error;
@@ -166,23 +272,6 @@ const AdminInstitutions = () => {
     setIsSubmitting(false);
   };
 
-  const handleVerify = async (id: string, currentStatus: boolean | null) => {
-    const { error } = await supabase
-      .from("institutes")
-      .update({ is_verified: !currentStatus })
-      .eq("id", id);
-
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
-      toast({
-        title: currentStatus ? "Verification revoked" : "Institute verified!",
-        description: `The institute has been ${currentStatus ? "unverified" : "verified"}.`,
-      });
-      fetchInstitutes();
-    }
-  };
-
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("institutes").delete().eq("id", id);
 
@@ -200,32 +289,34 @@ const AdminInstitutions = () => {
       name: institute.name,
       short_name: institute.short_name || "",
       type: institute.type || "engineering",
+      institution_category:
+        institute.institution_category === "school" ||
+        institute.institution_category === "plus_two"
+          ? institute.institution_category
+          : "college",
+      affiliation: institute.affiliation || "",
+      level: institute.level || "",
       description: institute.description || "",
       location: institute.location || "",
       website: institute.website || "",
+      youtube_url: institute.youtube_url || "",
       contact_email: institute.contact_email || "",
       contact_phone: institute.contact_phone || "",
       admission_status: institute.admission_status || "closed",
       total_seats: institute.total_seats?.toString() || "",
       available_seats: institute.available_seats?.toString() || "",
+      courses_offered: courseNames(institute.courses_offered),
+      logo_url: institute.logo_url || "",
+      cover_image_url: institute.cover_image_url || "",
+      gallery_urls: institute.gallery_urls || [],
+      applications_enabled: institute.applications_enabled,
+      status: institute.status || "pending",
     });
     setIsDialogOpen(true);
   };
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      short_name: "",
-      type: "engineering",
-      description: "",
-      location: "",
-      website: "",
-      contact_email: "",
-      contact_phone: "",
-      admission_status: "closed",
-      total_seats: "",
-      available_seats: "",
-    });
+    setFormData(emptyFormData());
     setEditingInstitute(null);
     setIsDialogOpen(false);
   };
@@ -239,7 +330,7 @@ const AdminInstitutions = () => {
 
   const stats = [
     { label: "Total Institutes", value: institutes.length, icon: Building2, color: "text-primary" },
-    { label: "Verified", value: institutes.filter(i => i.is_verified).length, icon: CheckCircle, color: "text-success" },
+    { label: "Paid verified", value: institutes.filter(i => i.payment_verified).length, icon: ShieldCheck, color: "text-success" },
     { label: "Admissions Open", value: institutes.filter(i => i.admission_status === "open").length, icon: GraduationCap, color: "text-warning" },
     { label: "Total Seats", value: institutes.reduce((sum, i) => sum + (i.total_seats || 0), 0).toLocaleString(), icon: Users, color: "text-accent" },
   ];
@@ -249,7 +340,7 @@ const AdminInstitutions = () => {
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold">Institutes Management</h1>
-          <p className="text-muted-foreground">Manage engineering colleges and institutes</p>
+          <p className="text-muted-foreground">Manage colleges, schools and +2 institutions</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); else setIsDialogOpen(open); }}>
           <DialogTrigger asChild>
@@ -262,7 +353,7 @@ const AdminInstitutions = () => {
             <DialogHeader>
               <DialogTitle>{editingInstitute ? "Edit Institute" : "Add New Institute"}</DialogTitle>
               <DialogDescription>
-                {editingInstitute ? "Update institute details" : "Add a new engineering institute to the platform"}
+                {editingInstitute ? "Update institute details" : "Add a new institute to the platform"}
               </DialogDescription>
             </DialogHeader>
 
@@ -286,9 +377,25 @@ const AdminInstitutions = () => {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label>Category</Label>
+                  <Select
+                    value={formData.institution_category}
+                    onValueChange={(value: InstituteFormData["institution_category"]) =>
+                      setFormData({ ...formData, institution_category: value })
+                    }
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="college">College</SelectItem>
+                      <SelectItem value="school">School</SelectItem>
+                      <SelectItem value="plus_two">+2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Academic focus</Label>
                   <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -306,6 +413,25 @@ const AdminInstitutions = () => {
                     placeholder="e.g., Lalitpur, Nepal"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Affiliation</Label>
+                  <Input
+                    placeholder="e.g., Tribhuvan University"
+                    value={formData.affiliation}
+                    onChange={(e) => setFormData({ ...formData, affiliation: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Level</Label>
+                  <Input
+                    placeholder="e.g., Bachelor, Master"
+                    value={formData.level}
+                    onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                   />
                 </div>
               </div>
@@ -330,6 +456,18 @@ const AdminInstitutions = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>YouTube video</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={formData.youtube_url}
+                    onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label>Contact Email</Label>
                   <Input
                     type="email"
@@ -338,6 +476,25 @@ const AdminInstitutions = () => {
                     onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Contact Phone</Label>
+                  <Input
+                    type="tel"
+                    placeholder="e.g., 01-5555555"
+                    value={formData.contact_phone}
+                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Programs offered</Label>
+                <Textarea
+                  placeholder={"One program per line, e.g.\nBBA\nBCA\nBSc CSIT"}
+                  value={formData.courses_offered}
+                  onChange={(e) => setFormData({ ...formData, courses_offered: e.target.value })}
+                  rows={4}
+                />
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4">
@@ -371,6 +528,139 @@ const AdminInstitutions = () => {
                   />
                 </div>
               </div>
+
+              <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Listing status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(status) => setFormData({ ...formData, status })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="pending">Pending review</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Approval controls directory visibility, not paid verification.
+                  </p>
+                </div>
+                <div className="flex items-start justify-between gap-4 rounded-md bg-background p-3">
+                  <div>
+                    <Label htmlFor="applications-enabled">Accept applications</Label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Enables Apply Now independently of paid verification.
+                    </p>
+                  </div>
+                  <Switch
+                    id="applications-enabled"
+                    checked={formData.applications_enabled}
+                    onCheckedChange={(applications_enabled) =>
+                      setFormData({ ...formData, applications_enabled })
+                    }
+                  />
+                </div>
+              </div>
+
+              {editingInstitute ? (
+                <div className="space-y-4 rounded-lg border p-4">
+                  <div>
+                    <h3 className="font-medium">Institute media</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Secure uploads are stored as canonical object paths. Save the form after uploading.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <SignedMediaUploader
+                        label="Logo"
+                        module="college_logo"
+                        resourceId={editingInstitute.id}
+                        onUploaded={([asset]: SignedMediaAsset[]) => {
+                          if (asset) {
+                            setFormData((current) => ({ ...current, logo_url: asset.path }));
+                          }
+                        }}
+                      />
+                      {formData.logo_url && (
+                        <MediaPreview
+                          value={formData.logo_url}
+                          label="Logo"
+                          onRemove={() =>
+                            setFormData((current) => ({ ...current, logo_url: "" }))
+                          }
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <SignedMediaUploader
+                        label="Cover image"
+                        module="college_cover"
+                        resourceId={editingInstitute.id}
+                        onUploaded={([asset]: SignedMediaAsset[]) => {
+                          if (asset) {
+                            setFormData((current) => ({ ...current, cover_image_url: asset.path }));
+                          }
+                        }}
+                      />
+                      {formData.cover_image_url && (
+                        <MediaPreview
+                          value={formData.cover_image_url}
+                          label="Cover image"
+                          onRemove={() =>
+                            setFormData((current) => ({ ...current, cover_image_url: "" }))
+                          }
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <SignedMediaUploader
+                    label="Gallery"
+                    module="college_gallery"
+                    resourceId={editingInstitute.id}
+                    multiple
+                    maxFiles={30 - formData.gallery_urls.length}
+                    disabled={formData.gallery_urls.length >= 30}
+                    onUploaded={(assets) =>
+                      setFormData((current) => ({
+                        ...current,
+                        gallery_urls: [
+                          ...current.gallery_urls,
+                          ...assets.map((asset) => asset.path),
+                        ].slice(0, 30),
+                      }))
+                    }
+                  />
+                  {formData.gallery_urls.length > 0 && (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {formData.gallery_urls.map((value, index) => (
+                        <MediaPreview
+                          key={`${value}-${index}`}
+                          value={value}
+                          label={`Gallery image ${index + 1}`}
+                          onRemove={() =>
+                            setFormData((current) => ({
+                              ...current,
+                              gallery_urls: current.gallery_urls.filter((_, itemIndex) => itemIndex !== index),
+                            }))
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  Save the institute first, then reopen it to upload its logo, cover and gallery images.
+                </p>
+              )}
             </div>
 
             <DialogFooter>
@@ -428,7 +718,7 @@ const AdminInstitutions = () => {
                 <TableHead>Location</TableHead>
                 <TableHead>Admission</TableHead>
                 <TableHead className="text-center">Seats</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -438,13 +728,22 @@ const AdminInstitutions = () => {
                   <TableCell>
                     <div>
                       <p className="font-medium">{institute.name}</p>
-                      {institute.short_name && (
-                        <p className="text-xs text-muted-foreground">{institute.short_name}</p>
-                      )}
+                      <p className="text-xs capitalize text-muted-foreground">
+                        {[institute.short_name, institute.status].filter(Boolean).join(" · ")}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">{institute.type}</Badge>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="outline" className="capitalize">
+                        {institute.institution_category === "plus_two"
+                          ? "+2"
+                          : institute.institution_category}
+                      </Badge>
+                      {institute.type && (
+                        <Badge variant="secondary" className="capitalize">{institute.type}</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -475,13 +774,13 @@ const AdminInstitutions = () => {
                     ) : "-"}
                   </TableCell>
                   <TableCell>
-                    {institute.is_verified ? (
+                    {institute.payment_verified ? (
                       <Badge className="bg-success/10 text-success border-success/20">
-                        <CheckCircle className="w-3 h-3 mr-1" />Verified
+                        <CheckCircle className="w-3 h-3 mr-1" />Paid verified
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                        Pending
+                      <Badge variant="outline" className="bg-muted text-muted-foreground">
+                        Not paid
                       </Badge>
                     )}
                   </TableCell>
@@ -495,10 +794,6 @@ const AdminInstitutions = () => {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openEdit(institute)}>
                           <Pencil className="w-4 h-4 mr-2" />Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleVerify(institute.id, institute.is_verified)}>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          {institute.is_verified ? "Revoke Verification" : "Verify"}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive" 

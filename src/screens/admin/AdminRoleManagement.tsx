@@ -180,36 +180,35 @@ const AdminRoleManagement = () => {
   const assignRole = async () => {
     if (!selectedUser || !selectedRole) return;
 
-    const { error } = await supabase.from("user_roles").insert({
-      user_id: selectedUser.user_id,
-      role: selectedRole as any,
+    const rpcClient = supabase as unknown as {
+      rpc: (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ error: { code?: string; message: string } | null }>;
+    };
+    const { error } = await rpcClient.rpc("admin_update_user_access", {
+      p_user_id: selectedUser.user_id,
+      p_role: selectedRole,
+      p_account_status: null,
     });
 
     if (error) {
-      if (error.code === "23505") {
-        toast({
-          variant: "destructive",
-          title: "Role already assigned",
-          description: "This user already has this role.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Role update failed",
+        description: error.message,
+      });
     } else {
-      // If assigning mentor role, create mentor record
+      // The audited RPC replaces the single primary role transactionally.
       if (selectedRole === "mentor") {
-        await supabase.from("mentors").insert({
+        await supabase.from("mentors").upsert({
           user_id: selectedUser.user_id,
-        });
+        }, { onConflict: "user_id" });
       }
 
       toast({
-        title: "Role assigned",
-        description: `${selectedRole} role has been assigned to ${selectedUser.full_name || selectedUser.email}`,
+        title: "Primary role updated",
+        description: `${selectedUser.full_name || selectedUser.email} is now a ${selectedRole}.`,
       });
       fetchUsers();
       fetchMentors();
@@ -219,18 +218,30 @@ const AdminRoleManagement = () => {
   };
 
   const removeRole = async (userId: string, role: string) => {
-    const { error } = await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", userId)
-      .eq("role", role as any);
+    const rpcClient = supabase as unknown as {
+      rpc: (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ error: { message: string } | null }>;
+    };
+    const { error } = await rpcClient.rpc("admin_update_user_access", {
+      p_user_id: userId,
+      p_role: "talent",
+      p_account_status: null,
+    });
 
     if (!error) {
       toast({
-        title: "Role removed",
-        description: `${role} role has been removed.`,
+        title: "Primary role reset",
+        description: `${role} was replaced with the talent role.`,
       });
       fetchUsers();
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Role update failed",
+        description: error.message,
+      });
     }
   };
 
@@ -298,8 +309,8 @@ const AdminRoleManagement = () => {
       {/* Users Table */}
       <Card className="border-border/50">
         <CardHeader>
-          <CardTitle>User Roles</CardTitle>
-          <CardDescription>Manage user access levels and permissions</CardDescription>
+          <CardTitle>Primary Roles</CardTitle>
+          <CardDescription>Manage one primary role per account; delegated permissions are configured separately</CardDescription>
           <div className="relative max-w-md mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -365,7 +376,7 @@ const AdminRoleManagement = () => {
                       }}
                     >
                       <Shield className="w-4 h-4 mr-2" />
-                      Assign Role
+                      Change Role
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -443,9 +454,9 @@ const AdminRoleManagement = () => {
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign Role</DialogTitle>
+            <DialogTitle>Change Primary Role</DialogTitle>
             <DialogDescription>
-              Assign a new role to {selectedUser?.full_name || selectedUser?.email}
+              Replace the primary role for {selectedUser?.full_name || selectedUser?.email}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -478,7 +489,7 @@ const AdminRoleManagement = () => {
               Cancel
             </Button>
             <Button onClick={assignRole} disabled={!selectedRole}>
-              Assign Role
+              Change Role
             </Button>
           </DialogFooter>
         </DialogContent>

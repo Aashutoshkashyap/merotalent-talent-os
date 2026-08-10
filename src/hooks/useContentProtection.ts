@@ -39,7 +39,7 @@ export const useContentProtection = (options: ContentProtectionOptions = {}) => 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!disableKeyboardShortcuts) return;
 
-      const key = e.key.toLowerCase();
+      const key = typeof e.key === "string" ? e.key.toLowerCase() : "";
 
       // F12 - DevTools
       if (e.key === "F12") {

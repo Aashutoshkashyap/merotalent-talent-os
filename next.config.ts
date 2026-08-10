@@ -1,10 +1,26 @@
 import type { NextConfig } from "next";
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "font-src 'self' data:",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "frame-src 'self' https://www.youtube-nocookie.com https://player.vdocipher.com https://player.vimeo.com",
+  "img-src 'self' data: blob: https://*.supabase.co",
+  "media-src 'self' blob: https://*.supabase.co",
+  "object-src 'none'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://player.vdocipher.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "worker-src 'self' blob:",
+  ...(process.env.NODE_ENV === "production" ? ["upgrade-insecure-requests"] : []),
+].join("; ");
+
 const securityHeaders = [
   {
     key: "Content-Security-Policy",
-    value:
-      "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+    value: contentSecurityPolicy,
   },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
   { key: "Cross-Origin-Resource-Policy", value: "same-site" },
@@ -22,7 +38,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  agentRules: false,
   reactStrictMode: true,
   poweredByHeader: false,
   async headers() {

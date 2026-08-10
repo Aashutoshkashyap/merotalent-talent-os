@@ -23,6 +23,7 @@ import CourseDetailPage from "./screens/courses/CourseDetailPage";
 import CourseCheckoutPage from "./screens/courses/CourseCheckoutPage";
 import JobsPage from "./screens/jobs/JobsPage";
 import InstitutesPage from "./screens/institutes/InstitutesPage";
+import InstituteDetailPage from "./screens/institutes/InstituteDetailPage";
 import CompetitionsPage from "./screens/competitions/CompetitionsPage";
 import MentorshipPage from "./screens/mentorship/MentorshipPage";
 import EventsPage from "./screens/events/EventsPage";
@@ -101,6 +102,7 @@ const App = () => (
               <Route path="/courses/:id/checkout" element={<CourseCheckoutPage />} />
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/institutes" element={<InstitutesPage />} />
+              <Route path="/institutes/:slug" element={<InstituteDetailPage />} />
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/mentorship" element={<MentorshipPage />} />

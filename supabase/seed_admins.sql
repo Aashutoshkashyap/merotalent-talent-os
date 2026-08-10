@@ -1,0 +1,14 @@
+-- Intentionally non-executable.
+--
+-- Supabase Auth identities must be created through the supported Auth Admin
+-- API, never by inserting into auth.users or auth.identities. Use:
+--
+--   SEED_USERS_FILE=.seeds/users.local.json \
+--   SEED_CONFIRM_PROJECT_REF=<project-ref> \
+--   npm run seed:test-users
+--
+-- Keep the configuration and SUPABASE_SECRET_KEY untracked. The script is
+-- idempotent, bootstraps the first admin through bootstrap_first_admin(), and
+-- creates the minimum role-domain records and explicit delegated permissions
+-- required by the dashboards. It also verifies every account through the
+-- normal password login and get_my_access_context() flow before succeeding.

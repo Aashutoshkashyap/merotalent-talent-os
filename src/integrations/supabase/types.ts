@@ -692,60 +692,123 @@ export type Database = {
       institutes: {
         Row: {
           admission_deadline: string | null
+          admission_guidelines: string | null
           admission_status: string | null
+          affiliation: string | null
+          applications_enabled: boolean
           available_seats: number | null
           contact_email: string | null
+          contact_info: Json
           contact_phone: string | null
+          courses_offered: Json
+          cover_image_url: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
+          established_year: number | null
+          featured_until: string | null
+          gallery_urls: string[]
           id: string
+          institution_category: string
+          is_featured: boolean
           is_verified: boolean | null
+          level: string | null
           location: string | null
           logo_url: string | null
           name: string
+          owner_user_id: string | null
+          ranking: number | null
+          salient_features: string[]
+          scholarships: string | null
           short_name: string | null
+          slug: string | null
+          source_url: string | null
+          status: string
           total_seats: number | null
           type: string | null
           updated_at: string
           website: string | null
+          youtube_url: string | null
         }
         Insert: {
           admission_deadline?: string | null
+          admission_guidelines?: string | null
           admission_status?: string | null
+          affiliation?: string | null
+          applications_enabled?: boolean
           available_seats?: number | null
           contact_email?: string | null
+          contact_info?: Json
           contact_phone?: string | null
+          courses_offered?: Json
+          cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
+          established_year?: number | null
+          featured_until?: string | null
+          gallery_urls?: string[]
           id?: string
+          institution_category?: string
+          is_featured?: boolean
           is_verified?: boolean | null
+          level?: string | null
           location?: string | null
           logo_url?: string | null
           name: string
+          owner_user_id?: string | null
+          ranking?: number | null
+          salient_features?: string[]
+          scholarships?: string | null
           short_name?: string | null
+          slug?: string | null
+          source_url?: string | null
+          status?: string
           total_seats?: number | null
           type?: string | null
           updated_at?: string
           website?: string | null
+          youtube_url?: string | null
         }
         Update: {
           admission_deadline?: string | null
+          admission_guidelines?: string | null
           admission_status?: string | null
+          affiliation?: string | null
+          applications_enabled?: boolean
           available_seats?: number | null
           contact_email?: string | null
+          contact_info?: Json
           contact_phone?: string | null
+          courses_offered?: Json
+          cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
+          established_year?: number | null
+          featured_until?: string | null
+          gallery_urls?: string[]
           id?: string
+          institution_category?: string
+          is_featured?: boolean
           is_verified?: boolean | null
+          level?: string | null
           location?: string | null
           logo_url?: string | null
           name?: string
+          owner_user_id?: string | null
+          ranking?: number | null
+          salient_features?: string[]
+          scholarships?: string | null
           short_name?: string | null
+          slug?: string | null
+          source_url?: string | null
+          status?: string
           total_seats?: number | null
           type?: string | null
           updated_at?: string
           website?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -1626,6 +1689,46 @@ export type Database = {
       }
     }
     Views: {
+      institute_directory: {
+        Row: {
+          admission_deadline: string | null
+          admission_guidelines: string | null
+          admission_status: string | null
+          affiliation: string | null
+          applications_enabled: boolean | null
+          available_seats: number | null
+          contact_email: string | null
+          contact_info: Json | null
+          contact_phone: string | null
+          courses_offered: Json | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          established_year: number | null
+          gallery_urls: string[] | null
+          id: string
+          institution_category: string | null
+          is_featured: boolean | null
+          level: string | null
+          location: string | null
+          logo_url: string | null
+          name: string
+          payment_verified: boolean | null
+          ranking: number | null
+          salient_features: string[] | null
+          scholarships: string | null
+          short_name: string | null
+          slug: string | null
+          source_url: string | null
+          status: string | null
+          total_seats: number | null
+          type: string | null
+          updated_at: string
+          website: string | null
+          youtube_url: string | null
+        }
+        Relationships: []
+      }
       public_profile_directory: {
         Row: {
           avatar_url: string | null
