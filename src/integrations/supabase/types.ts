@@ -1714,8 +1714,11 @@ export type Database = {
           logo_url: string | null
           name: string
           payment_verified: boolean | null
+          program_names: string[] | null
           ranking: number | null
           salient_features: string[] | null
+          search_document: string | null
+          search_tags: string[] | null
           scholarships: string | null
           short_name: string | null
           slug: string | null

@@ -26,6 +26,19 @@ const oauthMigration = readFileSync(
   "utf8",
 );
 
+const roleGuardMigration = readFileSync(
+  resolve(
+    process.cwd(),
+    "supabase/migrations/20260810111500_seed_fixture_and_role_guard.sql",
+  ),
+  "utf8",
+);
+
+const seedScript = readFileSync(
+  resolve(process.cwd(), "scripts/seed-test-users.mjs"),
+  "utf8",
+);
+
 describe("college directory and application security contract", () => {
   it("derives the public badge only from an exact successful paid subscription", () => {
     expect(collegeMigration).toContain(
@@ -86,5 +99,34 @@ describe("OAuth role onboarding security contract", () => {
     expect(oauthMigration).toContain("auth_provider NOT IN ('google', 'apple')");
     expect(oauthMigration).toContain("role_count <> 1 OR current_role <> 'talent'");
     expect(oauthMigration).toContain("'claim_initial_oauth_role'");
+  });
+});
+
+describe("legacy role and test-fixture hardening contract", () => {
+  it("makes every legacy has_role policy depend on the Auth-aware account check", () => {
+    expect(roleGuardMigration).toContain(
+      "CREATE OR REPLACE FUNCTION public.has_role(",
+    );
+    expect(roleGuardMigration).toContain(
+      "_user_id uuid,\n  _role public.app_role",
+    );
+    expect(roleGuardMigration).toContain("SECURITY DEFINER");
+    expect(roleGuardMigration).toContain(
+      "SELECT public.is_account_active(_user_id) AND EXISTS (",
+    );
+    expect(roleGuardMigration).not.toMatch(/\b(?:DROP FUNCTION|REVOKE|GRANT)\b/i);
+  });
+
+  it("keeps the institution fixture private and grants standalone-job entitlement", () => {
+    expect(seedScript).toContain('status: "draft"');
+    expect(seedScript).toContain('applications_enabled: false');
+    expect(seedScript).toContain('entityType: "user"');
+    expect(seedScript).toContain("entityId: null");
+    expect(seedScript).toContain("features: { job_applications: true }");
+  });
+
+  it("looks up NULL entity subscriptions with IS NULL semantics", () => {
+    expect(seedScript).toContain("entityId === null");
+    expect(seedScript).toContain('.is("entity_id", null)');
   });
 });

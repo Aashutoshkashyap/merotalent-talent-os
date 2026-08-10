@@ -20,6 +20,11 @@ out
 !.seeds/users.example.json
 supabase/.temp/
 
+# Local research/source captures (kept out of application releases)
+Education_Directory_Aug2026_With_Descriptions.xlsx
+Edusanjal - Your Guide to Education in Nepal.html
+Edusanjal - Your Guide to Education in Nepal_files/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

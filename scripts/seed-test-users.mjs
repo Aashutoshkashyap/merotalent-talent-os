@@ -274,15 +274,17 @@ async function ensureComplimentaryEntitlement(
     .single();
   if (packageError) throw packageError;
 
-  const { data: current, error: currentError } = await client
+  let currentQuery = client
     .from("subscriptions")
     .select("id")
     .eq("user_id", userId)
     .eq("entity_type", entityType)
-    .eq("entity_id", entityId)
     .in("status", ["trialing", "active"])
-    .is("deleted_at", null)
-    .maybeSingle();
+    .is("deleted_at", null);
+  currentQuery = entityId === null
+    ? currentQuery.is("entity_id", null)
+    : currentQuery.eq("entity_id", entityId);
+  const { data: current, error: currentError } = await currentQuery.maybeSingle();
   if (currentError) throw currentError;
 
   const values = {
@@ -322,8 +324,8 @@ async function ensureRoleFixture(client, user, seed) {
       type: "college",
       institution_category: "college",
       description: "Private test workspace created by the secure seed process.",
-      status: "approved",
-      applications_enabled: true,
+      status: "draft",
+      applications_enabled: false,
       is_verified: false,
       deleted_at: null,
     };
@@ -362,6 +364,18 @@ async function ensureRoleFixture(client, user, seed) {
       name: "Test College Complimentary Access",
       features: { college_applications: true, event_registrations: true },
     });
+
+    if (seed.permissions.includes("job.post")) {
+      await ensureComplimentaryEntitlement(client, {
+        userId: user.id,
+        entityType: "user",
+        entityId: null,
+        audience: "institution",
+        code: "test-institution-job-complimentary",
+        name: "Test Institution Job Access",
+        features: { job_applications: true },
+      });
+    }
   }
 
   if (seed.role === "company") {

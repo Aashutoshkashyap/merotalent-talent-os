@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import {
+  cleanInstituteFilterText,
+  tokenizeInstituteSearch,
+} from "./directory-search";
 
 export type InstituteCategory = "all" | "college" | "school" | "plus-two";
 export type InstituteSort = "recommended" | "name" | "newest";
@@ -35,6 +39,9 @@ export interface InstituteRecord {
   admission_deadline: string | null;
   applications_enabled: boolean | null;
   payment_verified: boolean | null;
+  program_names: string[] | null;
+  search_tags: string[] | null;
+  search_document: string | null;
   is_featured: boolean | null;
   ranking: number | null;
   status: string | null;
@@ -71,14 +78,6 @@ const categoryValues: Record<Exclude<InstituteCategory, "all">, string[]> = {
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const youtubeIdPattern = /^[A-Za-z0-9_-]{11}$/;
-
-const cleanFilterText = (value: string) =>
-  value
-    .normalize("NFKC")
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 120);
 
 export const institutePath = (institute: Pick<InstituteRecord, "id" | "slug">) =>
   `/institutes/${encodeURIComponent(institute.slug || institute.id)}`;
@@ -196,22 +195,19 @@ export async function fetchPublicInstitutes({
     .from("institute_directory")
     .select("*", { count: "exact" });
 
-  const normalizedSearch = cleanFilterText(search);
-  if (normalizedSearch) {
-    const pattern = `%${normalizedSearch}%`;
-    request = request.or(
-      `name.ilike.${pattern},short_name.ilike.${pattern},location.ilike.${pattern},affiliation.ilike.${pattern}`,
-    );
+  const searchTokens = tokenizeInstituteSearch(search);
+  for (const token of searchTokens) {
+    request = request.ilike("search_document", `%${token}%`);
   }
 
   if (category !== "all") {
     request = request.in("institution_category", categoryValues[category]);
   }
 
-  const normalizedLocation = cleanFilterText(location);
+  const normalizedLocation = cleanInstituteFilterText(location);
   if (normalizedLocation) request = request.ilike("location", `%${normalizedLocation}%`);
 
-  const normalizedAffiliation = cleanFilterText(affiliation);
+  const normalizedAffiliation = cleanInstituteFilterText(affiliation);
   if (normalizedAffiliation) request = request.ilike("affiliation", `%${normalizedAffiliation}%`);
 
   if (admissionStatus) request = request.eq("admission_status", admissionStatus);
