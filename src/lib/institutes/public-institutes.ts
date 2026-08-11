@@ -182,15 +182,24 @@ export const getYoutubeEmbedUrl = (value: string | null | undefined) => {
   }
 };
 
-export async function fetchPublicInstitutes({
-  search,
-  category,
-  location,
-  affiliation,
-  admissionStatus,
-  sort,
-  limit,
-}: PublicInstituteQuery): Promise<PublicInstituteResult> {
+interface CacheEntry<T> {
+  timestamp: number;
+  data: T;
+}
+
+const queryCache = new Map<string, CacheEntry<PublicInstituteResult>>();
+const detailCache = new Map<string, CacheEntry<InstituteRecord | null>>();
+const CACHE_TTL_MS = 30000; // 30 seconds TTL
+
+export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promise<PublicInstituteResult> {
+  const cacheKey = JSON.stringify(query);
+  const cached = queryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  const { search, category, location, affiliation, admissionStatus, sort, limit } = query;
+
   let request = supabase
     .from("institute_directory")
     .select("*", { count: "exact" });
@@ -226,13 +235,22 @@ export async function fetchPublicInstitutes({
   const { data, error, count } = await request.range(0, Math.max(0, limit - 1));
   if (error) throw new Error(error.message);
 
-  return {
+  const result: PublicInstituteResult = {
     institutes: (data ?? []) as InstituteRecord[],
     count: count ?? data?.length ?? 0,
   };
+
+  queryCache.set(cacheKey, { timestamp: Date.now(), data: result });
+  return result;
 }
 
 export async function fetchPublicInstitute(identifier: string): Promise<InstituteRecord | null> {
+  const cacheKey = identifier.toLowerCase();
+  const cached = detailCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   let request = supabase
     .from("institute_directory")
     .select("*");
@@ -243,5 +261,8 @@ export async function fetchPublicInstitute(identifier: string): Promise<Institut
 
   const { data, error } = await request.maybeSingle();
   if (error) throw new Error(error.message);
-  return data as InstituteRecord | null;
+
+  const record = data as InstituteRecord | null;
+  detailCache.set(cacheKey, { timestamp: Date.now(), data: record });
+  return record;
 }
