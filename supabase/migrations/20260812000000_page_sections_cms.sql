@@ -33,6 +33,13 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
 ALTER TABLE public.page_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
+-- Safely drop policies if they exist before recreating
+DROP POLICY IF EXISTS "Admins manage page sections" ON public.page_sections;
+DROP POLICY IF EXISTS "Public read visible sections" ON public.page_sections;
+
+DROP POLICY IF EXISTS "Admins manage site settings" ON public.site_settings;
+DROP POLICY IF EXISTS "Public read site settings" ON public.site_settings;
+
 -- Admins can do everything
 CREATE POLICY "Admins manage page sections"
 ON public.page_sections FOR ALL TO authenticated
