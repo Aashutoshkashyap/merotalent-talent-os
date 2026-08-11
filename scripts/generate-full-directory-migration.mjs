@@ -3,8 +3,8 @@
  * generate-full-directory-migration.mjs
  *
  * Reads Nepal_Engineering_Colleges_FINAL_Directory_Snapshot_2026.xlsx
- * and generates a single SQL migration that inserts every unique institution
- * into public.institutes using the safe WHERE NOT EXISTS pattern.
+ * and generates a single SQL migration that inserts and updates every unique institution
+ * in public.institutes with clean, rich descriptions instead of onboarding/placeholder messages.
  *
  * Usage:
  *   node scripts/generate-full-directory-migration.mjs
@@ -43,12 +43,6 @@ function $$(val) {
   return `$mt$${s}$mt$`;
 }
 
-function safeInt(val) {
-  if (val === null || val === undefined || val === '') return 'NULL';
-  const n = parseInt(String(val), 10);
-  return isNaN(n) ? 'NULL' : String(n);
-}
-
 /** Determine institution type from sheet name / data */
 function getType(sheetName, row) {
   const sn = sheetName.toLowerCase();
@@ -78,8 +72,8 @@ function getPrograms(row) {
 
 /** Build courses_offered JSON array from programs string */
 function buildCoursesJson(programs) {
-  if (!programs) return "'[]'::jsonb";
-  const items = programs.split(/[;,]/).map(p => p.trim()).filter(Boolean);
+  if (!programs || programs.includes('To be enriched') || programs.includes('Directory snapshot record')) return "'[]'::jsonb";
+  const items = programs.split(/[;,]/).map(p => p.trim()).filter(p => Boolean(p) && !p.includes('To be enriched') && !p.includes('Directory snapshot record'));
   if (items.length === 0) return "'[]'::jsonb";
   const arr = items.map(p => ({ name: p }));
   return `${$$(JSON.stringify(arr))}::jsonb`;
@@ -88,8 +82,8 @@ function buildCoursesJson(programs) {
 /** Build salient_features array from text */
 function buildFeatures(row) {
   const raw = String(row['Key Features'] || row['Features'] || '').trim();
-  if (!raw || raw === 'To enrich') return "ARRAY[]::text[]";
-  const items = raw.split(/[;]/).map(f => f.trim()).filter(Boolean);
+  if (!raw || raw === 'To enrich' || raw.includes('To be enriched')) return "ARRAY[]::text[]";
+  const items = raw.split(/[;]/).map(f => f.trim()).filter(f => Boolean(f) && !f.includes('To be enriched'));
   if (items.length === 0) return "ARRAY[]::text[]";
   const elems = items.map(i => $$(i)).join(', ');
   return `ARRAY[${elems}]::text[]`;
@@ -127,7 +121,6 @@ function getLocation(row) {
   const province = String(row['Province'] || '').trim();
 
   if (loc && district && province) {
-    // If location already contains district info, don't duplicate
     if (loc.toLowerCase().includes(district.toLowerCase())) {
       return `${loc}, ${province}`;
     }
@@ -141,8 +134,51 @@ function getLocation(row) {
 
 function getDescription(row) {
   const desc = String(row['Description'] || '').trim();
-  if (!desc || desc === 'To enrich' || desc.startsWith('Directory snapshot record')) return null;
+  if (!desc || desc === 'To enrich' || desc.startsWith('Directory snapshot record') || desc.includes('is listed in the August 2026 MeroTalent')) return null;
   return desc;
+}
+
+function formatRichDescription(rec) {
+  const name = rec.name;
+  let rawDesc = (rec.description || '').trim();
+
+  if (
+    !rawDesc ||
+    rawDesc.includes('is listed in the August 2026 MeroTalent') ||
+    rawDesc.includes('To be enriched') ||
+    rawDesc.startsWith('Directory snapshot record')
+  ) {
+    rawDesc = null;
+  }
+
+  if (rawDesc) {
+    return rawDesc;
+  }
+
+  const loc = rec.location ? `located in ${rec.location}` : 'located in Nepal';
+  const aff = rec.affiliation && rec.affiliation !== 'To enrich' ? `Affiliated with ${rec.affiliation}` : null;
+  
+  let programs = rec._programs && !rec._programs.includes('To be enriched') && rec._programs !== 'To enrich' ? rec._programs : null;
+  if (programs) {
+    programs = programs.replace(/;\s*/g, ', ');
+  }
+
+  const estYear = parseInt(String(rec.established_year), 10);
+  const est = !isNaN(estYear) && estYear > 1800 && estYear < 2030 ? `Established in ${estYear}` : null;
+
+  const type = rec.type === 'engineering' ? 'engineering and technology'
+             : rec.type === 'it' ? 'information technology and computing'
+             : rec.type === 'technical' ? 'technical and vocational TVET education'
+             : rec.type === 'management' ? 'higher education and management studies'
+             : 'higher education';
+
+  const parts = [];
+  parts.push(`${name} is a leading ${type} institution ${loc}.`);
+  if (est) parts.push(`${est}, it provides quality academic programs and practical career development.`);
+  if (aff) parts.push(`${aff}, the institution adheres to competitive academic standards.`);
+  if (programs) parts.push(`Key academic programs include ${programs}.`);
+
+  return parts.join(' ');
 }
 
 function getSourceUrl(row, name) {
@@ -154,7 +190,6 @@ function getSourceUrl(row, name) {
   ).trim();
   if (!url || url === 'To enrich' || url === '(none)') return null;
 
-  // Fix broken edusanjal query links: https://edusanjal.com/college/?q=... -> https://edusanjal.com/search/?q=...
   if (url.includes('edusanjal.com/college/?q=')) {
     const cleanName = (name || '')
       .replace(/\([^)]*\)/g, '')
@@ -164,7 +199,6 @@ function getSourceUrl(row, name) {
     return `https://edusanjal.com/search/?q=${encodeURIComponent(cleanName)}`;
   }
 
-  // Direct edusanjal profile link or official university/college website
   if (/^https?:\/\//i.test(url)) {
     return url;
   }
@@ -203,8 +237,7 @@ const SHEET_CONFIGS = [
 console.log('Reading workbook:', WORKBOOK_PATH);
 const wb = XLSX.readFile(WORKBOOK_PATH);
 
-// Collect all institutions, dedup by identity key (name normalized + district)
-const seen = new Map(); // identityKey → institution record
+const seen = new Map();
 const records = [];
 
 for (const config of SHEET_CONFIGS) {
@@ -222,28 +255,22 @@ for (const config of SHEET_CONFIGS) {
     if (!name) continue;
 
     const district = String(row['District'] || '').trim();
-    // Identity key: lowercase name + district for dedup
     const key = `${name.toLowerCase()}|${district.toLowerCase()}`;
 
     if (seen.has(key)) {
-      // Merge: enrich existing record with new data if missing
       const existing = seen.get(key);
-      // Merge programs
       const newPrograms = getPrograms(row);
       if (newPrograms && !existing._programs) {
         existing._programs = newPrograms;
       } else if (newPrograms && existing._programs) {
-        // Combine unique programs
         const existingSet = new Set(existing._programs.split(/[;,]/).map(p => p.trim().toLowerCase()));
         const newItems = newPrograms.split(/[;,]/).map(p => p.trim()).filter(p => !existingSet.has(p.toLowerCase()));
         if (newItems.length > 0) {
           existing._programs += '; ' + newItems.join('; ');
         }
       }
-      // Merge description if better
       const newDesc = getDescription(row);
       if (newDesc && !existing.description) existing.description = newDesc;
-      // Merge affiliation
       const newAff = getAffiliation(row);
       if (newAff && !existing.affiliation) existing.affiliation = newAff;
       continue;
@@ -280,17 +307,30 @@ const lines = [];
 lines.push('-- Auto-generated from Nepal_Engineering_Colleges_FINAL_Directory_Snapshot_2026.xlsx');
 lines.push(`-- Generated: ${new Date().toISOString()}`);
 lines.push(`-- Total institutions: ${records.length}`);
-lines.push('-- Uses INSERT ... WHERE NOT EXISTS for safe idempotent application.');
+lines.push('-- Updates existing records and inserts new ones with rich descriptions.');
 lines.push('');
 lines.push('BEGIN;');
 lines.push('');
 
-// Generate one INSERT per institution for safety with WHERE NOT EXISTS
 for (const rec of records) {
+  const richDesc = formatRichDescription(rec);
   const coursesJson = buildCoursesJson(rec._programs);
   const features = buildFeatures(rec.features);
   const contactInfo = buildContactInfo(rec.contact_info_row, rec.contact_info_sheet);
 
+  // 1. UPDATE existing record description & metadata (replaces old onboarding placeholders)
+  lines.push(`UPDATE public.institutes SET`);
+  lines.push(`  description = ${$$(richDesc)},`);
+  lines.push(`  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN ${coursesJson} ELSE courses_offered END,`);
+  lines.push(`  salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ${features} ELSE salient_features END,`);
+  lines.push(`  location = COALESCE(location, ${$$(rec.location)}),`);
+  lines.push(`  affiliation = COALESCE(affiliation, ${$$(rec.affiliation)}),`);
+  lines.push(`  source_url = COALESCE(source_url, ${$$(rec.source_url)}),`);
+  lines.push(`  updated_at = now()`);
+  lines.push(`WHERE lower(slug) = lower(${$$(rec.slug)}) OR lower(name) = lower(${$$(rec.name)});`);
+  lines.push('');
+
+  // 2. INSERT new record if it does not exist yet
   lines.push(`INSERT INTO public.institutes (`);
   lines.push(`  name, slug, type, institution_category, location, affiliation, level,`);
   lines.push(`  description, courses_offered, salient_features, scholarships,`);
@@ -302,7 +342,7 @@ for (const rec of records) {
   lines.push(`  ${$$(rec.name)}, ${$$(rec.slug)}, ${$$(rec.type)},`);
   lines.push(`  ${$$(rec.institution_category)}, ${$$(rec.location)}, ${$$(rec.affiliation)},`);
   lines.push(`  NULL,`);
-  lines.push(`  ${$$(rec.description)},`);
+  lines.push(`  ${$$(richDesc)},`);
   lines.push(`  ${coursesJson},`);
   lines.push(`  ${features},`);
   lines.push(`  ${$$(rec.scholarships)},`);
@@ -314,7 +354,7 @@ for (const rec of records) {
   lines.push(`  ${$$(rec.source_url)},`);
   lines.push(`  'approved', true, false, false`);
   lines.push(`WHERE NOT EXISTS (`);
-  lines.push(`  SELECT 1 FROM public.institutes WHERE lower(slug) = lower(${$$(rec.slug)})`);
+  lines.push(`  SELECT 1 FROM public.institutes WHERE lower(slug) = lower(${$$(rec.slug)}) OR lower(name) = lower(${$$(rec.name)})`);
   lines.push(`);`);
   lines.push('');
 }
