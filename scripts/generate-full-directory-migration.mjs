@@ -60,18 +60,8 @@ function getType(sheetName, row) {
   return 'college';
 }
 
-/** Determine institution_category */
+/** Determine institution_category - must strictly match CHECK (institution_category IN ('college', 'school', 'plus_two')) */
 function getCategory(sheetName, row) {
-  const sn = sheetName.toLowerCase();
-  const ownership = String(row['Ownership'] || row['Ownership / Modality'] || row['Ownership / Category'] || row['Institution Type'] || '').toLowerCase();
-  if (sn.includes('ctevt')) {
-    if (ownership.includes('constituent')) return 'constituent';
-    if (ownership.includes('community')) return 'community_campus';
-    return 'technical_institute';
-  }
-  if (ownership.includes('university') || ownership.includes('constituent')) return 'constituent';
-  if (ownership.includes('community')) return 'community_campus';
-  if (ownership.includes('public')) return 'community_campus';
   return 'college';
 }
 

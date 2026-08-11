@@ -1,5 +1,5 @@
 -- Auto-generated from Nepal_Engineering_Colleges_FINAL_Directory_Snapshot_2026.xlsx
--- Generated: 2026-08-11T14:30:01.566Z
+-- Generated: 2026-08-11T14:38:03.589Z
 -- Total institutions: 210
 -- Uses INSERT ... WHERE NOT EXISTS for safe idempotent application.
 
@@ -40,7 +40,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Khwopa College of Engineering$mt$, $mt$khwopa-college-of-engineering$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Libali, Bhaktapur, Bagmati$mt$, $mt$Purbanchal University; also listed under Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Libali, Bhaktapur, Bagmati$mt$, $mt$Purbanchal University; also listed under Tribhuvan University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -66,7 +66,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Khwopa Engineering College$mt$, $mt$khwopa-engineering-college$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Libali, Bhaktapur, Bagmati$mt$, $mt$Purbanchal University$mt$,
+  $mt$college$mt$, $mt$Libali, Bhaktapur, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Community-based engineering college operated by Bhaktapur Municipality and affiliated with Purbanchal University. It is a different institution from Khwopa College of Engineering, which is affiliated with Tribhuvan University.$mt$,
   $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electronics & Communication Engineering"},{"name":"Bachelor of Architecture"},{"name":"other current programs subject to university approval"}]$mt$::jsonb,
@@ -92,7 +92,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Khwopa Polytechnic Institute$mt$, $mt$khwopa-polytechnic-institute$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Chyamhasingh, Bhaktapur, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Chyamhasingh, Bhaktapur, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"}]$mt$::jsonb,
@@ -118,7 +118,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Nepal Engineering College (NEC)$mt$, $mt$nepal-engineering-college-nec$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Changunarayan, Bhaktapur, Bagmati$mt$, $mt$Pokhara University$mt$,
+  $mt$college$mt$, $mt$Changunarayan, Bhaktapur, Bagmati$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Not-for-profit engineering institution established in 1994 at Changunarayan, Bhaktapur; offers undergraduate and postgraduate engineering/technology programs.$mt$,
   $mt$[{"name":"BE Civil (144)"},{"name":"BE Computer (96)"},{"name":"BE Electrical & Electronics (48)"},{"name":"B.Arch (48)"},{"name":"BE Civil & Rural (48)"},{"name":"BE Information & Communication (96)"},{"name":"BE Civil for Diploma Holders (48)"},{"name":"MSc Construction Management"},{"name":"MSc NRM & Rural Development"},{"name":"MSc iWRM"},{"name":"MSc Transportation Engineering & Management"}]$mt$::jsonb,
@@ -144,7 +144,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Chitwan Engineering Campus$mt$, $mt$chitwan-engineering-campus$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Rampur, Bharatpur, Chitwan, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Rampur, Bharatpur, Chitwan, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -508,7 +508,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kapan Campus$mt$, $mt$kapan-campus$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Kapan, Kathmandu, Bagmati$mt$, $mt$Bagmati University$mt$,
+  $mt$college$mt$, $mt$Kapan, Kathmandu, Bagmati$mt$, $mt$Bagmati University$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"}]$mt$::jsonb,
@@ -534,7 +534,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kapan Multiple Campus$mt$, $mt$kapan-multiple-campus$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Kapan, Budhanilakantha, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University; Bagmati University$mt$,
+  $mt$college$mt$, $mt$Kapan, Budhanilakantha, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University; Bagmati University$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"}]$mt$::jsonb,
@@ -690,7 +690,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Thapathali Campus | Institute of Engineering$mt$, $mt$thapathali-campus-institute-of-engineering$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Thapathali, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Thapathali, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Constituent IOE campus in central Kathmandu and a long-established engineering education institution offering undergraduate and graduate technical education.$mt$,
   $mt$[{"name":"BE Civil"},{"name":"BE Electronics"},{"name":"Communication & Information"},{"name":"BE Mechanical"},{"name":"BE Automobile"},{"name":"BE Industrial"},{"name":"BE Computer"},{"name":"B.Arch"}]$mt$::jsonb,
@@ -742,7 +742,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kathmandu University School of Engineering$mt$, $mt$kathmandu-university-school-of-engineering$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Dhulikhel, Kavre, Kavrepalanchok, Bagmati$mt$, $mt$Kathmandu University$mt$,
+  $mt$college$mt$, $mt$Dhulikhel, Kavre, Kavrepalanchok, Bagmati$mt$, $mt$Kathmandu University$mt$,
   NULL,
   $mt$Kathmandu University's autonomous, not-for-profit, self-funding public School of Engineering, offering undergraduate, graduate and research education.$mt$,
   $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Mechanical and specialist tracks"},{"name":"BE Geomatics"},{"name":"BE Chemical"},{"name":"BE Mining"},{"name":"B.Arch"},{"name":"B.Tech AI"},{"name":"BIT"},{"name":"Health Informatics"},{"name":"Environmental Engineering"},{"name":"graduate and PhD engineering programs"}]$mt$::jsonb,
@@ -768,7 +768,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Nepal Banepa Polytechnic Institute$mt$, $mt$nepal-banepa-polytechnic-institute$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Banepa, Kavrepalanchok, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Banepa, Kavrepalanchok, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"},{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Computer"},{"name":"Hospitality"}]$mt$::jsonb,
@@ -1106,7 +1106,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Nepal Open University$mt$, $mt$nepal-open-university$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Man Bhawan, Lalitpur, Bagmati$mt$, $mt$Nepal Open University$mt$,
+  $mt$college$mt$, $mt$Man Bhawan, Lalitpur, Bagmati$mt$, $mt$Nepal Open University$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"}]$mt$::jsonb,
@@ -1132,7 +1132,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Pulchowk Campus | Institute of Engineering$mt$, $mt$pulchowk-campus-institute-of-engineering$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Pulchowk, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Pulchowk, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1236,7 +1236,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Gandaki College of Engineering and Science$mt$, $mt$gandaki-college-of-engineering-and-science$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
+  $mt$college$mt$, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1262,7 +1262,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Pashchimanchal Campus | Institute of Engineering$mt$, $mt$pashchimanchal-campus-institute-of-engineering$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1314,7 +1314,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$School of Engineering | Pokhara University$mt$, $mt$school-of-engineering-pokhara-university$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
+  $mt$college$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Constituent School of Engineering of Pokhara University.$mt$,
   $mt$[{"name":"BE Civil"},{"name":"BE Civil & Rural"},{"name":"BE Computer"},{"name":"BE Software"},{"name":"BE Electrical & Electronics"},{"name":"BE IT"},{"name":"graduate engineering programs"}]$mt$::jsonb,
@@ -1392,7 +1392,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Karnali Technical School$mt$, $mt$karnali-technical-school$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Jumla, Karnali$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Jumla, Karnali$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"},{"name":"Engineering"},{"name":"Electrical"},{"name":"Agriculture"},{"name":"Animal Science"}]$mt$::jsonb,
@@ -1418,7 +1418,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Graduate School of Engineering | Mid-West University$mt$, $mt$graduate-school-of-engineering-mid-west-university$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Birendranagar, Surkhet, Karnali$mt$, $mt$Mid-West University$mt$,
+  $mt$college$mt$, $mt$Birendranagar, Surkhet, Karnali$mt$, $mt$Mid-West University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1444,7 +1444,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Dhulabari Campus$mt$, $mt$dhulabari-campus$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Dhulabari, Mechinagar, Jhapa, Koshi$mt$, $mt$Tribhuvan University; CTEVT; Purbanchal University$mt$,
+  $mt$college$mt$, $mt$Dhulabari, Mechinagar, Jhapa, Koshi$mt$, $mt$Tribhuvan University; CTEVT; Purbanchal University$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"}]$mt$::jsonb,
@@ -1574,7 +1574,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Manmohan Memorial Polytechnic$mt$, $mt$manmohan-memorial-polytechnic$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Biratnagar, Morang, Koshi$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Biratnagar, Morang, Koshi$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"}]$mt$::jsonb,
@@ -1600,7 +1600,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Purbanchal University School of Engineering$mt$, $mt$purbanchal-university-school-of-engineering$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Biratnagar, Morang, Koshi$mt$, $mt$Purbanchal University$mt$,
+  $mt$college$mt$, $mt$Biratnagar, Morang, Koshi$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Constituent engineering school of Purbanchal University.$mt$,
   $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical"},{"name":"BE Electronics"},{"name":"Communication & Automation"},{"name":"MSc Information System Engineering"}]$mt$::jsonb,
@@ -1626,7 +1626,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$School of Engineering - Manmohan Technical University$mt$, $mt$school-of-engineering-manmohan-technical-university$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Biratnagar, Budhiganga, Morang, Koshi$mt$, $mt$Manmohan Technical University$mt$,
+  $mt$college$mt$, $mt$Biratnagar, Budhiganga, Morang, Koshi$mt$, $mt$Manmohan Technical University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1652,7 +1652,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Purwanchal Campus | Institute of Engineering$mt$, $mt$purwanchal-campus-institute-of-engineering$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Dharan, Sunsari, Koshi$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Dharan, Sunsari, Koshi$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1730,7 +1730,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Institute of Engineering and Information Technology | Lumbini Technological University$mt$, $mt$institute-of-engineering-and-information-technology-lumbini-technological-university$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Nepalgunj, Banke, Lumbini$mt$, $mt$Lumbini Technological University$mt$,
+  $mt$college$mt$, $mt$Nepalgunj, Banke, Lumbini$mt$, $mt$Lumbini Technological University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1860,7 +1860,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Gaushala Engineering Campus$mt$, $mt$gaushala-engineering-campus$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Mahottari, Madhesh$mt$, $mt$Rajarshi Janak University$mt$,
+  $mt$college$mt$, $mt$Mahottari, Madhesh$mt$, $mt$Rajarshi Janak University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1938,7 +1938,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$School of Engineering | Far Western University$mt$, $mt$school-of-engineering-far-western-university$mt$, $mt$engineering$mt$,
-  $mt$constituent$mt$, $mt$Mahendranagar, Kanchanpur, Sudurpashchim$mt$, $mt$Far-Western University$mt$,
+  $mt$college$mt$, $mt$Mahendranagar, Kanchanpur, Sudurpashchim$mt$, $mt$Far-Western University$mt$,
   NULL,
   $mt$To be enriched from the individual Edusanjal college profile$mt$,
   $mt$[{"name":"To be enriched from the individual Edusanjal college profile"}]$mt$::jsonb,
@@ -1964,7 +1964,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Sindhuli Community Technical Institute$mt$, $mt$sindhuli-community-technical-institute$mt$, $mt$engineering$mt$,
-  $mt$community_campus$mt$, $mt$Kamalamai, Sindhuli, To verify$mt$, $mt$CTEVT / Kathmandu University$mt$,
+  $mt$college$mt$, $mt$Kamalamai, Sindhuli, To verify$mt$, $mt$CTEVT / Kathmandu University$mt$,
   NULL,
   $mt$To be enriched from the individual institution profile$mt$,
   $mt$[{"name":"To be enriched from official/Edusanjal profile"}]$mt$::jsonb,
@@ -1990,7 +1990,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Balaju School of Engineering and Technology$mt$, $mt$balaju-school-of-engineering-and-technology$mt$, $mt$technical$mt$,
-  $mt$constituent$mt$, $mt$Balaju, Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Balaju, Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Mechanical"}]$mt$::jsonb,
@@ -2016,7 +2016,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Shankharapur Polytechnic Institute$mt$, $mt$shankharapur-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$constituent$mt$, $mt$Shankharapur, Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Shankharapur, Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Mechanical"}]$mt$::jsonb,
@@ -2042,7 +2042,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Panauti Technical School$mt$, $mt$panauti-technical-school$mt$, $mt$technical$mt$,
-  $mt$constituent$mt$, $mt$Panauti, Kavre, Kavrepalanchok, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Panauti, Kavre, Kavrepalanchok, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Engineering"},{"name":"Mechanical"},{"name":"Electrical"},{"name":"Agriculture"}]$mt$::jsonb,
@@ -2068,7 +2068,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Thaha Polytechnic Institute$mt$, $mt$thaha-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Chitlang, Makwanpur, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Chitlang, Makwanpur, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Civil"},{"name":"Electrical"},{"name":"Plumbing"},{"name":"Mechanical"}]$mt$::jsonb,
@@ -2094,7 +2094,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Posta Bahadur Bogati Polytechnic Institute$mt$, $mt$posta-bahadur-bogati-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Nuwakot, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Nuwakot, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Agriculture"},{"name":"Animal Science"},{"name":"Technical trades"}]$mt$::jsonb,
@@ -2120,7 +2120,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Ganesh Man Memorial Polytechnic Institute$mt$, $mt$ganesh-man-memorial-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Chandragiri, Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Chandragiri, Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Beauty"},{"name":"Agriculture"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2146,7 +2146,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Mahanagar Polytechnic Institute$mt$, $mt$mahanagar-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Biratnagar, Morang, Koshi$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Biratnagar, Morang, Koshi$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Water Supply & Sanitation"},{"name":"Engineering"}]$mt$::jsonb,
@@ -2172,7 +2172,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Shahid Yagyashwor Memorial Polytechnic Institute$mt$, $mt$shahid-yagyashwor-memorial-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Chaurjahari, Rukum West, Karnali$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Chaurjahari, Rukum West, Karnali$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Agriculture"},{"name":"Electrical"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2198,7 +2198,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Rapti Technical School$mt$, $mt$rapti-technical-school$mt$, $mt$technical$mt$,
-  $mt$constituent$mt$, $mt$Lalmatiya, Dang, Lumbini$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Lalmatiya, Dang, Lumbini$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey"},{"name":"Engineering"}]$mt$::jsonb,
@@ -2224,7 +2224,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Nirmal Lama Polytechnic Institute$mt$, $mt$nirmal-lama-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$constituent$mt$, $mt$Bardibas, Mahottari, Madhesh$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Bardibas, Mahottari, Madhesh$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Health"},{"name":"Construction"},{"name":"Hotel Management"},{"name":"Technical trades"}]$mt$::jsonb,
@@ -2250,7 +2250,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Lahan Technical School$mt$, $mt$lahan-technical-school$mt$, $mt$technical$mt$,
-  $mt$constituent$mt$, $mt$Lahan, Siraha, Madhesh$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Lahan, Siraha, Madhesh$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Engineering"},{"name":"Mechanical"},{"name":"Electrical"}]$mt$::jsonb,
@@ -2276,7 +2276,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$BP Memorial Polytechnic Institute$mt$, $mt$bp-memorial-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Dhanusha, Madhesh$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Dhanusha, Madhesh$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Agriculture"},{"name":"Civil"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2302,7 +2302,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Pokhara Technical School$mt$, $mt$pokhara-technical-school$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Hotel Management"},{"name":"Hospitality"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2328,7 +2328,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Gandaki Polytechnic Institute Pvt. Ltd.$mt$, $mt$gandaki-polytechnic-institute-pvt-ltd$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Electrical"},{"name":"Civil"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2354,7 +2354,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Asia Technical Training Institute$mt$, $mt$asia-technical-training-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Agriculture"},{"name":"Computer"},{"name":"Electronics"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2380,7 +2380,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Annapurna Polytechnic Institute$mt$, $mt$annapurna-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Kaski, Gandaki$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Agriculture"},{"name":"Electrical"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2406,7 +2406,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Dhaulagiri Technical School$mt$, $mt$dhaulagiri-technical-school$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Baglung, Gandaki$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Baglung, Gandaki$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Hotel Management"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -2432,7 +2432,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Gandaki Polytechnic Institute$mt$, $mt$gandaki-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Rupandehi, Lumbini$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Rupandehi, Lumbini$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Electrical"},{"name":"Technical trades"}]$mt$::jsonb,
@@ -2458,7 +2458,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Tikapur Polytechnic Institute$mt$, $mt$tikapur-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Tikapur, Kailali, Sudurpashchim$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Tikapur, Kailali, Sudurpashchim$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Agriculture"},{"name":"Plumbing"},{"name":"Electrical"},{"name":"Beauty"}]$mt$::jsonb,
@@ -2484,7 +2484,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Sahid Smriti Pratishthan$mt$, $mt$sahid-smriti-pratishthan$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Birtamode, Jhapa, Koshi$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Birtamode, Jhapa, Koshi$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Civil"},{"name":"Computer"},{"name":"Geomatics"}]$mt$::jsonb,
@@ -2510,7 +2510,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Jana Prakash Secondary School$mt$, $mt$jana-prakash-secondary-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Kolti, Bajura, Sudurpashchim$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Kolti, Bajura, Sudurpashchim$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Civil Engineering"}]$mt$::jsonb,
@@ -2536,7 +2536,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Malika Secondary School$mt$, $mt$malika-secondary-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Jacha, Jumla, Karnali$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Jacha, Jumla, Karnali$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Civil"},{"name":"Agriculture"}]$mt$::jsonb,
@@ -2562,7 +2562,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Shree Krishna Secondary School$mt$, $mt$shree-krishna-secondary-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Kharipati, Bhaktapur, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Kharipati, Bhaktapur, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Civil"}]$mt$::jsonb,
@@ -2588,7 +2588,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Janajagriti Secondary School$mt$, $mt$janajagriti-secondary-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Civil"}]$mt$::jsonb,
@@ -2614,7 +2614,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Bairiya Secondary School$mt$, $mt$bairiya-secondary-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Agriculture"},{"name":"Animal Science"}]$mt$::jsonb,
@@ -2640,7 +2640,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Panchakanya Secondary School$mt$, $mt$panchakanya-secondary-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Electrical"},{"name":"Civil"}]$mt$::jsonb,
@@ -2666,7 +2666,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Bachhauli Secondary School$mt$, $mt$bachhauli-secondary-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Ratnanagar, Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Hotel Management"}]$mt$::jsonb,
@@ -2692,7 +2692,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Janjyoti Technical School$mt$, $mt$janjyoti-technical-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Lalbandi, Sarlahi, Madhesh$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Lalbandi, Sarlahi, Madhesh$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Computer Engineering"}]$mt$::jsonb,
@@ -2718,7 +2718,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kalika Community School$mt$, $mt$kalika-community-school$mt$, $mt$technical$mt$,
-  $mt$community_campus$mt$, $mt$Rainadevi Chhahara, Palpa, Lumbini$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Rainadevi Chhahara, Palpa, Lumbini$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Civil Engineering"}]$mt$::jsonb,
@@ -2744,7 +2744,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Institute of Community Technical Education$mt$, $mt$institute-of-community-technical-education$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Gaur, Rautahat, Madhesh$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Gaur, Rautahat, Madhesh$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
@@ -2770,7 +2770,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Chhinnamasta Institute of Technology$mt$, $mt$chhinnamasta-institute-of-technology$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Rajbiraj, Saptari, Madhesh$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Rajbiraj, Saptari, Madhesh$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
@@ -2796,7 +2796,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Everest Technical Institute$mt$, $mt$everest-technical-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Rajbiraj, Saptari, Madhesh$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Rajbiraj, Saptari, Madhesh$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
@@ -2822,7 +2822,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$White Park College$mt$, $mt$white-park-college$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Amargadhi, Dadeldhura, Sudurpashchim$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Amargadhi, Dadeldhura, Sudurpashchim$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
@@ -2848,7 +2848,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kailali Polytechnic Institute$mt$, $mt$kailali-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Dhangadhi, Kailali, Sudurpashchim$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Dhangadhi, Kailali, Sudurpashchim$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
@@ -2874,7 +2874,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$SK Institute of Technology$mt$, $mt$sk-institute-of-technology$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Bhimdatta, Kanchanpur, Sudurpashchim$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Bhimdatta, Kanchanpur, Sudurpashchim$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
@@ -2900,7 +2900,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Surkhet Technical School Pvt$mt$, $mt$surkhet-technical-school-pvt$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Surkhet, Karnali$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Surkhet, Karnali$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
@@ -2926,7 +2926,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$LB Modern Electronic Institute Pvt. Ltd.$mt$, $mt$lb-modern-electronic-institute-pvt-ltd$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Electrical"},{"name":"Electronics"},{"name":"Computer"},{"name":"Mechanical"}]$mt$::jsonb,
@@ -2952,7 +2952,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Peace Technical Training Center Pvt. Ltd.$mt$, $mt$peace-technical-training-center-pvt-ltd$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Gwarko, Lalitpur, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Gwarko, Lalitpur, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Electrical"},{"name":"Refrigeration & AC"},{"name":"Fabrication"},{"name":"Tailoring"}]$mt$::jsonb,
@@ -2978,7 +2978,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$World Link Technical Training Institute Private Limited$mt$, $mt$world-link-technical-training-institute-private-limited$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Lalitpur, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Lalitpur, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Mobile Phone Repair"},{"name":"Education"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -3004,7 +3004,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Narayani Polytechnic Institute Pvt. Ltd.$mt$, $mt$narayani-polytechnic-institute-pvt-ltd$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Chitwan, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Plumbing"},{"name":"Electrical"},{"name":"Technical trades"}]$mt$::jsonb,
@@ -3030,7 +3030,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kankai Polytechnic Institute$mt$, $mt$kankai-polytechnic-institute$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Durgapur, Jhapa, Koshi$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Durgapur, Jhapa, Koshi$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Electronics"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -3056,7 +3056,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Trade Link Training Institute Pvt.$mt$, $mt$trade-link-training-institute-pvt$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Jhapa, Koshi$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Jhapa, Koshi$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Electronics/Electrical"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -3082,7 +3082,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kumakh College of Management and Technical Science$mt$, $mt$kumakh-college-of-management-and-technical-science$mt$, $mt$technical$mt$,
-  $mt$technical_institute$mt$, $mt$Dang, Lumbini$mt$, $mt$CTEVT$mt$,
+  $mt$college$mt$, $mt$Dang, Lumbini$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
   $mt$[{"name":"Hospitality"},{"name":"Vocational trades"}]$mt$::jsonb,
@@ -3134,7 +3134,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Amrit Science Campus (ASCOL)$mt$, $mt$amrit-science-campus-ascol$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Lainchaur, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Lainchaur, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc CSIT"},{"name":"Computer/IT programs"}]$mt$::jsonb,
@@ -3420,7 +3420,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Mahendra Ratna Campus$mt$, $mt$mahendra-ratna-campus$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Tahachal, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Tahachal, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BCA"},{"name":"IT/computing-related programs"}]$mt$::jsonb,
@@ -3472,7 +3472,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Padma Kanya Multiple Campus$mt$, $mt$padma-kanya-multiple-campus$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Bagbazar, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Bagbazar, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BCA"},{"name":"BSc CSIT / IT-related programs"}]$mt$::jsonb,
@@ -3706,7 +3706,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Tribhuvan University Central Department of Computer Science and Information Technology$mt$, $mt$tribhuvan-university-central-department-of-computer-science-and-information-technology$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Kirtipur, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Kirtipur, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"MSc CSIT"},{"name":"MIT / postgraduate computing programs"}]$mt$::jsonb,
@@ -3758,7 +3758,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kathmandu University Department of Computer Science and Engineering$mt$, $mt$kathmandu-university-department-of-computer-science-and-engineering$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Dhulikhel, Kavrepalanchok, Bagmati$mt$, $mt$Kathmandu University$mt$,
+  $mt$college$mt$, $mt$Dhulikhel, Kavrepalanchok, Bagmati$mt$, $mt$Kathmandu University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc Computer Science"},{"name":"BE Computer Engineering"},{"name":"MSc/MPhil/PhD computing-related programs"}]$mt$::jsonb,
@@ -3862,7 +3862,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Patan Multiple Campus$mt$, $mt$patan-multiple-campus$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Patan Dhoka, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Patan Dhoka, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"BIM"},{"name":"Computer/IT programs"}]$mt$::jsonb,
@@ -4018,7 +4018,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Pokhara University School of Engineering$mt$, $mt$pokhara-university-school-of-engineering$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
+  $mt$college$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"Computer Engineering"},{"name":"Software Engineering"},{"name":"IT-related graduate programs"}]$mt$::jsonb,
@@ -4044,7 +4044,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Pokhara University School of Science and Technology$mt$, $mt$pokhara-university-school-of-science-and-technology$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
+  $mt$college$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"Computer Science / IT-related programs"}]$mt$::jsonb,
@@ -4070,7 +4070,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Prithvi Narayan Campus$mt$, $mt$prithvi-narayan-campus$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"Computer/IT programs"}]$mt$::jsonb,
@@ -4122,7 +4122,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Mid-West University Graduate School of Information Technology$mt$, $mt$mid-west-university-graduate-school-of-information-technology$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Birendranagar, Surkhet, Karnali$mt$, $mt$Mid-West University$mt$,
+  $mt$college$mt$, $mt$Birendranagar, Surkhet, Karnali$mt$, $mt$Mid-West University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BIT / MIT / IT and computing programs"}]$mt$::jsonb,
@@ -4148,7 +4148,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Mid-West University School of Engineering$mt$, $mt$mid-west-university-school-of-engineering$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Birendranagar, Surkhet, Karnali$mt$, $mt$Mid-West University$mt$,
+  $mt$college$mt$, $mt$Birendranagar, Surkhet, Karnali$mt$, $mt$Mid-West University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BE Computer"},{"name":"BE Software"},{"name":"Computer/IT programs"}]$mt$::jsonb,
@@ -4174,7 +4174,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Nepalgunj Campus$mt$, $mt$nepalgunj-campus$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Nepalgunj, Banke, Lumbini$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Nepalgunj, Banke, Lumbini$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc CSIT"},{"name":"IT/computing programs"}]$mt$::jsonb,
@@ -4200,7 +4200,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Mahendra Multiple Campus$mt$, $mt$mahendra-multiple-campus$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Ghorahi, Dang, Lumbini$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Ghorahi, Dang, Lumbini$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA and IT programs"}]$mt$::jsonb,
@@ -4226,7 +4226,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Butwal Multiple Campus$mt$, $mt$butwal-multiple-campus$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Butwal, Rupandehi, Lumbini$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Butwal, Rupandehi, Lumbini$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA/IT-related programs"}]$mt$::jsonb,
@@ -4304,7 +4304,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Far Western University$mt$, $mt$far-western-university$mt$, $mt$it$mt$,
-  $mt$constituent$mt$, $mt$Mahendranagar, Kanchanpur, Sudurpashchim$mt$, $mt$Far Western University$mt$,
+  $mt$college$mt$, $mt$Mahendranagar, Kanchanpur, Sudurpashchim$mt$, $mt$Far Western University$mt$,
   NULL,
   $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
   $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA/computing-related programs"}]$mt$::jsonb,
@@ -4434,7 +4434,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$People's Campus$mt$, $mt$peoples-campus$mt$, $mt$management$mt$,
-  $mt$community_campus$mt$, $mt$Paknajol, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Paknajol, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   NULL,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb,
@@ -4460,7 +4460,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Janamaitri Campus$mt$, $mt$janamaitri-campus$mt$, $mt$management$mt$,
-  $mt$community_campus$mt$, $mt$Kuleshwor, Kathmandu, Bagmati$mt$, $mt$Bagmati University$mt$,
+  $mt$college$mt$, $mt$Kuleshwor, Kathmandu, Bagmati$mt$, $mt$Bagmati University$mt$,
   NULL,
   NULL,
   $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"B.Ed and other programs"}]$mt$::jsonb,
@@ -4616,7 +4616,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Public Youth Campus$mt$, $mt$public-youth-campus$mt$, $mt$management$mt$,
-  $mt$constituent$mt$, $mt$Dhobichaur, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Dhobichaur, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   NULL,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"},{"name":"management"}]$mt$::jsonb,
@@ -5032,7 +5032,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Kalika Multiple Campus$mt$, $mt$kalika-multiple-campus$mt$, $mt$management$mt$,
-  $mt$community_campus$mt$, $mt$Kajipokhari, Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$Kajipokhari, Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   NULL,
   $mt$[{"name":"BBS"},{"name":"management/humanities programs"}]$mt$::jsonb,
@@ -5110,7 +5110,7 @@ INSERT INTO public.institutes (
 )
 SELECT
   $mt$Madan Bhandari Memorial College$mt$, $mt$madan-bhandari-memorial-college$mt$, $mt$management$mt$,
-  $mt$community_campus$mt$, $mt$New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
+  $mt$college$mt$, $mt$New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   NULL,
   $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management/IT programs"}]$mt$::jsonb,
