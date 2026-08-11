@@ -145,15 +145,31 @@ function getDescription(row) {
   return desc;
 }
 
-function getSourceUrl(row) {
+function getSourceUrl(row, name) {
   const url = String(
-    row['EduSanjal Profile URL'] ||
     row['Official / Profile URL'] ||
+    row['EduSanjal Profile URL'] ||
     row['Official / Primary Source'] ||
     ''
   ).trim();
-  if (!url || url === 'To enrich') return null;
-  return url;
+  if (!url || url === 'To enrich' || url === '(none)') return null;
+
+  // Fix broken edusanjal query links: https://edusanjal.com/college/?q=... -> https://edusanjal.com/search/?q=...
+  if (url.includes('edusanjal.com/college/?q=')) {
+    const cleanName = (name || '')
+      .replace(/\([^)]*\)/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .replace(/\s+/g, '+')
+      .trim();
+    return `https://edusanjal.com/search/?q=${encodeURIComponent(cleanName)}`;
+  }
+
+  // Direct edusanjal profile link or official university/college website
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  return null;
 }
 
 function getScholarships(row) {
@@ -246,7 +262,7 @@ for (const config of SHEET_CONFIGS) {
       featureSheet: config.name,
       scholarships: getScholarships(row),
       established_year: getEstablished(row),
-      source_url: getSourceUrl(row),
+      source_url: getSourceUrl(row, name),
       contact_info_row: row,
       contact_info_sheet: config.name,
     };

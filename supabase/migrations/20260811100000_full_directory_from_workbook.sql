@@ -1,5 +1,5 @@
 -- Auto-generated from Nepal_Engineering_Colleges_FINAL_Directory_Snapshot_2026.xlsx
--- Generated: 2026-08-11T14:38:03.589Z
+-- Generated: 2026-08-11T14:40:56.497Z
 -- Total institutions: 210
 -- Uses INSERT ... WHERE NOT EXISTS for safe idempotent application.
 
@@ -25,7 +25,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Imperial+College+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Imperial%2BCollege%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$imperial-college-of-engineering$mt$)
@@ -51,7 +51,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Community","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Khwopa+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Khwopa%2BCollege%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$khwopa-college-of-engineering$mt$)
@@ -103,7 +103,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public/Technical","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Khwopa+Polytechnic+Institute$mt$,
+  $mt$https://edusanjal.com/search/?q=Khwopa%2BPolytechnic%2BInstitute$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$khwopa-polytechnic-institute$mt$)
@@ -129,7 +129,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Community / not-for-profit","rawContact":"01-5221006 | info@nec.edu.np","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Nepal+Engineering+College+(NEC)$mt$,
+  $mt$https://edusanjal.com/search/?q=Nepal%2BEngineering%2BCollege%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$nepal-engineering-college-nec$mt$)
@@ -155,7 +155,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Chitwan+Engineering+Campus$mt$,
+  $mt$https://edusanjal.com/search/?q=Chitwan%2BEngineering%2BCampus$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$chitwan-engineering-campus$mt$)
@@ -181,7 +181,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Nepal+Polytechnic+Institute$mt$,
+  $mt$https://edusanjal.com/search/?q=Nepal%2BPolytechnic%2BInstitute$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$nepal-polytechnic-institute$mt$)
@@ -207,7 +207,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=United+Technical+College$mt$,
+  $mt$https://edusanjal.com/search/?q=United%2BTechnical%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$united-technical-college$mt$)
@@ -233,7 +233,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"01-5382962; 01-5380445; 01-5670924; 01-5670925; 9841470160 | acme@acme.edu.np","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Acme+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Acme%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$acme-engineering-college$mt$)
@@ -259,7 +259,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Advanced+College+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Advanced%2BCollege%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$advanced-college-of-engineering-and-management$mt$)
@@ -285,7 +285,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Aryan+School+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Aryan%2BSchool%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$aryan-school-of-engineering-and-management$mt$)
@@ -311,7 +311,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Not verified","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=College+of+Information+Technology+and+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=College%2Bof%2BInformation%2BTechnology%2Band%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$college-of-information-technology-and-engineering$mt$)
@@ -337,7 +337,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Cosmos+College+of+Management+and+Technology$mt$,
+  $mt$https://edusanjal.com/search/?q=Cosmos%2BCollege%2Bof%2BManagement%2Band%2BTechnology$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$cosmos-college-of-management-and-technology$mt$)
@@ -363,7 +363,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Geomatics+Institute+of+Technology$mt$,
+  $mt$https://edusanjal.com/search/?q=Geomatics%2BInstitute%2Bof%2BTechnology$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$geomatics-institute-of-technology$mt$)
@@ -389,7 +389,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Hillside+College+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Hillside%2BCollege%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$hillside-college-of-engineering$mt$)
@@ -415,7 +415,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Himalayan+College+of+Geomatic+Engineering+and+Land+Resource+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Himalayan%2BCollege%2Bof%2BGeomatic%2BEngineering%2Band%2BLand%2BResource%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$himalayan-college-of-geomatic-engineering-and-land-resource-management$mt$)
@@ -441,7 +441,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Himalayan+WhiteHouse+International+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Himalayan%2BWhiteHouse%2BInternational%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$himalayan-whitehouse-international-college$mt$)
@@ -467,7 +467,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Kantipur+City+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Kantipur%2BCity%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$kantipur-city-college$mt$)
@@ -493,7 +493,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Not verified","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Kantipur+International+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Kantipur%2BInternational%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$kantipur-international-college$mt$)
@@ -519,7 +519,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public/Community","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Kapan+Campus$mt$,
+  $mt$https://edusanjal.com/search/?q=Kapan%2BCampus$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$kapan-campus$mt$)
@@ -545,7 +545,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public/Community","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Kapan+Multiple+Campus$mt$,
+  $mt$https://edusanjal.com/search/?q=Kapan%2BMultiple%2BCampus$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$kapan-multiple-campus$mt$)
@@ -571,7 +571,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Kathmandu+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Kathmandu%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$kathmandu-engineering-college$mt$)
@@ -597,7 +597,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Morgan+Engineering+and+Management+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Morgan%2BEngineering%2Band%2BManagement%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$morgan-engineering-and-management-college$mt$)
@@ -623,7 +623,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private/Technical","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Oxford+Advanced+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Oxford%2BAdvanced%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$oxford-advanced-engineering-college$mt$)
@@ -649,7 +649,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=School+of+Environmental+Management+and+Sustainable+Development+(SchEMS)$mt$,
+  $mt$https://edusanjal.com/search/?q=School%2Bof%2BEnvironmental%2BManagement%2Band%2BSustainable%2BDevelopment%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$school-of-environmental-management-and-sustainable-development-schems$mt$)
@@ -675,7 +675,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private/International","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Softwarica+College+of+IT+and+E-commerce$mt$,
+  $mt$https://edusanjal.com/search/?q=Softwarica%2BCollege%2Bof%2BIT%2Band%2BE%2Bcommerce$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$softwarica-college-of-it-and-e-commerce$mt$)
@@ -701,7 +701,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Thapathali+Campus+|+Institute+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Thapathali%2BCampus%2BInstitute%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$thapathali-campus-institute-of-engineering$mt$)
@@ -727,7 +727,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Not verified","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Yeti+International+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Yeti%2BInternational%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$yeti-international-college$mt$)
@@ -779,7 +779,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public/Technical","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Nepal+Banepa+Polytechnic+Institute$mt$,
+  $mt$https://edusanjal.com/search/?q=Nepal%2BBanepa%2BPolytechnic%2BInstitute$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$nepal-banepa-polytechnic-institute$mt$)
@@ -805,7 +805,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Asian+Institute+of+Technology+and+Management+(AITM)$mt$,
+  $mt$https://edusanjal.com/search/?q=Asian%2BInstitute%2Bof%2BTechnology%2Band%2BManagement%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$asian-institute-of-technology-and-management-aitm$mt$)
@@ -831,7 +831,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"01-5520742; 01-5916922 | admission@eemc.edu.np","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Everest+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Everest%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$everest-engineering-college$mt$)
@@ -857,7 +857,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Himalaya+College+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Himalaya%2BCollege%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$himalaya-college-of-engineering$mt$)
@@ -883,7 +883,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Himalayan+Institute+of+Science+and+Technology+(HIST)$mt$,
+  $mt$https://edusanjal.com/search/?q=Himalayan%2BInstitute%2Bof%2BScience%2Band%2BTechnology%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$himalayan-institute-of-science-and-technology-hist$mt$)
@@ -909,7 +909,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Kantipur+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Kantipur%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$kantipur-engineering-college$mt$)
@@ -935,7 +935,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Kathford+International+College+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Kathford%2BInternational%2BCollege%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$kathford-international-college-of-engineering-and-management$mt$)
@@ -961,7 +961,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Lalitpur+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Lalitpur%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$lalitpur-engineering-college$mt$)
@@ -987,7 +987,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Lumbini+International+Academy+of+Science+and+Technology$mt$,
+  $mt$https://edusanjal.com/search/?q=Lumbini%2BInternational%2BAcademy%2Bof%2BScience%2Band%2BTechnology$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$lumbini-international-academy-of-science-and-technology$mt$)
@@ -1013,7 +1013,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Mega+College+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Mega%2BCollege%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$mega-college-of-engineering$mt$)
@@ -1039,7 +1039,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=National+College+of+Engineering+(NCE)$mt$,
+  $mt$https://edusanjal.com/search/?q=National%2BCollege%2Bof%2BEngineering%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$national-college-of-engineering-nce$mt$)
@@ -1065,7 +1065,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Not verified","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=National+Institute+of+Engineering+and+Technology+(NIET)$mt$,
+  $mt$https://edusanjal.com/search/?q=National%2BInstitute%2Bof%2BEngineering%2Band%2BTechnology%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$national-institute-of-engineering-and-technology-niet$mt$)
@@ -1091,7 +1091,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Nepal+College+of+Information+Technology+(NCIT)$mt$,
+  $mt$https://edusanjal.com/search/?q=Nepal%2BCollege%2Bof%2BInformation%2BTechnology%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$nepal-college-of-information-technology-ncit$mt$)
@@ -1117,7 +1117,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Nepal+Open+University$mt$,
+  $mt$https://edusanjal.com/search/?q=Nepal%2BOpen%2BUniversity$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$nepal-open-university$mt$)
@@ -1143,7 +1143,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Pulchowk+Campus+|+Institute+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Pulchowk%2BCampus%2BInstitute%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$pulchowk-campus-institute-of-engineering$mt$)
@@ -1169,7 +1169,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Ritz+College+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Ritz%2BCollege%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$ritz-college-of-engineering-and-management$mt$)
@@ -1195,7 +1195,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Sagarmatha+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Sagarmatha%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$sagarmatha-engineering-college$mt$)
@@ -1221,7 +1221,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Universal+Engineering+and+Science+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Universal%2BEngineering%2Band%2BScience%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$universal-engineering-and-science-college$mt$)
@@ -1247,7 +1247,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Community","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Gandaki+College+of+Engineering+and+Science$mt$,
+  $mt$https://edusanjal.com/search/?q=Gandaki%2BCollege%2Bof%2BEngineering%2Band%2BScience$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$gandaki-college-of-engineering-and-science$mt$)
@@ -1273,7 +1273,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Pashchimanchal+Campus+|+Institute+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Pashchimanchal%2BCampus%2BInstitute%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$pashchimanchal-campus-institute-of-engineering$mt$)
@@ -1299,7 +1299,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Pokhara+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Pokhara%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$pokhara-engineering-college$mt$)
@@ -1351,7 +1351,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Oxford+College+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Oxford%2BCollege%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$oxford-college-of-engineering-and-management$mt$)
@@ -1377,7 +1377,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Western+Advance+College+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Western%2BAdvance%2BCollege%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$western-advance-college-of-engineering-and-management$mt$)
@@ -1403,7 +1403,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public/Technical","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Karnali+Technical+School$mt$,
+  $mt$https://edusanjal.com/search/?q=Karnali%2BTechnical%2BSchool$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$karnali-technical-school$mt$)
@@ -1429,7 +1429,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Graduate+School+of+Engineering+|+Mid-West+University$mt$,
+  $mt$https://edusanjal.com/search/?q=Graduate%2BSchool%2Bof%2BEngineering%2BMid%2BWest%2BUniversity$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$graduate-school-of-engineering-mid-west-university$mt$)
@@ -1455,7 +1455,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public/Community","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Dhulabari+Campus$mt$,
+  $mt$https://edusanjal.com/search/?q=Dhulabari%2BCampus$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$dhulabari-campus$mt$)
@@ -1481,7 +1481,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Pathivara+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Pathivara%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$pathivara-engineering-college$mt$)
@@ -1507,7 +1507,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Eastern+College+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Eastern%2BCollege%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$eastern-college-of-engineering$mt$)
@@ -1533,7 +1533,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Not verified","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Madan+Bhandari+Memorial+Academy$mt$,
+  $mt$https://edusanjal.com/search/?q=Madan%2BBhandari%2BMemorial%2BAcademy$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$madan-bhandari-memorial-academy$mt$)
@@ -1559,7 +1559,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Not verified","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Madan+Bhandari+Memorial+Academy+Nepal$mt$,
+  $mt$https://edusanjal.com/search/?q=Madan%2BBhandari%2BMemorial%2BAcademy%2BNepal$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$madan-bhandari-memorial-academy-nepal$mt$)
@@ -1585,7 +1585,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public/Technical","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Manmohan+Memorial+Polytechnic$mt$,
+  $mt$https://edusanjal.com/search/?q=Manmohan%2BMemorial%2BPolytechnic$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$manmohan-memorial-polytechnic$mt$)
@@ -1637,7 +1637,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=School+of+Engineering+-+Manmohan+Technical+University$mt$,
+  $mt$https://edusanjal.com/search/?q=School%2Bof%2BEngineering%2BManmohan%2BTechnical%2BUniversity$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$school-of-engineering-manmohan-technical-university$mt$)
@@ -1663,7 +1663,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Purwanchal+Campus+|+Institute+of+Engineering$mt$,
+  $mt$https://edusanjal.com/search/?q=Purwanchal%2BCampus%2BInstitute%2Bof%2BEngineering$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$purwanchal-campus-institute-of-engineering$mt$)
@@ -1689,7 +1689,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Bheri+College+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=Bheri%2BCollege%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$bheri-college-of-engineering-and-management$mt$)
@@ -1715,7 +1715,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=College+of+Engineering+and+Management$mt$,
+  $mt$https://edusanjal.com/search/?q=College%2Bof%2BEngineering%2Band%2BManagement$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$college-of-engineering-and-management$mt$)
@@ -1741,7 +1741,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Institute+of+Engineering+and+Information+Technology+|+Lumbini+Technological+University$mt$,
+  $mt$https://edusanjal.com/search/?q=Institute%2Bof%2BEngineering%2Band%2BInformation%2BTechnology%2BLumbini%2BTechnological%2BUniversity$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$institute-of-engineering-and-information-technology-lumbini-technological-university$mt$)
@@ -1767,7 +1767,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Rapti+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Rapti%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$rapti-engineering-college$mt$)
@@ -1793,7 +1793,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Lumbini+Engineering,+Management+&+Science+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Lumbini%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$lumbini-engineering-college$mt$)
@@ -1819,7 +1819,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Not verified","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Central+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Central%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$central-engineering-college$mt$)
@@ -1845,7 +1845,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Janakpur+Engineering+College$mt$,
+  $mt$https://edusanjal.com/search/?q=Janakpur%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$janakpur-engineering-college$mt$)
@@ -1871,7 +1871,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Gaushala+Engineering+Campus$mt$,
+  $mt$https://edusanjal.com/search/?q=Gaushala%2BEngineering%2BCampus$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$gaushala-engineering-campus$mt$)
@@ -1897,7 +1897,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=National+Academy+of+Science+and+Technology+(Dhangadhi+Engineering+College)$mt$,
+  $mt$https://edusanjal.com/search/?q=Dhangadhi%2BEngineering%2BCollege$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$dhangadhi-engineering-college$mt$)
@@ -1923,7 +1923,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Private","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=National+Academy+of+Science+and+Technology+(Dhangadi+Engineering+College)$mt$,
+  $mt$https://edusanjal.com/search/?q=National%2BAcademy%2Bof%2BScience%2Band%2BTechnology%2B$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$national-academy-of-science-and-technology-dhangadi-engineering-college$mt$)
@@ -1949,7 +1949,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Public / Constituent","rawContact":"Not captured in current snapshot","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=School+of+Engineering+|+Far+Western+University$mt$,
+  $mt$https://edusanjal.com/search/?q=School%2Bof%2BEngineering%2BFar%2BWestern%2BUniversity$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$school-of-engineering-far-western-university$mt$)
@@ -1975,7 +1975,7 @@ SELECT
   $mt$closed$mt$,
   NULL, NULL,
   $mt${"directoryAsOf":"2026-08-11","ownership":"Community/Technical","rawContact":"To be enriched","sourceSheet":"Engineering Directory"}$mt$::jsonb,
-  $mt$https://edusanjal.com/college/?q=Sindhuli+Community+Technical+Institute$mt$,
+  $mt$https://edusanjal.com/search/?q=Sindhuli%2BCommunity%2BTechnical%2BInstitute$mt$,
   'approved', true, false, false
 WHERE NOT EXISTS (
   SELECT 1 FROM public.institutes WHERE lower(slug) = lower($mt$sindhuli-community-technical-institute$mt$)
