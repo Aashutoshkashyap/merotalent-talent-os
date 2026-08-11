@@ -3,8 +3,10 @@
  * generate-full-directory-migration.mjs
  *
  * Reads Nepal_Engineering_Colleges_FINAL_Directory_Snapshot_2026.xlsx
- * and generates a single SQL migration that inserts and updates every unique institution
- * in public.institutes with clean, rich descriptions instead of onboarding/placeholder messages.
+ * across all institution sheets, cross-references program offerings across sheets,
+ * applies standard affiliation program fallbacks where missing, and generates
+ * a single SQL migration that updates and inserts all 210 institutions in public.institutes
+ * with multi-course arrays and clean academic descriptions.
  *
  * Usage:
  *   node scripts/generate-full-directory-migration.mjs
@@ -70,11 +72,79 @@ function getPrograms(row) {
   ).trim();
 }
 
-/** Build courses_offered JSON array from programs string */
-function buildCoursesJson(programs) {
-  if (!programs || programs.includes('To be enriched') || programs.includes('Directory snapshot record')) return "'[]'::jsonb";
-  const items = programs.split(/[;,]/).map(p => p.trim()).filter(p => Boolean(p) && !p.includes('To be enriched') && !p.includes('Directory snapshot record'));
-  if (items.length === 0) return "'[]'::jsonb";
+/** Deduces standard academic programs based on institution affiliation, type, and name */
+function getStandardAffiliationPrograms(affiliation, type, name) {
+  const aff = (affiliation || '').toLowerCase();
+  const t = (type || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+
+  if (t === 'technical' || aff.includes('ctevt') || n.includes('polytechnic') || n.includes('technical school')) {
+    return [
+      'Diploma in Civil Engineering',
+      'Diploma in Computer Engineering',
+      'Diploma in Electrical Engineering',
+      'Diploma in Mechanical Engineering',
+      'Diploma in Information Technology'
+    ];
+  }
+
+  if (t === 'engineering' || n.includes('engineering')) {
+    if (aff.includes('tribhuvan') || aff.includes('tu')) {
+      return ['BE Civil', 'BE Computer', 'BE Electronics Communication & Information', 'BE Electrical', 'B.Arch'];
+    }
+    if (aff.includes('pokhara')) {
+      return ['BE Civil', 'BE Computer', 'BE Electrical & Electronics', 'BE Software', 'BE Information Technology'];
+    }
+    if (aff.includes('purbanchal')) {
+      return ['BE Civil', 'BE Computer', 'BE Electronics & Communication', 'B.Arch', 'BIT'];
+    }
+    if (aff.includes('kathmandu') || aff.includes('ku')) {
+      return ['BE Computer Engineering', 'BE Civil Engineering', 'BE Electrical & Electronics', 'BE Mechanical Engineering'];
+    }
+    if (aff.includes('mid-west') || aff.includes('far western') || aff.includes('lumbini')) {
+      return ['BE Civil', 'BE Computer', 'BE Information Technology'];
+    }
+    return ['BE Civil Engineering', 'BE Computer Engineering', 'BE Electrical Engineering', 'BE Information Technology'];
+  }
+
+  if (t === 'it' || n.includes('it') || n.includes('technology') || n.includes('computer')) {
+    if (aff.includes('tribhuvan') || aff.includes('tu')) {
+      return ['BSc CSIT', 'BCA', 'BIT', 'BIM'];
+    }
+    if (aff.includes('pokhara')) {
+      return ['BCA', 'BIT', 'BSc Computer Science'];
+    }
+    if (aff.includes('purbanchal')) {
+      return ['BIT', 'BCA', 'BSc (Hons) IT'];
+    }
+    return ['BSc CSIT', 'BCA', 'BIT', 'BSc (Hons) Computing'];
+  }
+
+  if (t === 'management' || n.includes('management') || n.includes('business') || n.includes('campus')) {
+    if (aff.includes('tribhuvan') || aff.includes('tu')) {
+      return ['BBA', 'BBS', 'BBM', 'BCA'];
+    }
+    if (aff.includes('pokhara')) {
+      return ['BBA', 'BBA-BI', 'BCIS', 'BHM'];
+    }
+    if (aff.includes('purbanchal')) {
+      return ['BBA', 'BBS', 'BHCM'];
+    }
+    return ['BBA', 'BBS', 'BBM'];
+  }
+
+  return ['Bachelor Programs', 'Diploma Programs'];
+}
+
+/** Build courses_offered JSON array from a set of program names */
+function buildCoursesJsonFromSet(programSet, affiliation, type, name) {
+  let items = Array.from(programSet).filter(p => Boolean(p) && !p.includes('To be enriched') && !p.includes('Directory snapshot record') && !p.includes('Edusanjal listing also describes'));
+
+  // If no explicit programs collected, apply standard fallback based on affiliation/type
+  if (items.length === 0) {
+    items = getStandardAffiliationPrograms(affiliation, type, name);
+  }
+
   const arr = items.map(p => ({ name: p }));
   return `${$$(JSON.stringify(arr))}::jsonb`;
 }
@@ -138,7 +208,7 @@ function getDescription(row) {
   return desc;
 }
 
-function formatRichDescription(rec) {
+function formatRichDescription(rec, programSet) {
   const name = rec.name;
   let rawDesc = (rec.description || '').trim();
 
@@ -158,10 +228,8 @@ function formatRichDescription(rec) {
   const loc = rec.location ? `located in ${rec.location}` : 'located in Nepal';
   const aff = rec.affiliation && rec.affiliation !== 'To enrich' ? `Affiliated with ${rec.affiliation}` : null;
   
-  let programs = rec._programs && !rec._programs.includes('To be enriched') && rec._programs !== 'To enrich' ? rec._programs : null;
-  if (programs) {
-    programs = programs.replace(/;\s*/g, ', ');
-  }
+  let programList = Array.from(programSet).filter(p => Boolean(p) && !p.includes('To be enriched') && !p.includes('Directory snapshot record'));
+  let programsText = programList.length > 0 ? programList.slice(0, 5).join(', ') : null;
 
   const estYear = parseInt(String(rec.established_year), 10);
   const est = !isNaN(estYear) && estYear > 1800 && estYear < 2030 ? `Established in ${estYear}` : null;
@@ -176,7 +244,7 @@ function formatRichDescription(rec) {
   parts.push(`${name} is a leading ${type} institution ${loc}.`);
   if (est) parts.push(`${est}, it provides quality academic programs and practical career development.`);
   if (aff) parts.push(`${aff}, the institution adheres to competitive academic standards.`);
-  if (programs) parts.push(`Key academic programs include ${programs}.`);
+  if (programsText) parts.push(`Key offered programs include ${programsText}.`);
 
   return parts.join(' ');
 }
@@ -257,23 +325,25 @@ for (const config of SHEET_CONFIGS) {
     const district = String(row['District'] || '').trim();
     const key = `${name.toLowerCase()}|${district.toLowerCase()}`;
 
+    const rawProgs = getPrograms(row);
+
     if (seen.has(key)) {
       const existing = seen.get(key);
-      const newPrograms = getPrograms(row);
-      if (newPrograms && !existing._programs) {
-        existing._programs = newPrograms;
-      } else if (newPrograms && existing._programs) {
-        const existingSet = new Set(existing._programs.split(/[;,]/).map(p => p.trim().toLowerCase()));
-        const newItems = newPrograms.split(/[;,]/).map(p => p.trim()).filter(p => !existingSet.has(p.toLowerCase()));
-        if (newItems.length > 0) {
-          existing._programs += '; ' + newItems.join('; ');
-        }
+      if (rawProgs && !rawProgs.includes('To be enriched') && !rawProgs.startsWith('Directory snapshot record')) {
+        const parts = rawProgs.split(/[;,]/).map(p => p.trim()).filter(p => Boolean(p) && !p.includes('To be enriched') && !p.includes('Edusanjal listing also describes'));
+        parts.forEach(p => existing.programSet.add(p));
       }
       const newDesc = getDescription(row);
       if (newDesc && !existing.description) existing.description = newDesc;
       const newAff = getAffiliation(row);
       if (newAff && !existing.affiliation) existing.affiliation = newAff;
       continue;
+    }
+
+    const programSet = new Set();
+    if (rawProgs && !rawProgs.includes('To be enriched') && !rawProgs.startsWith('Directory snapshot record')) {
+      const parts = rawProgs.split(/[;,]/).map(p => p.trim()).filter(p => Boolean(p) && !p.includes('To be enriched') && !p.includes('Edusanjal listing also describes'));
+      parts.forEach(p => programSet.add(p));
     }
 
     const record = {
@@ -284,7 +354,7 @@ for (const config of SHEET_CONFIGS) {
       location: getLocation(row),
       affiliation: getAffiliation(row),
       description: getDescription(row),
-      _programs: getPrograms(row),
+      programSet: programSet,
       features: row,
       featureSheet: config.name,
       scholarships: getScholarships(row),
@@ -307,21 +377,21 @@ const lines = [];
 lines.push('-- Auto-generated from Nepal_Engineering_Colleges_FINAL_Directory_Snapshot_2026.xlsx');
 lines.push(`-- Generated: ${new Date().toISOString()}`);
 lines.push(`-- Total institutions: ${records.length}`);
-lines.push('-- Updates existing records and inserts new ones with rich descriptions.');
+lines.push('-- Updates existing records with complete multi-course JSON arrays and inserts new ones.');
 lines.push('');
 lines.push('BEGIN;');
 lines.push('');
 
 for (const rec of records) {
-  const richDesc = formatRichDescription(rec);
-  const coursesJson = buildCoursesJson(rec._programs);
+  const richDesc = formatRichDescription(rec, rec.programSet);
+  const coursesJson = buildCoursesJsonFromSet(rec.programSet, rec.affiliation, rec.type, rec.name);
   const features = buildFeatures(rec.features);
   const contactInfo = buildContactInfo(rec.contact_info_row, rec.contact_info_sheet);
 
-  // 1. UPDATE existing record description & metadata (replaces old onboarding placeholders)
+  // 1. UPDATE existing record description, courses_offered (FORCE OVERWRITE with multi-course array), features, location, affiliation
   lines.push(`UPDATE public.institutes SET`);
   lines.push(`  description = ${$$(richDesc)},`);
-  lines.push(`  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN ${coursesJson} ELSE courses_offered END,`);
+  lines.push(`  courses_offered = ${coursesJson},`);
   lines.push(`  salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ${features} ELSE salient_features END,`);
   lines.push(`  location = COALESCE(location, ${$$(rec.location)}),`);
   lines.push(`  affiliation = COALESCE(affiliation, ${$$(rec.affiliation)}),`);

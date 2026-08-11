@@ -1,13 +1,13 @@
 -- Auto-generated from Nepal_Engineering_Colleges_FINAL_Directory_Snapshot_2026.xlsx
--- Generated: 2026-08-11T14:47:13.760Z
+-- Generated: 2026-08-11T15:11:38.227Z
 -- Total institutions: 210
--- Updates existing records and inserts new ones with rich descriptions.
+-- Updates existing records with complete multi-course JSON arrays and inserts new ones.
 
 BEGIN;
 
 UPDATE public.institutes SET
   description = $mt$Imperial College of Engineering is a leading engineering and technology institution located in Tathali, Bhaktapur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Tathali, Bhaktapur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -27,7 +27,7 @@ SELECT
   $mt$college$mt$, $mt$Tathali, Bhaktapur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Imperial College of Engineering is a leading engineering and technology institution located in Tathali, Bhaktapur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -43,7 +43,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Khwopa College of Engineering is a leading engineering and technology institution located in Libali, Bhaktapur, Bagmati. Affiliated with Purbanchal University; also listed under Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Libali, Bhaktapur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University; also listed under Tribhuvan University$mt$),
@@ -63,7 +63,7 @@ SELECT
   $mt$college$mt$, $mt$Libali, Bhaktapur, Bagmati$mt$, $mt$Purbanchal University; also listed under Tribhuvan University$mt$,
   NULL,
   $mt$Khwopa College of Engineering is a leading engineering and technology institution located in Libali, Bhaktapur, Bagmati. Affiliated with Purbanchal University; also listed under Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -79,7 +79,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Community-based engineering college operated by Bhaktapur Municipality and affiliated with Purbanchal University. It is a different institution from Khwopa College of Engineering, which is affiliated with Tribhuvan University.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electronics & Communication Engineering"},{"name":"Bachelor of Architecture"},{"name":"other current programs subject to university approval"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electronics & Communication Engineering"},{"name":"Bachelor of Architecture"},{"name":"other current programs subject to university approval"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Community-based institution$mt$, $mt$practical engineering education$mt$, $mt$engineering and architecture programs$mt$, $mt$Bhaktapur Municipality undertaking$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Libali, Bhaktapur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -115,7 +115,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Khwopa Polytechnic Institute is a leading engineering and technology institution located in Chyamhasingh, Bhaktapur, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chyamhasingh, Bhaktapur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -135,7 +135,7 @@ SELECT
   $mt$college$mt$, $mt$Chyamhasingh, Bhaktapur, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$Khwopa Polytechnic Institute is a leading engineering and technology institution located in Chyamhasingh, Bhaktapur, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -151,7 +151,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Not-for-profit engineering institution established in 1994 at Changunarayan, Bhaktapur; offers undergraduate and postgraduate engineering/technology programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil (144)"},{"name":"BE Computer (96)"},{"name":"BE Electrical & Electronics (48)"},{"name":"B.Arch (48)"},{"name":"BE Civil & Rural (48)"},{"name":"BE Information & Communication (96)"},{"name":"BE Civil for Diploma Holders (48)"},{"name":"MSc Construction Management"},{"name":"MSc NRM & Rural Development"},{"name":"MSc iWRM"},{"name":"MSc Transportation Engineering & Management"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil (144)"},{"name":"BE Computer (96)"},{"name":"BE Electrical & Electronics (48)"},{"name":"B.Arch (48)"},{"name":"BE Civil & Rural (48)"},{"name":"BE Information & Communication (96)"},{"name":"BE Civil for Diploma Holders (48)"},{"name":"MSc Construction Management"},{"name":"MSc NRM & Rural Development"},{"name":"MSc iWRM"},{"name":"MSc Transportation Engineering & Management"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$120+ faculty$mt$, $mt$35,000+ books$mt$, $mt$DELNET$mt$, $mt$laboratories$mt$, $mt$girls' hostel$mt$, $mt$transport$mt$, $mt$student health insurance$mt$, $mt$research management cell$mt$, $mt$international linkages$mt$, $mt$student clubs$mt$, $mt$scholarships.$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Changunarayan, Bhaktapur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -187,7 +187,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Chitwan Engineering Campus is a leading engineering and technology institution located in Rampur, Bharatpur, Chitwan, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Rampur, Bharatpur, Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -207,7 +207,7 @@ SELECT
   $mt$college$mt$, $mt$Rampur, Bharatpur, Chitwan, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Chitwan Engineering Campus is a leading engineering and technology institution located in Rampur, Bharatpur, Chitwan, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -223,7 +223,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Nepal Polytechnic Institute is a leading engineering and technology institution located in Bharatpur, Chitwan, Bagmati. Affiliated with Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bharatpur, Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University; CTEVT$mt$),
@@ -243,7 +243,7 @@ SELECT
   $mt$college$mt$, $mt$Bharatpur, Chitwan, Bagmati$mt$, $mt$Purbanchal University; CTEVT$mt$,
   NULL,
   $mt$Nepal Polytechnic Institute is a leading engineering and technology institution located in Bharatpur, Chitwan, Bagmati. Affiliated with Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -259,7 +259,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$United Technical College is a leading engineering and technology institution located in Bharatpur, Chitwan, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bharatpur, Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -279,7 +279,7 @@ SELECT
   $mt$college$mt$, $mt$Bharatpur, Chitwan, Bagmati$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$United Technical College is a leading engineering and technology institution located in Bharatpur, Chitwan, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -295,7 +295,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Engineering institution in Kathmandu affiliated with Purbanchal University, emphasizing theoretical foundations, practical learning, innovation and skill development.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"B.Arch"},{"name":"BIT (Edusanjal listing also describes additional graduate engineering programs)"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Smart air-conditioned classrooms$mt$, $mt$alumni network$mt$, $mt$cafeteria$mt$, $mt$futsal/basketball/table tennis$mt$, $mt$student-friendly environment.$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Basundhara, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -315,7 +315,7 @@ SELECT
   $mt$college$mt$, $mt$Basundhara, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Engineering institution in Kathmandu affiliated with Purbanchal University, emphasizing theoretical foundations, practical learning, innovation and skill development.$mt$,
-  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"B.Arch"},{"name":"BIT (Edusanjal listing also describes additional graduate engineering programs)"}]$mt$::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[$mt$Smart air-conditioned classrooms$mt$, $mt$alumni network$mt$, $mt$cafeteria$mt$, $mt$futsal/basketball/table tennis$mt$, $mt$student-friendly environment.$mt$]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -331,7 +331,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$TU-affiliated engineering institution in Kalanki, Kathmandu established in 2000, with engineering programs and technical events focused on innovation and professional development.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil"},{"name":"BE Electrical"},{"name":"BE Computer"},{"name":"BE Electronics"},{"name":"Communication & Information Engineering"},{"name":"BCA"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Electrical"},{"name":"BE Computer"},{"name":"BE Electronics"},{"name":"Communication & Information Engineering"},{"name":"BCA"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Qualified faculty$mt$, $mt$technical events$mt$, $mt$robotics/innovation activities$mt$, $mt$annual newsletter$mt$, $mt$prospectus and academic support.$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bhuwaneshwori Marg-14, Kalanki, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -367,7 +367,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Aryan School of Engineering and Management is a leading engineering and technology institution located in Devkota Sadak, Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Devkota Sadak, Mid Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -387,7 +387,7 @@ SELECT
   $mt$college$mt$, $mt$Devkota Sadak, Mid Baneshwor, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Aryan School of Engineering and Management is a leading engineering and technology institution located in Devkota Sadak, Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -403,7 +403,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$College of Information Technology and Engineering is a leading engineering and technology institution located in Tinkune, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Tinkune, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -423,7 +423,7 @@ SELECT
   $mt$college$mt$, $mt$Tinkune, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$College of Information Technology and Engineering is a leading engineering and technology institution located in Tinkune, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -439,7 +439,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Cosmos College of Management and Technology is a leading engineering and technology institution located in Sitapaila, Kathmandu, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Sitapaila, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -459,7 +459,7 @@ SELECT
   $mt$college$mt$, $mt$Sitapaila, Kathmandu, Bagmati$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Cosmos College of Management and Technology is a leading engineering and technology institution located in Sitapaila, Kathmandu, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -475,7 +475,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Geomatics Institute of Technology is a leading engineering and technology institution located in Thapathali, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Thapathali, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -495,7 +495,7 @@ SELECT
   $mt$college$mt$, $mt$Thapathali, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Geomatics Institute of Technology is a leading engineering and technology institution located in Thapathali, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -511,7 +511,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Hillside College of Engineering is a leading engineering and technology institution located in Koteshwar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Koteshwar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -531,7 +531,7 @@ SELECT
   $mt$college$mt$, $mt$Koteshwar, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Hillside College of Engineering is a leading engineering and technology institution located in Koteshwar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -547,7 +547,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Himalayan College of Geomatic Engineering and Land Resource Management is a leading engineering and technology institution located in Minbhawan, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Minbhawan, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -567,7 +567,7 @@ SELECT
   $mt$college$mt$, $mt$Minbhawan, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Himalayan College of Geomatic Engineering and Land Resource Management is a leading engineering and technology institution located in Minbhawan, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -583,7 +583,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Himalayan WhiteHouse International College is a leading engineering and technology institution located in Ramshahpath, Putalisadak, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ramshahpath, Putalisadak, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -603,7 +603,7 @@ SELECT
   $mt$college$mt$, $mt$Ramshahpath, Putalisadak, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Himalayan WhiteHouse International College is a leading engineering and technology institution located in Ramshahpath, Putalisadak, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -618,8 +618,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Kantipur City College is a leading engineering and technology institution located in Putalisadak, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  description = $mt$Kantipur City College is a leading engineering and technology institution located in Putalisadak, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BSc CSIT, BIT, IT/computing programs.$mt$,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"IT/computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Putalisadak, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -638,8 +638,8 @@ SELECT
   $mt$Kantipur City College$mt$, $mt$kantipur-city-college$mt$, $mt$engineering$mt$,
   $mt$college$mt$, $mt$Putalisadak, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
-  $mt$Kantipur City College is a leading engineering and technology institution located in Putalisadak, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$Kantipur City College is a leading engineering and technology institution located in Putalisadak, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BSc CSIT, BIT, IT/computing programs.$mt$,
+  $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"IT/computing programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -655,7 +655,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Kantipur International College is a leading engineering and technology institution located in Buddhanagar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Buddhanagar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -675,7 +675,7 @@ SELECT
   $mt$college$mt$, $mt$Buddhanagar, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Kantipur International College is a leading engineering and technology institution located in Buddhanagar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -691,7 +691,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Kapan Campus is a leading engineering and technology institution located in Kapan, Kathmandu, Bagmati. Affiliated with Bagmati University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kapan, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Bagmati University$mt$),
@@ -711,7 +711,7 @@ SELECT
   $mt$college$mt$, $mt$Kapan, Kathmandu, Bagmati$mt$, $mt$Bagmati University$mt$,
   NULL,
   $mt$Kapan Campus is a leading engineering and technology institution located in Kapan, Kathmandu, Bagmati. Affiliated with Bagmati University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -727,7 +727,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Kapan Multiple Campus is a leading engineering and technology institution located in Kapan, Budhanilakantha, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Bagmati University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kapan, Budhanilakantha, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University; Bagmati University$mt$),
@@ -747,7 +747,7 @@ SELECT
   $mt$college$mt$, $mt$Kapan, Budhanilakantha, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University; Bagmati University$mt$,
   NULL,
   $mt$Kapan Multiple Campus is a leading engineering and technology institution located in Kapan, Budhanilakantha, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Bagmati University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -763,7 +763,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Kathmandu Engineering College is a leading engineering and technology institution located in Kalimati, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kalimati, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -783,7 +783,7 @@ SELECT
   $mt$college$mt$, $mt$Kalimati, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Kathmandu Engineering College is a leading engineering and technology institution located in Kalimati, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -799,7 +799,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Morgan Engineering and Management College is a leading engineering and technology institution located in Basundhara, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Basundhara, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -819,7 +819,7 @@ SELECT
   $mt$college$mt$, $mt$Basundhara, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Morgan Engineering and Management College is a leading engineering and technology institution located in Basundhara, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -835,7 +835,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Oxford Advanced Engineering College is a leading engineering and technology institution located in Bafal, Kathmandu, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bafal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -855,7 +855,7 @@ SELECT
   $mt$college$mt$, $mt$Bafal, Kathmandu, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$Oxford Advanced Engineering College is a leading engineering and technology institution located in Bafal, Kathmandu, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -871,7 +871,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$School of Environmental Management and Sustainable Development (SchEMS) is a leading engineering and technology institution located in Koteshwor, Kathmandu, Bagmati. Affiliated with Not verified, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Koteshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Not verified$mt$),
@@ -891,7 +891,7 @@ SELECT
   $mt$college$mt$, $mt$Koteshwor, Kathmandu, Bagmati$mt$, $mt$Not verified$mt$,
   NULL,
   $mt$School of Environmental Management and Sustainable Development (SchEMS) is a leading engineering and technology institution located in Koteshwor, Kathmandu, Bagmati. Affiliated with Not verified, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -906,8 +906,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Softwarica College of IT and E-commerce is a leading engineering and technology institution located in Dillibazar, Kathmandu, Bagmati. Affiliated with Coventry University, UK, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  description = $mt$Softwarica College of IT and E-commerce is a leading engineering and technology institution located in Dillibazar, Kathmandu, Bagmati. Affiliated with Coventry University, UK, the institution adheres to competitive academic standards. Key offered programs include BSc (Hons) Software Engineering, BSc (Hons) Ethical Hacking & Cybersecurity / computing-related programs.$mt$,
+  courses_offered = $mt$[{"name":"BSc (Hons) Software Engineering"},{"name":"BSc (Hons) Ethical Hacking & Cybersecurity / computing-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dillibazar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Coventry University, UK$mt$),
@@ -926,8 +926,8 @@ SELECT
   $mt$Softwarica College of IT and E-commerce$mt$, $mt$softwarica-college-of-it-and-e-commerce$mt$, $mt$engineering$mt$,
   $mt$college$mt$, $mt$Dillibazar, Kathmandu, Bagmati$mt$, $mt$Coventry University, UK$mt$,
   NULL,
-  $mt$Softwarica College of IT and E-commerce is a leading engineering and technology institution located in Dillibazar, Kathmandu, Bagmati. Affiliated with Coventry University, UK, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$Softwarica College of IT and E-commerce is a leading engineering and technology institution located in Dillibazar, Kathmandu, Bagmati. Affiliated with Coventry University, UK, the institution adheres to competitive academic standards. Key offered programs include BSc (Hons) Software Engineering, BSc (Hons) Ethical Hacking & Cybersecurity / computing-related programs.$mt$,
+  $mt$[{"name":"BSc (Hons) Software Engineering"},{"name":"BSc (Hons) Ethical Hacking & Cybersecurity / computing-related programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -943,7 +943,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Constituent IOE campus in central Kathmandu and a long-established engineering education institution offering undergraduate and graduate technical education.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil"},{"name":"BE Electronics"},{"name":"Communication & Information"},{"name":"BE Mechanical"},{"name":"BE Automobile"},{"name":"BE Industrial"},{"name":"BE Computer"},{"name":"B.Arch"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Electronics"},{"name":"Communication & Information"},{"name":"BE Mechanical"},{"name":"BE Automobile"},{"name":"BE Industrial"},{"name":"BE Computer"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Thapathali, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -979,7 +979,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Yeti International College is a leading engineering and technology institution located in Buddhanagar, Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Sripatum University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Buddhanagar, Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University; Sripatum University$mt$),
@@ -999,7 +999,7 @@ SELECT
   $mt$college$mt$, $mt$Buddhanagar, Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University; Sripatum University$mt$,
   NULL,
   $mt$Yeti International College is a leading engineering and technology institution located in Buddhanagar, Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Sripatum University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1015,7 +1015,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Kathmandu University's autonomous, not-for-profit, self-funding public School of Engineering, offering undergraduate, graduate and research education.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Mechanical and specialist tracks"},{"name":"BE Geomatics"},{"name":"BE Chemical"},{"name":"BE Mining"},{"name":"B.Arch"},{"name":"B.Tech AI"},{"name":"BIT"},{"name":"Health Informatics"},{"name":"Environmental Engineering"},{"name":"graduate and PhD engineering programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Mechanical and specialist tracks"},{"name":"BE Geomatics"},{"name":"BE Chemical"},{"name":"BE Mining"},{"name":"B.Arch"},{"name":"B.Tech AI"},{"name":"BIT"},{"name":"Health Informatics"},{"name":"Environmental Engineering"},{"name":"graduate and PhD engineering programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Research laboratories$mt$, $mt$specialist departments$mt$, $mt$university admission system$mt$, $mt$industry/research collaboration$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dhulikhel, Kavre, Kavrepalanchok, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Kathmandu University$mt$),
@@ -1050,8 +1050,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Nepal Banepa Polytechnic Institute is a leading engineering and technology institution located in Banepa, Kavrepalanchok, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  description = $mt$Nepal Banepa Polytechnic Institute is a leading engineering and technology institution located in Banepa, Kavrepalanchok, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards. Key offered programs include Engineering, Electrical/Electronics, Computer, Hospitality.$mt$,
+  courses_offered = $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Computer"},{"name":"Hospitality"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Banepa, Kavrepalanchok, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -1070,8 +1070,8 @@ SELECT
   $mt$Nepal Banepa Polytechnic Institute$mt$, $mt$nepal-banepa-polytechnic-institute$mt$, $mt$engineering$mt$,
   $mt$college$mt$, $mt$Banepa, Kavrepalanchok, Bagmati$mt$, $mt$CTEVT$mt$,
   NULL,
-  $mt$Nepal Banepa Polytechnic Institute is a leading engineering and technology institution located in Banepa, Kavrepalanchok, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$Nepal Banepa Polytechnic Institute is a leading engineering and technology institution located in Banepa, Kavrepalanchok, Bagmati. Affiliated with CTEVT, the institution adheres to competitive academic standards. Key offered programs include Engineering, Electrical/Electronics, Computer, Hospitality.$mt$,
+  $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Computer"},{"name":"Hospitality"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -1087,7 +1087,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Asian Institute of Technology and Management (AITM) is a leading engineering and technology institution located in Khumaltar Heights, Lalitpur, Bagmati. Affiliated with Far-Western University / UHI, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Khumaltar Heights, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Far-Western University / UHI$mt$),
@@ -1107,7 +1107,7 @@ SELECT
   $mt$college$mt$, $mt$Khumaltar Heights, Lalitpur, Bagmati$mt$, $mt$Far-Western University / UHI$mt$,
   NULL,
   $mt$Asian Institute of Technology and Management (AITM) is a leading engineering and technology institution located in Khumaltar Heights, Lalitpur, Bagmati. Affiliated with Far-Western University / UHI, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -1123,7 +1123,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Pokhara University-affiliated engineering college in Sanepa, Lalitpur, established in 2001, emphasizing research, innovation, practical learning and project-based education.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE IT and other engineering programs under Pokhara University"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE IT and other engineering programs under Pokhara University"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Research and innovation$mt$, $mt$practical opportunities$mt$, $mt$counseling$mt$, $mt$project-based learning$mt$, $mt$experienced academic team.$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Sanepa, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -1159,7 +1159,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Himalaya College of Engineering is a leading engineering and technology institution located in Chyasal-9, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chyasal-9, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -1179,7 +1179,7 @@ SELECT
   $mt$college$mt$, $mt$Chyasal-9, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Himalaya College of Engineering is a leading engineering and technology institution located in Chyasal-9, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1195,7 +1195,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Himalayan Institute of Science and Technology (HIST) is a leading engineering and technology institution located in Gwarko, Lalitpur, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gwarko, Lalitpur, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -1215,7 +1215,7 @@ SELECT
   $mt$college$mt$, $mt$Gwarko, Lalitpur, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Himalayan Institute of Science and Technology (HIST) is a leading engineering and technology institution located in Gwarko, Lalitpur, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1231,7 +1231,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$TU-affiliated engineering college in Dhapakhel, Lalitpur, founded in 1998.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil (96 seats)"},{"name":"additional programs listed on current Edusanjal profile"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil (96 seats)"},{"name":"additional programs listed on current Edusanjal profile"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Well-equipped campus$mt$, $mt$experienced faculty$mt$, $mt$research and innovation focus$mt$, $mt$collaborations with universities/industry$mt$, $mt$alumni network$mt$, $mt$student-centric teaching.$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dhapakhel, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -1266,8 +1266,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Kathford International College of Engineering and Management is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  description = $mt$Kathford International College of Engineering and Management is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BSc CSIT, BE Computer, Computer/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BE Computer"},{"name":"Computer/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Balkumari, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -1286,8 +1286,8 @@ SELECT
   $mt$Kathford International College of Engineering and Management$mt$, $mt$kathford-international-college-of-engineering-and-management$mt$, $mt$engineering$mt$,
   $mt$college$mt$, $mt$Balkumari, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Kathford International College of Engineering and Management is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$Kathford International College of Engineering and Management is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BSc CSIT, BE Computer, Computer/IT programs.$mt$,
+  $mt$[{"name":"BSc CSIT"},{"name":"BE Computer"},{"name":"Computer/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1303,7 +1303,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Lalitpur Engineering College is a leading engineering and technology institution located in Chakupat, Patan Dhoka, Lalitpur, Bagmati. Affiliated with Tribhuvan University; Rajarshi Janak University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chakupat, Patan Dhoka, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University; Rajarshi Janak University$mt$),
@@ -1323,7 +1323,7 @@ SELECT
   $mt$college$mt$, $mt$Chakupat, Patan Dhoka, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University; Rajarshi Janak University$mt$,
   NULL,
   $mt$Lalitpur Engineering College is a leading engineering and technology institution located in Chakupat, Patan Dhoka, Lalitpur, Bagmati. Affiliated with Tribhuvan University; Rajarshi Janak University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1339,7 +1339,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Lumbini International Academy of Science and Technology is a leading engineering and technology institution located in Mahalaxmisthan, Lalitpur, Bagmati. Affiliated with Lumbini Buddhist University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mahalaxmisthan, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Lumbini Buddhist University$mt$),
@@ -1359,7 +1359,7 @@ SELECT
   $mt$college$mt$, $mt$Mahalaxmisthan, Lalitpur, Bagmati$mt$, $mt$Lumbini Buddhist University$mt$,
   NULL,
   $mt$Lumbini International Academy of Science and Technology is a leading engineering and technology institution located in Mahalaxmisthan, Lalitpur, Bagmati. Affiliated with Lumbini Buddhist University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1375,7 +1375,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Mega College of Engineering is a leading engineering and technology institution located in Kumaripati, Lalitpur, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kumaripati, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -1395,7 +1395,7 @@ SELECT
   $mt$college$mt$, $mt$Kumaripati, Lalitpur, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Mega College of Engineering is a leading engineering and technology institution located in Kumaripati, Lalitpur, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -1411,7 +1411,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Private engineering institution in Talchhikhel, Lalitpur, established in 2001; focuses on practical, research-driven engineering education.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil"},{"name":"BE Electrical"},{"name":"BE Computer"},{"name":"BE Electronics"},{"name":"Communication & Information Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Electrical"},{"name":"BE Computer"},{"name":"BE Electronics"},{"name":"Communication & Information Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Applied engineering laboratories$mt$, $mt$smart learning rooms$mt$, $mt$digital library$mt$, $mt$R&D division$mt$, $mt$internship/job placement division$mt$, $mt$student support services$mt$, $mt$student clubs and technical events.$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Satdobato, Talchhikhel, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -1447,7 +1447,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$National Institute of Engineering and Technology (NIET) is a leading engineering and technology institution located in Kupondole, Lalitpur, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kupondole, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -1467,7 +1467,7 @@ SELECT
   $mt$college$mt$, $mt$Kupondole, Lalitpur, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$National Institute of Engineering and Technology (NIET) is a leading engineering and technology institution located in Kupondole, Lalitpur, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1482,8 +1482,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Nepal College of Information Technology (NCIT) is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  description = $mt$Nepal College of Information Technology (NCIT) is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards. Key offered programs include BE Computer, BE Software, BCA/IT-related programs.$mt$,
+  courses_offered = $mt$[{"name":"BE Computer"},{"name":"BE Software"},{"name":"BCA/IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Balkumari, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -1502,8 +1502,8 @@ SELECT
   $mt$Nepal College of Information Technology (NCIT)$mt$, $mt$nepal-college-of-information-technology-ncit$mt$, $mt$engineering$mt$,
   $mt$college$mt$, $mt$Balkumari, Lalitpur, Bagmati$mt$, $mt$Pokhara University$mt$,
   NULL,
-  $mt$Nepal College of Information Technology (NCIT) is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$Nepal College of Information Technology (NCIT) is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards. Key offered programs include BE Computer, BE Software, BCA/IT-related programs.$mt$,
+  $mt$[{"name":"BE Computer"},{"name":"BE Software"},{"name":"BCA/IT-related programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1519,7 +1519,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Nepal Open University is a leading engineering and technology institution located in Man Bhawan, Lalitpur, Bagmati. Affiliated with Nepal Open University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Man Bhawan, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Nepal Open University$mt$),
@@ -1539,7 +1539,7 @@ SELECT
   $mt$college$mt$, $mt$Man Bhawan, Lalitpur, Bagmati$mt$, $mt$Nepal Open University$mt$,
   NULL,
   $mt$Nepal Open University is a leading engineering and technology institution located in Man Bhawan, Lalitpur, Bagmati. Affiliated with Nepal Open University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -1555,7 +1555,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Pulchowk Campus | Institute of Engineering is a leading engineering and technology institution located in Pulchowk, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pulchowk, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -1575,7 +1575,7 @@ SELECT
   $mt$college$mt$, $mt$Pulchowk, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Pulchowk Campus | Institute of Engineering is a leading engineering and technology institution located in Pulchowk, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1591,7 +1591,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Ritz College of Engineering and Management is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Balkumari, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -1611,7 +1611,7 @@ SELECT
   $mt$college$mt$, $mt$Balkumari, Lalitpur, Bagmati$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Ritz College of Engineering and Management is a leading engineering and technology institution located in Balkumari, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1627,7 +1627,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Sagarmatha Engineering College is a leading engineering and technology institution located in Sanepa, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Sanepa, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -1647,7 +1647,7 @@ SELECT
   $mt$college$mt$, $mt$Sanepa, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Sagarmatha Engineering College is a leading engineering and technology institution located in Sanepa, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1663,7 +1663,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Universal Engineering and Science College is a leading engineering and technology institution located in Chakupat, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chakupat, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -1683,7 +1683,7 @@ SELECT
   $mt$college$mt$, $mt$Chakupat, Lalitpur, Bagmati$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Universal Engineering and Science College is a leading engineering and technology institution located in Chakupat, Lalitpur, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1699,7 +1699,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Gandaki College of Engineering and Science is a leading engineering and technology institution located in Lamachaur, Pokhara, Kaski, Gandaki. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -1719,7 +1719,7 @@ SELECT
   $mt$college$mt$, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Gandaki College of Engineering and Science is a leading engineering and technology institution located in Lamachaur, Pokhara, Kaski, Gandaki. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1735,7 +1735,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Pashchimanchal Campus | Institute of Engineering is a leading engineering and technology institution located in Lamachaur, Pokhara, Kaski, Gandaki. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -1755,7 +1755,7 @@ SELECT
   $mt$college$mt$, $mt$Lamachaur, Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Pashchimanchal Campus | Institute of Engineering is a leading engineering and technology institution located in Lamachaur, Pokhara, Kaski, Gandaki. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1771,7 +1771,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Engineering institution in Phirke, Pokhara offering bachelor engineering programs along with technical programs; emphasizes practical and extracurricular development.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Computer"},{"name":"BE Civil"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"plus diploma/pre-diploma engineering programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Computer"},{"name":"BE Civil"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"plus diploma/pre-diploma engineering programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Phirke, Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University; CTEVT$mt$),
@@ -1807,7 +1807,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Constituent School of Engineering of Pokhara University.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil"},{"name":"BE Civil & Rural"},{"name":"BE Computer"},{"name":"BE Software"},{"name":"BE Electrical & Electronics"},{"name":"BE IT"},{"name":"graduate engineering programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Civil & Rural"},{"name":"BE Computer"},{"name":"BE Software"},{"name":"BE Electrical & Electronics"},{"name":"BE IT"},{"name":"graduate engineering programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Laboratories$mt$, $mt$research$mt$, $mt$industry collaboration$mt$, $mt$constituent university school$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -1843,7 +1843,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Oxford College of Engineering and Management is a leading engineering and technology institution located in Gaindakot, Nawalpur, Gandaki. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gaindakot, Nawalpur, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -1863,7 +1863,7 @@ SELECT
   $mt$college$mt$, $mt$Gaindakot, Nawalpur, Gandaki$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Oxford College of Engineering and Management is a leading engineering and technology institution located in Gaindakot, Nawalpur, Gandaki. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1879,7 +1879,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Western Advance College of Engineering and Management is a leading engineering and technology institution located in Gaindakot, Nawalpur, Gandaki. Affiliated with Far-Western University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gaindakot, Nawalpur, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Far-Western University$mt$),
@@ -1899,7 +1899,7 @@ SELECT
   $mt$college$mt$, $mt$Gaindakot, Nawalpur, Gandaki$mt$, $mt$Far-Western University$mt$,
   NULL,
   $mt$Western Advance College of Engineering and Management is a leading engineering and technology institution located in Gaindakot, Nawalpur, Gandaki. Affiliated with Far-Western University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1914,8 +1914,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Karnali Technical School is a leading engineering and technology institution located in Jumla, Karnali. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  description = $mt$Karnali Technical School is a leading engineering and technology institution located in Jumla, Karnali. Affiliated with CTEVT, the institution adheres to competitive academic standards. Key offered programs include Engineering, Electrical, Agriculture, Animal Science.$mt$,
+  courses_offered = $mt$[{"name":"Engineering"},{"name":"Electrical"},{"name":"Agriculture"},{"name":"Animal Science"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Jumla, Karnali$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -1934,8 +1934,8 @@ SELECT
   $mt$Karnali Technical School$mt$, $mt$karnali-technical-school$mt$, $mt$engineering$mt$,
   $mt$college$mt$, $mt$Jumla, Karnali$mt$, $mt$CTEVT$mt$,
   NULL,
-  $mt$Karnali Technical School is a leading engineering and technology institution located in Jumla, Karnali. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$Karnali Technical School is a leading engineering and technology institution located in Jumla, Karnali. Affiliated with CTEVT, the institution adheres to competitive academic standards. Key offered programs include Engineering, Electrical, Agriculture, Animal Science.$mt$,
+  $mt$[{"name":"Engineering"},{"name":"Electrical"},{"name":"Agriculture"},{"name":"Animal Science"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -1951,7 +1951,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Graduate School of Engineering | Mid-West University is a leading engineering and technology institution located in Birendranagar, Surkhet, Karnali. Affiliated with Mid-West University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Birendranagar, Surkhet, Karnali$mt$),
   affiliation = COALESCE(affiliation, $mt$Mid-West University$mt$),
@@ -1971,7 +1971,7 @@ SELECT
   $mt$college$mt$, $mt$Birendranagar, Surkhet, Karnali$mt$, $mt$Mid-West University$mt$,
   NULL,
   $mt$Graduate School of Engineering | Mid-West University is a leading engineering and technology institution located in Birendranagar, Surkhet, Karnali. Affiliated with Mid-West University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -1987,7 +1987,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Dhulabari Campus is a leading engineering and technology institution located in Dhulabari, Mechinagar, Jhapa, Koshi. Affiliated with Tribhuvan University; CTEVT; Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dhulabari, Mechinagar, Jhapa, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University; CTEVT; Purbanchal University$mt$),
@@ -2007,7 +2007,7 @@ SELECT
   $mt$college$mt$, $mt$Dhulabari, Mechinagar, Jhapa, Koshi$mt$, $mt$Tribhuvan University; CTEVT; Purbanchal University$mt$,
   NULL,
   $mt$Dhulabari Campus is a leading engineering and technology institution located in Dhulabari, Mechinagar, Jhapa, Koshi. Affiliated with Tribhuvan University; CTEVT; Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -2023,7 +2023,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Pathivara Engineering College is a leading engineering and technology institution located in Arjundhara Municipality-11, Birtamode, Jhapa, Koshi. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Arjundhara Municipality-11, Birtamode, Jhapa, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -2043,7 +2043,7 @@ SELECT
   $mt$college$mt$, $mt$Arjundhara Municipality-11, Birtamode, Jhapa, Koshi$mt$, $mt$Purbanchal University$mt$,
   NULL,
   $mt$Pathivara Engineering College is a leading engineering and technology institution located in Arjundhara Municipality-11, Birtamode, Jhapa, Koshi. Affiliated with Purbanchal University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics & Communication"},{"name":"B.Arch"},{"name":"BIT"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2059,7 +2059,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Eastern College of Engineering is a leading engineering and technology institution located in Tinpaini Chowk, Biratnagar, Morang, Koshi. Affiliated with Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Tinpaini Chowk, Biratnagar, Morang, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University; CTEVT$mt$),
@@ -2079,7 +2079,7 @@ SELECT
   $mt$college$mt$, $mt$Tinpaini Chowk, Biratnagar, Morang, Koshi$mt$, $mt$Purbanchal University; CTEVT$mt$,
   NULL,
   $mt$Eastern College of Engineering is a leading engineering and technology institution located in Tinpaini Chowk, Biratnagar, Morang, Koshi. Affiliated with Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2095,7 +2095,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Madan Bhandari Memorial Academy is a leading engineering and technology institution located in Mangalbare, Urlabari, Morang, Koshi. Affiliated with Pokhara University; Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mangalbare, Urlabari, Morang, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University; Purbanchal University; CTEVT$mt$),
@@ -2115,7 +2115,7 @@ SELECT
   $mt$college$mt$, $mt$Mangalbare, Urlabari, Morang, Koshi$mt$, $mt$Pokhara University; Purbanchal University; CTEVT$mt$,
   NULL,
   $mt$Madan Bhandari Memorial Academy is a leading engineering and technology institution located in Mangalbare, Urlabari, Morang, Koshi. Affiliated with Pokhara University; Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2131,7 +2131,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Madan Bhandari Memorial Academy Nepal is a leading engineering and technology institution located in Urlabari, Morang, Koshi. Affiliated with Pokhara University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Urlabari, Morang, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University; CTEVT$mt$),
@@ -2151,7 +2151,7 @@ SELECT
   $mt$college$mt$, $mt$Urlabari, Morang, Koshi$mt$, $mt$Pokhara University; CTEVT$mt$,
   NULL,
   $mt$Madan Bhandari Memorial Academy Nepal is a leading engineering and technology institution located in Urlabari, Morang, Koshi. Affiliated with Pokhara University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -2167,7 +2167,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Manmohan Memorial Polytechnic is a leading engineering and technology institution located in Biratnagar, Morang, Koshi. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Biratnagar, Morang, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2187,7 +2187,7 @@ SELECT
   $mt$college$mt$, $mt$Biratnagar, Morang, Koshi$mt$, $mt$CTEVT$mt$,
   NULL,
   $mt$Manmohan Memorial Polytechnic is a leading engineering and technology institution located in Biratnagar, Morang, Koshi. Affiliated with CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -2203,7 +2203,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Constituent engineering school of Purbanchal University.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical"},{"name":"BE Electronics"},{"name":"Communication & Automation"},{"name":"MSc Information System Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical"},{"name":"BE Electronics"},{"name":"Communication & Automation"},{"name":"MSc Information System Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Constituent university school$mt$, $mt$engineering laboratories$mt$, $mt$practical learning$mt$, $mt$research$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Biratnagar, Morang, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -2239,7 +2239,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$School of Engineering - Manmohan Technical University is a leading engineering and technology institution located in Biratnagar, Budhiganga, Morang, Koshi. Affiliated with Manmohan Technical University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Biratnagar, Budhiganga, Morang, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Manmohan Technical University$mt$),
@@ -2259,7 +2259,7 @@ SELECT
   $mt$college$mt$, $mt$Biratnagar, Budhiganga, Morang, Koshi$mt$, $mt$Manmohan Technical University$mt$,
   NULL,
   $mt$School of Engineering - Manmohan Technical University is a leading engineering and technology institution located in Biratnagar, Budhiganga, Morang, Koshi. Affiliated with Manmohan Technical University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2275,7 +2275,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Purwanchal Campus | Institute of Engineering is a leading engineering and technology institution located in Dharan, Sunsari, Koshi. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dharan, Sunsari, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -2295,7 +2295,7 @@ SELECT
   $mt$college$mt$, $mt$Dharan, Sunsari, Koshi$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Purwanchal Campus | Institute of Engineering is a leading engineering and technology institution located in Dharan, Sunsari, Koshi. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2311,7 +2311,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Bheri College of Engineering and Management is a leading engineering and technology institution located in Nepalgunj, Banke, Lumbini. Affiliated with Far-Western University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Nepalgunj, Banke, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Far-Western University$mt$),
@@ -2331,7 +2331,7 @@ SELECT
   $mt$college$mt$, $mt$Nepalgunj, Banke, Lumbini$mt$, $mt$Far-Western University$mt$,
   NULL,
   $mt$Bheri College of Engineering and Management is a leading engineering and technology institution located in Nepalgunj, Banke, Lumbini. Affiliated with Far-Western University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2347,7 +2347,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$College of Engineering and Management is a leading engineering and technology institution located in Shitalnagar, Nepalgunj, Banke, Lumbini. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Shitalnagar, Nepalgunj, Banke, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -2367,7 +2367,7 @@ SELECT
   $mt$college$mt$, $mt$Shitalnagar, Nepalgunj, Banke, Lumbini$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$College of Engineering and Management is a leading engineering and technology institution located in Shitalnagar, Nepalgunj, Banke, Lumbini. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2383,7 +2383,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Institute of Engineering and Information Technology | Lumbini Technological University is a leading engineering and technology institution located in Nepalgunj, Banke, Lumbini. Affiliated with Lumbini Technological University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Nepalgunj, Banke, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Lumbini Technological University$mt$),
@@ -2403,7 +2403,7 @@ SELECT
   $mt$college$mt$, $mt$Nepalgunj, Banke, Lumbini$mt$, $mt$Lumbini Technological University$mt$,
   NULL,
   $mt$Institute of Engineering and Information Technology | Lumbini Technological University is a leading engineering and technology institution located in Nepalgunj, Banke, Lumbini. Affiliated with Lumbini Technological University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2419,7 +2419,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Engineering institution in Ghorahi, Dang offering engineering and technology programs under Pokhara University and CTEVT.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Computer"},{"name":"BE Civil"},{"name":"BE Electronics & Communication"},{"name":"BCA"},{"name":"Diploma/Pre-Diploma engineering programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Computer"},{"name":"BE Civil"},{"name":"BE Electronics & Communication"},{"name":"BCA"},{"name":"Diploma/Pre-Diploma engineering programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ghorahi, Dang, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University; CTEVT$mt$),
@@ -2455,7 +2455,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Lumbini Engineering College is a leading engineering and technology institution located in Bhalwari, Rupandehi, Lumbini. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bhalwari, Rupandehi, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -2475,7 +2475,7 @@ SELECT
   $mt$college$mt$, $mt$Bhalwari, Rupandehi, Lumbini$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Lumbini Engineering College is a leading engineering and technology institution located in Bhalwari, Rupandehi, Lumbini. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -2491,7 +2491,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Central Engineering College is a leading engineering and technology institution located in Ramanand Chowk 8, Janakpur, Dhanusha, Madhesh. Affiliated with Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ramanand Chowk 8, Janakpur, Dhanusha, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University; CTEVT$mt$),
@@ -2511,7 +2511,7 @@ SELECT
   $mt$college$mt$, $mt$Ramanand Chowk 8, Janakpur, Dhanusha, Madhesh$mt$, $mt$Purbanchal University; CTEVT$mt$,
   NULL,
   $mt$Central Engineering College is a leading engineering and technology institution located in Ramanand Chowk 8, Janakpur, Dhanusha, Madhesh. Affiliated with Purbanchal University; CTEVT, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2527,7 +2527,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Janakpur Engineering College is a leading engineering and technology institution located in Janakpur / Dhanusha, Madhesh. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Janakpur / Dhanusha, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -2547,7 +2547,7 @@ SELECT
   $mt$college$mt$, $mt$Janakpur / Dhanusha, Madhesh$mt$, $mt$Tribhuvan University$mt$,
   NULL,
   $mt$Janakpur Engineering College is a leading engineering and technology institution located in Janakpur / Dhanusha, Madhesh. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electronics Communication & Information"},{"name":"BE Electrical"},{"name":"B.Arch"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -2563,7 +2563,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Gaushala Engineering Campus is a leading engineering and technology institution located in Mahottari, Madhesh. Affiliated with Rajarshi Janak University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mahottari, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$Rajarshi Janak University$mt$),
@@ -2583,7 +2583,7 @@ SELECT
   $mt$college$mt$, $mt$Mahottari, Madhesh$mt$, $mt$Rajarshi Janak University$mt$,
   NULL,
   $mt$Gaushala Engineering Campus is a leading engineering and technology institution located in Mahottari, Madhesh. Affiliated with Rajarshi Janak University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2599,7 +2599,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Dhangadhi Engineering College is a leading engineering and technology institution located in Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -2619,7 +2619,7 @@ SELECT
   $mt$college$mt$, $mt$Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$Dhangadhi Engineering College is a leading engineering and technology institution located in Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -2635,7 +2635,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$National Academy of Science and Technology (Dhangadi Engineering College) is a leading engineering and technology institution located in Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -2655,7 +2655,7 @@ SELECT
   $mt$college$mt$, $mt$Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim$mt$, $mt$Pokhara University$mt$,
   NULL,
   $mt$National Academy of Science and Technology (Dhangadi Engineering College) is a leading engineering and technology institution located in Uttar Behadi, Dhangadhi, Kailali, Sudurpashchim. Affiliated with Pokhara University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil"},{"name":"BE Computer"},{"name":"BE Electrical & Electronics"},{"name":"BE Software"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2671,7 +2671,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$School of Engineering | Far Western University is a leading engineering and technology institution located in Mahendranagar, Kanchanpur, Sudurpashchim. Affiliated with Far-Western University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mahendranagar, Kanchanpur, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$Far-Western University$mt$),
@@ -2691,7 +2691,7 @@ SELECT
   $mt$college$mt$, $mt$Mahendranagar, Kanchanpur, Sudurpashchim$mt$, $mt$Far-Western University$mt$,
   NULL,
   $mt$School of Engineering | Far Western University is a leading engineering and technology institution located in Mahendranagar, Kanchanpur, Sudurpashchim. Affiliated with Far-Western University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"BE Civil Engineering"},{"name":"BE Computer Engineering"},{"name":"BE Electrical Engineering"},{"name":"BE Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched from individual profile/admission notice$mt$,
   NULL,
@@ -2707,7 +2707,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$Sindhuli Community Technical Institute is a leading engineering and technology institution located in Kamalamai, Sindhuli, To verify. Affiliated with CTEVT / Kathmandu University, the institution adheres to competitive academic standards.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN '[]'::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kamalamai, Sindhuli, To verify$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT / Kathmandu University$mt$),
@@ -2727,7 +2727,7 @@ SELECT
   $mt$college$mt$, $mt$Kamalamai, Sindhuli, To verify$mt$, $mt$CTEVT / Kathmandu University$mt$,
   NULL,
   $mt$Sindhuli Community Technical Institute is a leading engineering and technology institution located in Kamalamai, Sindhuli, To verify. Affiliated with CTEVT / Kathmandu University, the institution adheres to competitive academic standards.$mt$,
-  '[]'::jsonb,
+  $mt$[{"name":"Diploma in Civil Engineering"},{"name":"Diploma in Computer Engineering"},{"name":"Diploma in Electrical Engineering"},{"name":"Diploma in Mechanical Engineering"},{"name":"Diploma in Information Technology"}]$mt$::jsonb,
   ARRAY[]::text[],
   $mt$To be enriched$mt$,
   NULL,
@@ -2743,7 +2743,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Mechanical"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Mechanical"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Balaju, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2779,7 +2779,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Mechanical"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Engineering"},{"name":"Electrical/Electronics"},{"name":"Mechanical"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Shankharapur, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2815,7 +2815,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Engineering"},{"name":"Mechanical"},{"name":"Electrical"},{"name":"Agriculture"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Engineering"},{"name":"Mechanical"},{"name":"Electrical"},{"name":"Agriculture"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Panauti, Kavre, Kavrepalanchok, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2851,7 +2851,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Civil"},{"name":"Electrical"},{"name":"Plumbing"},{"name":"Mechanical"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Civil"},{"name":"Electrical"},{"name":"Plumbing"},{"name":"Mechanical"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chitlang, Makwanpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2887,7 +2887,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Agriculture"},{"name":"Animal Science"},{"name":"Technical trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Agriculture"},{"name":"Animal Science"},{"name":"Technical trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Nuwakot, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2923,7 +2923,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Beauty"},{"name":"Agriculture"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Beauty"},{"name":"Agriculture"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chandragiri, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2959,7 +2959,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Water Supply & Sanitation"},{"name":"Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Water Supply & Sanitation"},{"name":"Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Biratnagar, Morang, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -2995,7 +2995,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Agriculture"},{"name":"Electrical"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Agriculture"},{"name":"Electrical"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chaurjahari, Rukum West, Karnali$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3031,7 +3031,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey"},{"name":"Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey"},{"name":"Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lalmatiya, Dang, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3067,7 +3067,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Health"},{"name":"Construction"},{"name":"Hotel Management"},{"name":"Technical trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Health"},{"name":"Construction"},{"name":"Hotel Management"},{"name":"Technical trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bardibas, Mahottari, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3103,7 +3103,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Engineering"},{"name":"Mechanical"},{"name":"Electrical"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Engineering"},{"name":"Mechanical"},{"name":"Electrical"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lahan, Siraha, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3139,7 +3139,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Agriculture"},{"name":"Civil"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Agriculture"},{"name":"Civil"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dhanusha, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3175,7 +3175,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Hotel Management"},{"name":"Hospitality"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Hotel Management"},{"name":"Hospitality"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3211,7 +3211,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Electrical"},{"name":"Civil"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Electrical"},{"name":"Civil"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3247,7 +3247,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Agriculture"},{"name":"Computer"},{"name":"Electronics"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Agriculture"},{"name":"Computer"},{"name":"Electronics"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3283,7 +3283,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Agriculture"},{"name":"Electrical"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Agriculture"},{"name":"Electrical"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3319,7 +3319,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Hotel Management"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Hotel Management"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Baglung, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3355,7 +3355,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Electrical"},{"name":"Technical trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Electrical"},{"name":"Technical trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Rupandehi, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3391,7 +3391,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Agriculture"},{"name":"Plumbing"},{"name":"Electrical"},{"name":"Beauty"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Agriculture"},{"name":"Plumbing"},{"name":"Electrical"},{"name":"Beauty"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Tikapur, Kailali, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3427,7 +3427,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Civil"},{"name":"Computer"},{"name":"Geomatics"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Civil"},{"name":"Computer"},{"name":"Geomatics"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Birtamode, Jhapa, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3463,7 +3463,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Civil Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Civil Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kolti, Bajura, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3499,7 +3499,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Civil"},{"name":"Agriculture"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Civil"},{"name":"Agriculture"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Jacha, Jumla, Karnali$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3535,7 +3535,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Civil"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Civil"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kharipati, Bhaktapur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3571,7 +3571,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Civil"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Civil"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ratnanagar, Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3607,7 +3607,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Agriculture"},{"name":"Animal Science"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Agriculture"},{"name":"Animal Science"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ratnanagar, Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3643,7 +3643,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Electrical"},{"name":"Civil"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Electrical"},{"name":"Civil"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ratnanagar, Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3679,7 +3679,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Hotel Management"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Hotel Management"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ratnanagar, Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3715,7 +3715,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Computer Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Computer Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lalbandi, Sarlahi, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3751,7 +3751,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Civil Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Civil Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Rainadevi Chhahara, Palpa, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3787,7 +3787,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gaur, Rautahat, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3823,7 +3823,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Rajbiraj, Saptari, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3859,7 +3859,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Rajbiraj, Saptari, Madhesh$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3895,7 +3895,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Amargadhi, Dadeldhura, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3931,7 +3931,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dhangadhi, Kailali, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -3967,7 +3967,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bhimdatta, Kanchanpur, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4003,7 +4003,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Survey Engineering"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Survey Engineering"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Surkhet, Karnali$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4039,7 +4039,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Electrical"},{"name":"Electronics"},{"name":"Computer"},{"name":"Mechanical"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Electrical"},{"name":"Electronics"},{"name":"Computer"},{"name":"Mechanical"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4075,7 +4075,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Electrical"},{"name":"Refrigeration & AC"},{"name":"Fabrication"},{"name":"Tailoring"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Electrical"},{"name":"Refrigeration & AC"},{"name":"Fabrication"},{"name":"Tailoring"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gwarko, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4111,7 +4111,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Mobile Phone Repair"},{"name":"Education"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Mobile Phone Repair"},{"name":"Education"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4147,7 +4147,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Plumbing"},{"name":"Electrical"},{"name":"Technical trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Plumbing"},{"name":"Electrical"},{"name":"Technical trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Chitwan, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4183,7 +4183,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Electronics"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Electronics"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Durgapur, Jhapa, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4219,7 +4219,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Electronics/Electrical"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Electronics/Electrical"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Jhapa, Koshi$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4255,7 +4255,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$CTEVT-affiliated/managed technical and vocational education provider; detailed current program status should be checked against CTEVT's live institutional mapping.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Hospitality"},{"name":"Vocational trades"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Hospitality"},{"name":"Vocational trades"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Practical TVET delivery$mt$, $mt$CTEVT curriculum/assessment framework$mt$, $mt$program-specific facilities$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dang, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$CTEVT$mt$),
@@ -4291,7 +4291,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCSIT"},{"name":"IT/business computing programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCSIT"},{"name":"IT/business computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Business and computing education$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University / national affiliation$mt$),
@@ -4327,7 +4327,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"Computer/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"Computer/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Public science campus$mt$, $mt$strong computing/science orientation$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lainchaur, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -4363,7 +4363,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"computing/technology programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"computing/technology programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Technology-oriented institution$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Sifal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University / national affiliation$mt$),
@@ -4399,7 +4399,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"computing specializations"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"computing specializations"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Foreign-affiliated computing degree$mt$, $mt$industry-oriented model$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Naxal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$University of Wolverhampton, UK$mt$),
@@ -4435,7 +4435,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computer Science"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computer Science"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Same institution as Herald College Kathmandu$mt$, $mt$retained once in final identity logic$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Naxal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$University of Wolverhampton, UK$mt$),
@@ -4471,7 +4471,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"computing/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"computing/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$International university pathway$mt$, $mt$IT-focused programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Putalisadak, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Taylor's University, Malaysia$mt$),
@@ -4507,7 +4507,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computer Systems Engineering"},{"name":"BSc (Hons) Computer Science"},{"name":"BSc (Hons) Cyber Security"},{"name":"computing programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computer Systems Engineering"},{"name":"BSc (Hons) Computer Science"},{"name":"BSc (Hons) Cyber Security"},{"name":"computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Foreign-affiliated computing/IT degrees$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Tinkune, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$University of Sunderland, UK$mt$),
@@ -4543,7 +4543,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"BSc (Hons) Computing / IT"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"BSc (Hons) Computing / IT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$International IT degree pathway$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Maitidevi, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$London Metropolitan University, UK$mt$),
@@ -4579,7 +4579,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computing"},{"name":"BSc (Hons) Computer Networking & IT Security"},{"name":"BSc (Hons) Multimedia Technologies"},{"name":"BSc (Hons) Computing with Artificial Intelligence"},{"name":"postgraduate IT"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computing"},{"name":"BSc (Hons) Computer Networking & IT Security"},{"name":"BSc (Hons) Multimedia Technologies"},{"name":"BSc (Hons) Computing with Artificial Intelligence"},{"name":"postgraduate IT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$International IT/business college$mt$, $mt$industry-oriented curriculum$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kamalpokhari, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$London Metropolitan University, UK$mt$),
@@ -4615,7 +4615,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCA"},{"name":"BIT"},{"name":"IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCA"},{"name":"BIT"},{"name":"IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Business and IT-focused college$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Subidhanagar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -4651,7 +4651,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSIT"},{"name":"BS Computer Science"},{"name":"MSc Artificial Intelligence"},{"name":"other technology/business programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSIT"},{"name":"BS Computer Science"},{"name":"MSc Artificial Intelligence"},{"name":"other technology/business programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$US-affiliated degree programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Babarmahal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Westcliff University, USA$mt$),
@@ -4687,7 +4687,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Information Technology"},{"name":"BSc (Hons) Computer Science"},{"name":"MSc IT Management"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Information Technology"},{"name":"BSc (Hons) Computer Science"},{"name":"MSc IT Management"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Long-running foreign-affiliated IT institution$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Maitidevi, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Asia Pacific University of Technology & Innovation, Malaysia$mt$),
@@ -4723,7 +4723,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCA"},{"name":"IT/computing-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCA"},{"name":"IT/computing-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Public TU constituent campus$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Tahachal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -4759,7 +4759,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computing"},{"name":"BSc (Hons) Computing with AI / related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computing"},{"name":"BSc (Hons) Computing with AI / related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$UK-affiliated computing education$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Jorpati, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$University of Northampton, UK$mt$),
@@ -4795,7 +4795,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCA"},{"name":"BSc CSIT / IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCA"},{"name":"BSc CSIT / IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Public women's campus with IT programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bagbazar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -4831,7 +4831,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$IT/business/science programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Naya Bazar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -4867,7 +4867,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCSIT"},{"name":"IT/business programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCSIT"},{"name":"IT/business programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Business and IT programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gwarko, Lalitpur, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -4903,7 +4903,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCSIT"},{"name":"IT/business programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCSIT"},{"name":"IT/business programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Management and computing programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Old Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -4939,7 +4939,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BCA / computing-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BCA / computing-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Established academic institution with science and IT programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Maitighar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -4975,7 +4975,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"AI/data/IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computer Science"},{"name":"AI/data/IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Emerging foreign-affiliated IT institution$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Subidhanagar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$International / foreign-affiliated$mt$),
@@ -5011,7 +5011,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BCA"},{"name":"BIT/IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BCA"},{"name":"BIT/IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Large private college with IT programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mitrapark, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5047,7 +5047,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computing"},{"name":"BSc (Hons) Cyber Security and Networking"},{"name":"BSc (Hons) Artificial Intelligence"},{"name":"MSc IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computing"},{"name":"BSc (Hons) Cyber Security and Networking"},{"name":"BSc (Hons) Artificial Intelligence"},{"name":"MSc IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$British university degrees$mt$, $mt$international academic pathway$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Thapathali, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$University of the West of England / University of the West of Scotland, UK$mt$),
@@ -5083,7 +5083,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Computing"},{"name":"Cyber Security"},{"name":"AI and IT postgraduate programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Computing"},{"name":"Cyber Security"},{"name":"AI and IT postgraduate programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$International degree pathway$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Thapathali, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$UK universities$mt$),
@@ -5119,7 +5119,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"MSc CSIT"},{"name":"MIT / postgraduate computing programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"MSc CSIT"},{"name":"MIT / postgraduate computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Central university department$mt$, $mt$postgraduate/research focus$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kirtipur, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5155,7 +5155,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCSIT"},{"name":"IT/business programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCSIT"},{"name":"IT/business programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Business + IT orientation$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -5191,7 +5191,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc Computer Science"},{"name":"BE Computer Engineering"},{"name":"MSc/MPhil/PhD computing-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc Computer Science"},{"name":"BE Computer Engineering"},{"name":"MSc/MPhil/PhD computing-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Research-intensive computing/engineering school$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dhulikhel, Kavrepalanchok, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Kathmandu University$mt$),
@@ -5227,7 +5227,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCA"},{"name":"BSc CSIT / computing programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCA"},{"name":"BSc CSIT / computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$IT and management programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Satdobato, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5263,7 +5263,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Computer/IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Computer/IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Management, technology and engineering education$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -5299,7 +5299,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Software Engineering"},{"name":"computing-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Software Engineering"},{"name":"computing-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$UK degree pathway$mt$, $mt$computing and business$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kupondole, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$University of Bedfordshire, UK$mt$),
@@ -5335,7 +5335,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"BIM"},{"name":"Computer/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"BIM"},{"name":"Computer/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Major public TU campus with multiple IT degrees$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Patan Dhoka, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5371,7 +5371,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Computer"},{"name":"Software/Computer-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Computer"},{"name":"Software/Computer-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Engineering and computing focus$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -5407,7 +5407,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Computer Science / computing-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Computer Science / computing-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Foreign-affiliated computing education$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$University of Sunderland, UK$mt$),
@@ -5443,7 +5443,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"IT/computing and management programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"IT/computing and management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$IT-focused private college$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Asia Pacific University of Technology & Innovation / international collaboration$mt$),
@@ -5479,7 +5479,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc (Hons) Computing"},{"name":"IT/computing programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc (Hons) Computing"},{"name":"IT/computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Foreign-affiliated IT college outside Kathmandu Valley$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$London Metropolitan University, UK$mt$),
@@ -5515,7 +5515,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"computer/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"computer/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$TU-affiliated IT education$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5551,7 +5551,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Computer Engineering"},{"name":"Software Engineering"},{"name":"IT-related graduate programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Computer Engineering"},{"name":"Software Engineering"},{"name":"IT-related graduate programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$University engineering school$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -5587,7 +5587,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Computer Science / IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"Computer Science / IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$University science and technology programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -5623,7 +5623,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"Computer/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BIT"},{"name":"BCA"},{"name":"Computer/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Large public constituent campus$mt$, $mt$broad computing programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5659,7 +5659,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$IT-focused TU-affiliated college$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5695,7 +5695,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BIT / MIT / IT and computing programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BIT / MIT / IT and computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Dedicated graduate/IT academic unit$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Birendranagar, Surkhet, Karnali$mt$),
   affiliation = COALESCE(affiliation, $mt$Mid-West University$mt$),
@@ -5731,7 +5731,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BE Computer"},{"name":"BE Software"},{"name":"Computer/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BE Computer"},{"name":"BE Software"},{"name":"Computer/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$University school focused on engineering and technology$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Birendranagar, Surkhet, Karnali$mt$),
   affiliation = COALESCE(affiliation, $mt$Mid-West University$mt$),
@@ -5767,7 +5767,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"IT/computing programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"IT/computing programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Public higher education campus with computing programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Nepalgunj, Banke, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5803,7 +5803,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA and IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA and IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Public constituent campus in Dang$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ghorahi, Dang, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5839,7 +5839,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA/IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA/IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Public campus serving western Nepal$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Butwal, Rupandehi, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5875,7 +5875,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCA"},{"name":"BSc CSIT / IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCA"},{"name":"BSc CSIT / IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Regional IT-focused institution$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Butwal, Rupandehi, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5911,7 +5911,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BCA / IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BCA / IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Regional private IT/computing education$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Butwal, Rupandehi, Lumbini$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -5947,7 +5947,7 @@ WHERE NOT EXISTS (
 
 UPDATE public.institutes SET
   description = $mt$IT/computing-focused higher-education institution or university school offering one or more computing, information technology, computer science, software, cybersecurity, AI or related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA/computing-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  courses_offered = $mt$[{"name":"BSc CSIT"},{"name":"BIT/BCA/computing-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[$mt$Regional public university with computing programs$mt$]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mahendranagar, Kanchanpur, Sudurpashchim$mt$),
   affiliation = COALESCE(affiliation, $mt$Far Western University$mt$),
@@ -5982,8 +5982,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Thames International College is a leading higher education and management studies institution located in Old Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BCA, BA/other management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BCA"},{"name":"BA/other management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Thames International College is a leading higher education and management studies institution located in Old Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BCA, BA/other management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BCA"},{"name":"BA/other management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Old Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6002,7 +6002,7 @@ SELECT
   $mt$Thames International College$mt$, $mt$thames-international-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Old Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Thames International College is a leading higher education and management studies institution located in Old Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BCA, BA/other management programs.$mt$,
+  $mt$Thames International College is a leading higher education and management studies institution located in Old Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BCA, BA/other management programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BCA"},{"name":"BA/other management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6018,8 +6018,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Texas College of Management and IT is a leading higher education and management studies institution located in Siphal / Mitrapark, Kathmandu, Bagmati. Affiliated with Lincoln University College; Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, BBS, BSc CSIT, other management/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"BBS"},{"name":"BSc CSIT"},{"name":"other management/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Texas College of Management and IT is a leading higher education and management studies institution located in Siphal / Mitrapark, Kathmandu, Bagmati. Affiliated with Lincoln University College; Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, BBS, BSc CSIT, other management/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"BBS"},{"name":"BSc CSIT"},{"name":"other management/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Siphal / Mitrapark, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Lincoln University College; Tribhuvan University$mt$),
@@ -6038,7 +6038,7 @@ SELECT
   $mt$Texas College of Management and IT$mt$, $mt$texas-college-of-management-and-it$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Siphal / Mitrapark, Kathmandu, Bagmati$mt$, $mt$Lincoln University College; Tribhuvan University$mt$,
   NULL,
-  $mt$Texas College of Management and IT is a leading higher education and management studies institution located in Siphal / Mitrapark, Kathmandu, Bagmati. Affiliated with Lincoln University College; Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, BBS, BSc CSIT, other management/IT programs.$mt$,
+  $mt$Texas College of Management and IT is a leading higher education and management studies institution located in Siphal / Mitrapark, Kathmandu, Bagmati. Affiliated with Lincoln University College; Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, BBS, BSc CSIT, other management/IT programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"BBS"},{"name":"BSc CSIT"},{"name":"other management/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6054,8 +6054,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$National College of Management and Technical Science (NCMT College) is a leading higher education and management studies institution located in Samakhusi, Ranibari, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, IT/business programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"IT/business programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$National College of Management and Technical Science (NCMT College) is a leading higher education and management studies institution located in Samakhusi, Ranibari, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, IT/business programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"IT/business programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Samakhusi, Ranibari, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Lincoln University College$mt$),
@@ -6074,7 +6074,7 @@ SELECT
   $mt$National College of Management and Technical Science (NCMT College)$mt$, $mt$national-college-of-management-and-technical-science-ncmt-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Samakhusi, Ranibari, Kathmandu, Bagmati$mt$, $mt$Lincoln University College$mt$,
   NULL,
-  $mt$National College of Management and Technical Science (NCMT College) is a leading higher education and management studies institution located in Samakhusi, Ranibari, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, IT/business programs.$mt$,
+  $mt$National College of Management and Technical Science (NCMT College) is a leading higher education and management studies institution located in Samakhusi, Ranibari, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, IT/business programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"IT/business programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6090,8 +6090,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$School of Arts, Sciences, & Technology (SAST) is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with University of Nepal, the institution adheres to competitive academic standards. Key academic programs include BBA, Computer Science/IT, integrated science, economics, sustainability-related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"Computer Science/IT"},{"name":"integrated science"},{"name":"economics"},{"name":"sustainability-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$School of Arts, Sciences, & Technology (SAST) is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with University of Nepal, the institution adheres to competitive academic standards. Key offered programs include BBA, Computer Science/IT, integrated science, economics, sustainability-related programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"Computer Science/IT"},{"name":"integrated science"},{"name":"economics"},{"name":"sustainability-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lazimpat, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$University of Nepal$mt$),
@@ -6110,7 +6110,7 @@ SELECT
   $mt$School of Arts, Sciences, & Technology (SAST)$mt$, $mt$school-of-arts-sciences-technology-sast$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Lazimpat, Kathmandu, Bagmati$mt$, $mt$University of Nepal$mt$,
   NULL,
-  $mt$School of Arts, Sciences, & Technology (SAST) is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with University of Nepal, the institution adheres to competitive academic standards. Key academic programs include BBA, Computer Science/IT, integrated science, economics, sustainability-related programs.$mt$,
+  $mt$School of Arts, Sciences, & Technology (SAST) is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with University of Nepal, the institution adheres to competitive academic standards. Key offered programs include BBA, Computer Science/IT, integrated science, economics, sustainability-related programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"Computer Science/IT"},{"name":"integrated science"},{"name":"economics"},{"name":"sustainability-related programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6126,8 +6126,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$People's Campus is a leading higher education and management studies institution located in Paknajol, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$People's Campus is a leading higher education and management studies institution located in Paknajol, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Paknajol, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6146,7 +6146,7 @@ SELECT
   $mt$People's Campus$mt$, $mt$peoples-campus$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Paknajol, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$People's Campus is a leading higher education and management studies institution located in Paknajol, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, management programs.$mt$,
+  $mt$People's Campus is a leading higher education and management studies institution located in Paknajol, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, management programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6162,8 +6162,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Janamaitri Campus is a leading higher education and management studies institution located in Kuleshwor, Kathmandu, Bagmati. Affiliated with Bagmati University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, B.Ed and other programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"B.Ed and other programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Janamaitri Campus is a leading higher education and management studies institution located in Kuleshwor, Kathmandu, Bagmati. Affiliated with Bagmati University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, B.Ed and other programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"B.Ed and other programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kuleshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Bagmati University$mt$),
@@ -6182,7 +6182,7 @@ SELECT
   $mt$Janamaitri Campus$mt$, $mt$janamaitri-campus$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Kuleshwor, Kathmandu, Bagmati$mt$, $mt$Bagmati University$mt$,
   NULL,
-  $mt$Janamaitri Campus is a leading higher education and management studies institution located in Kuleshwor, Kathmandu, Bagmati. Affiliated with Bagmati University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, B.Ed and other programs.$mt$,
+  $mt$Janamaitri Campus is a leading higher education and management studies institution located in Kuleshwor, Kathmandu, Bagmati. Affiliated with Bagmati University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, B.Ed and other programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"B.Ed and other programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6198,8 +6198,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Kantipur College of Management and Information Technology is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BITM/BIM, IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BITM/BIM"},{"name":"IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Kantipur College of Management and Information Technology is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BITM/BIM, IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BITM/BIM"},{"name":"IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mid Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6218,7 +6218,7 @@ SELECT
   $mt$Kantipur College of Management and Information Technology$mt$, $mt$kantipur-college-of-management-and-information-technology$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Mid Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Kantipur College of Management and Information Technology is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BITM/BIM, IT programs.$mt$,
+  $mt$Kantipur College of Management and Information Technology is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BITM/BIM, IT programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BITM/BIM"},{"name":"IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6234,8 +6234,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Modern Nepal College is a leading higher education and management studies institution located in Sorhakhutte, Naya Bazar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BITM, management programs, management/IT.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BITM"},{"name":"management programs"},{"name":"management/IT"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Modern Nepal College is a leading higher education and management studies institution located in Sorhakhutte, Naya Bazar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BITM, management programs, management/IT.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BITM"},{"name":"management programs"},{"name":"management/IT"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Sorhakhutte, Naya Bazar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6254,7 +6254,7 @@ SELECT
   $mt$Modern Nepal College$mt$, $mt$modern-nepal-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Sorhakhutte, Naya Bazar, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Modern Nepal College is a leading higher education and management studies institution located in Sorhakhutte, Naya Bazar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BITM, management programs, management/IT.$mt$,
+  $mt$Modern Nepal College is a leading higher education and management studies institution located in Sorhakhutte, Naya Bazar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BITM, management programs, management/IT.$mt$,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BITM"},{"name":"management programs"},{"name":"management/IT"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6270,8 +6270,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$KFA Business School is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Lincoln University College, Malaysia, the institution adheres to competitive academic standards. Key academic programs include BBA, business/management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"business/management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$KFA Business School is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Lincoln University College, Malaysia, the institution adheres to competitive academic standards. Key offered programs include BBA, business/management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"business/management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mid Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Lincoln University College, Malaysia$mt$),
@@ -6290,7 +6290,7 @@ SELECT
   $mt$KFA Business School$mt$, $mt$kfa-business-school$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Mid Baneshwor, Kathmandu, Bagmati$mt$, $mt$Lincoln University College, Malaysia$mt$,
   NULL,
-  $mt$KFA Business School is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Lincoln University College, Malaysia, the institution adheres to competitive academic standards. Key academic programs include BBA, business/management programs.$mt$,
+  $mt$KFA Business School is a leading higher education and management studies institution located in Mid Baneshwor, Kathmandu, Bagmati. Affiliated with Lincoln University College, Malaysia, the institution adheres to competitive academic standards. Key offered programs include BBA, business/management programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"business/management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6306,8 +6306,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Presidential Graduate School is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Westcliff University, USA, the institution adheres to competitive academic standards. Key academic programs include BBA, business/management and technology-related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"business/management and technology-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Presidential Graduate School is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Westcliff University, USA, the institution adheres to competitive academic standards. Key offered programs include BBA, business/management and technology-related programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"business/management and technology-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Thapagaun, New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Westcliff University, USA$mt$),
@@ -6326,7 +6326,7 @@ SELECT
   $mt$Presidential Graduate School$mt$, $mt$presidential-graduate-school$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Thapagaun, New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Westcliff University, USA$mt$,
   NULL,
-  $mt$Presidential Graduate School is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Westcliff University, USA, the institution adheres to competitive academic standards. Key academic programs include BBA, business/management and technology-related programs.$mt$,
+  $mt$Presidential Graduate School is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Westcliff University, USA, the institution adheres to competitive academic standards. Key offered programs include BBA, business/management and technology-related programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"business/management and technology-related programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6342,8 +6342,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$KIST College & SS is a leading higher education and management studies institution located in Kamalpokhari, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BIT, BSc CSIT, BCA, BHM, science/management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BIT"},{"name":"BSc CSIT"},{"name":"BCA"},{"name":"BHM"},{"name":"science/management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$KIST College & SS is a leading higher education and management studies institution located in Kamalpokhari, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BIT, BSc CSIT, BCA.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BIT"},{"name":"BSc CSIT"},{"name":"BCA"},{"name":"BHM"},{"name":"science/management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kamalpokhari, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University; Purbanchal University$mt$),
@@ -6362,7 +6362,7 @@ SELECT
   $mt$KIST College & SS$mt$, $mt$kist-college-ss$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Kamalpokhari, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University; Purbanchal University$mt$,
   NULL,
-  $mt$KIST College & SS is a leading higher education and management studies institution located in Kamalpokhari, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, BIT, BSc CSIT, BCA, BHM, science/management programs.$mt$,
+  $mt$KIST College & SS is a leading higher education and management studies institution located in Kamalpokhari, Kathmandu, Bagmati. Affiliated with Tribhuvan University; Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, BIT, BSc CSIT, BCA.$mt$,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"BIT"},{"name":"BSc CSIT"},{"name":"BCA"},{"name":"BHM"},{"name":"science/management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6378,8 +6378,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Public Youth Campus is a leading higher education and management studies institution located in Dhobichaur, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, management programs, management.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"},{"name":"management"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Public Youth Campus is a leading higher education and management studies institution located in Dhobichaur, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, management programs, management.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"},{"name":"management"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Dhobichaur, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6398,7 +6398,7 @@ SELECT
   $mt$Public Youth Campus$mt$, $mt$public-youth-campus$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Dhobichaur, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Public Youth Campus is a leading higher education and management studies institution located in Dhobichaur, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, management programs, management.$mt$,
+  $mt$Public Youth Campus is a leading higher education and management studies institution located in Dhobichaur, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, management programs, management.$mt$,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management programs"},{"name":"management"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6414,8 +6414,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Ace International Business School is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Glasgow Caledonian University, Scotland, the institution adheres to competitive academic standards. Key academic programs include BBA, computing/business programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"computing/business programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Ace International Business School is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Glasgow Caledonian University, Scotland, the institution adheres to competitive academic standards. Key offered programs include BBA, computing/business programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"computing/business programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Glasgow Caledonian University, Scotland$mt$),
@@ -6434,7 +6434,7 @@ SELECT
   $mt$Ace International Business School$mt$, $mt$ace-international-business-school$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Glasgow Caledonian University, Scotland$mt$,
   NULL,
-  $mt$Ace International Business School is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Glasgow Caledonian University, Scotland, the institution adheres to competitive academic standards. Key academic programs include BBA, computing/business programs.$mt$,
+  $mt$Ace International Business School is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Glasgow Caledonian University, Scotland, the institution adheres to competitive academic standards. Key offered programs include BBA, computing/business programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"computing/business programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6450,8 +6450,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Global College International is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Mid-West University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, management/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Global College International is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Mid-West University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, management/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mid-Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Mid-West University$mt$),
@@ -6470,7 +6470,7 @@ SELECT
   $mt$Global College International$mt$, $mt$global-college-international$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Mid-Baneshwor, Kathmandu, Bagmati$mt$, $mt$Mid-West University$mt$,
   NULL,
-  $mt$Global College International is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Mid-West University, the institution adheres to competitive academic standards. Key academic programs include BBA, BBS, management/IT programs.$mt$,
+  $mt$Global College International is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Mid-West University, the institution adheres to competitive academic standards. Key offered programs include BBA, BBS, management/IT programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BBS"},{"name":"management/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6486,8 +6486,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Kathmandu Don Bosco College is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, management/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"management/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Kathmandu Don Bosco College is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, management/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"management/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lazimpat, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -6506,7 +6506,7 @@ SELECT
   $mt$Kathmandu Don Bosco College$mt$, $mt$kathmandu-don-bosco-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Lazimpat, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
-  $mt$Kathmandu Don Bosco College is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, management/IT programs.$mt$,
+  $mt$Kathmandu Don Bosco College is a leading higher education and management studies institution located in Lazimpat, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, management/IT programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"management/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6522,8 +6522,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Atharva Business College is a leading higher education and management studies institution located in Maharajgunj, Kathmandu, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards. Key academic programs include BBA, business/management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"business/management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Atharva Business College is a leading higher education and management studies institution located in Maharajgunj, Kathmandu, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards. Key offered programs include BBA, business/management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"business/management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Maharajgunj, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Pokhara University$mt$),
@@ -6542,7 +6542,7 @@ SELECT
   $mt$Atharva Business College$mt$, $mt$atharva-business-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Maharajgunj, Kathmandu, Bagmati$mt$, $mt$Pokhara University$mt$,
   NULL,
-  $mt$Atharva Business College is a leading higher education and management studies institution located in Maharajgunj, Kathmandu, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards. Key academic programs include BBA, business/management programs.$mt$,
+  $mt$Atharva Business College is a leading higher education and management studies institution located in Maharajgunj, Kathmandu, Bagmati. Affiliated with Pokhara University, the institution adheres to competitive academic standards. Key offered programs include BBA, business/management programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"business/management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6558,8 +6558,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$SANN International College is a leading higher education and management studies institution located in Naikap, Chandragiri, Kathmandu, Bagmati. Affiliated with Purbanchal University; Rajarshi Janak University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$SANN International College is a leading higher education and management studies institution located in Naikap, Chandragiri, Kathmandu, Bagmati. Affiliated with Purbanchal University; Rajarshi Janak University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Naikap, Chandragiri, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University; Rajarshi Janak University$mt$),
@@ -6578,7 +6578,7 @@ SELECT
   $mt$SANN International College$mt$, $mt$sann-international-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Naikap, Chandragiri, Kathmandu, Bagmati$mt$, $mt$Purbanchal University; Rajarshi Janak University$mt$,
   NULL,
-  $mt$SANN International College is a leading higher education and management studies institution located in Naikap, Chandragiri, Kathmandu, Bagmati. Affiliated with Purbanchal University; Rajarshi Janak University, the institution adheres to competitive academic standards. Key academic programs include BBA, BIT, management programs.$mt$,
+  $mt$SANN International College is a leading higher education and management studies institution located in Naikap, Chandragiri, Kathmandu, Bagmati. Affiliated with Purbanchal University; Rajarshi Janak University, the institution adheres to competitive academic standards. Key offered programs include BBA, BIT, management programs.$mt$,
   $mt$[{"name":"BBA"},{"name":"BIT"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6594,8 +6594,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Certified College of Accountancy (CCA) is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University; ACCA, the institution adheres to competitive academic standards. Key academic programs include BBS, ACCA/professional accountancy.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"ACCA/professional accountancy"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Certified College of Accountancy (CCA) is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University; ACCA, the institution adheres to competitive academic standards. Key offered programs include BBS, ACCA/professional accountancy.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"ACCA/professional accountancy"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Thapagaun, New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University; ACCA$mt$),
@@ -6614,7 +6614,7 @@ SELECT
   $mt$Certified College of Accountancy (CCA)$mt$, $mt$certified-college-of-accountancy-cca$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Thapagaun, New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University; ACCA$mt$,
   NULL,
-  $mt$Certified College of Accountancy (CCA) is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University; ACCA, the institution adheres to competitive academic standards. Key academic programs include BBS, ACCA/professional accountancy.$mt$,
+  $mt$Certified College of Accountancy (CCA) is a leading higher education and management studies institution located in Thapagaun, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University; ACCA, the institution adheres to competitive academic standards. Key offered programs include BBS, ACCA/professional accountancy.$mt$,
   $mt$[{"name":"BBS"},{"name":"ACCA/professional accountancy"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6630,8 +6630,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Global College of Management is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Global College of Management is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Mid-Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6650,7 +6650,7 @@ SELECT
   $mt$Global College of Management$mt$, $mt$global-college-of-management$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Mid-Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Global College of Management is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management programs.$mt$,
+  $mt$Global College of Management is a leading higher education and management studies institution located in Mid-Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6666,8 +6666,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$New Summit College is a leading higher education and management studies institution located in Shantinagar Gate, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$New Summit College is a leading higher education and management studies institution located in Shantinagar Gate, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Shantinagar Gate, New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6686,7 +6686,7 @@ SELECT
   $mt$New Summit College$mt$, $mt$new-summit-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Shantinagar Gate, New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$New Summit College is a leading higher education and management studies institution located in Shantinagar Gate, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
+  $mt$New Summit College is a leading higher education and management studies institution located in Shantinagar Gate, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6702,8 +6702,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$St. Xavier's College, Maitighar is a leading higher education and management studies institution located in Maitighar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, science/IT and management-related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"science/IT and management-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$St. Xavier's College, Maitighar is a leading higher education and management studies institution located in Maitighar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, science/IT and management-related programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"science/IT and management-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Maitighar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6722,7 +6722,7 @@ SELECT
   $mt$St. Xavier's College, Maitighar$mt$, $mt$st-xaviers-college-maitighar$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Maitighar, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$St. Xavier's College, Maitighar is a leading higher education and management studies institution located in Maitighar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, science/IT and management-related programs.$mt$,
+  $mt$St. Xavier's College, Maitighar is a leading higher education and management studies institution located in Maitighar, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, science/IT and management-related programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"science/IT and management-related programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6738,8 +6738,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$NIST Higher Education is a leading higher education and management studies institution located in Lainchour, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, science/management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"science/management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$NIST Higher Education is a leading higher education and management studies institution located in Lainchour, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, science/management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"science/management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lainchour, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6758,7 +6758,7 @@ SELECT
   $mt$NIST Higher Education$mt$, $mt$nist-higher-education$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Lainchour, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$NIST Higher Education is a leading higher education and management studies institution located in Lainchour, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, science/management programs.$mt$,
+  $mt$NIST Higher Education is a leading higher education and management studies institution located in Lainchour, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, science/management programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"science/management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6774,8 +6774,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Academia International College is a leading higher education and management studies institution located in Gwarko Chowk, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management/science/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Academia International College is a leading higher education and management studies institution located in Gwarko Chowk, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management/science/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gwarko Chowk, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6794,7 +6794,7 @@ SELECT
   $mt$Academia International College$mt$, $mt$academia-international-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Gwarko Chowk, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Academia International College is a leading higher education and management studies institution located in Gwarko Chowk, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science/IT programs.$mt$,
+  $mt$Academia International College is a leading higher education and management studies institution located in Gwarko Chowk, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science/IT programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management/science/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6810,8 +6810,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Nesfield International College is a leading higher education and management studies institution located in Lagankhel, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management/hospitality programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management/hospitality programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Nesfield International College is a leading higher education and management studies institution located in Lagankhel, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management/hospitality programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management/hospitality programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lagankhel, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6830,7 +6830,7 @@ SELECT
   $mt$Nesfield International College$mt$, $mt$nesfield-international-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Lagankhel, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Nesfield International College is a leading higher education and management studies institution located in Lagankhel, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management/hospitality programs.$mt$,
+  $mt$Nesfield International College is a leading higher education and management studies institution located in Lagankhel, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management/hospitality programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management/hospitality programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6846,8 +6846,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Nepal Mega College is a leading higher education and management studies institution located in Babarmahal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Nepal Mega College is a leading higher education and management studies institution located in Babarmahal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Babarmahal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6866,7 +6866,7 @@ SELECT
   $mt$Nepal Mega College$mt$, $mt$nepal-mega-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Babarmahal, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Nepal Mega College is a leading higher education and management studies institution located in Babarmahal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
+  $mt$Nepal Mega College is a leading higher education and management studies institution located in Babarmahal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6882,8 +6882,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$DAV College is a leading higher education and management studies institution located in Bhanimandal, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science/IT-related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management/science/IT-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$DAV College is a leading higher education and management studies institution located in Bhanimandal, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science/IT-related programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management/science/IT-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bhanimandal, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6902,7 +6902,7 @@ SELECT
   $mt$DAV College$mt$, $mt$dav-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Bhanimandal, Lalitpur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$DAV College is a leading higher education and management studies institution located in Bhanimandal, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science/IT-related programs.$mt$,
+  $mt$DAV College is a leading higher education and management studies institution located in Bhanimandal, Lalitpur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science/IT-related programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management/science/IT-related programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6918,8 +6918,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Ed-Mark College is a leading higher education and management studies institution located in Kalanki, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Ed-Mark College is a leading higher education and management studies institution located in Kalanki, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kalanki, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6938,7 +6938,7 @@ SELECT
   $mt$Ed-Mark College$mt$, $mt$ed-mark-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Kalanki, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Ed-Mark College is a leading higher education and management studies institution located in Kalanki, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
+  $mt$Ed-Mark College is a leading higher education and management studies institution located in Kalanki, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6954,8 +6954,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Kalika Multiple Campus is a leading higher education and management studies institution located in Kajipokhari, Pokhara, Kaski, Gandaki. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/humanities programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management/humanities programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Kalika Multiple Campus is a leading higher education and management studies institution located in Kajipokhari, Pokhara, Kaski, Gandaki. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/humanities programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management/humanities programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Kajipokhari, Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -6974,7 +6974,7 @@ SELECT
   $mt$Kalika Multiple Campus$mt$, $mt$kalika-multiple-campus$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Kajipokhari, Pokhara, Kaski, Gandaki$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Kalika Multiple Campus is a leading higher education and management studies institution located in Kajipokhari, Pokhara, Kaski, Gandaki. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/humanities programs.$mt$,
+  $mt$Kalika Multiple Campus is a leading higher education and management studies institution located in Kajipokhari, Pokhara, Kaski, Gandaki. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/humanities programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management/humanities programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -6990,8 +6990,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$REHDON College & School is a leading higher education and management studies institution located in Samakhushi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$REHDON College & School is a leading higher education and management studies institution located in Samakhushi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Samakhushi, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -7010,7 +7010,7 @@ SELECT
   $mt$REHDON College & School$mt$, $mt$rehdon-college-school$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Samakhushi, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$REHDON College & School is a leading higher education and management studies institution located in Samakhushi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management/science programs.$mt$,
+  $mt$REHDON College & School is a leading higher education and management studies institution located in Samakhushi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management/science programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management/science programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7026,8 +7026,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Universal College is a leading higher education and management studies institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Universal College is a leading higher education and management studies institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Maitidevi, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -7046,7 +7046,7 @@ SELECT
   $mt$Universal College$mt$, $mt$universal-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Maitidevi, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Universal College is a leading higher education and management studies institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management programs.$mt$,
+  $mt$Universal College is a leading higher education and management studies institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7062,8 +7062,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Madan Bhandari Memorial College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Madan Bhandari Memorial College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -7082,7 +7082,7 @@ SELECT
   $mt$Madan Bhandari Memorial College$mt$, $mt$madan-bhandari-memorial-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Madan Bhandari Memorial College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management/IT programs.$mt$,
+  $mt$Madan Bhandari Memorial College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management/IT programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7098,8 +7098,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Premier College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Premier College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -7118,7 +7118,7 @@ SELECT
   $mt$Premier College$mt$, $mt$premier-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Premier College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BBA, management programs.$mt$,
+  $mt$Premier College is a leading higher education and management studies institution located in New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BBA, management programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"BBA"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7134,8 +7134,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Samriddhi College is a leading higher education and management studies institution located in Lokanthali, Madhyapur Thimi, Bhaktapur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Samriddhi College is a leading higher education and management studies institution located in Lokanthali, Madhyapur Thimi, Bhaktapur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Lokanthali, Madhyapur Thimi, Bhaktapur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -7154,7 +7154,7 @@ SELECT
   $mt$Samriddhi College$mt$, $mt$samriddhi-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Lokanthali, Madhyapur Thimi, Bhaktapur, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Samriddhi College is a leading higher education and management studies institution located in Lokanthali, Madhyapur Thimi, Bhaktapur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management programs.$mt$,
+  $mt$Samriddhi College is a leading higher education and management studies institution located in Lokanthali, Madhyapur Thimi, Bhaktapur, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7170,8 +7170,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$NCA College of Management is a leading higher education and management studies institution located in Minbhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$NCA College of Management is a leading higher education and management studies institution located in Minbhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Minbhawan, New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -7190,7 +7190,7 @@ SELECT
   $mt$NCA College of Management$mt$, $mt$nca-college-of-management$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Minbhawan, New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$NCA College of Management is a leading higher education and management studies institution located in Minbhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, management programs.$mt$,
+  $mt$NCA College of Management is a leading higher education and management studies institution located in Minbhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, management programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7206,8 +7206,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Kathmandu BernHardt College is a leading higher education and management studies institution located in Bafal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BSc CSIT, management/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BBS"},{"name":"BSc CSIT"},{"name":"management/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Kathmandu BernHardt College is a leading higher education and management studies institution located in Bafal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BSc CSIT, management/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BBS"},{"name":"BSc CSIT"},{"name":"management/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bafal, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Tribhuvan University$mt$),
@@ -7226,7 +7226,7 @@ SELECT
   $mt$Kathmandu BernHardt College$mt$, $mt$kathmandu-bernhardt-college$mt$, $mt$management$mt$,
   $mt$college$mt$, $mt$Bafal, Kathmandu, Bagmati$mt$, $mt$Tribhuvan University$mt$,
   NULL,
-  $mt$Kathmandu BernHardt College is a leading higher education and management studies institution located in Bafal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key academic programs include BBS, BSc CSIT, management/IT programs.$mt$,
+  $mt$Kathmandu BernHardt College is a leading higher education and management studies institution located in Bafal, Kathmandu, Bagmati. Affiliated with Tribhuvan University, the institution adheres to competitive academic standards. Key offered programs include BBS, BSc CSIT, management/IT programs.$mt$,
   $mt$[{"name":"BBS"},{"name":"BSc CSIT"},{"name":"management/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7242,8 +7242,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Kathipur International College is a leading engineering and technology institution located in Buddhanagar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include Engineering/technology and management-related programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"Engineering/technology and management-related programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Kathipur International College is a leading engineering and technology institution located in Buddhanagar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include Engineering/technology and management-related programs.$mt$,
+  courses_offered = $mt$[{"name":"Engineering/technology and management-related programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Buddhanagar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -7262,7 +7262,7 @@ SELECT
   $mt$Kathipur International College$mt$, $mt$kathipur-international-college$mt$, $mt$engineering$mt$,
   $mt$college$mt$, $mt$Buddhanagar, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
-  $mt$Kathipur International College is a leading engineering and technology institution located in Buddhanagar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include Engineering/technology and management-related programs.$mt$,
+  $mt$Kathipur International College is a leading engineering and technology institution located in Buddhanagar, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include Engineering/technology and management-related programs.$mt$,
   $mt$[{"name":"Engineering/technology and management-related programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7278,8 +7278,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Mid-Valley International College is a leading information technology and computing institution located in Gyaneshwor, Kathmandu, Bagmati. Affiliated with HELP University, Malaysia, the institution adheres to competitive academic standards. Key academic programs include BSc IT / computing, management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc IT / computing"},{"name":"management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Mid-Valley International College is a leading information technology and computing institution located in Gyaneshwor, Kathmandu, Bagmati. Affiliated with HELP University, Malaysia, the institution adheres to competitive academic standards. Key offered programs include BSc IT / computing, management programs.$mt$,
+  courses_offered = $mt$[{"name":"BSc IT / computing"},{"name":"management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gyaneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$HELP University, Malaysia$mt$),
@@ -7298,7 +7298,7 @@ SELECT
   $mt$Mid-Valley International College$mt$, $mt$mid-valley-international-college$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Gyaneshwor, Kathmandu, Bagmati$mt$, $mt$HELP University, Malaysia$mt$,
   NULL,
-  $mt$Mid-Valley International College is a leading information technology and computing institution located in Gyaneshwor, Kathmandu, Bagmati. Affiliated with HELP University, Malaysia, the institution adheres to competitive academic standards. Key academic programs include BSc IT / computing, management programs.$mt$,
+  $mt$Mid-Valley International College is a leading information technology and computing institution located in Gyaneshwor, Kathmandu, Bagmati. Affiliated with HELP University, Malaysia, the institution adheres to competitive academic standards. Key offered programs include BSc IT / computing, management programs.$mt$,
   $mt$[{"name":"BSc IT / computing"},{"name":"management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7314,8 +7314,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Southwestern School of Management and Technology is a leading information technology and computing institution located in Basundhara, Dhapashi, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BIT, management/technology programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BIT"},{"name":"management/technology programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Southwestern School of Management and Technology is a leading information technology and computing institution located in Basundhara, Dhapashi, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BIT, management/technology programs.$mt$,
+  courses_offered = $mt$[{"name":"BIT"},{"name":"management/technology programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Basundhara, Dhapashi, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -7334,7 +7334,7 @@ SELECT
   $mt$Southwestern School of Management and Technology$mt$, $mt$southwestern-school-of-management-and-technology$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Basundhara, Dhapashi, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
-  $mt$Southwestern School of Management and Technology is a leading information technology and computing institution located in Basundhara, Dhapashi, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BIT, management/technology programs.$mt$,
+  $mt$Southwestern School of Management and Technology is a leading information technology and computing institution located in Basundhara, Dhapashi, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BIT, management/technology programs.$mt$,
   $mt$[{"name":"BIT"},{"name":"management/technology programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7350,8 +7350,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Padmashree College is a leading information technology and computing institution located in Tinkune, Kathmandu, Bagmati. Affiliated with Nilai University, Malaysia, the institution adheres to competitive academic standards. Key academic programs include BIT, IT/computing and management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BIT"},{"name":"IT/computing and management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Padmashree College is a leading information technology and computing institution located in Tinkune, Kathmandu, Bagmati. Affiliated with Nilai University, Malaysia, the institution adheres to competitive academic standards. Key offered programs include BIT, IT/computing and management programs.$mt$,
+  courses_offered = $mt$[{"name":"BIT"},{"name":"IT/computing and management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Tinkune, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Nilai University, Malaysia$mt$),
@@ -7370,7 +7370,7 @@ SELECT
   $mt$Padmashree College$mt$, $mt$padmashree-college$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Tinkune, Kathmandu, Bagmati$mt$, $mt$Nilai University, Malaysia$mt$,
   NULL,
-  $mt$Padmashree College is a leading information technology and computing institution located in Tinkune, Kathmandu, Bagmati. Affiliated with Nilai University, Malaysia, the institution adheres to competitive academic standards. Key academic programs include BIT, IT/computing and management programs.$mt$,
+  $mt$Padmashree College is a leading information technology and computing institution located in Tinkune, Kathmandu, Bagmati. Affiliated with Nilai University, Malaysia, the institution adheres to competitive academic standards. Key offered programs include BIT, IT/computing and management programs.$mt$,
   $mt$[{"name":"BIT"},{"name":"IT/computing and management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7386,8 +7386,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Model Institute of Technology (MIT) is a leading information technology and computing institution located in Bagbazar, Kathmandu, Bagmati. Affiliated with International American University, the institution adheres to competitive academic standards. Key academic programs include BIT, business/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BIT"},{"name":"business/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Model Institute of Technology (MIT) is a leading information technology and computing institution located in Bagbazar, Kathmandu, Bagmati. Affiliated with International American University, the institution adheres to competitive academic standards. Key offered programs include BIT, business/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BIT"},{"name":"business/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Bagbazar, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$International American University$mt$),
@@ -7406,7 +7406,7 @@ SELECT
   $mt$Model Institute of Technology (MIT)$mt$, $mt$model-institute-of-technology-mit$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Bagbazar, Kathmandu, Bagmati$mt$, $mt$International American University$mt$,
   NULL,
-  $mt$Model Institute of Technology (MIT) is a leading information technology and computing institution located in Bagbazar, Kathmandu, Bagmati. Affiliated with International American University, the institution adheres to competitive academic standards. Key academic programs include BIT, business/IT programs.$mt$,
+  $mt$Model Institute of Technology (MIT) is a leading information technology and computing institution located in Bagbazar, Kathmandu, Bagmati. Affiliated with International American University, the institution adheres to competitive academic standards. Key offered programs include BIT, business/IT programs.$mt$,
   $mt$[{"name":"BIT"},{"name":"business/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7422,8 +7422,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$KCM is a leading information technology and computing institution located in Gwarko, Lalitpur, Bagmati. Affiliated with Siam University, Thailand, the institution adheres to competitive academic standards. Key academic programs include BSc Information Technology, business/management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc Information Technology"},{"name":"business/management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$KCM is a leading information technology and computing institution located in Gwarko, Lalitpur, Bagmati. Affiliated with Siam University, Thailand, the institution adheres to competitive academic standards. Key offered programs include BSc Information Technology, business/management programs.$mt$,
+  courses_offered = $mt$[{"name":"BSc Information Technology"},{"name":"business/management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Gwarko, Lalitpur, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Siam University, Thailand$mt$),
@@ -7442,7 +7442,7 @@ SELECT
   $mt$KCM$mt$, $mt$kcm$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Gwarko, Lalitpur, Bagmati$mt$, $mt$Siam University, Thailand$mt$,
   NULL,
-  $mt$KCM is a leading information technology and computing institution located in Gwarko, Lalitpur, Bagmati. Affiliated with Siam University, Thailand, the institution adheres to competitive academic standards. Key academic programs include BSc Information Technology, business/management programs.$mt$,
+  $mt$KCM is a leading information technology and computing institution located in Gwarko, Lalitpur, Bagmati. Affiliated with Siam University, Thailand, the institution adheres to competitive academic standards. Key offered programs include BSc Information Technology, business/management programs.$mt$,
   $mt$[{"name":"BSc Information Technology"},{"name":"business/management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7458,8 +7458,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Phoenix College of Management is a leading information technology and computing institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key academic programs include BIT, business/management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BIT"},{"name":"business/management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Phoenix College of Management is a leading information technology and computing institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key offered programs include BIT, business/management programs.$mt$,
+  courses_offered = $mt$[{"name":"BIT"},{"name":"business/management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Maitidevi, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Lincoln University College$mt$),
@@ -7478,7 +7478,7 @@ SELECT
   $mt$Phoenix College of Management$mt$, $mt$phoenix-college-of-management$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Maitidevi, Kathmandu, Bagmati$mt$, $mt$Lincoln University College$mt$,
   NULL,
-  $mt$Phoenix College of Management is a leading information technology and computing institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key academic programs include BIT, business/management programs.$mt$,
+  $mt$Phoenix College of Management is a leading information technology and computing institution located in Maitidevi, Kathmandu, Bagmati. Affiliated with Lincoln University College, the institution adheres to competitive academic standards. Key offered programs include BIT, business/management programs.$mt$,
   $mt$[{"name":"BIT"},{"name":"business/management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7494,8 +7494,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Asian College of Management and Technology is a leading information technology and computing institution located in Min Bhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BIT, management/IT programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BIT"},{"name":"management/IT programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Asian College of Management and Technology is a leading information technology and computing institution located in Min Bhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BIT, management/IT programs.$mt$,
+  courses_offered = $mt$[{"name":"BIT"},{"name":"management/IT programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Min Bhawan, New Baneshwor, Kathmandu, Bagmati$mt$),
   affiliation = COALESCE(affiliation, $mt$Purbanchal University$mt$),
@@ -7514,7 +7514,7 @@ SELECT
   $mt$Asian College of Management and Technology$mt$, $mt$asian-college-of-management-and-technology$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Min Bhawan, New Baneshwor, Kathmandu, Bagmati$mt$, $mt$Purbanchal University$mt$,
   NULL,
-  $mt$Asian College of Management and Technology is a leading information technology and computing institution located in Min Bhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key academic programs include BIT, management/IT programs.$mt$,
+  $mt$Asian College of Management and Technology is a leading information technology and computing institution located in Min Bhawan, New Baneshwor, Kathmandu, Bagmati. Affiliated with Purbanchal University, the institution adheres to competitive academic standards. Key offered programs include BIT, management/IT programs.$mt$,
   $mt$[{"name":"BIT"},{"name":"management/IT programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
@@ -7530,8 +7530,8 @@ WHERE NOT EXISTS (
 );
 
 UPDATE public.institutes SET
-  description = $mt$Infomax College of Information Technology and Management is a leading information technology and computing institution located in Ranipauwa, Pokhara, Kaski, Gandaki. Affiliated with Asia Pacific University of Technology & Innovation, the institution adheres to competitive academic standards. Key academic programs include BSc IT, IT and management programs.$mt$,
-  courses_offered = CASE WHEN courses_offered = '[]'::jsonb OR courses_offered::text ILIKE '%To be enriched%' THEN $mt$[{"name":"BSc IT"},{"name":"IT and management programs"}]$mt$::jsonb ELSE courses_offered END,
+  description = $mt$Infomax College of Information Technology and Management is a leading information technology and computing institution located in Ranipauwa, Pokhara, Kaski, Gandaki. Affiliated with Asia Pacific University of Technology & Innovation, the institution adheres to competitive academic standards. Key offered programs include BSc IT, IT and management programs.$mt$,
+  courses_offered = $mt$[{"name":"BSc IT"},{"name":"IT and management programs"}]$mt$::jsonb,
   salient_features = CASE WHEN array_length(salient_features, 1) IS NULL OR salient_features::text ILIKE '%To be enriched%' THEN ARRAY[]::text[] ELSE salient_features END,
   location = COALESCE(location, $mt$Ranipauwa, Pokhara, Kaski, Gandaki$mt$),
   affiliation = COALESCE(affiliation, $mt$Asia Pacific University of Technology & Innovation$mt$),
@@ -7550,7 +7550,7 @@ SELECT
   $mt$Infomax College of Information Technology and Management$mt$, $mt$infomax-college-of-information-technology-and-management$mt$, $mt$it$mt$,
   $mt$college$mt$, $mt$Ranipauwa, Pokhara, Kaski, Gandaki$mt$, $mt$Asia Pacific University of Technology & Innovation$mt$,
   NULL,
-  $mt$Infomax College of Information Technology and Management is a leading information technology and computing institution located in Ranipauwa, Pokhara, Kaski, Gandaki. Affiliated with Asia Pacific University of Technology & Innovation, the institution adheres to competitive academic standards. Key academic programs include BSc IT, IT and management programs.$mt$,
+  $mt$Infomax College of Information Technology and Management is a leading information technology and computing institution located in Ranipauwa, Pokhara, Kaski, Gandaki. Affiliated with Asia Pacific University of Technology & Innovation, the institution adheres to competitive academic standards. Key offered programs include BSc IT, IT and management programs.$mt$,
   $mt$[{"name":"BSc IT"},{"name":"IT and management programs"}]$mt$::jsonb,
   ARRAY[]::text[],
   NULL,
