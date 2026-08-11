@@ -294,28 +294,28 @@ const AdminSettings = () => {
                 <Sparkles className="w-5 h-5 text-primary" />
                 AI Content Generation Engine & API Key
               </CardTitle>
-              <CardDescription>Configure the OpenAI / Gemini API key used for automatic course and institute detail generation</CardDescription>
+              <CardDescription>Configure the OpenAI / Gemini API key used for 1-click AI generation across all admin modules (Jobs, Mentors, Events, Companies, Competitions, Advertisements, LMS Courses, and Institutions)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="aiApiKey">AI API Key</Label>
+                <Label htmlFor="aiApiKey">AI API Key (BYOK)</Label>
                 <div className="flex gap-2">
-                  <Input
+                  <Input 
                     id="aiApiKey"
                     type="password"
-                    placeholder="sk-proj-..."
+                    placeholder="sk-proj-... or AI key"
                     defaultValue={getStoredAIApiKey()}
                     onChange={(e) => setStoredAIApiKey(e.target.value)}
                   />
-                  <Button
+                  <Button 
                     variant="hero"
-                    onClick={() => toast.success("AI API Key saved successfully!")}
+                    onClick={() => toast.success("AI API Key saved! All admin modules will now use this key.")}
                   >
                     Save Key
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  The API key is securely stored in local configuration and enables 1-click AI generation of descriptions, courses, and contact details across the platform.
+                  The API key is securely saved in your browser configuration and automatically powers 1-click AI generation for descriptions, requirements, bios, agendas, and content across all admin modules platform-wide.
                 </p>
               </div>
             </CardContent>
