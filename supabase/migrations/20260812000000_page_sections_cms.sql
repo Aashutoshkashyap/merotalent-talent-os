@@ -1,10 +1,11 @@
 -- Page Sections CMS table for admin-managed visual content.
--- Allows editing of homepage hero, banners, about sections, CTAs etc.
+-- Allows editing of homepage hero, banners, about sections, CTAs, site branding, favicons, etc.
 
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS public.page_sections (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  parent_id   uuid REFERENCES public.page_sections(id) ON DELETE CASCADE,
   section_key text NOT NULL,
   title       text NOT NULL,
   subtitle    text,
@@ -16,12 +17,21 @@ CREATE TABLE IF NOT EXISTS public.page_sections (
   display_order integer NOT NULL DEFAULT 0,
   is_visible  boolean NOT NULL DEFAULT true,
   page        text NOT NULL DEFAULT 'home',
+  extra_data  jsonb DEFAULT '{}'::jsonb,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now(),
   UNIQUE (page, section_key)
 );
 
+CREATE TABLE IF NOT EXISTS public.site_settings (
+  key         text PRIMARY KEY,
+  value       text,
+  extra_json  jsonb DEFAULT '{}'::jsonb,
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
 ALTER TABLE public.page_sections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
 -- Admins can do everything
 CREATE POLICY "Admins manage page sections"
@@ -33,10 +43,23 @@ USING (
   )
 );
 
--- Anyone can read visible sections (public content)
+CREATE POLICY "Admins manage site settings"
+ON public.site_settings FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
+  )
+);
+
+-- Anyone can read visible sections and site settings
 CREATE POLICY "Public read visible sections"
 ON public.page_sections FOR SELECT TO anon, authenticated
 USING (is_visible = true);
+
+CREATE POLICY "Public read site settings"
+ON public.site_settings FOR SELECT TO anon, authenticated
+USING (true);
 
 -- Auto-update timestamp
 CREATE OR REPLACE FUNCTION public.update_page_sections_timestamp()

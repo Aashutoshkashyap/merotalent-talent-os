@@ -15,10 +15,11 @@ import {
 } from "@/components/ui/table";
 import {
   Briefcase, Plus, Search, Building2, MapPin, Clock, Users, Eye, Pencil, Trash2,
-  FileText, CheckCircle, XCircle, AlertCircle, DollarSign, Loader2, ExternalLink
+  FileText, CheckCircle, XCircle, AlertCircle, DollarSign, Loader2, ExternalLink, Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { generateJobDetails } from "@/lib/ai/ai-generator";
 
 interface Job {
   id: string;
@@ -47,6 +48,7 @@ const AdminJobs = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -62,6 +64,40 @@ const AdminJobs = () => {
     is_remote: false,
     external_link: "",
   });
+
+  const handleAIGenerate = async () => {
+    if (!formData.title.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Job title required",
+        description: "Please type the job title first before generating with AI.",
+      });
+      return;
+    }
+
+    setIsAiGenerating(true);
+    try {
+      const aiResult = await generateJobDetails(formData.title, formData.job_type);
+      setFormData((current) => ({
+        ...current,
+        description: current.description || aiResult.description,
+        requirements: current.requirements || aiResult.requirements.join("\n"),
+        skills_required: current.skills_required || aiResult.skills_required.join(", "),
+      }));
+      toast({
+        title: "AI Generation Complete!",
+        description: "Job description, requirements, and key skills generated.",
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "AI Generation failed",
+        description: "Unable to generate job details.",
+      });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   useEffect(() => {
     fetchJobs();
@@ -120,6 +156,7 @@ const AdminJobs = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this job listing?")) return;
     const { error } = await supabase.from("jobs").delete().eq("id", id);
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });
@@ -219,6 +256,26 @@ const AdminJobs = () => {
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-2 border-dashed border-[#c2410c]/30 text-[#c2410c] hover:bg-[#fff5ed]"
+                onClick={handleAIGenerate}
+                disabled={isAiGenerating || !formData.title.trim()}
+              >
+                {isAiGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating job details with AI...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Description, Requirements & Skills with AI
+                  </>
+                )}
+              </Button>
 
               <div className="space-y-2">
                 <Label>Description</Label>

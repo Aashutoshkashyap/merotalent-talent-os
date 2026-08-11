@@ -122,3 +122,312 @@ export async function generateInstituteDetails(
     website: `https://www.${domain}`,
   };
 }
+
+export interface JobAIPayload {
+  description: string;
+  requirements: string[];
+  skills_required: string[];
+}
+
+export async function generateJobDetails(title: string, category: string): Promise<JobAIPayload> {
+  const apiKey = getStoredAIApiKey();
+  if (apiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are a professional HR assistant. Return JSON with format: { description: string, requirements: string[], skills_required: string[] }.",
+            },
+            {
+              role: "user",
+              content: `Generate job details for a job post with title "${title}" in category "${category}". Provide a 2-3 sentence overview, a list of 4 key requirements, and a list of 4 key skills.`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const parsed = JSON.parse(json.choices[0].message.content);
+        return {
+          description: parsed.description || "",
+          requirements: Array.isArray(parsed.requirements) ? parsed.requirements : [],
+          skills_required: Array.isArray(parsed.skills_required) ? parsed.skills_required : [],
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return {
+    description: `We are looking for a dedicated and talented ${title} to join our growing team. In this role, you will collaborate with cross-functional teams to deliver high-quality solutions, drive innovation, and contribute to the successful execution of our core initiatives.`,
+    requirements: [
+      "Bachelor's degree in a relevant field or equivalent experience",
+      "Proven track record of success in a similar role",
+      "Excellent communication and collaborative problem-solving skills",
+      "Ability to thrive in a fast-paced, dynamic work environment",
+    ],
+    skills_required: ["Collaboration", "Problem Solving", "Time Management", title.split(" ")[0] || "Technical Skills"],
+  };
+}
+
+export interface MentorAIPayload {
+  bio: string;
+  skills: string[];
+  title: string;
+}
+
+export async function generateMentorDetails(name: string, category: string): Promise<MentorAIPayload> {
+  const apiKey = getStoredAIApiKey();
+  if (apiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are a talent development assistant. Return JSON with format: { bio: string, skills: string[], title: string }.",
+            },
+            {
+              role: "user",
+              content: `Generate mentor profile details for "${name}" who is a mentor in "${category}". Return a concise professional bio, a list of 4 key skills, and a professional title/role.`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const parsed = JSON.parse(json.choices[0].message.content);
+        return {
+          bio: parsed.bio || "",
+          skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+          title: parsed.title || "",
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return {
+    bio: `${name} is an experienced mentor in the field of ${category}. With years of industry expertise and a passion for teaching, ${name} has guided numerous professionals and students towards achieving their career goals.`,
+    skills: [category, "Mentorship", "Leadership", "Career Guidance"],
+    title: `Senior Consultant / Mentor in ${category}`,
+  };
+}
+
+export interface EventAIPayload {
+  description: string;
+}
+
+export async function generateEventDetails(title: string, format: string): Promise<EventAIPayload> {
+  const apiKey = getStoredAIApiKey();
+  if (apiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are an event coordination assistant. Return JSON with format: { description: string }.",
+            },
+            {
+              role: "user",
+              content: `Generate a compelling marketing description for an event titled "${title}" in a "${format}" format.`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const parsed = JSON.parse(json.choices[0].message.content);
+        return {
+          description: parsed.description || "",
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return {
+    description: `Join us for "${title}"! This ${format} event brings together industry experts, enthusiasts, and learners to connect, share insights, and discuss key trends. Don't miss this opportunity to grow your network and skills.`,
+  };
+}
+
+export interface CompanyAIPayload {
+  bio: string;
+  industry: string;
+}
+
+export async function generateCompanyDetails(name: string, type: string): Promise<CompanyAIPayload> {
+  const apiKey = getStoredAIApiKey();
+  if (apiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are a business writer assistant. Return JSON with format: { bio: string, industry: string }.",
+            },
+            {
+              role: "user",
+              content: `Generate company profile information for "${name}" which is a "${type}" company. Provide a concise company bio/mission statement and a specific industry classification.`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const parsed = JSON.parse(json.choices[0].message.content);
+        return {
+          bio: parsed.bio || "",
+          industry: parsed.industry || type,
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return {
+    bio: `${name} is an innovative player in the ${type} sector, committed to delivering cutting-edge solutions, exceeding customer expectations, and building sustainable growth in Nepal and beyond.`,
+    industry: type,
+  };
+}
+
+export interface CompetitionAIPayload {
+  description: string;
+}
+
+export async function generateCompetitionDetails(title: string): Promise<CompetitionAIPayload> {
+  const apiKey = getStoredAIApiKey();
+  if (apiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are a competition planning assistant. Return JSON with format: { description: string }.",
+            },
+            {
+              role: "user",
+              content: `Generate a detailed marketing and guidelines description for a challenge/competition titled "${title}".`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const parsed = JSON.parse(json.choices[0].message.content);
+        return {
+          description: parsed.description || "",
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return {
+    description: `Welcome to "${title}"! Register now to showcase your skills, solve challenging problems, collaborate with peers, and compete for amazing prizes. Open to all qualifying participants.`,
+  };
+}
+
+export interface AdAIPayload {
+  description: string;
+}
+
+export async function generateAdDetails(title: string): Promise<AdAIPayload> {
+  const apiKey = getStoredAIApiKey();
+  if (apiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are a copywriting marketing assistant. Return JSON with format: { description: string }.",
+            },
+            {
+              role: "user",
+              content: `Generate a compelling advertisement description / copy for an ad campaign titled "${title}".`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const parsed = JSON.parse(json.choices[0].message.content);
+        return {
+          description: parsed.description || "",
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return {
+    description: `Don't miss out on "${title}"! Click to explore our exclusive offers, find out more about the platform, and take advantage of our services today.`,
+  };
+}
+

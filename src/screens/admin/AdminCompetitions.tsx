@@ -33,7 +33,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Calendar, Users, Trophy, Loader2 } from "lucide-react";
+import { Plus, Search, Calendar, Users, Trophy, Loader2, Sparkles, Pencil, Trash2 } from "lucide-react";
+import { generateCompetitionDetails } from "@/lib/ai/ai-generator";
 
 interface Competition {
   id: string;
@@ -55,6 +56,8 @@ const AdminCompetitions = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
   const { toast } = useToast();
 
   const [newCompetition, setNewCompetition] = useState({
@@ -84,45 +87,129 @@ const AdminCompetitions = () => {
     setIsLoading(false);
   };
 
+  const handleAIGenerate = async () => {
+    if (!newCompetition.title.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Title required",
+        description: "Please type the competition title first before generating with AI.",
+      });
+      return;
+    }
+
+    setIsAiGenerating(true);
+    try {
+      const aiResult = await generateCompetitionDetails(newCompetition.title);
+      setNewCompetition((current) => ({
+        ...current,
+        description: current.description || aiResult.description,
+      }));
+      toast({
+        title: "AI Generation Complete!",
+        description: "Competition description generated successfully.",
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "AI Generation failed",
+        description: "Unable to generate competition details.",
+      });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
   const createCompetition = async () => {
     if (!user) return;
     setIsCreating(true);
 
-    const { error } = await supabase.from("competitions").insert({
-      ...newCompetition,
+    const payload = {
+      title: newCompetition.title,
+      description: newCompetition.description || null,
+      type: newCompetition.type,
+      format: newCompetition.format,
+      start_date: newCompetition.start_date ? new Date(newCompetition.start_date).toISOString() : null,
+      end_date: newCompetition.end_date ? new Date(newCompetition.end_date).toISOString() : null,
+      registration_deadline: newCompetition.registration_deadline ? new Date(newCompetition.registration_deadline).toISOString() : null,
       max_participants: newCompetition.max_participants ? parseInt(newCompetition.max_participants) : null,
+      prize_pool: newCompetition.prize_pool || null,
+      is_team_based: newCompetition.is_team_based,
       organizer_id: user.id,
       organizer_type: "admin",
-      status: "draft",
-    });
+    };
+
+    let error;
+    if (editingCompetition) {
+      const result = await supabase.from("competitions").update(payload).eq("id", editingCompetition.id);
+      error = result.error;
+    } else {
+      const result = await supabase.from("competitions").insert({
+        ...payload,
+        status: "draft",
+      });
+      error = result.error;
+    }
 
     if (error) {
       toast({
         variant: "destructive",
-        title: "Error creating competition",
+        title: editingCompetition ? "Error updating competition" : "Error creating competition",
         description: error.message,
       });
     } else {
       toast({
-        title: "Competition created!",
-        description: "The competition has been created as a draft.",
+        title: editingCompetition ? "Competition updated!" : "Competition created!",
+        description: editingCompetition ? "Changes saved successfully." : "The competition has been created as a draft.",
       });
-      setIsDialogOpen(false);
-      setNewCompetition({
-        title: "",
-        description: "",
-        type: "hackathon",
-        format: "online",
-        start_date: "",
-        end_date: "",
-        registration_deadline: "",
-        max_participants: "",
-        prize_pool: "",
-        is_team_based: false,
-      });
+      resetForm();
       fetchCompetitions();
     }
     setIsCreating(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this competition?")) return;
+    const { error } = await supabase.from("competitions").delete().eq("id", id);
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } else {
+      toast({ title: "Competition deleted" });
+      fetchCompetitions();
+    }
+  };
+
+  const openEdit = (comp: Competition) => {
+    setEditingCompetition(comp);
+    setNewCompetition({
+      title: comp.title,
+      description: (comp as any).description || "",
+      type: comp.type || "hackathon",
+      format: comp.format || "online",
+      start_date: comp.start_date ? comp.start_date.slice(0, 16) : "",
+      end_date: comp.end_date ? comp.end_date.slice(0, 16) : "",
+      registration_deadline: (comp as any).registration_deadline ? (comp as any).registration_deadline.slice(0, 16) : "",
+      max_participants: comp.max_participants ? comp.max_participants.toString() : "",
+      prize_pool: comp.prize_pool || "",
+      is_team_based: (comp as any).is_team_based ?? false,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingCompetition(null);
+    setNewCompetition({
+      title: "",
+      description: "",
+      type: "hackathon",
+      format: "online",
+      start_date: "",
+      end_date: "",
+      registration_deadline: "",
+      max_participants: "",
+      prize_pool: "",
+      is_team_based: false,
+    });
+    setIsDialogOpen(false);
   };
 
   const updateStatus = async (id: string, status: string) => {

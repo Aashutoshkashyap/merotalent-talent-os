@@ -58,7 +58,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
           .eq("status", "pending"),
       ]);
 
-      setUnreadCount((notifCount || 0) + (queryCount || 0));
+      setUnreadCount(notifCount || 0);
     };
 
     void fetchUnreadCounts();

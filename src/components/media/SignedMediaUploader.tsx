@@ -20,7 +20,8 @@ export type CollegeMediaModule =
   | "event_cover"
   | "course_thumbnail"
   | "mentor_profile"
-  | "advertisement";
+  | "advertisement"
+  | "company_logo";
 
 export interface SignedMediaAsset {
   bucket: string;

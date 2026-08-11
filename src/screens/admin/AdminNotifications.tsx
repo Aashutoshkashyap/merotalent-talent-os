@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -323,6 +324,34 @@ const AdminNotifications = () => {
     });
   };
 
+  const handleMarkAsRead = async (notification: NotificationRow) => {
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", notification.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Could not mark as read",
+        description: error.message,
+      });
+    } else {
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === notification.id ? { ...item, is_read: true } : item
+        )
+      );
+      setSelectedNotification((current) =>
+        current?.id === notification.id ? { ...current, is_read: true } : current
+      );
+      toast({
+        title: "Notification updated",
+        description: "Marked as read successfully.",
+      });
+    }
+  };
+
   const composeForMember = (member: AdminMember) => {
     setNewNotification((current) => ({
       ...current,
@@ -628,6 +657,17 @@ const AdminNotifications = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {!notification.is_read && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-emerald-600 hover:text-emerald-700"
+                              onClick={() => void handleMarkAsRead(notification)}
+                              aria-label={`Mark notification ${notification.title} as read`}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -784,6 +824,23 @@ const AdminNotifications = () => {
                   {formatDateTime(selectedNotification.created_at)}
                 </dd>
               </dl>
+              <DialogFooter className="gap-2 sm:gap-0">
+                {!selectedNotification.is_read && (
+                  <Button
+                    variant="hero"
+                    onClick={() => void handleMarkAsRead(selectedNotification)}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Mark as read
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedNotification(null)}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>

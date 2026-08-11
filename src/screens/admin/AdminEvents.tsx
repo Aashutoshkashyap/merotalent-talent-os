@@ -10,10 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Plus, Search, MapPin, CheckCircle, XCircle, Pencil, Trash2, Loader2, Star } from "lucide-react";
+import { Calendar, Plus, Search, MapPin, CheckCircle, XCircle, Pencil, Trash2, Loader2, Star, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
+import { generateEventDetails } from "@/lib/ai/ai-generator";
 
 interface EventItem {
   id: string;
@@ -44,6 +45,7 @@ export default function AdminEvents() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -62,6 +64,38 @@ export default function AdminEvents() {
     approval_status: "approved",
     status: "approved",
   });
+
+  const handleAIGenerate = async () => {
+    if (!formData.title.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Event title required",
+        description: "Please type the event title first before generating with AI.",
+      });
+      return;
+    }
+
+    setIsAiGenerating(true);
+    try {
+      const aiResult = await generateEventDetails(formData.title, formData.format);
+      setFormData((current) => ({
+        ...current,
+        description: current.description || aiResult.description,
+      }));
+      toast({
+        title: "AI Generation Complete!",
+        description: "Event description generated successfully.",
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "AI Generation failed",
+        description: "Unable to generate event details.",
+      });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   useEffect(() => {
     fetchEvents();
@@ -123,6 +157,7 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this event?")) return;
     const { error } = await (supabase as any).from("events").delete().eq("id", id);
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });
@@ -218,6 +253,26 @@ export default function AdminEvents() {
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-2 border-dashed border-[#c2410c]/30 text-[#c2410c] hover:bg-[#fff5ed]"
+                onClick={handleAIGenerate}
+                disabled={isAiGenerating || !formData.title.trim()}
+              >
+                {isAiGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating event description with AI...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Description & Overview with AI
+                  </>
+                )}
+              </Button>
 
               <div className="space-y-2">
                 <Label>Description</Label>
