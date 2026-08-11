@@ -16,10 +16,12 @@ import {
   Database,
   Server,
   Save,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import { OperationsPage } from "./OperationsUI";
+import { getStoredAIApiKey, setStoredAIApiKey } from "@/lib/ai/ai-generator";
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
@@ -286,6 +288,39 @@ const AdminSettings = () => {
 
         {/* Integrations */}
         <TabsContent value="integrations" className="space-y-6">
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                AI Content Generation Engine & API Key
+              </CardTitle>
+              <CardDescription>Configure the OpenAI / Gemini API key used for automatic course and institute detail generation</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="aiApiKey">AI API Key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="aiApiKey"
+                    type="password"
+                    placeholder="sk-proj-..."
+                    defaultValue={getStoredAIApiKey()}
+                    onChange={(e) => setStoredAIApiKey(e.target.value)}
+                  />
+                  <Button
+                    variant="hero"
+                    onClick={() => toast.success("AI API Key saved successfully!")}
+                  >
+                    Save Key
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  The API key is securely stored in local configuration and enables 1-click AI generation of descriptions, courses, and contact details across the platform.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

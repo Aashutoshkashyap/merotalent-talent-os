@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Calendar, Plus, Search, MapPin, CheckCircle, XCircle, Pencil, Trash2, Loader2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
 
 interface EventItem {
   id: string;
@@ -31,6 +32,7 @@ interface EventItem {
   approval_status: string;
   is_active: boolean;
   is_featured: boolean;
+  cover_image_url?: string | null;
   created_at: string;
 }
 
@@ -54,6 +56,7 @@ export default function AdminEvents() {
     end_date: "",
     capacity: "",
     ticket_price: "0",
+    cover_image_url: "",
     is_active: true,
     is_featured: false,
     approval_status: "approved",
@@ -93,6 +96,7 @@ export default function AdminEvents() {
       end_date: new Date(formData.end_date).toISOString(),
       capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
       ticket_price: parseFloat(formData.ticket_price || "0"),
+      cover_image_url: formData.cover_image_url || null,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
       approval_status: formData.approval_status,
@@ -150,6 +154,7 @@ export default function AdminEvents() {
       end_date: event.end_date ? event.end_date.slice(0, 16) : "",
       capacity: event.capacity ? event.capacity.toString() : "",
       ticket_price: event.ticket_price ? event.ticket_price.toString() : "0",
+      cover_image_url: event.cover_image_url || "",
       is_active: event.is_active ?? true,
       is_featured: event.is_featured ?? false,
       approval_status: event.approval_status || "approved",
@@ -170,6 +175,7 @@ export default function AdminEvents() {
       end_date: "",
       capacity: "",
       ticket_price: "0",
+      cover_image_url: "",
       is_active: true,
       is_featured: false,
       approval_status: "approved",
@@ -293,6 +299,24 @@ export default function AdminEvents() {
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <SignedMediaUploader
+                  label="Event Banner / Cover Image"
+                  module="event_cover"
+                  resourceId={editingEvent?.id || "new-event"}
+                  onUploaded={([asset]: SignedMediaAsset[]) => {
+                    if (asset) {
+                      setFormData((current) => ({ ...current, cover_image_url: asset.publicUrl || asset.path }));
+                    }
+                  }}
+                />
+                {formData.cover_image_url && (
+                  <div className="relative h-28 w-full overflow-hidden rounded-xl border">
+                    <img src={formData.cover_image_url} alt="Cover preview" className="h-full w-full object-cover" />
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-6 pt-2">

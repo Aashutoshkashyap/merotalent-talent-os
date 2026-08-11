@@ -148,6 +148,33 @@ const Login = () => {
               "Sign In"
             )}
           </button>
+
+          {/* Quick Demo Test Credentials */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50/75 p-3 text-xs space-y-2">
+            <p className="font-bold text-slate-600">Quick Test Sign-In Credentials:</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("admin@merotalent.com");
+                  setPassword("admin123");
+                }}
+                className="rounded-lg bg-white px-2.5 py-1.5 font-medium border border-slate-200 text-slate-700 hover:border-[#0073e6] hover:text-[#0073e6] transition-colors"
+              >
+                Admin (admin@merotalent.com)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("student@merotalent.com");
+                  setPassword("student123");
+                }}
+                className="rounded-lg bg-white px-2.5 py-1.5 font-medium border border-slate-200 text-slate-700 hover:border-[#0073e6] hover:text-[#0073e6] transition-colors"
+              >
+                Student (student@merotalent.com)
+              </button>
+            </div>
+          </div>
         </form>
       </div>
     </AuthShell>

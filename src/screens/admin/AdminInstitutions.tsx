@@ -52,7 +52,9 @@ import {
   Pencil,
   Trash2,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
+import { generateInstituteDetails } from "@/lib/ai/ai-generator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -162,9 +164,51 @@ const AdminInstitutions = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [editingInstitute, setEditingInstitute] = useState<Institute | null>(null);
+  const [formData, setFormData] = useState<InstituteFormData>(emptyFormData());
 
-  const [formData, setFormData] = useState<InstituteFormData>(emptyFormData);
+  const handleAIGenerate = async () => {
+    if (!formData.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Institute name required",
+        description: "Please type the institute name first before generating with AI.",
+      });
+      return;
+    }
+
+    setIsAiGenerating(true);
+    try {
+      const aiResult = await generateInstituteDetails(
+        formData.name,
+        formData.type,
+        formData.location || "Nepal",
+      );
+
+      setFormData((current) => ({
+        ...current,
+        description: current.description || aiResult.description,
+        courses_offered: current.courses_offered || aiResult.courses_offered.join("\n"),
+        contact_phone: current.contact_phone || aiResult.contact_phone,
+        contact_email: current.contact_email || aiResult.contact_email,
+        website: current.website || aiResult.website,
+      }));
+
+      toast({
+        title: "AI Generation Complete!",
+        description: "Description, programs, phone, email, and website generated successfully.",
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "AI Generation failed",
+        description: "Unable to generate institute details.",
+      });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   const fetchInstitutes = useCallback(async () => {
     const [instituteResult, directoryResult] = await Promise.all([
@@ -376,6 +420,26 @@ const AdminInstitutions = () => {
                   />
                 </div>
               </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-2 border-dashed border-[#c2410c]/30 text-[#c2410c] hover:bg-[#fff5ed]"
+                onClick={handleAIGenerate}
+                disabled={isAiGenerating || !formData.name.trim()}
+              >
+                {isAiGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating details with AI...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Description, Programs & Contact Details with AI
+                  </>
+                )}
+              </Button>
 
               <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-2">

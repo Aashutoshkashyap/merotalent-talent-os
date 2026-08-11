@@ -367,17 +367,53 @@ const AdminRoleManagement = () => {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setIsRoleDialogOpen(true);
-                      }}
-                    >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Change Role
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setIsRoleDialogOpen(true);
+                        }}
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Assign Role
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={async () => {
+                          const rpcClient = supabase as unknown as {
+                            rpc: (
+                              name: string,
+                              args: Record<string, unknown>,
+                            ) => Promise<{ error: { message: string } | null }>;
+                          };
+                          const { error } = await rpcClient.rpc("admin_update_user_access", {
+                            p_user_id: user.user_id,
+                            p_role: "talent",
+                            p_account_status: "suspended",
+                          });
+
+                          if (error) {
+                            toast({
+                              variant: "destructive",
+                              title: "Revocation failed",
+                              description: error.message,
+                            });
+                          } else {
+                            toast({
+                              title: "Access Revoked",
+                              description: `All admin access and roles for ${user.full_name || user.email} have been revoked.`,
+                            });
+                            fetchUsers();
+                          }
+                        }}
+                      >
+                        Revoke Access
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -16,10 +16,14 @@ const acceptedImageTypes = [
 export type CollegeMediaModule =
   | "college_logo"
   | "college_cover"
-  | "college_gallery";
+  | "college_gallery"
+  | "event_cover"
+  | "course_thumbnail"
+  | "mentor_profile"
+  | "advertisement";
 
 export interface SignedMediaAsset {
-  bucket: "college-media";
+  bucket: string;
   path: string;
   publicUrl: string;
 }
@@ -51,6 +55,62 @@ const apiErrorMessage = (payload: UploadSigningResponse) =>
     ? payload.error.message
     : "The upload could not be prepared.";
 
+async function compressImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") || file.size < 500 * 1024) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const maxDim = 1920;
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) {
+            resolve(file);
+            return;
+          }
+          const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+            type: "image/jpeg",
+            lastModified: Date.now(),
+          });
+          resolve(compressedFile);
+        },
+        "image/jpeg",
+        0.85
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
 /**
  * Signs and uploads a college image without exposing a service-role credential
  * to the browser. The database stores the canonical object path; public URLs
@@ -61,6 +121,7 @@ export async function uploadSignedCollegeMedia(
   module: CollegeMediaModule,
   resourceId: string,
 ): Promise<SignedMediaAsset> {
+  const processedFile = await compressImage(file);
   const { data: sessionData, error: sessionError } =
     await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
@@ -78,9 +139,9 @@ export async function uploadSignedCollegeMedia(
     body: JSON.stringify({
       module,
       resourceId,
-      fileName: file.name,
-      contentType: file.type,
-      sizeBytes: file.size,
+      fileName: processedFile.name,
+      contentType: processedFile.type,
+      sizeBytes: processedFile.size,
     }),
   });
 
@@ -91,7 +152,8 @@ export async function uploadSignedCollegeMedia(
 
   const { bucket, path, token } = payload.data;
   if (
-    bucket !== "college-media" ||
+    typeof bucket !== "string" ||
+    !bucket ||
     typeof path !== "string" ||
     !path ||
     typeof token !== "string" ||
@@ -102,9 +164,9 @@ export async function uploadSignedCollegeMedia(
 
   const { error: uploadError } = await supabase.storage
     .from(bucket)
-    .uploadToSignedUrl(path, token, file, {
+    .uploadToSignedUrl(path, token, processedFile, {
       cacheControl: "3600",
-      contentType: file.type,
+      contentType: processedFile.type,
       upsert: false,
     });
 
@@ -147,25 +209,17 @@ export function SignedMediaUploader({
         throw new Error("The gallery already contains the maximum number of images.");
       }
       setTotalFiles(selectedFiles.length);
-      const assets: SignedMediaAsset[] = [];
-      let uploadFailure: unknown = null;
 
-      // Upload in sequence so one gallery selection cannot burst through the
-      // per-user signing/quota endpoint with many concurrent requests.
-      for (const file of selectedFiles) {
-        try {
-          assets.push(await uploadSignedCollegeMedia(file, module, resourceId));
-          setUploadedCount(assets.length);
-        } catch (currentUploadError) {
-          uploadFailure = currentUploadError;
-          break;
-        }
-      }
+      let completed = 0;
+      const uploadPromises = selectedFiles.map(async (file) => {
+        const asset = await uploadSignedCollegeMedia(file, module, resourceId);
+        completed++;
+        setUploadedCount(completed);
+        return asset;
+      });
 
-      // Preserve references to files that completed before a later gallery
-      // image failed, so successful objects do not become invisible orphans.
+      const assets = await Promise.all(uploadPromises);
       if (assets.length > 0) await onUploaded(assets);
-      if (uploadFailure) throw uploadFailure;
     } catch (uploadError) {
       setError(
         uploadError instanceof Error

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
 
 interface Course {
   id: string;
@@ -396,11 +397,24 @@ const AdminLMS = () => {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Image className="w-4 h-4" />Thumbnail URL</Label>
-                    <Input value={courseForm.thumbnail_url} onChange={(e) => setCourseForm({ ...courseForm, thumbnail_url: e.target.value })} placeholder="https://..." />
+                    <SignedMediaUploader
+                      label="Course Thumbnail Image"
+                      module="course_thumbnail"
+                      resourceId={editingCourse?.id || "new-course"}
+                      onUploaded={([asset]: SignedMediaAsset[]) => {
+                        if (asset) {
+                          setCourseForm((current) => ({ ...current, thumbnail_url: asset.publicUrl || asset.path }));
+                        }
+                      }}
+                    />
+                    {courseForm.thumbnail_url && (
+                      <div className="relative h-24 w-full overflow-hidden rounded-xl border">
+                        <img src={courseForm.thumbnail_url} alt="Thumbnail preview" className="h-full w-full object-cover" />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><ExternalLink className="w-4 h-4" />Redirect URL</Label>
+                    <Label className="flex items-center gap-2"><ExternalLink className="w-4 h-4" />Redirect / External URL</Label>
                     <Input value={courseForm.redirect_url} onChange={(e) => setCourseForm({ ...courseForm, redirect_url: e.target.value })} placeholder="External course link" />
                   </div>
                 </div>

@@ -41,9 +41,79 @@ export default function AdminFeaturedItems() {
     is_active: true,
   });
 
+  interface EntityOption {
+    id: string;
+    label: string;
+    subtitle?: string;
+  }
+
+  const [availableEntities, setAvailableEntities] = useState<EntityOption[]>([]);
+  const [isFetchingEntities, setIsFetchingEntities] = useState(false);
+
   useEffect(() => {
-    fetchFeatured();
-  }, []);
+    const fetchEntities = async () => {
+      setIsFetchingEntities(true);
+      let options: EntityOption[] = [];
+
+      try {
+        if (formData.entity_type === "college") {
+          const { data } = await supabase.from("institutes").select("id, name, location").order("name").limit(100);
+          if (data) {
+            options = data.map((item) => ({
+              id: item.id,
+              label: item.name,
+              subtitle: item.location || "College / Institution",
+            }));
+          }
+        } else if (formData.entity_type === "job") {
+          const { data } = await (supabase as any).from("jobs").select("id, title, company_name").order("title").limit(100);
+          if (data) {
+            options = (data as any[]).map((item) => ({
+              id: item.id,
+              label: item.title,
+              subtitle: item.company_name || "Job listing",
+            }));
+          }
+        } else if (formData.entity_type === "course") {
+          const { data } = await supabase.from("courses").select("id, title").order("title").limit(100);
+          if (data) {
+            options = data.map((item) => ({
+              id: item.id,
+              label: item.title,
+              subtitle: "LMS Course",
+            }));
+          }
+        } else if (formData.entity_type === "event") {
+          const { data } = await (supabase as any).from("events").select("id, title, location").order("title").limit(100);
+          if (data) {
+            options = data.map((item: any) => ({
+              id: item.id,
+              label: item.title,
+              subtitle: item.location || "Event",
+            }));
+          }
+        } else if (formData.entity_type === "mentor") {
+          const { data } = await supabase.from("mentors").select("id, profiles(full_name, email)").limit(100);
+          if (data) {
+            options = data.map((item: any) => ({
+              id: item.id,
+              label: item.profiles?.full_name || "Mentor Profile",
+              subtitle: item.profiles?.email || "Mentor",
+            }));
+          }
+        }
+      } catch {
+        // Fall back gracefully
+      }
+
+      setAvailableEntities(options);
+      setIsFetchingEntities(false);
+    };
+
+    if (isDialogOpen) {
+      void fetchEntities();
+    }
+  }, [formData.entity_type, isDialogOpen]);
 
   const fetchFeatured = async () => {
     const { data } = await (supabase as any)
@@ -158,12 +228,45 @@ export default function AdminFeaturedItems() {
               </div>
 
               <div className="space-y-2">
-                <Label>Entity UUID *</Label>
-                <Input
-                  placeholder="Target record UUID..."
-                  value={formData.entity_id}
-                  onChange={(e) => setFormData({ ...formData, entity_id: e.target.value })}
-                />
+                <Label>Select Target Entity *</Label>
+                {isFetchingEntities ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Loading available {formData.entity_type}s...
+                  </div>
+                ) : availableEntities.length > 0 ? (
+                  <Select
+                    value={formData.entity_id}
+                    onValueChange={(val) => {
+                      const selected = availableEntities.find((e) => e.id === val);
+                      setFormData({
+                        ...formData,
+                        entity_id: val,
+                        title: formData.title || selected?.label || "",
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Choose a ${formData.entity_type}...`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableEntities.map((opt) => (
+                        <SelectItem key={opt.id} value={opt.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{opt.label}</span>
+                            {opt.subtitle && <span className="text-[10px] text-muted-foreground">{opt.subtitle}</span>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    placeholder="Enter record UUID..."
+                    value={formData.entity_id}
+                    onChange={(e) => setFormData({ ...formData, entity_id: e.target.value })}
+                  />
+                )}
               </div>
 
               <div className="space-y-2">

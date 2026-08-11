@@ -117,6 +117,33 @@ const AdminUsers = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, email: string) => {
+    if (!confirm(`Are you sure you want to permanently delete user account ${email}?`)) return;
+
+    try {
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+
+      const rpcClient = supabase as unknown as {
+        rpc: (name: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+      };
+      await rpcClient.rpc("admin_update_user_access", {
+        p_user_id: userId,
+        p_account_status: "deactivated",
+      });
+
+      const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
+
+      if (error) {
+        toast({ variant: "destructive", title: "Delete failed", description: error.message });
+      } else {
+        toast({ title: "User deleted", description: `Account for ${email} was permanently deleted.` });
+        fetchUsers();
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error deleting user", description: err?.message || "Failed to delete user." });
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -237,6 +264,14 @@ const AdminUsers = () => {
                             Remove {role}
                           </DropdownMenuItem>
                         ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteUser(user.user_id, user.email)}
+                          className="text-destructive font-semibold"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2 text-destructive" />
+                          Delete User Account
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

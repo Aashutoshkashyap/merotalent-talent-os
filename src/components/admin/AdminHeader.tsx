@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Bell,
   ChevronDown,
@@ -28,6 +29,7 @@ interface AdminHeaderProps {
 const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
   const { profile, signOut } = useAuth();
   const [query, setQuery] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -41,6 +43,25 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
 
     window.addEventListener("keydown", focusCommandSearch);
     return () => window.removeEventListener("keydown", focusCommandSearch);
+  }, []);
+
+  useEffect(() => {
+    const fetchUnreadCounts = async () => {
+      const [{ count: notifCount }, { count: queryCount }] = await Promise.all([
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("is_read", false),
+        supabase
+          .from("contact_queries")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending"),
+      ]);
+
+      setUnreadCount((notifCount || 0) + (queryCount || 0));
+    };
+
+    void fetchUnreadCounts();
   }, []);
 
   const runCommand = (event: FormEvent) => {
@@ -99,9 +120,19 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
         </span>
       </form>
 
-      <Button variant="ghost" size="icon" className="relative shrink-0 rounded-xl" aria-label="Notifications">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative shrink-0 rounded-xl"
+        aria-label="Notifications"
+        onClick={() => navigate("/admin/notifications")}
+      >
         <Bell className="h-[18px] w-[18px]" />
-        <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-[#ef6d72]" />
+        {unreadCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ef6d72] px-1 text-[10px] font-bold text-white shadow-sm">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
       </Button>
 
       <DropdownMenu>
