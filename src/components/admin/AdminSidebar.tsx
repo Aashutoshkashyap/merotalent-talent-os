@@ -22,6 +22,7 @@ import {
   Megaphone,
   MessageSquareText,
   Package,
+  PanelTop,
   Receipt,
   Settings,
   ShieldCheck,
@@ -66,6 +67,7 @@ const systemItems = [
   { icon: MessageSquareText, label: "Support queries", href: "/admin/queries" },
   { icon: ShieldCheck, label: "Roles & access", href: "/admin/roles" },
   { icon: UserCog, label: "Admin team", href: "/admin/admins" },
+  { icon: PanelTop, label: "Page editor", href: "/admin/pages" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
 

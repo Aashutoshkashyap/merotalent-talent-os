@@ -71,6 +71,7 @@ import AdminLeads from "./screens/admin/AdminLeads";
 import AdminReports from "./screens/admin/AdminReports";
 import AdminApplications from "./screens/admin/AdminApplications";
 import AdminBookings from "./screens/admin/AdminBookings";
+import AdminPageEditor from "./screens/admin/AdminPageEditor";
 
 // Institute Pages
 import InstituteDashboard from "./screens/institute/InstituteDashboard";
@@ -165,6 +166,7 @@ const App = () => (
                 <Route path="queries" element={<AdminQueries />} />
                 <Route path="admins" element={<AdminManagement />} />
                 <Route path="roles" element={<AdminRoleManagement />} />
+                <Route path="pages" element={<AdminPageEditor />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
