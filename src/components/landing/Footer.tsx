@@ -4,7 +4,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, MapPin, Mail, Phone, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 
+import { useSiteCMS } from "@/hooks/useSiteCMS";
+
 export default function Footer() {
+  const { settings } = useSiteCMS();
+
   return (
     <footer className="w-full bg-white border-t border-slate-200/80 pt-12 pb-8 px-6 sm:px-10 lg:px-16 font-sans">
       <div className="w-full max-w-[1400px] mx-auto flex flex-col justify-between min-h-[420px]">
@@ -13,16 +17,22 @@ export default function Footer() {
           {/* Column 1: Brand Logo, Description & Social Icons */}
           <div className="flex flex-col gap-5">
             <Link to="/" className="inline-flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#0073e6] text-white">
-                <Sparkles className="h-5 w-5" />
-              </span>
+              {settings.logo_url ? (
+                <img src={settings.logo_url} alt="Logo" className="h-9 w-auto object-contain rounded-lg" />
+              ) : (
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#071a3d] text-white">
+                  <Sparkles className="h-5 w-5" />
+                </span>
+              )}
               <span className="text-2xl font-black text-slate-900 tracking-tight">
-                Mero<span className="text-[#0073e6]">Talent</span>
+                {settings.site_title ? settings.site_title.split(" - ")[0] : (
+                  <>Mero<span className="text-[#071a3d]">Talent</span></>
+                )}
               </span>
             </Link>
 
             <p className="text-sm text-slate-600 font-medium leading-relaxed pr-2">
-              Nepal&apos;s premier engineering talent ecosystem. Connecting IOE, KU, PoU, and Pokhara University graduates with top tech & engineering employers.
+              {settings.meta_description || "Nepal's premier talent ecosystem. Connecting students, graduates, and partners with top tech & engineering employers."}
             </p>
 
             {/* Social Icons Row */}
@@ -155,15 +165,15 @@ export default function Footer() {
                 <span>123 Technology Park, Pulchowk, Lalitpur, Nepal</span>
               </li>
               <li className="flex items-center gap-3 text-sm font-semibold text-slate-600">
-                <Mail className="w-5 h-5 text-[#0073e6] flex-shrink-0" />
-                <a href="mailto:hello@merotalent.com" className="hover:text-[#0073e6] transition-colors">
-                  hello@merotalent.com
+                <Mail className="w-5 h-5 text-[#071a3d] flex-shrink-0" />
+                <a href={`mailto:${settings.contact_email || "support@merotalent.com"}`} className="hover:text-[#071a3d] transition-colors">
+                  {settings.contact_email || "support@merotalent.com"}
                 </a>
               </li>
               <li className="flex items-center gap-3 text-sm font-semibold text-slate-600">
-                <Phone className="w-5 h-5 text-[#0073e6] flex-shrink-0" />
-                <a href="tel:+97715551234" className="hover:text-[#0073e6] transition-colors">
-                  +977 (1) 555-1234
+                <Phone className="w-5 h-5 text-[#071a3d] flex-shrink-0" />
+                <a href={`tel:${settings.contact_phone || "+977-01-4400000"}`} className="hover:text-[#071a3d] transition-colors">
+                  {settings.contact_phone || "+977-01-4400000"}
                 </a>
               </li>
             </ul>

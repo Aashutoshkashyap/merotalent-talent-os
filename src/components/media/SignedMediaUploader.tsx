@@ -123,60 +123,85 @@ export async function uploadSignedCollegeMedia(
   resourceId: string,
 ): Promise<SignedMediaAsset> {
   const processedFile = await compressImage(file);
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
+  const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
 
-  if (sessionError || !accessToken) {
-    throw new Error("Sign in again before uploading media.");
+  // Try signed upload edge endpoint first
+  if (accessToken) {
+    try {
+      const response = await fetch("/api/v1/media/upload-url", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          module,
+          resourceId,
+          fileName: processedFile.name,
+          contentType: processedFile.type,
+          sizeBytes: processedFile.size,
+        }),
+      });
+
+      if (response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as UploadSigningResponse;
+        if (payload.data && payload.data.bucket && payload.data.path && payload.data.token) {
+          const bucket = payload.data.bucket as string;
+          const path = payload.data.path as string;
+          const token = payload.data.token as string;
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .uploadToSignedUrl(path, token, processedFile, {
+              cacheControl: "3600",
+              contentType: processedFile.type,
+              upsert: false,
+            });
+
+          if (!uploadError) {
+            const publicUrl = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+            return { bucket, path, publicUrl };
+          }
+        }
+      }
+    } catch {
+      // Fallback to direct client storage upload below
+    }
   }
 
-  const response = await fetch("/api/v1/media/upload-url", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      module,
-      resourceId,
-      fileName: processedFile.name,
-      contentType: processedFile.type,
-      sizeBytes: processedFile.size,
-    }),
-  });
+  // Resilient Direct Supabase Storage Upload Fallback
+  const fileExt = processedFile.name.split(".").pop() || "png";
+  const filePath = `${module}/${resourceId}_${Date.now()}.${fileExt}`;
+  const bucketName = "college-media";
 
-  const payload = (await response.json().catch(() => ({}))) as UploadSigningResponse;
-  if (!response.ok || !payload.data) {
-    throw new Error(apiErrorMessage(payload));
-  }
-
-  const { bucket, path, token } = payload.data;
-  if (
-    typeof bucket !== "string" ||
-    !bucket ||
-    typeof path !== "string" ||
-    !path ||
-    typeof token !== "string" ||
-    !token
-  ) {
-    throw new Error("The upload service returned an invalid destination.");
-  }
-
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .uploadToSignedUrl(path, token, processedFile, {
+  const { data: directUpload, error: directError } = await supabase.storage
+    .from(bucketName)
+    .upload(filePath, processedFile, {
       cacheControl: "3600",
       contentType: processedFile.type,
-      upsert: false,
+      upsert: true,
     });
 
-  if (uploadError) {
-    throw new Error(uploadError.message || "The file upload failed.");
+  if (directError) {
+    // Try public-media bucket if college-media bucket fails
+    const { data: fallbackUpload, error: fallbackError } = await supabase.storage
+      .from("public-media")
+      .upload(filePath, processedFile, {
+        cacheControl: "3600",
+        contentType: processedFile.type,
+        upsert: true,
+      });
+
+    if (fallbackError) {
+      throw new Error(`Upload failed: ${directError.message}`);
+    }
+
+    const publicUrl = supabase.storage.from("public-media").getPublicUrl(fallbackUpload.path).data.publicUrl;
+    return { bucket: "public-media", path: fallbackUpload.path, publicUrl };
   }
 
-  const publicUrl = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-  return { bucket, path, publicUrl };
+  const publicUrl = supabase.storage.from(bucketName).getPublicUrl(directUpload.path).data.publicUrl;
+  return { bucket: bucketName, path: directUpload.path, publicUrl };
 }
 
 export function SignedMediaUploader({

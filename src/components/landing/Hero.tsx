@@ -55,9 +55,14 @@ const taskRows = [
   { label: "Submit AI challenge concept", date: "04 Aug", progress: 24 },
 ];
 
+import { useSiteCMS } from "@/hooks/useSiteCMS";
+
 const Hero = () => {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const { getSection } = useSiteCMS();
+
+  const heroSection = getSection("hero_banner");
 
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -147,15 +152,17 @@ const Hero = () => {
         <div className="p-3 sm:p-5 lg:pl-[104px] lg:pr-7 lg:pt-6">
           <div className="grid min-w-0 gap-3 lg:grid-cols-[1.05fr_1.55fr]">
             <div className="flex min-h-[210px] flex-col justify-center rounded-[22px] bg-[#fffaf7] p-5 sm:p-6">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#fed7aa] bg-white px-2.5 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#c2410c]">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#fed7aa] bg-white px-2.5 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#071a3d]">
                 <Sparkles className="h-3 w-3" />
-                Built for ambitious talent
+                {heroSection?.subtitle || "Built for ambitious talent"}
               </span>
               <h1 className="mt-4 max-w-[560px] text-balance font-display text-[36px] font-black leading-[1.02] tracking-[-0.04em] text-[#172039] sm:text-[48px] lg:text-[52px]">
-                Hi, future you. What will you <span className="text-[#c2410c]">prove today?</span>
+                {heroSection?.title || (
+                  <>Hi, future you. What will you <span className="text-[#071a3d]">prove today?</span></>
+                )}
               </h1>
               <p className="mt-3 max-w-md text-xs leading-5 text-[#7b7480] sm:text-xs">
-                Turn learning, challenges and real work into opportunities people can trust.
+                {heroSection?.body || "Turn learning, challenges and real work into opportunities people can trust."}
               </p>
             </div>
 

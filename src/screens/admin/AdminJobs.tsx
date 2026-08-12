@@ -77,12 +77,12 @@ const AdminJobs = () => {
 
     setIsAiGenerating(true);
     try {
-      const aiResult = await generateJobDetails(formData.title, formData.job_type);
+      const aiResult = await generateJobDetails(formData.title, formData.job_type, formData.location || "Kathmandu");
       setFormData((current) => ({
         ...current,
         description: current.description || aiResult.description,
         requirements: current.requirements || aiResult.requirements.join("\n"),
-        skills_required: current.skills_required || aiResult.skills_required.join(", "),
+        skills_required: current.skills_required || aiResult.skills.join(", "),
       }));
       toast({
         title: "AI Generation Complete!",

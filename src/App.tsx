@@ -72,6 +72,8 @@ import AdminReports from "./screens/admin/AdminReports";
 import AdminApplications from "./screens/admin/AdminApplications";
 import AdminBookings from "./screens/admin/AdminBookings";
 import AdminPageEditor from "./screens/admin/AdminPageEditor";
+import AdminAccessRequests from "./screens/admin/AdminAccessRequests";
+import RequestSubAdminAccess from "./screens/RequestSubAdminAccess";
 
 // Institute Pages
 import InstituteDashboard from "./screens/institute/InstituteDashboard";
@@ -107,6 +109,7 @@ const App = () => (
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/mentorship" element={<MentorshipPage />} />
+              <Route path="/request-access" element={<RequestSubAdminAccess />} />
               <Route path="/privacy" element={<LegalPage type="privacy" />} />
               <Route path="/terms" element={<LegalPage type="terms" />} />
 
@@ -166,6 +169,7 @@ const App = () => (
                 <Route path="queries" element={<AdminQueries />} />
                 <Route path="admins" element={<AdminManagement />} />
                 <Route path="roles" element={<AdminRoleManagement />} />
+                <Route path="access-requests" element={<AdminAccessRequests />} />
                 <Route path="pages" element={<AdminPageEditor />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

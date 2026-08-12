@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useSiteCMS } from "@/hooks/useSiteCMS";
+
 const navLinks = [
   { name: "Jobs", href: "/jobs" },
   { name: "Competitions", href: "/competitions" },
@@ -24,6 +26,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const { settings } = useSiteCMS();
 
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -36,11 +39,17 @@ const Navbar = () => {
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#eadfd9] bg-[#fffdfb]/92 backdrop-blur-xl">
       <div className="flex h-[68px] w-full items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Merotalent home">
-          <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#c2410c] text-white shadow-lg shadow-[#c2410c]/20">
-            <Sparkles className="h-4 w-4" />
-          </span>
+          {settings.logo_url ? (
+            <img src={settings.logo_url} alt={settings.site_title || "Logo"} className="h-9 w-auto object-contain rounded-lg" />
+          ) : (
+            <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#071a3d] text-white shadow-lg shadow-[#071a3d]/20">
+              <Sparkles className="h-4 w-4" />
+            </span>
+          )}
           <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
-            Mero<span className="text-[#c2410c]">talent</span>
+            {settings.site_title ? settings.site_title.split(" - ")[0] : (
+              <>Mero<span className="text-[#071a3d]">talent</span></>
+            )}
           </span>
         </Link>
 

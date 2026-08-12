@@ -1,17 +1,19 @@
 /**
  * Centralized AI Generation Utility for MeroTalent.
- * Supports configurable API key from LocalStorage / Environment with smart fallbacks.
+ * Supports OpenAI (gpt-4o-mini) and Google Gemini (gemini-1.5-flash) with full parameter handling.
  */
 
 const AI_KEY_STORAGE_KEY = "merotalent_ai_api_key";
 const AI_PROVIDER_STORAGE_KEY = "merotalent_ai_provider";
 
-export interface InstituteAIPayload {
-  description: string;
-  courses_offered: string[];
-  contact_phone: string;
-  contact_email: string;
-  website: string;
+export interface AIParams {
+  title?: string;
+  category?: string;
+  location?: string;
+  type?: string;
+  keywords?: string;
+  tone?: string;
+  notes?: string;
 }
 
 export function getStoredAIApiKey(): string {
@@ -42,143 +44,141 @@ export function getStoredAIProvider(): string {
 }
 
 /**
- * Generates rich institute details (Description, Courses, Contact Phone, Email, Website)
- * using an AI model or smart structured generation.
+ * Universal LLM completion caller for OpenAI or Gemini
  */
+async function callLLM(systemPrompt: string, userPrompt: string): Promise<string | null> {
+  const apiKey = getStoredAIApiKey();
+  const provider = getStoredAIProvider();
+
+  if (!apiKey) return null;
+
+  if (provider === "gemini") {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+              },
+            ],
+          }),
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        return text || null;
+      }
+    } catch (e) {
+      console.warn("Gemini API call failed:", e);
+    }
+  }
+
+  // Default to OpenAI gpt-4o-mini
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+      }),
+    });
+    if (response.ok) {
+      const json = await response.json();
+      return json.choices[0]?.message?.content || null;
+    }
+  } catch (e) {
+    console.warn("OpenAI API call failed:", e);
+  }
+
+  return null;
+}
+
+export interface InstituteAIPayload {
+  description: string;
+  courses_offered: string[];
+  contact_phone: string;
+  contact_email: string;
+  website: string;
+}
+
 export async function generateInstituteDetails(
   name: string,
   type = "engineering",
   location = "Kathmandu, Nepal",
+  notes = ""
 ): Promise<InstituteAIPayload> {
-  const apiKey = getStoredAIApiKey();
+  const systemPrompt = "You are an academic directory expert for Nepal higher education. Return ONLY valid JSON: { \"description\": string, \"courses_offered\": string[], \"contact_phone\": string, \"contact_email\": string, \"website\": string }.";
+  const userPrompt = `Generate profile details for academic institution "${name}" in "${location}" specializing in "${type}". Additional notes: ${notes}. Return JSON format only.`;
 
-  if (apiKey) {
+  const raw = await callLLM(systemPrompt, userPrompt);
+  if (raw) {
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an academic directory expert for Nepal higher education. Return JSON with format: { description: string, courses_offered: string[], contact_phone: string, contact_email: string, website: string }.",
-            },
-            {
-              role: "user",
-              content: `Generate authentic profile information for the academic institution named "${name}" located in "${location}" specializing in "${type}". Return valid JSON matching the schema.`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-        }),
-      });
-
-      if (response.ok) {
-        const json = await response.json();
-        const parsed = JSON.parse(json.choices[0].message.content);
-        return {
-          description: parsed.description || "",
-          courses_offered: Array.isArray(parsed.courses_offered) ? parsed.courses_offered : [],
-          contact_phone: parsed.contact_phone || "",
-          contact_email: parsed.contact_email || "",
-          website: parsed.website || "",
-        };
-      }
-    } catch {
-      // Fallback to structured generator on API failure
-    }
+      const cleanJson = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      return {
+        description: parsed.description || "",
+        courses_offered: Array.isArray(parsed.courses_offered) ? parsed.courses_offered : [],
+        contact_phone: parsed.contact_phone || "+977-01-4400000",
+        contact_email: parsed.contact_email || `info@${name.toLowerCase().replace(/[^a-z]/g, "")}.edu.np`,
+        website: parsed.website || `https://${name.toLowerCase().replace(/[^a-z]/g, "")}.edu.np`,
+      };
+    } catch {}
   }
-
-  // Smart structured fallback based on institute category and location
-  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const domain = `${slug.slice(0, 15)}.edu.np`;
-
-  let courses: string[] = [];
-  if (type.includes("engineering")) {
-    courses = ["BE Civil Engineering", "BE Computer Engineering", "BE Electronics & Communication", "BE Electrical Engineering", "B.Architecture"];
-  } else if (type.includes("management") || type.includes("business")) {
-    courses = ["BBA (Bachelor of Business Administration)", "BBM (Bachelor of Business Management)", "BHM (Bachelor of Hotel Management)", "MBA"];
-  } else if (type.includes("medical") || type.includes("health")) {
-    courses = ["MBBS", "BSc Nursing", "B.Pharmacy", "BPH (Bachelor of Public Health)"];
-  } else if (type.includes("it") || type.includes("technology")) {
-    courses = ["BSc CSIT", "BCA (Bachelor of Computer Applications)", "BIT (Bachelor of Information Technology)", "BSc (Hons) Computing"];
-  } else {
-    courses = ["Bachelor of Arts (BA)", "Bachelor of Science (BSc)", "Bachelor of Business Studies (BBS)", "Master of Arts (MA)"];
-  }
-
-  const phoneCode = location.toLowerCase().includes("bhaktapur") ? "01-66" : location.toLowerCase().includes("lalitpur") ? "01-55" : "01-44";
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
 
   return {
-    description: `${name} is a premier educational institution located in ${location}. Known for academic excellence, modern campus facilities, and experienced faculty, the institute prepares students for global careers through practical learning, research initiatives, and strong industry linkages.`,
-    courses_offered: courses,
-    contact_phone: `+977-${phoneCode}${randomNum}`,
-    contact_email: `info@${domain}`,
-    website: `https://www.${domain}`,
+    description: `${name} is a leading academic institution located in ${location}, known for delivering high-quality education and research in ${type}.`,
+    courses_offered: ["B.Sc. Computer Science & IT", "BE Software Engineering", "Bachelor of Business Administration"],
+    contact_phone: "+977-01-4400000",
+    contact_email: `contact@${name.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu.np`,
+    website: `https://${name.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu.np`,
   };
 }
 
 export interface JobAIPayload {
   description: string;
   requirements: string[];
-  skills_required: string[];
+  skills: string[];
 }
 
-export async function generateJobDetails(title: string, category: string): Promise<JobAIPayload> {
-  const apiKey = getStoredAIApiKey();
-  if (apiKey) {
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a professional HR assistant. Return JSON with format: { description: string, requirements: string[], skills_required: string[] }.",
-            },
-            {
-              role: "user",
-              content: `Generate job details for a job post with title "${title}" in category "${category}". Provide a 2-3 sentence overview, a list of 4 key requirements, and a list of 4 key skills.`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-        }),
-      });
+export async function generateJobDetails(title: string, category: string, location: string, keywords = ""): Promise<JobAIPayload> {
+  const systemPrompt = "You are a professional HR recruiter in Nepal. Return ONLY valid JSON: { \"description\": string, \"requirements\": string[], \"skills\": string[] }.";
+  const userPrompt = `Generate job posting details for position "${title}" under category "${category}" in "${location}". Key focus: ${keywords}.`;
 
-      if (response.ok) {
-        const json = await response.json();
-        const parsed = JSON.parse(json.choices[0].message.content);
-        return {
-          description: parsed.description || "",
-          requirements: Array.isArray(parsed.requirements) ? parsed.requirements : [],
-          skills_required: Array.isArray(parsed.skills_required) ? parsed.skills_required : [],
-        };
-      }
-    } catch {
-      // Fallback
-    }
+  const raw = await callLLM(systemPrompt, userPrompt);
+  if (raw) {
+    try {
+      const cleanJson = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      return {
+        description: parsed.description || "",
+        requirements: Array.isArray(parsed.requirements) ? parsed.requirements : [],
+        skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+      };
+    } catch {}
   }
 
   return {
-    description: `We are looking for a dedicated and talented ${title} to join our growing team. In this role, you will collaborate with cross-functional teams to deliver high-quality solutions, drive innovation, and contribute to the successful execution of our core initiatives.`,
+    description: `We are seeking an outstanding ${title} to join our team in ${location}. You will drive key initiatives in ${category} and collaborate across teams to deliver high-impact results.`,
     requirements: [
-      "Bachelor's degree in a relevant field or equivalent experience",
-      "Proven track record of success in a similar role",
-      "Excellent communication and collaborative problem-solving skills",
-      "Ability to thrive in a fast-paced, dynamic work environment",
+      `3+ years experience in ${category} or related technical field`,
+      "Strong problem-solving and analytical capabilities",
+      "Excellent teamwork and communication skills",
     ],
-    skills_required: ["Collaboration", "Problem Solving", "Time Management", title.split(" ")[0] || "Technical Skills"],
+    skills: [category, "Problem Solving", "Teamwork", "Agile Workflow"],
   };
 }
 
@@ -188,51 +188,27 @@ export interface MentorAIPayload {
   title: string;
 }
 
-export async function generateMentorDetails(name: string, category: string): Promise<MentorAIPayload> {
-  const apiKey = getStoredAIApiKey();
-  if (apiKey) {
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a talent development assistant. Return JSON with format: { bio: string, skills: string[], title: string }.",
-            },
-            {
-              role: "user",
-              content: `Generate mentor profile details for "${name}" who is a mentor in "${category}". Return a concise professional bio, a list of 4 key skills, and a professional title/role.`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-        }),
-      });
+export async function generateMentorDetails(name: string, category: string, keywords = ""): Promise<MentorAIPayload> {
+  const systemPrompt = "You are a executive career coach. Return ONLY valid JSON: { \"bio\": string, \"skills\": string[], \"title\": string }.";
+  const userPrompt = `Generate a mentor profile for "${name}" who specializes in "${category}". Focus areas: ${keywords}.`;
 
-      if (response.ok) {
-        const json = await response.json();
-        const parsed = JSON.parse(json.choices[0].message.content);
-        return {
-          bio: parsed.bio || "",
-          skills: Array.isArray(parsed.skills) ? parsed.skills : [],
-          title: parsed.title || "",
-        };
-      }
-    } catch {
-      // Fallback
-    }
+  const raw = await callLLM(systemPrompt, userPrompt);
+  if (raw) {
+    try {
+      const cleanJson = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      return {
+        bio: parsed.bio || "",
+        skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+        title: parsed.title || "",
+      };
+    } catch {}
   }
 
   return {
-    bio: `${name} is an experienced mentor in the field of ${category}. With years of industry expertise and a passion for teaching, ${name} has guided numerous professionals and students towards achieving their career goals.`,
-    skills: [category, "Mentorship", "Leadership", "Career Guidance"],
-    title: `Senior Consultant / Mentor in ${category}`,
+    bio: `${name} is an accomplished mentor in ${category}. Passionate about helping students and young professionals navigate industry challenges and build successful careers.`,
+    skills: [category, "Career Growth", "Technical Leadership", "1-on-1 Coaching"],
+    title: `Senior Consultant & Mentor in ${category}`,
   };
 }
 
@@ -240,47 +216,21 @@ export interface EventAIPayload {
   description: string;
 }
 
-export async function generateEventDetails(title: string, format: string): Promise<EventAIPayload> {
-  const apiKey = getStoredAIApiKey();
-  if (apiKey) {
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are an event coordination assistant. Return JSON with format: { description: string }.",
-            },
-            {
-              role: "user",
-              content: `Generate a compelling marketing description for an event titled "${title}" in a "${format}" format.`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-        }),
-      });
+export async function generateEventDetails(title: string, format: string, topic = ""): Promise<EventAIPayload> {
+  const systemPrompt = "You are an event producer. Return ONLY valid JSON: { \"description\": string }.";
+  const userPrompt = `Write an engaging promotional description for event "${title}" in "${format}" format. Core topic: ${topic}.`;
 
-      if (response.ok) {
-        const json = await response.json();
-        const parsed = JSON.parse(json.choices[0].message.content);
-        return {
-          description: parsed.description || "",
-        };
-      }
-    } catch {
-      // Fallback
-    }
+  const raw = await callLLM(systemPrompt, userPrompt);
+  if (raw) {
+    try {
+      const cleanJson = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      return { description: parsed.description || "" };
+    } catch {}
   }
 
   return {
-    description: `Join us for "${title}"! This ${format} event brings together industry experts, enthusiasts, and learners to connect, share insights, and discuss key trends. Don't miss this opportunity to grow your network and skills.`,
+    description: `Join us for "${title}"! This ${format} session brings together top industry experts to explore ${topic || "cutting-edge skills and career pathways"}.`,
   };
 }
 
@@ -290,144 +240,74 @@ export interface CompanyAIPayload {
 }
 
 export async function generateCompanyDetails(name: string, type: string): Promise<CompanyAIPayload> {
-  const apiKey = getStoredAIApiKey();
-  if (apiKey) {
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a business writer assistant. Return JSON with format: { bio: string, industry: string }.",
-            },
-            {
-              role: "user",
-              content: `Generate company profile information for "${name}" which is a "${type}" company. Provide a concise company bio/mission statement and a specific industry classification.`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-        }),
-      });
+  const systemPrompt = "You are a business writer. Return ONLY valid JSON: { \"bio\": string, \"industry\": string }.";
+  const userPrompt = `Generate company overview for "${name}" operating in "${type}".`;
 
-      if (response.ok) {
-        const json = await response.json();
-        const parsed = JSON.parse(json.choices[0].message.content);
-        return {
-          bio: parsed.bio || "",
-          industry: parsed.industry || type,
-        };
-      }
-    } catch {
-      // Fallback
-    }
+  const raw = await callLLM(systemPrompt, userPrompt);
+  if (raw) {
+    try {
+      const cleanJson = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      return { bio: parsed.bio || "", industry: parsed.industry || type };
+    } catch {}
   }
 
   return {
-    bio: `${name} is an innovative player in the ${type} sector, committed to delivering cutting-edge solutions, exceeding customer expectations, and building sustainable growth in Nepal and beyond.`,
+    bio: `${name} is a leading organization in ${type}, delivering innovative solutions and empowering talent across Nepal.`,
     industry: type,
   };
 }
 
 export interface CompetitionAIPayload {
   description: string;
+  rules: string;
 }
 
-export async function generateCompetitionDetails(title: string): Promise<CompetitionAIPayload> {
-  const apiKey = getStoredAIApiKey();
-  if (apiKey) {
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a competition planning assistant. Return JSON with format: { description: string }.",
-            },
-            {
-              role: "user",
-              content: `Generate a detailed marketing and guidelines description for a challenge/competition titled "${title}".`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-        }),
-      });
+export async function generateCompetitionDetails(title: string, type: string): Promise<CompetitionAIPayload> {
+  const systemPrompt = "You are a hackathon coordinator. Return ONLY valid JSON: { \"description\": string, \"rules\": string }.";
+  const userPrompt = `Generate competition overview and rules for "${title}" (${type}).`;
 
-      if (response.ok) {
-        const json = await response.json();
-        const parsed = JSON.parse(json.choices[0].message.content);
-        return {
-          description: parsed.description || "",
-        };
-      }
-    } catch {
-      // Fallback
-    }
+  const raw = await callLLM(systemPrompt, userPrompt);
+  if (raw) {
+    try {
+      const cleanJson = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      return { description: parsed.description || "", rules: parsed.rules || "" };
+    } catch {}
   }
 
   return {
-    description: `Welcome to "${title}"! Register now to showcase your skills, solve challenging problems, collaborate with peers, and compete for amazing prizes. Open to all qualifying participants.`,
+    description: `Challenge your skills in "${title}"! Compete with top talent across Nepal for prizes, mentorship, and career recognition.`,
+    rules: "1. Original submissions only.\n2. Respect submission deadlines.\n3. Team size 1-4 members.",
   };
 }
 
 export interface AdAIPayload {
+  title: string;
   description: string;
+  ctaText: string;
 }
 
-export async function generateAdDetails(title: string): Promise<AdAIPayload> {
-  const apiKey = getStoredAIApiKey();
-  if (apiKey) {
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a copywriting marketing assistant. Return JSON with format: { description: string }.",
-            },
-            {
-              role: "user",
-              content: `Generate a compelling advertisement description / copy for an ad campaign titled "${title}".`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-        }),
-      });
+export async function generateAdDetails(targetAudience: string, goal: string): Promise<AdAIPayload> {
+  const systemPrompt = "You are a digital advertising copywriter. Return ONLY valid JSON: { \"title\": string, \"description\": string, \"ctaText\": string }.";
+  const userPrompt = `Write ad banner copy for target audience "${targetAudience}" with goal "${goal}".`;
 
-      if (response.ok) {
-        const json = await response.json();
-        const parsed = JSON.parse(json.choices[0].message.content);
-        return {
-          description: parsed.description || "",
-        };
-      }
-    } catch {
-      // Fallback
-    }
+  const raw = await callLLM(systemPrompt, userPrompt);
+  if (raw) {
+    try {
+      const cleanJson = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      return {
+        title: parsed.title || "",
+        description: parsed.description || "",
+        ctaText: parsed.ctaText || "Learn More",
+      };
+    } catch {}
   }
 
   return {
-    description: `Don't miss out on "${title}"! Click to explore our exclusive offers, find out more about the platform, and take advantage of our services today.`,
+    title: "Accelerate Your Future with MeroTalent",
+    description: "Connect with leading colleges, top engineering employers, and expert mentors today.",
+    ctaText: "Explore Opportunities",
   };
 }
-

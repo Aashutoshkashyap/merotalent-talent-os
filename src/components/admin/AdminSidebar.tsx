@@ -66,6 +66,7 @@ const systemItems = [
   { icon: Bell, label: "Notifications", href: "/admin/notifications" },
   { icon: MessageSquareText, label: "Support queries", href: "/admin/queries" },
   { icon: ShieldCheck, label: "Roles & access", href: "/admin/roles" },
+  { icon: ShieldCheck, label: "Sub-Admin Requests", href: "/admin/access-requests" },
   { icon: UserCog, label: "Admin team", href: "/admin/admins" },
   { icon: PanelTop, label: "Page editor", href: "/admin/pages" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },

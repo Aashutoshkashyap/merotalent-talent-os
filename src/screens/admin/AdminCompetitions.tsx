@@ -99,7 +99,7 @@ const AdminCompetitions = () => {
 
     setIsAiGenerating(true);
     try {
-      const aiResult = await generateCompetitionDetails(newCompetition.title);
+      const aiResult = await generateCompetitionDetails(newCompetition.title, newCompetition.type || "Hackathon");
       setNewCompetition((current) => ({
         ...current,
         description: current.description || aiResult.description,
