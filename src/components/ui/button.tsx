@@ -9,20 +9,20 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(249,115,22,0.18)] hover:-translate-y-0.5 hover:bg-[#9a3412] hover:shadow-[0_12px_24px_rgba(249,115,22,0.24)] active:translate-y-0",
+        default: "bg-[#071a3d] text-white shadow-[0_8px_18px_rgba(7,26,61,0.22)] hover:-translate-y-0.5 hover:bg-[#05132d] hover:shadow-[0_12px_24px_rgba(7,26,61,0.3)] active:translate-y-0",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-lg hover:shadow-destructive/25",
-        outline: "border border-[#e6ddd6] bg-white text-foreground shadow-[0_4px_12px_rgba(77,48,31,0.04)] hover:border-[#fdba74] hover:bg-[#fffaf7]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/90 hover:shadow-lg hover:shadow-secondary/25 active:scale-[0.98]",
-        ghost: "hover:bg-[#fff1e8] hover:text-primary",
-        link: "text-primary underline-offset-4 hover:underline",
+        outline: "border border-[#e2e8f0] bg-[#f8fafc] text-[#071a3d] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#071a3d] hover:bg-white",
+        secondary: "bg-[#0f295a] text-white hover:bg-[#071a3d] hover:shadow-lg active:scale-[0.98]",
+        ghost: "hover:bg-[#f1f5f9] hover:text-[#071a3d]",
+        link: "text-[#071a3d] underline-offset-4 hover:underline",
         // Hero variants for landing page
-        hero: "bg-primary text-primary-foreground shadow-[0_10px_24px_rgba(249,115,22,0.22)] hover:-translate-y-0.5 hover:bg-[#9a3412] hover:shadow-[0_14px_30px_rgba(249,115,22,0.28)]",
-        "hero-secondary": "border border-[#e6ddd6] bg-white text-foreground shadow-[0_6px_18px_rgba(77,48,31,0.06)] hover:border-[#fdba74] hover:bg-[#fffaf7]",
-        "hero-outline": "border-2 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground",
+        hero: "bg-[#071a3d] text-white shadow-[0_10px_24px_rgba(7,26,61,0.25)] hover:-translate-y-0.5 hover:bg-[#05132d] hover:shadow-[0_14px_30px_rgba(7,26,61,0.35)]",
+        "hero-secondary": "border border-[#cbd5e1] bg-[#f8fafc] text-[#071a3d] shadow-[0_6px_18px_rgba(0,0,0,0.04)] hover:border-[#071a3d] hover:bg-white",
+        "hero-outline": "border-2 border-white/30 bg-transparent text-white hover:bg-white/10 hover:border-white",
         // Accent button
-        accent: "bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-lg hover:shadow-accent/25 active:scale-[0.98]",
+        accent: "bg-[#071a3d] text-white hover:bg-[#05132d] hover:shadow-lg active:scale-[0.98]",
         // Success button for positive actions
-        success: "bg-success text-success-foreground hover:bg-success/90 hover:shadow-lg hover:shadow-success/25",
+        success: "bg-emerald-700 text-white hover:bg-emerald-800 hover:shadow-lg",
       },
       size: {
         default: "h-10 px-5 py-2",

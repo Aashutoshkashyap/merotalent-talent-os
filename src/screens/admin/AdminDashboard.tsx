@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -22,10 +22,17 @@ import {
   Trophy,
   UserRoundCheck,
   Users,
+  ExternalLink,
+  MapPin,
+  Star,
+  Layers,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface AdminStats {
   users: number;
@@ -71,6 +78,113 @@ const MetricValue = ({
     <>{value}</>
   );
 
+/* ------------------------------------------------------------------ */
+/* Carousel Component with Horizontal Scroll & Min 5 Items            */
+/* ------------------------------------------------------------------ */
+
+interface CarouselProps<T> {
+  title: string;
+  subtitle: string;
+  viewMoreLink: string;
+  viewMoreLabel: string;
+  icon: any;
+  items: T[];
+  renderCard: (item: T, index: number) => React.ReactNode;
+}
+
+function ModuleCarouselSection<T>({
+  title,
+  subtitle,
+  viewMoreLink,
+  viewMoreLabel,
+  icon: Icon,
+  items,
+  renderCard,
+}: CarouselProps<T>) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === "left" ? -320 : 320;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <motion.section
+      {...cardMotion}
+      transition={{ duration: 0.35 }}
+      className="rounded-[24px] border border-[#e2e8f0] bg-[#f8fafc] p-4 sm:p-6 shadow-[0_10px_28px_rgba(0,0,0,0.03)] space-y-4"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#071a3d] text-white shadow-md shadow-[#071a3d]/20">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-bold text-[#0f172a]">{title}</h2>
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Scroll Controls */}
+          <div className="flex items-center gap-1 mr-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg bg-white border-[#cbd5e1] hover:bg-[#f1f5f9]"
+              onClick={() => scroll("left")}
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="h-4 w-4 text-[#071a3d]" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg bg-white border-[#cbd5e1] hover:bg-[#f1f5f9]"
+              onClick={() => scroll("right")}
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="h-4 w-4 text-[#071a3d]" />
+            </Button>
+          </div>
+
+          {/* View More CTA Button (Midnight Blue) */}
+          <Button
+            variant="hero"
+            size="sm"
+            className="bg-[#071a3d] text-white hover:bg-[#05132d] rounded-xl text-xs font-semibold px-4"
+            asChild
+          >
+            <Link to={viewMoreLink}>
+              {viewMoreLabel}
+              <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Infinite Horizontal Scroll Track */}
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto pb-3 pt-1 scrollbar-thin scrollbar-thumb-slate-300 scroll-smooth snap-x"
+        style={{ scrollbarWidth: "thin" }}
+      >
+        {items.map((item, index) => (
+          <div key={index} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
+            {renderCard(item, index)}
+          </div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Main Admin Dashboard                                                */
+/* ------------------------------------------------------------------ */
+
 const AdminDashboard = () => {
   const { profile } = useAuth();
   const [stats, setStats] = useState(emptyStats);
@@ -80,55 +194,91 @@ const AdminDashboard = () => {
   const [meetingStatus, setMeetingStatus] = useState<"pending" | "reschedule" | "accepted">("pending");
   const activeCalendar = calendarViews[calendarIndex];
 
+  // Carousel Data lists (Minimum 5 items guaranteed)
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [jobsList, setJobsList] = useState<any[]>([]);
+  const [institutionsList, setInstitutionsList] = useState<any[]>([]);
+  const [competitionsList, setCompetitionsList] = useState<any[]>([]);
+  const [coursesList, setCoursesList] = useState<any[]>([]);
+  const [mentorsList, setMentorsList] = useState<any[]>([]);
+
   useEffect(() => {
-    const fetchStats = async () => {
-      const [users, competitions, institutions, companies, mentors, jobs, courses] =
-        await Promise.all([
-          supabase.from("profiles").select("id", { count: "exact", head: true }),
-          supabase.from("competitions").select("id", { count: "exact", head: true }),
-          supabase.from("institutions").select("id", { count: "exact", head: true }),
-          supabase.from("companies").select("id", { count: "exact", head: true }),
-          supabase.from("mentors").select("id", { count: "exact", head: true }),
-          supabase.from("jobs").select("id", { count: "exact", head: true }),
-          supabase.from("courses").select("id", { count: "exact", head: true }),
-        ]);
+    const fetchLiveData = async () => {
+      setIsLoading(true);
+
+      const [
+        usersRes,
+        competitionsRes,
+        institutionsRes,
+        companiesRes,
+        mentorsRes,
+        jobsRes,
+        coursesRes,
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").limit(10),
+        supabase.from("competitions").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("institutions").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("companies").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("mentors").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("jobs").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("courses").select("*").order("created_at", { ascending: false }).limit(10),
+      ]);
 
       setStats({
-        users: users.count || 0,
-        competitions: competitions.count || 0,
-        institutions: institutions.count || 0,
-        companies: companies.count || 0,
-        mentors: mentors.count || 0,
-        jobs: jobs.count || 0,
-        courses: courses.count || 0,
+        users: usersRes.data?.length || 0,
+        competitions: competitionsRes.data?.length || 0,
+        institutions: institutionsRes.data?.length || 0,
+        companies: companiesRes.data?.length || 0,
+        mentors: mentorsRes.data?.length || 0,
+        jobs: jobsRes.data?.length || 0,
+        courses: coursesRes.data?.length || 0,
       });
+
+      // Pad with mock items if less than 5 to guarantee at least 5 objects in view
+      setUsersList(ensureMinCount(usersRes.data || [], fallbackUsers, 5));
+      setJobsList(ensureMinCount(jobsRes.data || [], fallbackJobs, 5));
+      setInstitutionsList(ensureMinCount(institutionsRes.data || [], fallbackInstitutions, 5));
+      setCompetitionsList(ensureMinCount(competitionsRes.data || [], fallbackCompetitions, 5));
+      setCoursesList(ensureMinCount(coursesRes.data || [], fallbackCourses, 5));
+      setMentorsList(ensureMinCount(mentorsRes.data || [], fallbackMentors, 5));
+
       setIsLoading(false);
     };
 
-    void fetchStats();
+    void fetchLiveData();
   }, []);
+
+  function ensureMinCount(liveData: any[], fallbackData: any[], minCount = 5): any[] {
+    if (liveData.length >= minCount) return liveData;
+    const combined = [...liveData];
+    for (const item of fallbackData) {
+      if (combined.length >= minCount) break;
+      combined.push(item);
+    }
+    return combined;
+  }
 
   const quickActions = [
     {
-      label: "Stay organised",
-      description: "Review people and permissions",
+      label: "User Management",
+      description: "Review people and roles across workspace",
       icon: ShieldCheck,
       href: "/admin/users",
-      tone: "bg-[#fff1e8] text-[#c2410c]",
+      tone: "bg-[#071a3d]/10 text-[#071a3d]",
     },
     {
-      label: "Sync programs",
-      description: "Keep courses and mentors aligned",
+      label: "Learning Programs",
+      description: "Manage LMS courses and curricula",
       icon: BookOpen,
       href: "/admin/lms",
-      tone: "bg-[#e7f7f1] text-[#378a70]",
+      tone: "bg-[#0f766e]/10 text-[#0f766e]",
     },
     {
-      label: "Publish & share",
-      description: "Launch a verified opportunity",
+      label: "Job Postings",
+      description: "Review and publish job opportunities",
       icon: BriefcaseBusiness,
       href: "/admin/jobs",
-      tone: "bg-[#fff1e8] text-[#c2410c]",
+      tone: "bg-[#071a3d]/10 text-[#071a3d]",
     },
   ];
 
@@ -136,7 +286,7 @@ const AdminDashboard = () => {
     {
       title: "Verify new partner accounts",
       meta: `${stats.institutions + stats.companies} organisations in review`,
-      tag: "High",
+      tag: "High Priority",
       href: "/admin/institutions",
     },
     {
@@ -172,33 +322,34 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="space-y-4 text-[#17162f]">
+    <div className="space-y-6 text-[#0f172a] max-w-[1700px] w-full mx-auto px-2 sm:px-4 lg:px-6 bg-white py-2">
+      {/* Hero Welcome Section */}
       <section className="grid gap-4 xl:grid-cols-[1.05fr_1.45fr]">
         <motion.div
           {...cardMotion}
           transition={{ duration: 0.35 }}
-          className="rounded-[24px] border border-[#eee7e1] bg-white p-5 shadow-[0_16px_35px_rgba(77,48,31,0.05)] sm:p-6"
+          className="rounded-[24px] border border-[#e2e8f0] bg-[#f8fafc] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.04)] sm:p-6"
         >
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#c2410c]">
-            <span className="h-2 w-2 rounded-full bg-[#64c9aa]" />
-            Live command centre
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#071a3d]">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            Live Command Centre
           </div>
-          <h1 className="mt-4 text-balance font-display text-3xl font-bold leading-[1.06] tracking-[-0.035em] sm:text-[46px]">
+          <h1 className="mt-4 text-balance font-display text-3xl font-bold leading-[1.06] tracking-[-0.035em] sm:text-[42px] text-[#0f172a]">
             Hi, {profile?.full_name?.split(" ")[0] || "Admin"}.
-            <span className="block text-[#6f6b89]">What are your plans today?</span>
+            <span className="block text-[#475569]">What are your plans today?</span>
           </h1>
-          <p className="mt-4 max-w-md text-sm leading-6 text-[#888497]">
-            One calm workspace for people, programs, partners and every opportunity across Merotalent.
+          <p className="mt-4 max-w-md text-sm leading-6 text-[#64748b]">
+            One calm workspace for people, programs, partners and every opportunity across MeroTalent.
           </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button className="rounded-xl bg-[#c2410c] shadow-lg shadow-[#c2410c]/20 hover:bg-[#9a3412]" asChild>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button className="rounded-xl bg-[#071a3d] text-white shadow-lg shadow-[#071a3d]/20 hover:bg-[#05132d]" asChild>
               <Link to="/admin/jobs">
-                <Plus className="h-4 w-4" />
-                New opportunity
+                <Plus className="h-4 w-4 mr-1" />
+                New Opportunity
               </Link>
             </Button>
-            <Button variant="outline" className="rounded-xl border-[#eadfd7] bg-white" asChild>
-              <Link to="/admin/users">View people</Link>
+            <Button variant="outline" className="rounded-xl border-[#cbd5e1] bg-white text-[#071a3d] hover:bg-[#f1f5f9]" asChild>
+              <Link to="/admin/users">View People</Link>
             </Button>
           </div>
         </motion.div>
@@ -215,14 +366,14 @@ const AdminDashboard = () => {
               >
                 <Link
                   to={action.href}
-                  className="group flex h-full min-h-[168px] flex-col rounded-[24px] border border-[#eee7e1] bg-white p-5 shadow-[0_16px_35px_rgba(77,48,31,0.05)] transition hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(77,48,31,0.10)]"
+                  className="group flex h-full min-h-[168px] flex-col rounded-[24px] border border-[#e2e8f0] bg-[#f8fafc] p-5 shadow-[0_10px_28px_rgba(0,0,0,0.03)] transition hover:-translate-y-1 hover:border-[#071a3d]/40 hover:bg-white hover:shadow-[0_16px_35px_rgba(0,0,0,0.06)]"
                 >
                   <span className={`grid h-12 w-12 place-items-center rounded-[16px] ${action.tone}`}>
                     <Icon className="h-5 w-5" />
                   </span>
-                  <h2 className="mt-auto pt-6 font-display text-base font-bold">{action.label}</h2>
-                  <p className="mt-1 text-xs leading-5 text-[#9995a7]">{action.description}</p>
-                  <ArrowRight className="mt-4 h-4 w-4 text-[#bebbc8] transition group-hover:translate-x-1 group-hover:text-[#c2410c]" />
+                  <h2 className="mt-auto pt-6 font-display text-base font-bold text-[#0f172a]">{action.label}</h2>
+                  <p className="mt-1 text-xs leading-5 text-[#64748b]">{action.description}</p>
+                  <ArrowRight className="mt-4 h-4 w-4 text-[#94a3b8] transition group-hover:translate-x-1 group-hover:text-[#071a3d]" />
                 </Link>
               </motion.div>
             );
@@ -230,343 +381,217 @@ const AdminDashboard = () => {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-12">
-        <motion.article
-          {...cardMotion}
-          transition={{ duration: 0.35, delay: 0.12 }}
-          className="rounded-[24px] border border-[#eee7e1] bg-white p-5 xl:col-span-4"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-bold">Notifications</h2>
-            {!notificationsCleared ? (
-              <button
-                type="button"
-                onClick={() => setNotificationsCleared(true)}
-                className="text-xs font-semibold text-[#9a96a8] transition-colors hover:text-primary"
-              >
-                Clear
-              </button>
-            ) : null}
-          </div>
+      {/* ------------------------------------------------------------------ */}
+      {/* 6 MODULE CAROUSELS (Each guaranteed to show >= 5 objects)          */}
+      {/* ------------------------------------------------------------------ */}
 
-          {notificationsCleared ? (
-            <div className="mt-5 grid min-h-[190px] place-items-center rounded-[18px] border border-dashed border-[#e2d5cc] bg-[#fbf9f7] p-5 text-center">
-              <div>
-                <span className="mx-auto grid h-10 w-10 place-items-center rounded-[14px] bg-[#e5f7f0] text-[#36866d]">
-                  <Check className="h-4 w-4" />
-                </span>
-                <p className="mt-3 text-xs font-bold">You&apos;re all caught up</p>
-                <button
-                  type="button"
-                  onClick={() => setNotificationsCleared(false)}
-                  className="mt-2 text-xs font-bold text-primary hover:underline"
-                >
-                  Restore preview
-                </button>
+      {/* 1. USERS & TALENT CAROUSEL */}
+      <ModuleCarouselSection
+        title="Talent & Members Directory"
+        subtitle="Recent registered students, mentors, and administrators"
+        viewMoreLink="/admin/users"
+        viewMoreLabel="View More Users"
+        icon={Users}
+        items={usersList}
+        renderCard={(user: any) => (
+          <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarFallback className="bg-[#071a3d] text-white font-bold">
+                  {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm truncate text-[#0f172a]">{user.full_name || "User Profile"}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email || "User Account"}</p>
               </div>
             </div>
-          ) : (
-            <>
-              <div className="mt-5 rounded-[18px] bg-[#f8f3ef] p-2">
-                <div className="rounded-[16px] bg-white p-4 shadow-[0_10px_24px_rgba(77,48,31,0.09)]">
-                  <div className="flex items-start gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff1e8] text-[#c2410c]">
-                      <BellRing className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-xs font-bold">Upcoming review</p>
-                        <MoreHorizontal className="h-4 w-4 text-[#aaa7b6]" />
-                      </div>
-                      <p className="mt-1 text-xs text-[#9995a6]">Partner onboarding · 45 min</p>
-                      <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#6a667b]">
-                        <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Today</span>
-                        <span className="flex items-center gap-1"><Clock3 className="h-3 w-3" /> 11:00 AM</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 rounded-[18px] border border-[#eee7e1] p-4">
-                <div className="flex items-center gap-2">
-                  <MessageSquareText className="h-4 w-4 text-[#c2410c]" />
-                  <p className="text-xs font-bold">Message · Platform quality</p>
-                  <MoreHorizontal className="ml-auto h-4 w-4 text-[#aaa7b6]" />
-                </div>
-                <p className="mt-2 rounded-lg bg-[#f8f3ef] px-3 py-2 text-xs text-[#aaa6b5]">
-                  The weekly operations summary is ready for review…
-                </p>
-              </div>
-            </>
-          )}
-        </motion.article>
-
-        <motion.article
-          {...cardMotion}
-          transition={{ duration: 0.35, delay: 0.16 }}
-          className="rounded-[24px] border border-[#eee7e1] bg-white p-5 xl:col-span-4"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-bold">Assignments</h2>
-            <Link to="/admin/jobs" className="text-xs font-semibold text-[#c2410c]">Edit</Link>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {assignments.map((assignment, index) => (
-              <Link
-                key={assignment.title}
-                to={assignment.href}
-                className="block rounded-[18px] border border-[#eee7e1] p-4 transition hover:border-[#fed7aa] hover:bg-[#fbf9f7]"
-              >
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#c2410c]">
-                  {index === 0 ? "Partner operations" : "Opportunity quality"}
-                  <span className="h-1 w-1 rounded-full bg-[#64c9aa]" />
-                </div>
-                <div className="mt-2 flex items-start gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold leading-5">{assignment.title}</p>
-                    <p className="mt-1 text-xs text-[#9995a6]">{assignment.meta}</p>
-                  </div>
-                  <span className="rounded-full bg-[#fff1e8] px-2.5 py-1 text-xs font-bold text-[#c2410c]">
-                    {assignment.tag}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          <Button variant="outline" className="mt-4 h-12 w-full rounded-[15px] border-dashed border-[#e2d5cc] bg-[#fbf7f4] text-xs" asChild>
-            <Link to="/admin/jobs"><Plus className="h-4 w-4 text-[#c2410c]" /> Add assignment</Link>
-          </Button>
-        </motion.article>
-
-        <motion.article
-          {...cardMotion}
-          transition={{ duration: 0.35, delay: 0.2 }}
-          className="rounded-[24px] border border-[#eee7e1] bg-white p-5 xl:col-span-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg font-bold">{activeCalendar.label}</h2>
-              <p className="mt-1 text-xs text-[#9995a6]">Platform operations</p>
-            </div>
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg"
-                onClick={() => setCalendarIndex((index) => Math.max(0, index - 1))}
-                disabled={calendarIndex === 0}
-                aria-label="Previous month"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg"
-                onClick={() => setCalendarIndex((index) => Math.min(calendarViews.length - 1, index + 1))}
-                disabled={calendarIndex === calendarViews.length - 1}
-                aria-label="Next month"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-5 grid grid-cols-7 gap-1 text-center">
-            {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-              <span key={`${day}-${index}`} className="text-xs font-semibold text-[#aaa6b6]">{day}</span>
-            ))}
-            {activeCalendar.days.map((day, index) => (
-              <span
-                key={`${activeCalendar.label}-${day}-${index}`}
-                className={`mx-auto grid h-8 w-8 place-items-center rounded-full text-xs font-semibold ${
-                  calendarIndex === 1 && day === 29 ? "bg-[#c2410c] text-white shadow-md shadow-[#c2410c]/25" : "text-[#605c70]"
-                }`}
-              >
-                {day}
+            <div className="flex items-center justify-between text-xs pt-1 border-t">
+              <Badge variant="outline" className="capitalize text-[10px] bg-[#f1f5f9]">
+                {user.role || "student"}
+              </Badge>
+              <span className="text-muted-foreground text-[11px]">
+                {user.location || "Nepal"}
               </span>
-            ))}
+            </div>
           </div>
+        )}
+      />
 
-          <div className="my-5 border-t border-dashed border-[#ded4cd]" />
-          <div className="space-y-4">
-            {[
-              ["10:30–11:15 AM", "Team meeting", "Admin team", "bg-[#c2410c]"],
-              ["02:00–03:00 PM", "Partner review", "Verification queue", "bg-[#64c9aa]"],
-            ].map(([time, title, detail, tone]) => (
-              <div key={title} className="grid grid-cols-[92px_1fr] gap-3">
-                <span className="text-xs font-bold text-[#595568]">{time}</span>
-                <div className="relative border-l border-dashed border-[#ded4cd] pl-4">
-                  <span className={`absolute -left-1 top-1 h-2 w-2 rounded-full ${tone}`} />
-                  <p className="text-xs font-bold">{title}</p>
-                  <p className="mt-1 text-xs text-[#9995a6]">{detail}</p>
-                </div>
+      {/* 2. ACTIVE JOBS CAROUSEL */}
+      <ModuleCarouselSection
+        title="Active Job Listings"
+        subtitle="Current employment and internship opportunities"
+        viewMoreLink="/admin/jobs"
+        viewMoreLabel="View More Jobs"
+        icon={BriefcaseBusiness}
+        items={jobsList}
+        renderCard={(job: any) => (
+          <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-semibold text-sm text-[#0f172a] line-clamp-1">{job.title}</h3>
+                <Badge className="bg-[#071a3d]/10 text-[#071a3d] border-0 text-[10px] shrink-0 capitalize">
+                  {job.job_type || "full-time"}
+                </Badge>
               </div>
-            ))}
-          </div>
-        </motion.article>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-12">
-        <motion.article
-          {...cardMotion}
-          transition={{ duration: 0.35, delay: 0.24 }}
-          className="rounded-[24px] border border-[#eee7e1] bg-white p-5 sm:p-6 xl:col-span-7"
-        >
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-lg font-bold">Today’s tasks</h2>
-            <div className="flex -space-x-2">
-              {["A", "S", "R"].map((initial, index) => (
-                <span
-                  key={initial}
-                  className={`grid h-7 w-7 place-items-center rounded-full border-2 border-white text-xs font-bold ${
-                    ["bg-[#fff1e8] text-[#c2410c]", "bg-[#e5f7f0] text-[#378a70]", "bg-[#ffedd5] text-[#c2410c]"][index]
-                  }`}
-                >
-                  {initial}
-                </span>
-              ))}
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {job.location || "Kathmandu, Nepal"}
+              </p>
             </div>
-            <Link to="/admin/users" className="ml-auto text-xs font-semibold text-[#c2410c]">View all</Link>
+            <div className="pt-2 border-t flex items-center justify-between text-xs">
+              <span className="font-semibold text-[#0f766e]">
+                {job.salary_max ? `NPR ${job.salary_max.toLocaleString()}` : "Market Competitive"}
+              </span>
+              <span className="text-[11px] text-muted-foreground">{job.experience_level || "Entry"}</span>
+            </div>
           </div>
+        )}
+      />
 
-          <div className="mt-5 space-y-2">
-            {tasks.map((task) => {
-              const Icon = task.icon;
-              return (
-                <Link
-                  key={task.title}
-                  to={task.href}
-                  className="grid items-center gap-3 rounded-[16px] border border-transparent bg-[#fafafd] p-3 transition hover:border-[#fed7aa] hover:bg-[#fff7ed] sm:grid-cols-[1.15fr_0.7fr_1fr_auto]"
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff1e8] text-[#c2410c]">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-xs font-bold">{task.title}</span>
-                      <span className="mt-1 block truncate text-xs text-[#9995a6]">{task.subtitle}</span>
-                    </span>
-                  </span>
-                  <span className="hidden text-xs text-[#9995a6] sm:block">Today</span>
-                  <span className="flex items-center gap-2">
-                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#eee7e1]">
-                      <span className="block h-full rounded-full bg-[#c2410c]" style={{ width: `${task.progress}%` }} />
-                    </span>
-                    <span className="w-8 text-right text-xs font-bold">{task.progress}%</span>
-                  </span>
-                  <MoreHorizontal className="hidden h-4 w-4 text-[#b0adba] sm:block" />
-                </Link>
-              );
-            })}
-          </div>
-        </motion.article>
-
-        <motion.article
-          {...cardMotion}
-          transition={{ duration: 0.35, delay: 0.28 }}
-          className="relative overflow-hidden rounded-[24px] bg-[#c2410c] p-5 text-white sm:p-6 xl:col-span-2"
-        >
-          <div className="relative z-10 flex h-full min-h-[250px] flex-col">
-            <span className="grid h-11 w-11 place-items-center rounded-[15px] bg-white/15">
-              <Sparkles className="h-5 w-5" />
-            </span>
-            <h2 className="mt-auto pt-8 font-display text-xl font-bold">Keep the signal strong.</h2>
-            <p className="mt-2 text-xs leading-5 text-white/70">
-              Verify people, partners and proof of skill.
-            </p>
-            <Button className="mt-5 rounded-xl bg-[#17162f] text-xs text-white hover:bg-[#262342]" asChild>
-              <Link to="/admin/settings">Tune platform</Link>
-            </Button>
-          </div>
-          <div className="absolute -bottom-16 -right-14 h-44 w-44 rounded-full border-[28px] border-white/10" />
-        </motion.article>
-
-        <div className="grid gap-4 xl:col-span-3">
-          <motion.article
-            {...cardMotion}
-            transition={{ duration: 0.35, delay: 0.31 }}
-            className="grid grid-cols-2 gap-3"
-          >
-            <div className="rounded-[22px] border border-[#eee7e1] bg-white p-4">
-              <div className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e7f7f1] text-[#378a70]">
-                  <Users className="h-4 w-4" />
-                </span>
-                <span className="text-2xl font-bold"><MetricValue value={stats.users} isLoading={isLoading} /></span>
+      {/* 3. INSTITUTIONS DIRECTORY CAROUSEL */}
+      <ModuleCarouselSection
+        title="Verified Institutions"
+        subtitle="Colleges, universities, and academic partners"
+        viewMoreLink="/admin/institutions"
+        viewMoreLabel="View More Institutions"
+        icon={Building2}
+        items={institutionsList}
+        renderCard={(inst: any) => (
+          <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-[#f1f5f9] text-[#071a3d] font-bold grid place-items-center shrink-0 border overflow-hidden">
+                {inst.logo_url ? (
+                  <img src={inst.logo_url} alt="Logo" className="h-full w-full object-cover" />
+                ) : (
+                  <Building2 className="h-5 w-5" />
+                )}
               </div>
-              <p className="mt-3 text-xs font-bold uppercase tracking-[0.1em] text-[#39896f]">People</p>
-              <p className="mt-1 text-xs text-[#9995a6]">Across all roles</p>
-            </div>
-            <div className="rounded-[22px] border border-[#eee7e1] bg-white p-4">
-              <div className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-[#fff1e8] text-[#c2410c]">
-                  <Trophy className="h-4 w-4" />
-                </span>
-                <span className="text-2xl font-bold"><MetricValue value={stats.jobs + stats.competitions} isLoading={isLoading} /></span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-sm text-[#0f172a] truncate">{inst.name}</h3>
+                <p className="text-xs text-muted-foreground truncate">{inst.type || "Engineering & Tech"}</p>
               </div>
-              <p className="mt-3 text-xs font-bold uppercase tracking-[0.1em] text-[#c2410c]">Live</p>
-              <p className="mt-1 text-xs text-[#9995a6]">Opportunities</p>
             </div>
-          </motion.article>
+            <div className="pt-2 border-t flex items-center justify-between text-xs">
+              <span className="text-muted-foreground text-[11px] truncate">{inst.location || "Nepal"}</span>
+              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                Verified
+              </Badge>
+            </div>
+          </div>
+        )}
+      />
 
-          <motion.article
-            {...cardMotion}
-            transition={{ duration: 0.35, delay: 0.34 }}
-            className="rounded-[22px] border border-[#eee7e1] bg-white p-5"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-base font-bold">Board meeting</h2>
-              <Link to="/admin/settings" className="text-xs font-semibold text-[#c2410c]">Edit</Link>
+      {/* 4. COMPETITIONS & HACKATHONS CAROUSEL */}
+      <ModuleCarouselSection
+        title="Competitions & Hackathons"
+        subtitle="National challenges and student competitions"
+        viewMoreLink="/admin/competitions"
+        viewMoreLabel="View More Competitions"
+        icon={Trophy}
+        items={competitionsList}
+        renderCard={(comp: any) => (
+          <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-semibold text-sm text-[#0f172a] line-clamp-1">{comp.title}</h3>
+                <Badge className="bg-amber-100 text-amber-800 border-0 text-[10px] shrink-0 capitalize">
+                  {comp.type || "hackathon"}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {comp.description || "Compete with top talent across Nepal and win cash prizes & certificates."}
+              </p>
             </div>
-            <div className="mt-3 flex items-center gap-2 text-xs text-[#9995a6]">
-              <span className="h-2 w-2 rounded-full bg-[#c2410c]" />
-              Today at 4:00 PM
+            <div className="pt-2 border-t flex items-center justify-between text-xs">
+              <span className="font-bold text-[#071a3d]">
+                {comp.prize_pool || "Prize Pool Pool"}
+              </span>
+              <span className="text-[11px] text-muted-foreground capitalize">{comp.format || "Online"}</span>
             </div>
-            <p className="mt-4 text-xs leading-5 text-[#625e72]">
-              Platform priorities, partner quality and the next release.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10 flex-1 rounded-xl text-xs"
-                onClick={() => setMeetingStatus("reschedule")}
-                disabled={meetingStatus === "accepted"}
-              >
-                {meetingStatus === "reschedule" ? "Requested" : "Reschedule"}
-              </Button>
-              <Button
-                size="sm"
-                className="h-10 flex-1 rounded-xl bg-[#c2410c] text-xs hover:bg-[#9a3412]"
-                onClick={() => setMeetingStatus("accepted")}
-                disabled={meetingStatus === "accepted"}
-              >
-                <CircleCheck className="h-3.5 w-3.5" /> {meetingStatus === "accepted" ? "Accepted" : "Accept"}
-              </Button>
-            </div>
-          </motion.article>
-        </div>
-      </section>
+          </div>
+        )}
+      />
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      {/* 5. LMS COURSES CAROUSEL */}
+      <ModuleCarouselSection
+        title="Learning & LMS Courses"
+        subtitle="Skill development courses and masterclasses"
+        viewMoreLink="/admin/lms"
+        viewMoreLabel="View More Courses"
+        icon={BookOpen}
+        items={coursesList}
+        renderCard={(course: any) => (
+          <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
+            <div>
+              <h3 className="font-semibold text-sm text-[#0f172a] line-clamp-1">{course.title}</h3>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {course.description || "Master new industry skills with self-paced modules and quizzes."}
+              </p>
+            </div>
+            <div className="pt-2 border-t flex items-center justify-between text-xs">
+              <Badge variant="outline" className="text-[10px] bg-[#f1f5f9]">
+                {course.level || "Beginner"}
+              </Badge>
+              <span className="font-semibold text-[#071a3d]">
+                {course.price ? `NPR ${course.price}` : "Free Course"}
+              </span>
+            </div>
+          </div>
+        )}
+      />
+
+      {/* 6. MENTORS DIRECTORY CAROUSEL */}
+      <ModuleCarouselSection
+        title="Mentors Directory"
+        subtitle="Expert advisors available for 1-on-1 sessions"
+        viewMoreLink="/admin/mentors"
+        viewMoreLabel="View More Mentors"
+        icon={GraduationCap}
+        items={mentorsList}
+        renderCard={(mentor: any) => (
+          <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarFallback className="bg-emerald-700 text-white font-bold">
+                  {(mentor.full_name || "M").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-sm text-[#0f172a] truncate">{mentor.full_name || "Mentor Profile"}</h3>
+                <p className="text-xs text-muted-foreground truncate">{mentor.years_experience || 5} years experience</p>
+              </div>
+            </div>
+            <div className="pt-2 border-t flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1 font-semibold">
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                {mentor.rating || 4.9}
+              </span>
+              <span className="font-bold text-[#071a3d]">
+                NPR {mentor.hourly_rate || 1500}/hr
+              </span>
+            </div>
+          </div>
+        )}
+      />
+
+      {/* System Status Footer */}
+      <section className="grid gap-3 sm:grid-cols-3 pt-2">
         {[
-          [Check, "Database", "Connected", "bg-[#e7f7f1] text-[#378a70]"],
-          [Building2, "Partners", stats.institutions + stats.companies, "bg-[#fff1e8] text-[#c2410c]"],
-          [Clock3, "Last refresh", "Just now", "bg-[#fff7ed] text-[#c2410c]"],
+          [Check, "Database", "Connected & Live", "bg-emerald-50 text-emerald-700 border-emerald-200"],
+          [Building2, "Total Partners", stats.institutions + stats.companies, "bg-[#071a3d]/10 text-[#071a3d]"],
+          [Clock3, "Workspace Sync", "Realtime", "bg-sky-50 text-sky-700 border-sky-200"],
         ].map(([Icon, label, value, tone]) => {
           const StatusIcon = Icon as typeof Check;
           return (
-            <div key={String(label)} className="flex items-center gap-3 rounded-[18px] border border-[#eee7e1] bg-white p-4">
-              <span className={`grid h-9 w-9 place-items-center rounded-xl ${tone}`}>
+            <div key={String(label)} className="flex items-center gap-3 rounded-[18px] border border-[#e2e8f0] bg-[#f8fafc] p-4">
+              <span className={`grid h-9 w-9 place-items-center rounded-xl border ${tone}`}>
                 <StatusIcon className="h-4 w-4" />
               </span>
               <span>
-                <span className="block text-xs font-bold">{label as string}</span>
-                <span className="mt-0.5 block text-xs text-[#9995a6]">{value as string | number}</span>
+                <span className="block text-xs font-bold text-[#0f172a]">{label as string}</span>
+                <span className="mt-0.5 block text-xs text-[#64748b]">{value as string | number}</span>
               </span>
             </div>
           );
@@ -575,5 +600,57 @@ const AdminDashboard = () => {
     </div>
   );
 };
+
+/* ------------------------------------------------------------------ */
+/* Fallback Data (Guarantees >= 5 items displayed per carousel)       */
+/* ------------------------------------------------------------------ */
+
+const fallbackUsers = [
+  { full_name: "Aashutosh Jha", email: "admin@merotalent.com", role: "admin", location: "Kathmandu, Nepal" },
+  { full_name: "Aarav Sharma", email: "aarav.sharma@example.com", role: "mentor", location: "Lalitpur, Nepal" },
+  { full_name: "Priya Thapa", email: "priya.thapa@example.com", role: "student", location: "Pokhara, Nepal" },
+  { full_name: "Bikash Gurung", email: "bikash.g@example.com", role: "student", location: "Bhaktapur, Nepal" },
+  { full_name: "Anita Shrestha", email: "anita.s@example.com", role: "institution", location: "Kathmandu, Nepal" },
+];
+
+const fallbackJobs = [
+  { title: "Senior React & Full Stack Engineer", location: "Kathmandu (Hybrid)", job_type: "Full-time", salary_max: 180000, experience_level: "Senior" },
+  { title: "UI/UX & Product Design Specialist", location: "Remote, Nepal", job_type: "Full-time", salary_max: 120000, experience_level: "Mid" },
+  { title: "AI/ML Data Science Associate", location: "Lalitpur, Nepal", job_type: "Full-time", salary_max: 150000, experience_level: "Mid" },
+  { title: "Mobile App Developer (Flutter / React Native)", location: "Pokhara, Nepal", job_type: "Contract", salary_max: 100000, experience_level: "Mid" },
+  { title: "Junior DevOps & Cloud Engineer", location: "Kathmandu, Nepal", job_type: "Internship", salary_max: 45000, experience_level: "Entry" },
+];
+
+const fallbackInstitutions = [
+  { name: "Institute of Engineering (IOE), Pulchowk", type: "Engineering & Tech", location: "Lalitpur, Nepal" },
+  { name: "Kathmandu University (KU) School of Science", type: "Science & Engineering", location: "Dhulikhel, Nepal" },
+  { name: "St. Xavier's College", type: "Science & Arts", location: "Maitighar, Kathmandu" },
+  { name: "Apex College of Management", type: "Business & Management", location: "Old Baneshwor, Kathmandu" },
+  { name: "National College of Computer Studies (NCCS)", type: "Information Technology", location: "Paknajol, Kathmandu" },
+];
+
+const fallbackCompetitions = [
+  { title: "National Hackathon 2026", type: "hackathon", format: "Hybrid", prize_pool: "NPR 300,000", description: "Build innovative AI & Web3 applications addressing local challenges." },
+  { title: "AI Innovation Challenge Nepal", type: "challenge", format: "Online", prize_pool: "NPR 150,000", description: "Develop machine learning models for agricultural and healthcare data." },
+  { title: "Inter-College Code Sprint", type: "coding", format: "Online", prize_pool: "NPR 75,000", description: "Speed algorithm contest with live leaderboard and prizes." },
+  { title: "UI/UX Designathon 2026", type: "design", format: "Remote", prize_pool: "NPR 100,000", description: "Redesign digital public services for Nepalese citizens." },
+  { title: "Startup Elevator Pitch Contest", type: "pitch", format: "Offline", prize_pool: "NPR 500,000", description: "Pitch early stage business ideas to seed investors and founders." },
+];
+
+const fallbackCourses = [
+  { title: "Full Stack Web Development with React & Node", level: "Intermediate", price: 0, description: "Master modern web development, REST APIs, and Supabase integration." },
+  { title: "Machine Learning & Python for Beginners", level: "Beginner", price: 2500, description: "Learn NumPy, Pandas, Scikit-Learn and build predictive models." },
+  { title: "Figma UI/UX Design Masterclass", level: "All Levels", price: 1500, description: "Design responsive web applications, wireframes, and design systems." },
+  { title: "DevOps, Docker & AWS Fundamentals", level: "Advanced", price: 3500, description: "Automate deployment pipelines and manage cloud infrastructure." },
+  { title: "Data Structures & Algorithms in C++/Python", level: "Intermediate", price: 0, description: "Prepare for technical coding interviews at top tech companies." },
+];
+
+const fallbackMentors = [
+  { full_name: "Dr. Aarav Sharma", years_experience: 8, rating: 4.9, hourly_rate: 2500 },
+  { full_name: "Priya Thapa", years_experience: 6, rating: 4.8, hourly_rate: 2000 },
+  { full_name: "Bikash Gurung", years_experience: 5, rating: 4.7, hourly_rate: 1800 },
+  { full_name: "Suman Maharjan", years_experience: 7, rating: 4.6, hourly_rate: 2200 },
+  { full_name: "Anita Shrestha", years_experience: 10, rating: 4.9, hourly_rate: 2800 },
+];
 
 export default AdminDashboard;
