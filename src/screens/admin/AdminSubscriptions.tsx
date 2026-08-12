@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Calendar, Loader2, Gift, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SEED_SUBSCRIPTIONS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface SubscriptionItem {
   id: string;
@@ -84,7 +85,11 @@ export default function AdminSubscriptions() {
       .select("*, packages(name, code, package_kind, is_default_free, module_scope), profiles:user_id(email, full_name)")
       .order("created_at", { ascending: false });
 
-    if (data) setSubscriptions(data as SubscriptionItem[]);
+    if (data && data.length > 0) {
+      setSubscriptions(data as SubscriptionItem[]);
+    } else {
+      setSubscriptions(SEED_SUBSCRIPTIONS as unknown as SubscriptionItem[]);
+    }
     setIsLoading(false);
   };
 

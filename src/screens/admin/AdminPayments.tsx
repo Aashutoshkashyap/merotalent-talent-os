@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, CreditCard, DollarSign, ArrowUpRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SEED_PAYMENTS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface PaymentItem {
   id: string;
@@ -40,7 +41,11 @@ export default function AdminPayments() {
       .select("*, profiles:user_id(email, full_name)")
       .order("created_at", { ascending: false });
 
-    if (data) setPayments(data as PaymentItem[]);
+    if (data && data.length > 0) {
+      setPayments(data as PaymentItem[]);
+    } else {
+      setPayments(SEED_PAYMENTS as unknown as PaymentItem[]);
+    }
     setIsLoading(false);
   };
 

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Calendar, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SEED_MENTOR_BOOKINGS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface MentorBooking {
   id: string;
@@ -40,7 +41,11 @@ export default function AdminBookings() {
       .select("*, mentors(title, profiles:user_id(full_name)), students:student_id(email, full_name)")
       .order("scheduled_start", { ascending: false });
 
-    if (data) setBookings(data as MentorBooking[]);
+    if (data && data.length > 0) {
+      setBookings(data as MentorBooking[]);
+    } else {
+      setBookings(SEED_MENTOR_BOOKINGS as unknown as MentorBooking[]);
+    }
     setIsLoading(false);
   };
 

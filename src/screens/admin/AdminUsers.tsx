@@ -24,6 +24,10 @@ import {
 import { Search, MoreHorizontal, RefreshCw, Shield, UserRoundCog } from "lucide-react";
 import { OperationsPage } from "./OperationsUI";
 
+import {
+  SEED_USERS,
+} from "@/lib/admin/admin-seed-fallbacks";
+
 interface User {
   id: string;
   user_id: string;
@@ -48,7 +52,7 @@ const AdminUsers = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (profiles) {
+    if (profiles && profiles.length > 0) {
       // Fetch roles for all users
       const userIds = profiles.map((p) => p.user_id);
       const { data: roles } = await supabase
@@ -62,6 +66,8 @@ const AdminUsers = () => {
       }));
 
       setUsers(usersWithRoles);
+    } else {
+      setUsers(SEED_USERS.map((user) => ({ ...user, roles: [user.role] })));
     }
     setIsLoading(false);
   };

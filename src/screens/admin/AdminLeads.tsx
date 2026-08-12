@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Inbox, Eye, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SEED_LEADS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface LeadItem {
   id: string;
@@ -39,7 +40,11 @@ export default function AdminLeads() {
       .select("*, profiles:applicant_user_id(email, full_name)")
       .order("created_at", { ascending: false });
 
-    if (data) setLeads(data as LeadItem[]);
+    if (data && data.length > 0) {
+      setLeads(data as LeadItem[]);
+    } else {
+      setLeads(SEED_LEADS as unknown as LeadItem[]);
+    }
     setIsLoading(false);
   };
 

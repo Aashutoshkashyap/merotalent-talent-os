@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SEED_COLLEGE_APPLICATIONS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface CollegeApp {
   id: string;
@@ -39,7 +40,11 @@ export default function AdminApplications() {
       .select("*, institutes(name)")
       .order("submitted_at", { ascending: false });
 
-    if (data) setApplications(data as CollegeApp[]);
+    if (data && data.length > 0) {
+      setApplications(data as CollegeApp[]);
+    } else {
+      setApplications(SEED_COLLEGE_APPLICATIONS as unknown as CollegeApp[]);
+    }
     setIsLoading(false);
   };
 
