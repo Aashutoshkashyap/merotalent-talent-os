@@ -23,6 +23,19 @@ const MODULE_OPTIONS = [
   { id: "companies", label: "Company Partners", desc: "Manage company brand profile and recruiter accounts" },
 ];
 
+const errorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return "The request could not be submitted.";
+};
+
 export default function RequestSubAdminAccess() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -44,7 +57,7 @@ export default function RequestSubAdminAccess() {
     e.preventDefault();
     if (!user) {
       toast({ variant: "destructive", title: "Authentication required", description: "Please sign in to submit a request." });
-      navigate("/auth");
+      navigate("/login");
       return;
     }
 
@@ -60,25 +73,34 @@ export default function RequestSubAdminAccess() {
 
     setIsSubmitting(true);
 
-    const payload = {
-      user_id: user.id,
-      user_name: profile?.full_name || user.email?.split("@")[0] || "User",
-      user_email: user.email || "",
-      requested_modules: selectedModules,
-      reason: `[Organization: ${organization || "N/A"}] ${reason}`,
-      status: "pending",
-    };
+    try {
+      const { data, error } = await (supabase as any).rpc(
+        "request_sub_admin_access",
+        {
+          p_requested_modules: selectedModules,
+          p_reason: reason.trim(),
+          p_organization: organization.trim() || null,
+        },
+      );
 
-    const { error } = await (supabase as any).from("sub_admin_requests").insert(payload);
+      if (error) throw error;
 
-    if (error) {
-      toast({ variant: "destructive", title: "Request failed", description: error.message });
-    } else {
+      const request = data as { id?: unknown; status?: unknown } | null;
+      if (!request || typeof request.id !== "string" || request.status !== "pending") {
+        throw new Error("The database did not confirm the access request.");
+      }
+
       setIsSubmitted(true);
       toast({ title: "Sub-Admin request submitted!" });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Request failed",
+        description: errorMessage(error),
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   return (

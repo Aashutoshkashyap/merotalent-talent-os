@@ -4,33 +4,33 @@
       "email": "admin@example.com",
       "password": "GENERATE-A-UNIQUE-ADMIN-SECRET",
       "role": "admin",
-      "fullName": "Platform Administrator"
+      "fullName": "QA Admin"
     },
     {
       "email": "student@example.com",
       "password": "GENERATE-A-UNIQUE-STUDENT-SECRET",
       "role": "talent",
-      "fullName": "Test Student"
+      "fullName": "QA Student"
     },
     {
       "email": "college@example.com",
       "password": "GENERATE-A-UNIQUE-COLLEGE-SECRET",
       "role": "institution",
-      "fullName": "Test College Manager",
+      "fullName": "QA College",
       "permissions": ["job.post", "event.organize"]
     },
     {
       "email": "company@example.com",
       "password": "GENERATE-A-UNIQUE-COMPANY-SECRET",
       "role": "company",
-      "fullName": "Test Employer",
+      "fullName": "QA Company",
       "permissions": ["job.post", "event.organize"]
     },
     {
       "email": "mentor@example.com",
       "password": "GENERATE-A-UNIQUE-MENTOR-SECRET",
       "role": "mentor",
-      "fullName": "Test Mentor",
+      "fullName": "QA Mentor",
       "permissions": ["event.organize"]
     }
   ]

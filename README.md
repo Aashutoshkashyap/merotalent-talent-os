@@ -108,7 +108,7 @@ trusted service-role client calls the one-time `bootstrap_first_admin` RPC.
 
 ## Scheduled maintenance
 
-`vercel.json` runs `/api/cron/maintenance` daily at midnight Nepal time. Vercel
+`vercel.json` runs `/api/cron/maintenance` daily at midnight Nepal time (18:15 UTC). Vercel
 sends `Authorization: Bearer <CRON_SECRET>`; the route rejects missing or invalid
 secrets and invokes the idempotent `run_platform_maintenance()` database
 function to expire subscriptions, jobs, events, and advertisements.

@@ -8,7 +8,6 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarDays,
-  Check,
   ChevronLeft,
   ChevronRight,
   CircleCheck,
@@ -79,7 +78,7 @@ const MetricValue = ({
   );
 
 /* ------------------------------------------------------------------ */
-/* Carousel Component with Horizontal Scroll & Min 5 Items            */
+/* Carousel Component with Horizontal Scroll                          */
 /* ------------------------------------------------------------------ */
 
 interface CarouselProps<T> {
@@ -89,6 +88,8 @@ interface CarouselProps<T> {
   viewMoreLabel: string;
   icon: any;
   items: T[];
+  isLoading: boolean;
+  emptyMessage: string;
   renderCard: (item: T, index: number) => React.ReactNode;
 }
 
@@ -99,6 +100,8 @@ function ModuleCarouselSection<T>({
   viewMoreLabel,
   icon: Icon,
   items,
+  isLoading,
+  emptyMessage,
   renderCard,
 }: CarouselProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -135,6 +138,7 @@ function ModuleCarouselSection<T>({
               size="icon"
               className="h-8 w-8 rounded-lg bg-white border-[#cbd5e1] hover:bg-[#f1f5f9]"
               onClick={() => scroll("left")}
+              disabled={items.length === 0}
               aria-label="Scroll left"
             >
               <ChevronLeft className="h-4 w-4 text-[#071a3d]" />
@@ -144,6 +148,7 @@ function ModuleCarouselSection<T>({
               size="icon"
               className="h-8 w-8 rounded-lg bg-white border-[#cbd5e1] hover:bg-[#f1f5f9]"
               onClick={() => scroll("right")}
+              disabled={items.length === 0}
               aria-label="Scroll right"
             >
               <ChevronRight className="h-4 w-4 text-[#071a3d]" />
@@ -165,17 +170,31 @@ function ModuleCarouselSection<T>({
         </div>
       </div>
 
-      {/* Infinite Horizontal Scroll Track */}
+      {/* Horizontal Scroll Track */}
       <div
         ref={scrollRef}
         className="flex gap-4 overflow-x-auto pb-3 pt-1 scrollbar-thin scrollbar-thumb-slate-300 scroll-smooth snap-x"
         style={{ scrollbarWidth: "thin" }}
       >
-        {items.map((item, index) => (
-          <div key={index} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
-            {renderCard(item, index)}
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={`loading-${index}`}
+              className="h-[132px] w-[280px] shrink-0 animate-pulse snap-start rounded-2xl border border-[#e2e8f0] bg-white sm:w-[320px]"
+              aria-hidden="true"
+            />
+          ))
+        ) : items.length > 0 ? (
+          items.map((item, index) => (
+            <div key={index} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
+              {renderCard(item, index)}
+            </div>
+          ))
+        ) : (
+          <div className="flex min-h-[132px] w-full items-center justify-center rounded-2xl border border-dashed border-[#cbd5e1] bg-white px-5 text-center">
+            <p className="text-sm font-medium text-[#64748b]">{emptyMessage}</p>
           </div>
-        ))}
+        )}
       </div>
     </motion.section>
   );
@@ -189,12 +208,13 @@ const AdminDashboard = () => {
   const { profile } = useAuth();
   const [stats, setStats] = useState(emptyStats);
   const [isLoading, setIsLoading] = useState(true);
+  const [dataLoadState, setDataLoadState] = useState<"loading" | "ready" | "partial" | "error">("loading");
   const [notificationsCleared, setNotificationsCleared] = useState(false);
   const [calendarIndex, setCalendarIndex] = useState(1);
   const [meetingStatus, setMeetingStatus] = useState<"pending" | "reschedule" | "accepted">("pending");
   const activeCalendar = calendarViews[calendarIndex];
 
-  // Carousel Data lists (Minimum 5 items guaranteed)
+  // Recent live records for each carousel.
   const [usersList, setUsersList] = useState<any[]>([]);
   const [jobsList, setJobsList] = useState<any[]>([]);
   const [institutionsList, setInstitutionsList] = useState<any[]>([]);
@@ -205,6 +225,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchLiveData = async () => {
       setIsLoading(true);
+      setDataLoadState("loading");
 
       const [
         usersRes,
@@ -214,49 +235,71 @@ const AdminDashboard = () => {
         mentorsRes,
         jobsRes,
         coursesRes,
+        instituteVerificationRes,
       ] = await Promise.all([
-        supabase.from("profiles").select("*").limit(10),
-        supabase.from("competitions").select("*").order("created_at", { ascending: false }).limit(10),
-        supabase.from("institutions").select("*").order("created_at", { ascending: false }).limit(10),
-        supabase.from("companies").select("*").order("created_at", { ascending: false }).limit(10),
-        supabase.from("mentors").select("*").order("created_at", { ascending: false }).limit(10),
-        supabase.from("jobs").select("*").order("created_at", { ascending: false }).limit(10),
-        supabase.from("courses").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("profiles").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+        supabase.from("competitions").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+        supabase.from("institutes").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+        supabase.from("companies").select("id", { count: "exact", head: true }),
+        supabase.from("mentors").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+        supabase.from("jobs").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+        supabase.from("courses").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+        supabase.from("institute_directory").select("id, payment_verified"),
       ]);
 
       setStats({
-        users: usersRes.data?.length || 0,
-        competitions: competitionsRes.data?.length || 0,
-        institutions: institutionsRes.data?.length || 0,
-        companies: companiesRes.data?.length || 0,
-        mentors: mentorsRes.data?.length || 0,
-        jobs: jobsRes.data?.length || 0,
-        courses: coursesRes.data?.length || 0,
+        users: usersRes.count ?? 0,
+        competitions: competitionsRes.count ?? 0,
+        institutions: institutionsRes.count ?? 0,
+        companies: companiesRes.count ?? 0,
+        mentors: mentorsRes.count ?? 0,
+        jobs: jobsRes.count ?? 0,
+        courses: coursesRes.count ?? 0,
       });
 
-      // Pad with mock items if less than 5 to guarantee at least 5 objects in view
-      setUsersList(ensureMinCount(usersRes.data || [], fallbackUsers, 5));
-      setJobsList(ensureMinCount(jobsRes.data || [], fallbackJobs, 5));
-      setInstitutionsList(ensureMinCount(institutionsRes.data || [], fallbackInstitutions, 5));
-      setCompetitionsList(ensureMinCount(competitionsRes.data || [], fallbackCompetitions, 5));
-      setCoursesList(ensureMinCount(coursesRes.data || [], fallbackCourses, 5));
-      setMentorsList(ensureMinCount(mentorsRes.data || [], fallbackMentors, 5));
+      const paymentByInstitute = new Map(
+        (instituteVerificationRes.data ?? []).map((institute) => [
+          institute.id,
+          institute.payment_verified === true,
+        ]),
+      );
+
+      setUsersList(usersRes.data ?? []);
+      setJobsList(jobsRes.data ?? []);
+      setInstitutionsList(
+        (institutionsRes.data ?? []).map((institute) => ({
+          ...institute,
+          payment_verified: paymentByInstitute.get(institute.id) ?? false,
+        })),
+      );
+      setCompetitionsList(competitionsRes.data ?? []);
+      setCoursesList(coursesRes.data ?? []);
+      setMentorsList(mentorsRes.data ?? []);
+
+      const results = [
+        usersRes,
+        competitionsRes,
+        institutionsRes,
+        companiesRes,
+        mentorsRes,
+        jobsRes,
+        coursesRes,
+        instituteVerificationRes,
+      ];
+      const failedRequests = results.filter((result) => result.error).length;
+      setDataLoadState(
+        failedRequests === 0
+          ? "ready"
+          : failedRequests === results.length
+            ? "error"
+            : "partial",
+      );
 
       setIsLoading(false);
     };
 
     void fetchLiveData();
   }, []);
-
-  function ensureMinCount(liveData: any[], fallbackData: any[], minCount = 5): any[] {
-    if (liveData.length >= minCount) return liveData;
-    const combined = [...liveData];
-    for (const item of fallbackData) {
-      if (combined.length >= minCount) break;
-      combined.push(item);
-    }
-    return combined;
-  }
 
   const quickActions = [
     {
@@ -382,7 +425,7 @@ const AdminDashboard = () => {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 6 MODULE CAROUSELS (Each guaranteed to show >= 5 objects)          */}
+      {/* 6 MODULE CAROUSELS                                                 */}
       {/* ------------------------------------------------------------------ */}
 
       {/* 1. USERS & TALENT CAROUSEL */}
@@ -393,6 +436,8 @@ const AdminDashboard = () => {
         viewMoreLabel="View More Users"
         icon={Users}
         items={usersList}
+        isLoading={isLoading}
+        emptyMessage="No user records are available yet."
         renderCard={(user: any) => (
           <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3">
             <div className="flex items-center gap-3">
@@ -426,6 +471,8 @@ const AdminDashboard = () => {
         viewMoreLabel="View More Jobs"
         icon={BriefcaseBusiness}
         items={jobsList}
+        isLoading={isLoading}
+        emptyMessage="No job records are available yet."
         renderCard={(job: any) => (
           <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
             <div>
@@ -452,12 +499,14 @@ const AdminDashboard = () => {
 
       {/* 3. INSTITUTIONS DIRECTORY CAROUSEL */}
       <ModuleCarouselSection
-        title="Verified Institutions"
+        title="Institutions Directory"
         subtitle="Colleges, universities, and academic partners"
         viewMoreLink="/admin/institutions"
         viewMoreLabel="View More Institutions"
         icon={Building2}
         items={institutionsList}
+        isLoading={isLoading}
+        emptyMessage="No institute records are available yet."
         renderCard={(inst: any) => (
           <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
             <div className="flex items-start gap-3">
@@ -475,8 +524,15 @@ const AdminDashboard = () => {
             </div>
             <div className="pt-2 border-t flex items-center justify-between text-xs">
               <span className="text-muted-foreground text-[11px] truncate">{inst.location || "Nepal"}</span>
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
-                Verified
+              <Badge
+                variant="outline"
+                className={
+                  inst.payment_verified
+                    ? "text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "text-[10px] bg-amber-50 text-amber-700 border-amber-200"
+                }
+              >
+                {inst.payment_verified ? "Verified" : "Pending"}
               </Badge>
             </div>
           </div>
@@ -491,6 +547,8 @@ const AdminDashboard = () => {
         viewMoreLabel="View More Competitions"
         icon={Trophy}
         items={competitionsList}
+        isLoading={isLoading}
+        emptyMessage="No competition records are available yet."
         renderCard={(comp: any) => (
           <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
             <div>
@@ -522,6 +580,8 @@ const AdminDashboard = () => {
         viewMoreLabel="View More Courses"
         icon={BookOpen}
         items={coursesList}
+        isLoading={isLoading}
+        emptyMessage="No course records are available yet."
         renderCard={(course: any) => (
           <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
             <div>
@@ -550,6 +610,8 @@ const AdminDashboard = () => {
         viewMoreLabel="View More Mentors"
         icon={GraduationCap}
         items={mentorsList}
+        isLoading={isLoading}
+        emptyMessage="No mentor records are available yet."
         renderCard={(mentor: any) => (
           <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
             <div className="flex items-center gap-3">
@@ -579,11 +641,24 @@ const AdminDashboard = () => {
       {/* System Status Footer */}
       <section className="grid gap-3 sm:grid-cols-3 pt-2">
         {[
-          [Check, "Database", "Connected & Live", "bg-emerald-50 text-emerald-700 border-emerald-200"],
+          [
+            CircleCheck,
+            "Data source",
+            dataLoadState === "loading"
+              ? "Loading Supabase snapshot"
+              : dataLoadState === "ready"
+                ? "Supabase snapshot loaded"
+                : dataLoadState === "partial"
+                  ? "Some records unavailable"
+                  : "Records unavailable",
+            dataLoadState === "ready"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-amber-50 text-amber-700 border-amber-200",
+          ],
           [Building2, "Total Partners", stats.institutions + stats.companies, "bg-[#071a3d]/10 text-[#071a3d]"],
-          [Clock3, "Workspace Sync", "Realtime", "bg-sky-50 text-sky-700 border-sky-200"],
+          [Clock3, "Refresh mode", "Loaded on page visit", "bg-sky-50 text-sky-700 border-sky-200"],
         ].map(([Icon, label, value, tone]) => {
-          const StatusIcon = Icon as typeof Check;
+          const StatusIcon = Icon as typeof CircleCheck;
           return (
             <div key={String(label)} className="flex items-center gap-3 rounded-[18px] border border-[#e2e8f0] bg-[#f8fafc] p-4">
               <span className={`grid h-9 w-9 place-items-center rounded-xl border ${tone}`}>
@@ -600,57 +675,5 @@ const AdminDashboard = () => {
     </div>
   );
 };
-
-/* ------------------------------------------------------------------ */
-/* Fallback Data (Guarantees >= 5 items displayed per carousel)       */
-/* ------------------------------------------------------------------ */
-
-const fallbackUsers = [
-  { full_name: "Aashutosh Jha", email: "admin@merotalent.com", role: "admin", location: "Kathmandu, Nepal" },
-  { full_name: "Aarav Sharma", email: "aarav.sharma@example.com", role: "mentor", location: "Lalitpur, Nepal" },
-  { full_name: "Priya Thapa", email: "priya.thapa@example.com", role: "student", location: "Pokhara, Nepal" },
-  { full_name: "Bikash Gurung", email: "bikash.g@example.com", role: "student", location: "Bhaktapur, Nepal" },
-  { full_name: "Anita Shrestha", email: "anita.s@example.com", role: "institution", location: "Kathmandu, Nepal" },
-];
-
-const fallbackJobs = [
-  { title: "Senior React & Full Stack Engineer", location: "Kathmandu (Hybrid)", job_type: "Full-time", salary_max: 180000, experience_level: "Senior" },
-  { title: "UI/UX & Product Design Specialist", location: "Remote, Nepal", job_type: "Full-time", salary_max: 120000, experience_level: "Mid" },
-  { title: "AI/ML Data Science Associate", location: "Lalitpur, Nepal", job_type: "Full-time", salary_max: 150000, experience_level: "Mid" },
-  { title: "Mobile App Developer (Flutter / React Native)", location: "Pokhara, Nepal", job_type: "Contract", salary_max: 100000, experience_level: "Mid" },
-  { title: "Junior DevOps & Cloud Engineer", location: "Kathmandu, Nepal", job_type: "Internship", salary_max: 45000, experience_level: "Entry" },
-];
-
-const fallbackInstitutions = [
-  { name: "Institute of Engineering (IOE), Pulchowk", type: "Engineering & Tech", location: "Lalitpur, Nepal" },
-  { name: "Kathmandu University (KU) School of Science", type: "Science & Engineering", location: "Dhulikhel, Nepal" },
-  { name: "St. Xavier's College", type: "Science & Arts", location: "Maitighar, Kathmandu" },
-  { name: "Apex College of Management", type: "Business & Management", location: "Old Baneshwor, Kathmandu" },
-  { name: "National College of Computer Studies (NCCS)", type: "Information Technology", location: "Paknajol, Kathmandu" },
-];
-
-const fallbackCompetitions = [
-  { title: "National Hackathon 2026", type: "hackathon", format: "Hybrid", prize_pool: "NPR 300,000", description: "Build innovative AI & Web3 applications addressing local challenges." },
-  { title: "AI Innovation Challenge Nepal", type: "challenge", format: "Online", prize_pool: "NPR 150,000", description: "Develop machine learning models for agricultural and healthcare data." },
-  { title: "Inter-College Code Sprint", type: "coding", format: "Online", prize_pool: "NPR 75,000", description: "Speed algorithm contest with live leaderboard and prizes." },
-  { title: "UI/UX Designathon 2026", type: "design", format: "Remote", prize_pool: "NPR 100,000", description: "Redesign digital public services for Nepalese citizens." },
-  { title: "Startup Elevator Pitch Contest", type: "pitch", format: "Offline", prize_pool: "NPR 500,000", description: "Pitch early stage business ideas to seed investors and founders." },
-];
-
-const fallbackCourses = [
-  { title: "Full Stack Web Development with React & Node", level: "Intermediate", price: 0, description: "Master modern web development, REST APIs, and Supabase integration." },
-  { title: "Machine Learning & Python for Beginners", level: "Beginner", price: 2500, description: "Learn NumPy, Pandas, Scikit-Learn and build predictive models." },
-  { title: "Figma UI/UX Design Masterclass", level: "All Levels", price: 1500, description: "Design responsive web applications, wireframes, and design systems." },
-  { title: "DevOps, Docker & AWS Fundamentals", level: "Advanced", price: 3500, description: "Automate deployment pipelines and manage cloud infrastructure." },
-  { title: "Data Structures & Algorithms in C++/Python", level: "Intermediate", price: 0, description: "Prepare for technical coding interviews at top tech companies." },
-];
-
-const fallbackMentors = [
-  { full_name: "Dr. Aarav Sharma", years_experience: 8, rating: 4.9, hourly_rate: 2500 },
-  { full_name: "Priya Thapa", years_experience: 6, rating: 4.8, hourly_rate: 2000 },
-  { full_name: "Bikash Gurung", years_experience: 5, rating: 4.7, hourly_rate: 1800 },
-  { full_name: "Suman Maharjan", years_experience: 7, rating: 4.6, hourly_rate: 2200 },
-  { full_name: "Anita Shrestha", years_experience: 10, rating: 4.9, hourly_rate: 2800 },
-];
 
 export default AdminDashboard;

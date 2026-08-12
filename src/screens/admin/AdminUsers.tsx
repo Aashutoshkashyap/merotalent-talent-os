@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-import { Search, MoreHorizontal, RefreshCw, Shield, Trash2 } from "lucide-react";
+import { Search, MoreHorizontal, RefreshCw, Shield, UserRoundCog } from "lucide-react";
 import { OperationsPage } from "./OperationsUI";
 
 interface User {
@@ -37,7 +37,6 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchUsers();
@@ -67,83 +66,6 @@ const AdminUsers = () => {
     setIsLoading(false);
   };
 
-  const addRole = async (userId: string, role: string) => {
-    const { error } = await supabase
-      .from("user_roles")
-      .insert({ user_id: userId, role: role as "admin" | "talent" | "institution" | "company" | "mentor" });
-
-    if (error) {
-      if (error.code === "23505") {
-        toast({
-          variant: "destructive",
-          title: "Role already exists",
-          description: "This user already has this role.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error adding role",
-          description: error.message,
-        });
-      }
-    } else {
-      toast({
-        title: "Role added",
-        description: `Successfully added ${role} role.`,
-      });
-      fetchUsers();
-    }
-  };
-
-  const removeRole = async (userId: string, role: string) => {
-    const { error } = await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", userId)
-      .eq("role", role as "admin" | "talent" | "institution" | "company" | "mentor");
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error removing role",
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: "Role removed",
-        description: `Successfully removed ${role} role.`,
-      });
-      fetchUsers();
-    }
-  };
-
-  const handleDeleteUser = async (userId: string, email: string) => {
-    if (!confirm(`Are you sure you want to permanently delete user account ${email}?`)) return;
-
-    try {
-      await supabase.from("user_roles").delete().eq("user_id", userId);
-
-      const rpcClient = supabase as unknown as {
-        rpc: (name: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
-      };
-      await rpcClient.rpc("admin_update_user_access", {
-        p_user_id: userId,
-        p_account_status: "deactivated",
-      });
-
-      const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
-
-      if (error) {
-        toast({ variant: "destructive", title: "Delete failed", description: error.message });
-      } else {
-        toast({ title: "User deleted", description: `Account for ${email} was permanently deleted.` });
-        fetchUsers();
-      }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Error deleting user", description: err?.message || "Failed to delete user." });
-    }
-  };
-
   const filteredUsers = users.filter(
     (user) =>
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,8 +91,10 @@ const AdminUsers = () => {
     <OperationsPage>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold">Manage Users</h1>
-          <p className="text-muted-foreground">View and manage all platform users</p>
+          <h1 className="text-2xl font-display font-bold">Users</h1>
+          <p className="text-muted-foreground">
+            View accounts; manage primary roles and delegated access separately.
+          </p>
         </div>
         <Button onClick={() => void fetchUsers()} disabled={isLoading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -241,36 +165,17 @@ const AdminUsers = () => {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuLabel>Add Role</DropdownMenuLabel>
-                        {["admin", "mentor", "institution", "company"].map((role) => (
-                          <DropdownMenuItem
-                            key={role}
-                            onClick={() => addRole(user.user_id, role)}
-                            disabled={user.roles.includes(role)}
-                          >
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/roles">
                             <Shield className="w-4 h-4 mr-2" />
-                            Make {role}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel>Remove Role</DropdownMenuLabel>
-                        {user.roles.filter(r => r !== 'talent').map((role) => (
-                          <DropdownMenuItem
-                            key={`remove-${role}`}
-                            onClick={() => removeRole(user.user_id, role)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove {role}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteUser(user.user_id, user.email)}
-                          className="text-destructive font-semibold"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2 text-destructive" />
-                          Delete User Account
+                            Manage primary roles
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/admins">
+                            <UserRoundCog className="w-4 h-4 mr-2" />
+                            View administrators
+                          </Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

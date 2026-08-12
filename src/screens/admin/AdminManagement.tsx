@@ -174,11 +174,10 @@ const AdminManagement = () => {
             Access control
           </div>
           <h1 className="text-2xl font-display font-bold sm:text-3xl">
-            Admin management
+            Administrators
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Live administrator role assignments that your current Supabase
-            session is allowed to read.
+            Accounts currently assigned the full administrator role.
           </p>
         </div>
 
@@ -186,7 +185,7 @@ const AdminManagement = () => {
           <DialogTrigger asChild>
             <Button variant="hero" className="shrink-0" aria-label="View administrator provisioning steps">
               <UserRoundCog className="mr-2 h-4 w-4" aria-hidden="true" />
-              Provision an admin
+              Provision admin
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg border-[#f1e2d7] bg-[#fffdfb]">
@@ -236,7 +235,7 @@ const AdminManagement = () => {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Admin roles
+                Admin accounts
               </p>
               <p className="mt-1 text-2xl font-bold text-[#17162e]">
                 {isLoading ? "—" : admins.length}
@@ -279,7 +278,7 @@ const AdminManagement = () => {
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-[#f2e7df]">
           <div>
-            <CardTitle className="text-lg">Admin role assignments</CardTitle>
+            <CardTitle className="text-lg">Administrator accounts</CardTitle>
             <CardDescription className="mt-1">
               Sourced from live <code>user_roles</code> and <code>profiles</code>{" "}
               records. Auth invitation and activity status are not exposed here.

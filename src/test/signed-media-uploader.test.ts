@@ -109,6 +109,44 @@ describe("signed college media upload client", () => {
         resourceId,
       ),
     ).rejects.toThrow("invalid destination");
+    expect(storageMocks.from).not.toHaveBeenCalled();
     expect(storageMocks.uploadToSignedUrl).not.toHaveBeenCalled();
+    expect(storageMocks.getPublicUrl).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when signing is unavailable instead of switching buckets", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: null, error: { message: "Upload authorization failed." } }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(
+      uploadSignedCollegeMedia(
+        new File(["png-content"], "logo.png", { type: "image/png" }),
+        "college_logo",
+        resourceId,
+      ),
+    ).rejects.toThrow("Upload authorization failed");
+
+    expect(storageMocks.from).not.toHaveBeenCalled();
+    expect(storageMocks.uploadToSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it("requires an authenticated session before requesting an upload", async () => {
+    storageMocks.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    await expect(
+      uploadSignedCollegeMedia(
+        new File(["png-content"], "logo.png", { type: "image/png" }),
+        "college_logo",
+        resourceId,
+      ),
+    ).rejects.toThrow("Sign in again");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(storageMocks.from).not.toHaveBeenCalled();
   });
 });

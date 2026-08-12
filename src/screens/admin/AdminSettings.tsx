@@ -1,10 +1,6 @@
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Settings, 
@@ -12,35 +8,14 @@ import {
   Shield, 
   Globe,
   Mail,
-  Key,
   Database,
   Server,
-  Save,
   AlertTriangle,
   Sparkles
 } from "lucide-react";
-import { toast } from "sonner";
 import { OperationsPage } from "./OperationsUI";
-import { getStoredAIApiKey, setStoredAIApiKey } from "@/lib/ai/ai-generator";
 
 const AdminSettings = () => {
-  const [settings, setSettings] = useState({
-    siteName: "MeroTalent",
-    siteDescription: "Nepal's Premier Talent Platform",
-    supportEmail: "support@merotalent.com",
-    maintenanceMode: false,
-    registrationEnabled: true,
-    emailVerificationRequired: true,
-    autoApproveInstitutions: false,
-    autoApproveCompanies: false,
-    maxFileUploadSize: 10,
-    sessionTimeout: 60,
-  });
-
-  const handleSave = () => {
-    toast.success("Settings saved successfully!");
-  };
-
   return (
     <OperationsPage>
       <div>
@@ -72,89 +47,23 @@ const AdminSettings = () => {
         <TabsContent value="general" className="space-y-6">
           <Card className="border-border/50">
             <CardHeader>
-              <CardTitle>Site Information</CardTitle>
-              <CardDescription>Basic platform configuration</CardDescription>
+              <CardTitle>Site content and branding</CardTitle>
+              <CardDescription>Public settings are persisted in the Page editor.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="siteName">Site Name</Label>
-                  <Input 
-                    id="siteName" 
-                    value={settings.siteName}
-                    onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="supportEmail">Support Email</Label>
-                  <Input 
-                    id="supportEmail" 
-                    type="email"
-                    value={settings.supportEmail}
-                    onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="siteDescription">Site Description</Label>
-                <Input 
-                  id="siteDescription" 
-                  value={settings.siteDescription}
-                  onChange={(e) => setSettings({ ...settings, siteDescription: e.target.value })}
-                />
-              </div>
+            <CardContent>
+              <Button variant="hero" asChild>
+                <Link to="/admin/pages">Open Page editor</Link>
+              </Button>
             </CardContent>
           </Card>
 
           <Card className="border-border/50">
             <CardHeader>
-              <CardTitle>Registration Settings</CardTitle>
-              <CardDescription>Control user registration options</CardDescription>
+              <CardTitle>Registration policy</CardTitle>
+              <CardDescription>Managed by Supabase Auth and protected approval workflows.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">User Registration</p>
-                  <p className="text-sm text-muted-foreground">Allow new users to register</p>
-                </div>
-                <Switch
-                  checked={settings.registrationEnabled}
-                  onCheckedChange={(checked) => setSettings({ ...settings, registrationEnabled: checked })}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Email Verification Required</p>
-                  <p className="text-sm text-muted-foreground">Require email verification before login</p>
-                </div>
-                <Switch
-                  checked={settings.emailVerificationRequired}
-                  onCheckedChange={(checked) => setSettings({ ...settings, emailVerificationRequired: checked })}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Auto-Approve Institutions</p>
-                  <p className="text-sm text-muted-foreground">Automatically verify institution registrations</p>
-                </div>
-                <Switch
-                  checked={settings.autoApproveInstitutions}
-                  onCheckedChange={(checked) => setSettings({ ...settings, autoApproveInstitutions: checked })}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Auto-Approve Companies</p>
-                  <p className="text-sm text-muted-foreground">Automatically verify company registrations</p>
-                </div>
-                <Switch
-                  checked={settings.autoApproveCompanies}
-                  onCheckedChange={(checked) => setSettings({ ...settings, autoApproveCompanies: checked })}
-                />
-              </div>
+            <CardContent className="text-sm text-muted-foreground">
+              Registration remains enabled in the application. College, company, mentor, job, and event approval state is database-enforced; this page does not override those controls.
             </CardContent>
           </Card>
 
@@ -166,46 +75,20 @@ const AdminSettings = () => {
               </CardTitle>
               <CardDescription>Temporarily disable access to the platform</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Enable Maintenance Mode</p>
-                  <p className="text-sm text-muted-foreground">Only admins can access the platform</p>
-                </div>
-                <Switch
-                  checked={settings.maintenanceMode}
-                  onCheckedChange={(checked) => setSettings({ ...settings, maintenanceMode: checked })}
-                />
-              </div>
+            <CardContent className="text-sm text-muted-foreground">
+              No maintenance-mode middleware is configured. This control is intentionally unavailable until a server-enforced mode and recovery path are implemented.
             </CardContent>
           </Card>
-
-          <Button variant="hero" onClick={handleSave}>
-            <Save className="w-4 h-4 mr-2" />
-            Save Changes
-          </Button>
         </TabsContent>
 
         {/* Security Settings */}
         <TabsContent value="security" className="space-y-6">
           <Card className="border-border/50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5" />
-                Session Settings
-              </CardTitle>
+              <CardTitle>Authentication sessions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                <Input 
-                  id="sessionTimeout" 
-                  type="number"
-                  value={settings.sessionTimeout}
-                  onChange={(e) => setSettings({ ...settings, sessionTimeout: parseInt(e.target.value) })}
-                />
-                <p className="text-xs text-muted-foreground">How long before inactive users are logged out</p>
-              </div>
+            <CardContent className="text-sm text-muted-foreground">
+              Session lifetime, refresh-token rotation, email verification, and OAuth providers are controlled in Supabase Auth. Review them in the target project before UAT.
             </CardContent>
           </Card>
 
@@ -216,23 +99,10 @@ const AdminSettings = () => {
                 File Upload Settings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="maxFileSize">Max File Upload Size (MB)</Label>
-                <Input 
-                  id="maxFileSize" 
-                  type="number"
-                  value={settings.maxFileUploadSize}
-                  onChange={(e) => setSettings({ ...settings, maxFileUploadSize: parseInt(e.target.value) })}
-                />
-              </div>
+            <CardContent className="text-sm text-muted-foreground">
+              File type, size, bucket, ownership, and object path are validated by the signed-media APIs and Storage policies. Limits are code and database policy, not browser settings.
             </CardContent>
           </Card>
-
-          <Button variant="hero" onClick={handleSave}>
-            <Save className="w-4 h-4 mr-2" />
-            Save Security Settings
-          </Button>
         </TabsContent>
 
         {/* Notifications Settings */}
@@ -243,47 +113,22 @@ const AdminSettings = () => {
                 <Mail className="w-5 h-5" />
                 Email Configuration
               </CardTitle>
-              <CardDescription>Configure email notification settings</CardDescription>
+              <CardDescription>Email delivery is not connected yet.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fromEmail">From Email</Label>
-                <Input id="fromEmail" defaultValue="noreply@merotalent.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fromName">From Name</Label>
-                <Input id="fromName" defaultValue="MeroTalent" />
-              </div>
+            <CardContent className="text-sm text-muted-foreground">
+              The database queues dashboard and email notifications, but no SMTP or transactional-email worker currently consumes queued email rows.
             </CardContent>
           </Card>
 
           <Card className="border-border/50">
             <CardHeader>
               <CardTitle>Notification Types</CardTitle>
-              <CardDescription>Enable or disable notification types</CardDescription>
+              <CardDescription>Current database-triggered categories</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { key: "welcome", label: "Welcome Emails", desc: "Send welcome email on signup" },
-                { key: "competition", label: "Competition Updates", desc: "Notify users about competition changes" },
-                { key: "digest", label: "Weekly Digest", desc: "Send weekly activity summary" },
-                { key: "marketing", label: "Marketing Emails", desc: "Send promotional content" },
-              ].map((item) => (
-                <div key={item.key} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              ))}
+            <CardContent className="text-sm text-muted-foreground">
+              College applications, mentor bookings, job applications, event registrations, approval decisions, payments, and subscription lifecycle events are represented in the central notification model. Delivery acceptance is pending.
             </CardContent>
           </Card>
-
-          <Button variant="hero" onClick={handleSave}>
-            <Save className="w-4 h-4 mr-2" />
-            Save Notification Settings
-          </Button>
         </TabsContent>
 
         {/* Integrations */}
@@ -292,31 +137,13 @@ const AdminSettings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
-                AI Content Generation Engine & API Key
+                AI Content Generation
               </CardTitle>
-              <CardDescription>Configure the OpenAI / Gemini API key used for 1-click AI generation across all admin modules (Jobs, Mentors, Events, Companies, Competitions, Advertisements, LMS Courses, and Institutions)</CardDescription>
+              <CardDescription>Provider credentials are managed only through server-side deployment secrets.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="aiApiKey">AI API Key (BYOK)</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    id="aiApiKey"
-                    type="password"
-                    placeholder="sk-proj-... or AI key"
-                    defaultValue={getStoredAIApiKey()}
-                    onChange={(e) => setStoredAIApiKey(e.target.value)}
-                  />
-                  <Button 
-                    variant="hero"
-                    onClick={() => toast.success("AI API Key saved! All admin modules will now use this key.")}
-                  >
-                    Save Key
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  The API key is securely saved in your browser configuration and automatically powers 1-click AI generation for descriptions, requirements, bios, agendas, and content across all admin modules platform-wide.
-                </p>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+                Browser API-key storage is disabled. Content tools currently use local draft templates; connect an authenticated server-side provider route before enabling external AI generation.
               </div>
             </CardContent>
           </Card>
@@ -331,10 +158,10 @@ const AdminSettings = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               {[
-                { name: "Google OAuth", status: "connected", icon: "🔐" },
-                { name: "Stripe Payments", status: "not_connected", icon: "💳" },
-                { name: "AWS S3 Storage", status: "connected", icon: "☁️" },
-                { name: "SendGrid Email", status: "not_connected", icon: "📧" },
+                { name: "Supabase Auth", status: "Configured in Supabase", icon: "🔐" },
+                { name: "Payment gateway", status: "Not configured", icon: "💳" },
+                { name: "Supabase Storage", status: "Policy verification required", icon: "☁️" },
+                { name: "Transactional email", status: "Not configured", icon: "📧" },
               ].map((integration) => (
                 <div key={integration.name} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
@@ -342,13 +169,10 @@ const AdminSettings = () => {
                     <div>
                       <p className="font-medium">{integration.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {integration.status === "connected" ? "Connected" : "Not connected"}
+                        {integration.status}
                       </p>
                     </div>
                   </div>
-                  <Button variant={integration.status === "connected" ? "outline" : "default"}>
-                    {integration.status === "connected" ? "Configure" : "Connect"}
-                  </Button>
                 </div>
               ))}
             </CardContent>

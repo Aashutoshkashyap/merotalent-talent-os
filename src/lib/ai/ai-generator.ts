@@ -1,10 +1,10 @@
 /**
- * Centralized AI Generation Utility for MeroTalent.
- * Supports OpenAI (gpt-4o-mini) and Google Gemini (gemini-1.5-flash) with full parameter handling.
+ * Draft-content helpers for MeroTalent.
+ *
+ * Provider credentials must never be accepted by, persisted in, or sent from
+ * the browser. Until a server-only AI proxy is configured, these helpers use
+ * the deterministic fallbacks below.
  */
-
-const AI_KEY_STORAGE_KEY = "merotalent_ai_api_key";
-const AI_PROVIDER_STORAGE_KEY = "merotalent_ai_provider";
 
 export interface AIParams {
   title?: string;
@@ -16,94 +16,10 @@ export interface AIParams {
   notes?: string;
 }
 
-export function getStoredAIApiKey(): string {
-  if (typeof window !== "undefined") {
-    const key = localStorage.getItem(AI_KEY_STORAGE_KEY);
-    if (key?.trim()) return key.trim();
-  }
-  const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env || {};
-  return (
-    metaEnv.VITE_OPENAI_API_KEY ||
-    metaEnv.VITE_GEMINI_API_KEY ||
-    ""
-  );
-}
-
-export function setStoredAIApiKey(key: string, provider = "openai"): void {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(AI_KEY_STORAGE_KEY, key.trim());
-    localStorage.setItem(AI_PROVIDER_STORAGE_KEY, provider);
-  }
-}
-
-export function getStoredAIProvider(): string {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem(AI_PROVIDER_STORAGE_KEY) || "openai";
-  }
-  return "openai";
-}
-
-/**
- * Universal LLM completion caller for OpenAI or Gemini
- */
-async function callLLM(systemPrompt: string, userPrompt: string): Promise<string | null> {
-  const apiKey = getStoredAIApiKey();
-  const provider = getStoredAIProvider();
-
-  if (!apiKey) return null;
-
-  if (provider === "gemini") {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
-              },
-            ],
-          }),
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        return text || null;
-      }
-    } catch (e) {
-      console.warn("Gemini API call failed:", e);
-    }
-  }
-
-  // Default to OpenAI gpt-4o-mini
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.7,
-      }),
-    });
-    if (response.ok) {
-      const json = await response.json();
-      return json.choices[0]?.message?.content || null;
-    }
-  } catch (e) {
-    console.warn("OpenAI API call failed:", e);
-  }
-
+async function callLLM(_systemPrompt: string, _userPrompt: string): Promise<string | null> {
+  // Deliberately disabled client-side. A future implementation must call an
+  // authenticated same-origin server route whose provider key is stored only
+  // in the deployment secret manager.
   return null;
 }
 

@@ -26,6 +26,28 @@ interface AccessRequest {
   created_at: string;
 }
 
+interface AccessRequestDecision {
+  id: string;
+  user_id: string;
+  status: "approved" | "rejected";
+  requested_modules: string[];
+  granted_permissions: string[];
+  decided_at: string;
+}
+
+const errorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return "The request decision could not be completed.";
+};
+
 export default function AdminAccessRequests() {
   const { toast } = useToast();
   const [requests, setRequests] = useState<AccessRequest[]>([]);
@@ -43,9 +65,16 @@ export default function AdminAccessRequests() {
       setRequests(data);
     } else {
       setRequests([]);
+      toast({
+        variant: "destructive",
+        title: "Requests could not be loaded",
+        description: error
+          ? errorMessage(error)
+          : "The access request list could not be loaded.",
+      });
     }
     setIsLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchRequests();
@@ -53,50 +82,50 @@ export default function AdminAccessRequests() {
 
   const handleUpdateStatus = async (request: AccessRequest, newStatus: "approved" | "rejected") => {
     setUpdatingId(request.id);
-    const db = supabase as any;
-
-    // 1. Update sub_admin_requests status
-    const { error } = await db
-      .from("sub_admin_requests")
-      .update({
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", request.id);
-
-    if (error) {
-      toast({ variant: "destructive", title: "Action failed", description: error.message });
-      setUpdatingId(null);
-      return;
-    }
-
-    // 2. If approved, add role in user_roles table
-    if (newStatus === "approved") {
-      const roleName = "sub_admin";
-      await db.from("user_roles").upsert(
-        { user_id: request.user_id, role: roleName },
-        { onConflict: "user_id,role" }
+    try {
+      const { data, error } = await (supabase as any).rpc(
+        "admin_decide_sub_admin_request",
+        {
+          p_request_id: request.id,
+          p_approve: newStatus === "approved",
+          p_note: null,
+        },
       );
+
+      if (error) throw error;
+
+      const decision = data as AccessRequestDecision | null;
+      if (
+        !decision ||
+        decision.id !== request.id ||
+        decision.user_id !== request.user_id ||
+        decision.status !== newStatus
+      ) {
+        throw new Error("The database did not confirm the requested access decision.");
+      }
+
+      toast({
+        title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
+        description: newStatus === "approved"
+          ? `${request.user_name} has been granted module management access.`
+          : `Request for ${request.user_name} has been rejected.`,
+      });
+
+      await fetchRequests();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Action failed", description: errorMessage(error) });
+    } finally {
+      setUpdatingId(null);
     }
-
-    toast({
-      title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
-      description: newStatus === "approved"
-        ? `${request.user_name} has been granted Sub-Admin privileges.`
-        : `Request for ${request.user_name} has been rejected.`,
-    });
-
-    setUpdatingId(null);
-    fetchRequests();
   };
 
   return (
     <OperationsPage>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold text-[#0f172a]">Sub-Admin Access Requests</h1>
+          <h1 className="text-2xl font-display font-bold text-[#0f172a]">Access requests</h1>
           <p className="text-muted-foreground text-sm">
-            Review user access requests and grant module-specific sub-admin permissions.
+            Review requests for delegated module access.
           </p>
         </div>
         <Badge variant="outline" className="w-fit text-xs px-3 py-1 bg-slate-100 font-mono">
@@ -108,10 +137,10 @@ export default function AdminAccessRequests() {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-[#071a3d]" />
-            Pending Authorization Requests
+            Request queue
           </CardTitle>
           <CardDescription>
-            Approving a request converts the user into a Sub-Admin and grants module management rights.
+            Approval grants only the requested module permissions, not full administrator access.
           </CardDescription>
         </CardHeader>
 
@@ -123,9 +152,9 @@ export default function AdminAccessRequests() {
           ) : requests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Inbox className="h-12 w-12 text-muted-foreground/30 mb-3" />
-              <h3 className="font-semibold text-base">No Access Requests Yet</h3>
+              <h3 className="font-semibold text-base">No access requests yet</h3>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                When users request sub-admin access via /request-access, their submissions will appear here for review.
+                Requests for delegated module access will appear here for review.
               </p>
             </div>
           ) : (
@@ -133,9 +162,9 @@ export default function AdminAccessRequests() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User / Email</TableHead>
+                    <TableHead>Requester</TableHead>
                     <TableHead>Requested Modules</TableHead>
-                    <TableHead>Reason & Justification</TableHead>
+                    <TableHead>Reason</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Action</TableHead>
@@ -193,7 +222,7 @@ export default function AdminAccessRequests() {
                               ) : (
                                 <UserCheck className="mr-1.5 h-3.5 w-3.5" />
                               )}
-                              Approve Sub-Admin
+                              Grant access
                             </Button>
                             <Button
                               size="sm"

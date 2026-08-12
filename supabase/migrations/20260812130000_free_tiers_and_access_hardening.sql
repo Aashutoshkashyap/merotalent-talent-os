@@ -1,0 +1,1090 @@
+-- Central free-tier entitlements and delegated module access hardening.
+-- This migration is additive and keeps primary account roles separate from
+-- narrowly-scoped, auditable permissions.
+
+BEGIN;
+
+-- ---------------------------------------------------------------------------
+-- Package metadata for centrally provisioned free entitlements
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.packages
+  ADD COLUMN IF NOT EXISTS package_kind text NOT NULL DEFAULT 'paid',
+  ADD COLUMN IF NOT EXISTS module_scope text[] NOT NULL DEFAULT '{}'::text[],
+  ADD COLUMN IF NOT EXISTS is_default_free boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS duration_days integer,
+  ADD COLUMN IF NOT EXISTS is_publicly_selectable boolean NOT NULL DEFAULT true;
+
+ALTER TABLE public.packages DROP CONSTRAINT IF EXISTS packages_package_kind_check;
+ALTER TABLE public.packages ADD CONSTRAINT packages_package_kind_check
+  CHECK (package_kind IN ('free', 'paid', 'complimentary')) NOT VALID;
+
+ALTER TABLE public.packages DROP CONSTRAINT IF EXISTS packages_module_scope_check;
+ALTER TABLE public.packages ADD CONSTRAINT packages_module_scope_check
+  CHECK (
+    module_scope <@ ARRAY[
+      'student', 'college', 'mentor', 'jobs', 'events', 'partnered_courses'
+    ]::text[]
+  ) NOT VALID;
+
+ALTER TABLE public.packages DROP CONSTRAINT IF EXISTS packages_duration_days_check;
+ALTER TABLE public.packages ADD CONSTRAINT packages_duration_days_check
+  CHECK (duration_days IS NULL OR duration_days BETWEEN 1 AND 3650) NOT VALID;
+
+ALTER TABLE public.packages DROP CONSTRAINT IF EXISTS packages_default_free_check;
+ALTER TABLE public.packages ADD CONSTRAINT packages_default_free_check
+  CHECK (
+    NOT is_default_free
+    OR (
+      package_kind = 'free'
+      AND price = 0
+      AND duration_days IS NOT NULL
+      AND cardinality(module_scope) > 0
+      AND is_publicly_selectable = false
+    )
+  ) NOT VALID;
+
+CREATE OR REPLACE FUNCTION public.protect_default_free_package_scope()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  SELECT COALESCE(array_agg(DISTINCT scope_name ORDER BY scope_name), '{}'::text[])
+  INTO NEW.module_scope
+  FROM unnest(COALESCE(NEW.module_scope, '{}'::text[])) AS scopes(scope_name)
+  WHERE btrim(scope_name) <> '';
+
+  IF NEW.is_default_free AND NEW.is_active AND NEW.deleted_at IS NULL THEN
+    PERFORM pg_advisory_xact_lock(
+      hashtextextended(
+        'merotalent:default-free-package:' || COALESCE(NEW.audience::text, '__generic__'),
+        0
+      )
+    );
+    IF EXISTS (
+      SELECT 1 FROM public.packages p
+      WHERE p.id <> NEW.id
+        AND p.audience IS NOT DISTINCT FROM NEW.audience
+        AND p.is_default_free = true
+        AND p.is_active = true
+        AND p.deleted_at IS NULL
+        AND p.module_scope && NEW.module_scope
+    ) THEN
+      RAISE EXCEPTION 'A default free package already covers this audience and module scope'
+        USING ERRCODE = '23505';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.protect_default_free_package_scope()
+FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS protect_default_free_package_scope_trigger ON public.packages;
+CREATE TRIGGER protect_default_free_package_scope_trigger
+BEFORE INSERT OR UPDATE OF audience, module_scope, is_default_free, is_active, deleted_at
+ON public.packages
+FOR EACH ROW EXECUTE FUNCTION public.protect_default_free_package_scope();
+
+DROP INDEX IF EXISTS public.packages_one_default_free_scope_idx;
+
+CREATE UNIQUE INDEX IF NOT EXISTS packages_one_default_free_audience_scope_idx
+ON public.packages (audience, module_scope)
+WHERE is_default_free = true AND is_active = true
+  AND audience IS NOT NULL AND deleted_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS packages_one_default_free_generic_scope_idx
+ON public.packages (module_scope)
+WHERE is_default_free = true AND is_active = true
+  AND audience IS NULL AND deleted_at IS NULL;
+
+-- Supersede the short-lived draft package name before the overlap guard sees
+-- the canonical account-operator package below.
+UPDATE public.packages
+SET is_default_free = false,
+    is_active = false,
+    deleted_at = COALESCE(deleted_at, now()),
+    updated_at = now()
+WHERE code = 'partnered-courses-free';
+
+INSERT INTO public.packages (
+  code, name, description, audience, price, currency, billing_interval,
+  features, lead_access_mode, is_active, sort_order, package_kind,
+  module_scope, is_default_free, duration_days, is_publicly_selectable
+)
+VALUES
+  (
+    'student-free', 'Student Free',
+    'Default student access to browse and submit applications.',
+    'talent', 0, 'NPR', 'year',
+    '{"application_submit":true,"partnered_course_referrals":true}'::jsonb,
+    'none', true, 1000, 'free', ARRAY['student', 'partnered_courses'],
+    true, 365, false
+  ),
+  (
+    'college-free', 'College Free',
+    'Default college admissions and college-owned event lead access.',
+    'institution', 0, 'NPR', 'year',
+    '{"college_applications":true,"event_registrations":true}'::jsonb,
+    'full', true, 1010, 'free', ARRAY['college', 'events'], true, 365, false
+  ),
+  (
+    'mentor-free', 'Mentor Free',
+    'Default mentor booking and mentor-owned event lead access.',
+    'mentor', 0, 'NPR', 'year',
+    '{"mentor_bookings":true,"event_registrations":true}'::jsonb,
+    'full', true, 1020, 'free', ARRAY['mentor', 'events'], true, 365, false
+  ),
+  (
+    'company-jobs-free', 'Company Jobs Free',
+    'Default company job applicant and company-owned event lead access.',
+    'company', 0, 'NPR', 'year',
+    '{"job_applications":true,"event_registrations":true}'::jsonb,
+    'full', true, 1030, 'free', ARRAY['jobs', 'events'], true, 365, false
+  ),
+  (
+    'organizer-events-free', 'Organizer Events Free',
+    'Default event registration and attendee lead access.',
+    NULL, 0, 'NPR', 'year',
+    '{"event_registrations":true}'::jsonb,
+    'full', true, 1040, 'free', ARRAY['events'], true, 365, false
+  ),
+  (
+    'account-operator-free', 'Account Operator Free',
+    'Default account-scoped job and partnered-course operations.',
+    NULL, 0, 'NPR', 'year',
+    '{"job_applications":true,"partnered_courses":true}'::jsonb,
+    'full', true, 1050, 'free', ARRAY['jobs', 'partnered_courses'], true, 365, false
+  )
+ON CONFLICT (code) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  audience = EXCLUDED.audience,
+  price = EXCLUDED.price,
+  currency = EXCLUDED.currency,
+  billing_interval = EXCLUDED.billing_interval,
+  features = EXCLUDED.features,
+  lead_access_mode = EXCLUDED.lead_access_mode,
+  is_active = EXCLUDED.is_active,
+  sort_order = EXCLUDED.sort_order,
+  package_kind = EXCLUDED.package_kind,
+  module_scope = EXCLUDED.module_scope,
+  is_default_free = EXCLUDED.is_default_free,
+  duration_days = EXCLUDED.duration_days,
+  is_publicly_selectable = EXCLUDED.is_publicly_selectable,
+  deleted_at = NULL,
+  updated_at = now();
+
+-- Supersede the short-lived draft package name if an operator applied an
+-- earlier review copy of this migration before release.
+UPDATE public.packages
+SET is_default_free = false,
+    is_active = false,
+    deleted_at = COALESCE(deleted_at, now()),
+    updated_at = now()
+WHERE code = 'partnered-courses-free';
+
+-- Validate ownership and return the primary role expected by the selected
+-- entity. The caller must still have an active platform account.
+CREATE OR REPLACE FUNCTION public.validate_free_tier_target(
+  p_user_id uuid,
+  p_entity_type text,
+  p_entity_id uuid,
+  p_module text
+)
+RETURNS public.app_role
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  expected_role public.app_role;
+BEGIN
+  IF p_user_id IS NULL OR NOT public.is_account_active(p_user_id) THEN
+    RAISE EXCEPTION 'The target user must have an active verified account'
+      USING ERRCODE = '22023';
+  END IF;
+
+  IF p_module NOT IN ('student', 'college', 'mentor', 'jobs', 'events', 'partnered_courses') THEN
+    RAISE EXCEPTION 'Unsupported free-tier module' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_module = 'student' THEN
+    IF p_entity_type <> 'user' OR p_entity_id IS NOT NULL THEN
+      RAISE EXCEPTION 'Student free tier must target the user account'
+        USING ERRCODE = '22023';
+    END IF;
+    expected_role := 'talent';
+  ELSIF p_module = 'college' THEN
+    IF p_entity_type <> 'college' OR p_entity_id IS NULL OR NOT EXISTS (
+      SELECT 1 FROM public.institutes i
+      WHERE i.id = p_entity_id AND i.owner_user_id = p_user_id
+        AND i.status = 'approved' AND i.deleted_at IS NULL
+    ) THEN
+      RAISE EXCEPTION 'Approved college ownership does not match the target account'
+        USING ERRCODE = '42501';
+    END IF;
+    expected_role := 'institution';
+  ELSIF p_module = 'mentor' THEN
+    IF p_entity_type <> 'mentor' OR p_entity_id IS NULL OR NOT EXISTS (
+      SELECT 1 FROM public.mentors m
+      WHERE m.id = p_entity_id AND m.user_id = p_user_id
+        AND m.approval_status = 'approved' AND m.deleted_at IS NULL
+    ) THEN
+      RAISE EXCEPTION 'Approved mentor ownership does not match the target account'
+        USING ERRCODE = '42501';
+    END IF;
+    expected_role := 'mentor';
+  ELSIF p_module = 'jobs' THEN
+    IF p_entity_type = 'company' THEN
+      IF p_entity_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.companies c
+        WHERE c.id = p_entity_id AND c.user_id = p_user_id
+          AND c.status = 'approved' AND c.deleted_at IS NULL
+      ) THEN
+        RAISE EXCEPTION 'Approved company ownership does not match the target account'
+          USING ERRCODE = '42501';
+      END IF;
+      expected_role := 'company';
+    ELSIF p_entity_type = 'user' AND p_entity_id IS NULL THEN
+      SELECT ur.role INTO expected_role
+      FROM public.user_roles ur WHERE ur.user_id = p_user_id;
+      IF expected_role IS NULL THEN
+        RAISE EXCEPTION 'The target account does not have a primary role'
+          USING ERRCODE = '42501';
+      END IF;
+    ELSE
+      RAISE EXCEPTION 'Jobs free tier must target a company or standalone user'
+        USING ERRCODE = '22023';
+    END IF;
+  ELSIF p_module = 'events' THEN
+    IF p_entity_type = 'organizer' THEN
+      IF p_entity_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.events e
+        WHERE e.id = p_entity_id AND e.organizer_user_id = p_user_id
+          AND e.approval_status = 'approved' AND e.deleted_at IS NULL
+      ) THEN
+        RAISE EXCEPTION 'Approved event ownership does not match the target account'
+          USING ERRCODE = '42501';
+      END IF;
+    ELSIF p_entity_type = 'college' THEN
+      IF p_entity_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.institutes i
+        WHERE i.id = p_entity_id AND i.owner_user_id = p_user_id
+          AND i.status = 'approved' AND i.deleted_at IS NULL
+      ) THEN RAISE EXCEPTION 'College ownership mismatch' USING ERRCODE = '42501'; END IF;
+    ELSIF p_entity_type = 'mentor' THEN
+      IF p_entity_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.mentors m
+        WHERE m.id = p_entity_id AND m.user_id = p_user_id
+          AND m.approval_status = 'approved' AND m.deleted_at IS NULL
+      ) THEN RAISE EXCEPTION 'Mentor ownership mismatch' USING ERRCODE = '42501'; END IF;
+    ELSIF p_entity_type = 'company' THEN
+      IF p_entity_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.companies c
+        WHERE c.id = p_entity_id AND c.user_id = p_user_id
+          AND c.status = 'approved' AND c.deleted_at IS NULL
+      ) THEN RAISE EXCEPTION 'Company ownership mismatch' USING ERRCODE = '42501'; END IF;
+    ELSE
+      RAISE EXCEPTION 'Events free tier has an unsupported owner entity'
+        USING ERRCODE = '22023';
+    END IF;
+    SELECT ur.role INTO expected_role
+    FROM public.user_roles ur WHERE ur.user_id = p_user_id;
+  ELSE
+    -- Partner listings are currently account-scoped and remain admin-approved.
+    IF p_entity_type <> 'user' OR p_entity_id IS NOT NULL THEN
+      RAISE EXCEPTION 'Partnered course free tier must target the user account'
+        USING ERRCODE = '22023';
+    END IF;
+    SELECT ur.role INTO expected_role
+    FROM public.user_roles ur WHERE ur.user_id = p_user_id;
+  END IF;
+
+  IF expected_role IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = p_user_id AND ur.role = expected_role
+  ) THEN
+    RAISE EXCEPTION 'The target account role does not match the free-tier module'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN expected_role;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.validate_free_tier_target(uuid, text, uuid, text)
+FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public._provision_default_free_tier(
+  p_user_id uuid,
+  p_entity_type text,
+  p_entity_id uuid,
+  p_module text,
+  p_actor_user_id uuid,
+  p_actor_type text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  package_record public.packages%ROWTYPE;
+  previous_subscription public.subscriptions%ROWTYPE;
+  subscription_record public.subscriptions%ROWTYPE;
+  expected_role public.app_role;
+  requested_module text := NULLIF(btrim(p_module), '');
+BEGIN
+  IF p_actor_type NOT IN ('service_role', 'admin')
+    OR (p_actor_type = 'service_role' AND p_actor_user_id IS NOT NULL)
+    OR (p_actor_type = 'admin' AND NOT public.is_platform_admin(p_actor_user_id))
+  THEN
+    RAISE EXCEPTION 'A trusted free-tier provisioning actor is required'
+      USING ERRCODE = '42501';
+  END IF;
+  IF requested_module IS NULL THEN
+    RAISE EXCEPTION 'A free-tier module is required' USING ERRCODE = '22023';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended(
+      'merotalent:free-tier:' || p_user_id::text || ':' || p_entity_type || ':' ||
+      COALESCE(p_entity_id::text, 'user'),
+      0
+    )
+  );
+
+  expected_role := public.validate_free_tier_target(
+    p_user_id, p_entity_type, p_entity_id, requested_module
+  );
+
+  SELECT p.* INTO package_record
+  FROM public.packages p
+  WHERE p.is_default_free = true
+    AND p.package_kind = 'free'
+    AND p.is_active = true
+    AND p.deleted_at IS NULL
+    AND requested_module = ANY(p.module_scope)
+    AND (p.audience IS NULL OR p.audience = expected_role)
+  ORDER BY CASE WHEN p.audience = expected_role THEN 0 ELSE 1 END, p.sort_order, p.id
+  LIMIT 1;
+
+  IF package_record.id IS NULL THEN
+    RAISE EXCEPTION 'No active default free package is configured for this module'
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  SELECT s.* INTO previous_subscription
+  FROM public.subscriptions s
+  WHERE s.user_id = p_user_id
+    AND s.entity_type = p_entity_type
+    AND s.entity_id IS NOT DISTINCT FROM p_entity_id
+    AND s.status IN ('trialing', 'active')
+    AND s.deleted_at IS NULL
+  FOR UPDATE;
+
+  IF previous_subscription.id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.packages p
+    WHERE p.id = previous_subscription.package_id
+      AND p.package_kind = 'free' AND p.is_default_free = true
+  ) THEN
+    RAISE EXCEPTION 'An active non-default subscription already controls this entity'
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  IF previous_subscription.id IS NULL THEN
+    INSERT INTO public.subscriptions (
+      user_id, package_id, entity_type, entity_id, start_date, expiry_date,
+      status, payment_status, auto_renew, metadata
+    ) VALUES (
+      p_user_id, package_record.id, p_entity_type, p_entity_id, now(),
+      now() + make_interval(days => package_record.duration_days),
+      'active', 'not_required', false,
+      jsonb_build_object(
+        'provisioning', 'default_free_tier',
+        'module', requested_module,
+        'package_code', package_record.code
+      )
+    )
+    RETURNING * INTO subscription_record;
+  ELSE
+    UPDATE public.subscriptions s
+    SET package_id = package_record.id,
+        start_date = now(),
+        expiry_date = now() + make_interval(days => package_record.duration_days),
+        status = 'active',
+        payment_status = 'not_required',
+        auto_renew = false,
+        cancelled_at = NULL,
+        cancellation_reason = NULL,
+        metadata = s.metadata || jsonb_build_object(
+          'provisioning', 'default_free_tier',
+          'module', requested_module,
+          'package_code', package_record.code
+        ),
+        updated_at = now()
+    WHERE s.id = previous_subscription.id
+    RETURNING * INTO subscription_record;
+  END IF;
+
+  INSERT INTO public.audit_logs(
+    actor_user_id, action, entity_type, entity_id, old_data, new_data, metadata
+  ) VALUES (
+    p_actor_user_id, 'provision_default_free_tier', 'subscriptions', subscription_record.id::text,
+    CASE WHEN previous_subscription.id IS NULL THEN NULL ELSE to_jsonb(previous_subscription) END,
+    to_jsonb(subscription_record),
+    jsonb_build_object(
+      'provisioning_actor', p_actor_type,
+      'target_user_id', p_user_id,
+      'target_entity_type', p_entity_type,
+      'target_entity_id', p_entity_id,
+      'module', requested_module
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'subscription_id', subscription_record.id,
+    'package_id', package_record.id,
+    'package_code', package_record.code,
+    'module', requested_module,
+    'status', subscription_record.status,
+    'payment_status', subscription_record.payment_status,
+    'expiry_date', subscription_record.expiry_date
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public._provision_default_free_tier(uuid, text, uuid, text, uuid, text)
+FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.provision_default_free_tier(
+  p_user_id uuid,
+  p_entity_type text,
+  p_entity_id uuid DEFAULT NULL,
+  p_module text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+BEGIN
+  IF auth.role() <> 'service_role' THEN
+    RAISE EXCEPTION 'Free-tier provisioning requires the service role'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN public._provision_default_free_tier(
+    p_user_id, p_entity_type, p_entity_id, p_module, NULL, 'service_role'
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.provision_default_free_tier(uuid, text, uuid, text)
+FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.provision_default_free_tier(uuid, text, uuid, text)
+TO service_role;
+
+CREATE OR REPLACE FUNCTION public._revoke_default_free_tier(
+  p_user_id uuid,
+  p_entity_type text,
+  p_entity_id uuid,
+  p_module text,
+  p_reason text,
+  p_actor_user_id uuid,
+  p_actor_type text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  revoked_count integer;
+  requested_module text := NULLIF(btrim(p_module), '');
+  safe_reason text := NULLIF(btrim(p_reason), '');
+BEGIN
+  IF p_actor_type NOT IN ('service_role', 'admin')
+    OR (p_actor_type = 'service_role' AND p_actor_user_id IS NOT NULL)
+    OR (p_actor_type = 'admin' AND NOT public.is_platform_admin(p_actor_user_id))
+  THEN
+    RAISE EXCEPTION 'A trusted free-tier revocation actor is required'
+      USING ERRCODE = '42501';
+  END IF;
+  IF requested_module IS NULL OR requested_module NOT IN (
+    'student', 'college', 'mentor', 'jobs', 'events', 'partnered_courses'
+  ) THEN
+    RAISE EXCEPTION 'A supported free-tier module is required' USING ERRCODE = '22023';
+  END IF;
+
+  UPDATE public.subscriptions s
+  SET status = 'cancelled',
+      cancelled_at = now(),
+      cancellation_reason = COALESCE(safe_reason, 'Free-tier access revoked by administrator'),
+      updated_at = now()
+  FROM public.packages p
+  WHERE s.package_id = p.id
+    AND s.user_id = p_user_id
+    AND s.entity_type = p_entity_type
+    AND s.entity_id IS NOT DISTINCT FROM p_entity_id
+    AND s.status IN ('trialing', 'active')
+    AND s.deleted_at IS NULL
+    AND p.is_default_free = true
+    AND p.package_kind = 'free'
+    AND requested_module = ANY(p.module_scope);
+  GET DIAGNOSTICS revoked_count = ROW_COUNT;
+
+  INSERT INTO public.audit_logs(
+    actor_user_id, action, entity_type, entity_id, old_data, new_data, metadata
+  ) VALUES (
+    p_actor_user_id, 'revoke_default_free_tier', 'subscriptions', p_entity_id::text,
+    NULL, jsonb_build_object('revoked_count', revoked_count),
+    jsonb_build_object(
+      'provisioning_actor', p_actor_type,
+      'target_user_id', p_user_id,
+      'target_entity_type', p_entity_type,
+      'target_entity_id', p_entity_id,
+      'module', requested_module,
+      'reason', safe_reason
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'revoked_count', revoked_count,
+    'module', requested_module,
+    'status', 'cancelled'
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public._revoke_default_free_tier(uuid, text, uuid, text, text, uuid, text)
+FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.revoke_default_free_tier(
+  p_user_id uuid,
+  p_entity_type text,
+  p_entity_id uuid DEFAULT NULL,
+  p_module text DEFAULT NULL,
+  p_reason text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+BEGIN
+  IF auth.role() <> 'service_role' THEN
+    RAISE EXCEPTION 'Free-tier revocation requires the service role'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN public._revoke_default_free_tier(
+    p_user_id, p_entity_type, p_entity_id, p_module, p_reason, NULL, 'service_role'
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.revoke_default_free_tier(uuid, text, uuid, text, text)
+FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.revoke_default_free_tier(uuid, text, uuid, text, text)
+TO service_role;
+
+-- Authenticated admin wrappers call the private implementation in a controlled
+-- local service context. Their own authorization always uses the caller JWT.
+CREATE OR REPLACE FUNCTION public.admin_provision_default_free_tier(
+  p_user_id uuid,
+  p_entity_type text,
+  p_entity_id uuid DEFAULT NULL,
+  p_module text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  actor uuid := auth.uid();
+  result jsonb;
+BEGIN
+  IF NOT public.is_platform_admin(actor) THEN
+    RAISE EXCEPTION 'Only an active Super Admin can provision free-tier access'
+      USING ERRCODE = '42501';
+  END IF;
+  result := public._provision_default_free_tier(
+    p_user_id, p_entity_type, p_entity_id, p_module, actor, 'admin'
+  );
+  RETURN result;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_provision_default_free_tier(uuid, text, uuid, text)
+FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_provision_default_free_tier(uuid, text, uuid, text)
+TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_revoke_default_free_tier(
+  p_user_id uuid,
+  p_entity_type text,
+  p_entity_id uuid DEFAULT NULL,
+  p_module text DEFAULT NULL,
+  p_reason text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  actor uuid := auth.uid();
+  result jsonb;
+BEGIN
+  IF NOT public.is_platform_admin(actor) THEN
+    RAISE EXCEPTION 'Only an active Super Admin can revoke free-tier access'
+      USING ERRCODE = '42501';
+  END IF;
+  result := public._revoke_default_free_tier(
+    p_user_id, p_entity_type, p_entity_id, p_module, p_reason, actor, 'admin'
+  );
+  RETURN result;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_revoke_default_free_tier(uuid, text, uuid, text, text)
+FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_revoke_default_free_tier(uuid, text, uuid, text, text)
+TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Delegated module access requests: trusted identity, explicit permissions
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.sub_admin_requests
+  ADD COLUMN IF NOT EXISTS organization text,
+  ADD COLUMN IF NOT EXISTS decision_note text,
+  ADD COLUMN IF NOT EXISTS decided_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS decided_at timestamptz;
+
+UPDATE public.sub_admin_requests
+SET status = 'rejected',
+    decision_note = COALESCE(
+      decision_note,
+      'Rejected automatically because the legacy request status was invalid.'
+    ),
+    decided_at = COALESCE(decided_at, now()),
+    updated_at = now()
+WHERE status IS NULL OR status NOT IN ('pending', 'approved', 'rejected');
+
+UPDATE public.sub_admin_requests r
+SET status = 'rejected',
+    decision_note = COALESCE(
+      r.decision_note,
+      'Rejected automatically because the legacy module selection was invalid.'
+    ),
+    decided_at = COALESCE(r.decided_at, now()),
+    updated_at = now()
+WHERE r.status = 'pending'
+  AND (
+    cardinality(r.requested_modules) NOT BETWEEN 1 AND 7
+    OR EXISTS (
+      SELECT 1 FROM unnest(r.requested_modules) AS requested(requested_module)
+      WHERE requested_module NOT IN (
+        'jobs', 'institutions', 'mentors', 'events',
+        'competitions', 'lms', 'companies'
+      )
+    )
+  );
+
+WITH ranked_pending AS (
+  SELECT
+    r.id,
+    row_number() OVER (
+      PARTITION BY r.user_id ORDER BY r.created_at DESC, r.id DESC
+    ) AS request_rank
+  FROM public.sub_admin_requests r
+  WHERE r.status = 'pending'
+)
+UPDATE public.sub_admin_requests r
+SET status = 'rejected',
+    decision_note = COALESCE(
+      r.decision_note,
+      'Superseded by the most recent pending access request during hardening.'
+    ),
+    decided_at = COALESCE(r.decided_at, now()),
+    updated_at = now()
+FROM ranked_pending ranked
+WHERE r.id = ranked.id AND ranked.request_rank > 1;
+
+ALTER TABLE public.sub_admin_requests DROP CONSTRAINT IF EXISTS sub_admin_requests_status_check;
+ALTER TABLE public.sub_admin_requests ADD CONSTRAINT sub_admin_requests_status_check
+  CHECK (status IN ('pending', 'approved', 'rejected')) NOT VALID;
+
+ALTER TABLE public.sub_admin_requests DROP CONSTRAINT IF EXISTS sub_admin_requests_modules_check;
+ALTER TABLE public.sub_admin_requests ADD CONSTRAINT sub_admin_requests_modules_check
+  CHECK (
+    cardinality(requested_modules) BETWEEN 1 AND 7
+    AND requested_modules <@ ARRAY[
+      'jobs', 'institutions', 'mentors', 'events',
+      'competitions', 'lms', 'companies'
+    ]::text[]
+  ) NOT VALID;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sub_admin_requests_one_pending_user_idx
+ON public.sub_admin_requests(user_id)
+WHERE status = 'pending';
+
+DROP POLICY IF EXISTS "Users create sub_admin_requests" ON public.sub_admin_requests;
+DROP POLICY IF EXISTS "Admins manage sub_admin_requests" ON public.sub_admin_requests;
+DROP POLICY IF EXISTS "Users view own sub_admin_requests" ON public.sub_admin_requests;
+DROP POLICY IF EXISTS "Active users view own sub admin requests" ON public.sub_admin_requests;
+
+CREATE POLICY "Active users view own sub admin requests"
+ON public.sub_admin_requests FOR SELECT TO authenticated
+USING (
+  (user_id = auth.uid() AND public.is_account_active(auth.uid()))
+  OR public.is_platform_admin(auth.uid())
+);
+
+-- No direct INSERT/UPDATE/DELETE policy is intentionally provided. All writes
+-- flow through the following checked SECURITY DEFINER functions.
+CREATE OR REPLACE FUNCTION public.request_sub_admin_access(
+  p_requested_modules text[],
+  p_reason text,
+  p_organization text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  actor uuid := auth.uid();
+  trusted_name text;
+  trusted_email text;
+  safe_modules text[];
+  safe_reason text := NULLIF(btrim(p_reason), '');
+  safe_organization text := NULLIF(btrim(p_organization), '');
+  request_record public.sub_admin_requests%ROWTYPE;
+BEGIN
+  IF actor IS NULL OR NOT public.is_account_active(actor) THEN
+    RAISE EXCEPTION 'An active verified account is required' USING ERRCODE = '42501';
+  END IF;
+  IF public.is_platform_admin(actor) THEN
+    RAISE EXCEPTION 'Super Admin accounts do not need delegated access'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT array_agg(DISTINCT btrim(module_name) ORDER BY btrim(module_name))
+  INTO safe_modules
+  FROM unnest(COALESCE(p_requested_modules, '{}'::text[])) AS requested(module_name)
+  WHERE btrim(module_name) <> '';
+
+  IF safe_modules IS NULL OR cardinality(safe_modules) NOT BETWEEN 1 AND 7
+    OR NOT safe_modules <@ ARRAY[
+      'jobs', 'institutions', 'mentors', 'events',
+      'competitions', 'lms', 'companies'
+    ]::text[]
+  THEN
+    RAISE EXCEPTION 'One or more requested modules are unsupported'
+      USING ERRCODE = '22023';
+  END IF;
+  IF safe_reason IS NULL OR char_length(safe_reason) NOT BETWEEN 10 AND 2000 THEN
+    RAISE EXCEPTION 'A reason between 10 and 2000 characters is required'
+      USING ERRCODE = '22023';
+  END IF;
+  IF safe_organization IS NOT NULL AND char_length(safe_organization) > 200 THEN
+    RAISE EXCEPTION 'Organization must be 200 characters or fewer'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT NULLIF(btrim(p.full_name), ''), lower(au.email)
+  INTO trusted_name, trusted_email
+  FROM public.profiles p
+  JOIN auth.users au ON au.id = p.user_id
+  WHERE p.user_id = actor;
+  IF trusted_name IS NULL OR trusted_email IS NULL THEN
+    RAISE EXCEPTION 'A verified profile name and email are required'
+      USING ERRCODE = '42501';
+  END IF;
+
+  INSERT INTO public.sub_admin_requests(
+    user_id, user_name, user_email, requested_modules, reason,
+    organization, status, updated_at
+  ) VALUES (
+    actor, trusted_name, trusted_email, safe_modules, safe_reason,
+    safe_organization, 'pending', now()
+  )
+  RETURNING * INTO request_record;
+
+  INSERT INTO public.audit_logs(
+    actor_user_id, action, entity_type, entity_id, old_data, new_data, metadata
+  ) VALUES (
+    actor, 'request_sub_admin_access', 'sub_admin_requests', request_record.id::text,
+    NULL,
+    jsonb_build_object(
+      'user_id', actor,
+      'requested_modules', safe_modules,
+      'status', 'pending'
+    ),
+    jsonb_build_object('organization', safe_organization)
+  );
+
+  RETURN jsonb_build_object(
+    'id', request_record.id,
+    'user_id', request_record.user_id,
+    'user_name', request_record.user_name,
+    'user_email', request_record.user_email,
+    'requested_modules', request_record.requested_modules,
+    'reason', request_record.reason,
+    'status', request_record.status,
+    'created_at', request_record.created_at
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.request_sub_admin_access(text[], text, text)
+FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.request_sub_admin_access(text[], text, text)
+TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_decide_sub_admin_request(
+  p_request_id uuid,
+  p_approve boolean,
+  p_note text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  actor uuid := auth.uid();
+  request_record public.sub_admin_requests%ROWTYPE;
+  safe_note text := NULLIF(btrim(p_note), '');
+  permission_codes text[] := '{}'::text[];
+BEGIN
+  IF NOT public.is_platform_admin(actor) THEN
+    RAISE EXCEPTION 'Only an active Super Admin can decide access requests'
+      USING ERRCODE = '42501';
+  END IF;
+  IF p_request_id IS NULL OR p_approve IS NULL THEN
+    RAISE EXCEPTION 'Request and decision are required' USING ERRCODE = '22023';
+  END IF;
+  IF safe_note IS NOT NULL AND char_length(safe_note) > 2000 THEN
+    RAISE EXCEPTION 'Decision note must be 2000 characters or fewer'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO request_record
+  FROM public.sub_admin_requests r
+  WHERE r.id = p_request_id
+  FOR UPDATE;
+  IF request_record.id IS NULL THEN
+    RAISE EXCEPTION 'Access request was not found' USING ERRCODE = 'P0002';
+  END IF;
+  IF request_record.status <> 'pending' THEN
+    RAISE EXCEPTION 'Access request has already been decided' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_approve AND NOT public.is_account_active(request_record.user_id) THEN
+    RAISE EXCEPTION 'Delegated access cannot be granted to an inactive account'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF p_approve THEN
+    SELECT COALESCE(array_agg(DISTINCT permission_code ORDER BY permission_code), '{}'::text[])
+    INTO permission_codes
+    FROM (
+      SELECT unnest(CASE module_name
+        WHEN 'jobs' THEN ARRAY['job.post', 'lead.view', 'media.manage']
+        WHEN 'institutions' THEN ARRAY['college.manage', 'lead.view', 'media.manage']
+        WHEN 'mentors' THEN ARRAY['mentor.manage', 'lead.view', 'media.manage']
+        WHEN 'events' THEN ARRAY['event.organize', 'lead.view', 'media.manage']
+        WHEN 'competitions' THEN ARRAY['event.organize', 'media.manage']
+        WHEN 'lms' THEN ARRAY['course.manage', 'media.manage']
+        WHEN 'companies' THEN ARRAY['job.post', 'lead.view', 'media.manage']
+        ELSE '{}'::text[]
+      END) AS permission_code
+      FROM unnest(request_record.requested_modules) AS requested(module_name)
+    ) mapped;
+
+    INSERT INTO public.user_permissions(user_id, permission_id, granted_by)
+    SELECT request_record.user_id, p.id, actor
+    FROM public.permissions p
+    WHERE p.code = ANY(permission_codes)
+    ON CONFLICT (user_id, permission_id) DO UPDATE SET
+      granted_by = EXCLUDED.granted_by,
+      expires_at = NULL;
+  END IF;
+
+  UPDATE public.sub_admin_requests
+  SET status = CASE WHEN p_approve THEN 'approved' ELSE 'rejected' END,
+      decision_note = safe_note,
+      decided_by = actor,
+      decided_at = now(),
+      updated_at = now()
+  WHERE id = request_record.id
+  RETURNING * INTO request_record;
+
+  INSERT INTO public.audit_logs(
+    actor_user_id, action, entity_type, entity_id, old_data, new_data, metadata
+  ) VALUES (
+    actor,
+    CASE WHEN p_approve THEN 'approve_sub_admin_access' ELSE 'reject_sub_admin_access' END,
+    'sub_admin_requests', request_record.id::text,
+    jsonb_build_object('status', 'pending'),
+    jsonb_build_object(
+      'status', request_record.status,
+      'requested_modules', request_record.requested_modules,
+      'granted_permissions', permission_codes
+    ),
+    jsonb_build_object(
+      'target_user_id', request_record.user_id,
+      'decision_note', safe_note
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'id', request_record.id,
+    'user_id', request_record.user_id,
+    'status', request_record.status,
+    'requested_modules', request_record.requested_modules,
+    'granted_permissions', permission_codes,
+    'decided_at', request_record.decided_at
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_decide_sub_admin_request(uuid, boolean, text)
+FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_decide_sub_admin_request(uuid, boolean, text)
+TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Verification and helper execution hardening
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.protect_profile_admin_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+BEGIN
+  IF EXISTS (
+      SELECT 1 FROM public.user_roles ur WHERE ur.user_id = OLD.user_id AND ur.role = 'admin'
+    )
+    AND OLD.account_status = 'active' AND OLD.deleted_at IS NULL
+    AND (NEW.account_status <> 'active' OR NEW.deleted_at IS NOT NULL)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_roles ur
+      JOIN public.profiles p ON p.user_id = ur.user_id
+      WHERE ur.role = 'admin' AND ur.user_id <> OLD.user_id
+        AND public.is_account_active(ur.user_id)
+    )
+  THEN
+    RAISE EXCEPTION 'The final active Super Admin cannot be deactivated'
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  IF auth.role() <> 'service_role' AND NOT public.is_platform_admin(auth.uid()) THEN
+    NEW.user_id := OLD.user_id;
+    NEW.email := OLD.email;
+    NEW.account_status := OLD.account_status;
+    NEW.email_verified_at := OLD.email_verified_at;
+    NEW.is_verified := OLD.is_verified;
+    NEW.deleted_at := OLD.deleted_at;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- PUBLIC receives EXECUTE on functions by default. Keep these predicates
+-- available only to signed-in clients and trusted server calls.
+CREATE OR REPLACE FUNCTION public.is_platform_admin(_user_id uuid DEFAULT auth.uid())
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+  SELECT
+    -- Anonymous RLS expressions need to execute this predicate, but anonymous
+    -- callers must not probe whether an arbitrary UUID is an administrator.
+    (auth.role() <> 'anon' OR _user_id IS NOT DISTINCT FROM auth.uid())
+    AND public.is_account_active(_user_id)
+    AND EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = _user_id AND ur.role = 'admin'
+    )
+$$;
+
+REVOKE ALL ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.has_permission(uuid, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_permission(uuid, text) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_account_active(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_account_active(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_platform_admin(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_platform_admin(uuid) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.has_active_subscription(uuid, text, uuid, text)
+FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_active_subscription(uuid, text, uuid, text)
+TO authenticated, service_role;
+
+-- Fix post-hardening CMS policies so a suspended/banned administrator cannot
+-- retain access through a stale role row.
+DROP POLICY IF EXISTS "Admins manage page sections" ON public.page_sections;
+DROP POLICY IF EXISTS "Active admins manage page sections" ON public.page_sections;
+CREATE POLICY "Active admins manage page sections"
+ON public.page_sections FOR ALL TO authenticated
+USING (public.is_platform_admin(auth.uid()))
+WITH CHECK (public.is_platform_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Admins manage site settings" ON public.site_settings;
+DROP POLICY IF EXISTS "Active admins manage site settings" ON public.site_settings;
+CREATE POLICY "Active admins manage site settings"
+ON public.site_settings FOR ALL TO authenticated
+USING (public.is_platform_admin(auth.uid()))
+WITH CHECK (public.is_platform_admin(auth.uid()));
+
+ALTER TABLE public.site_settings
+  ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT false;
+
+UPDATE public.site_settings
+SET is_public = true
+WHERE key IN (
+  'site_title', 'favicon_url', 'logo_url',
+  'meta_description', 'contact_email', 'contact_phone'
+);
+
+DROP POLICY IF EXISTS "Public read site settings" ON public.site_settings;
+DROP POLICY IF EXISTS "Public reads allowlisted site settings" ON public.site_settings;
+CREATE POLICY "Public reads allowlisted site settings"
+ON public.site_settings FOR SELECT TO anon, authenticated
+USING (is_public = true OR public.is_platform_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Public can view active packages" ON public.packages;
+DROP POLICY IF EXISTS "Public can view selectable or owned packages" ON public.packages;
+CREATE POLICY "Public can view selectable or owned packages"
+ON public.packages FOR SELECT TO anon, authenticated
+USING (
+  (
+    is_active = true
+    AND deleted_at IS NULL
+    AND (
+      is_publicly_selectable = true
+      OR EXISTS (
+        SELECT 1 FROM public.subscriptions s
+        WHERE s.package_id = packages.id
+          AND s.user_id = auth.uid()
+          AND s.deleted_at IS NULL
+      )
+    )
+  )
+  OR public.is_platform_admin(auth.uid())
+);
+
+COMMIT;

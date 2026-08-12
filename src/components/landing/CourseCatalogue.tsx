@@ -1,231 +1,156 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight, BookOpen, ExternalLink, Loader2 } from "lucide-react";
+import { PartnerCourseThumbnail } from "@/components/courses/PartnerCourseThumbnail";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { BookOpen, Clock, Users, Star, ArrowRight, Play, FileText, HelpCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const categories = ["All", "Development", "Design", "Business", "Data Science", "Marketing"];
-
-const mockCourses = [
-  {
-    id: "1",
-    title: "Full Stack Web Development Bootcamp",
-    description: "Master modern web development with React, Node.js, and databases",
-    thumbnail: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400",
-    category: "Development",
-    difficulty: "Intermediate",
-    duration: 40,
-    enrolled: 1234,
-    rating: 4.8,
-    price: 0,
-    modules: 12,
-    lessons: 48,
-  },
-  {
-    id: "2",
-    title: "UI/UX Design Masterclass",
-    description: "Learn design thinking, wireframing, and prototyping with Figma",
-    thumbnail: "https://images.unsplash.com/photo-1541462608143-67571c6738dd?w=400",
-    category: "Design",
-    difficulty: "Beginner",
-    duration: 25,
-    enrolled: 876,
-    rating: 4.9,
-    price: 49,
-    modules: 8,
-    lessons: 32,
-  },
-  {
-    id: "3",
-    title: "Data Science with Python",
-    description: "From basics to machine learning models with hands-on projects",
-    thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400",
-    category: "Data Science",
-    difficulty: "Advanced",
-    duration: 60,
-    enrolled: 654,
-    rating: 4.7,
-    price: 79,
-    modules: 15,
-    lessons: 72,
-  },
-  {
-    id: "4",
-    title: "Digital Marketing Fundamentals",
-    description: "SEO, Social Media, and Content Marketing strategies",
-    thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400",
-    category: "Marketing",
-    difficulty: "Beginner",
-    duration: 20,
-    enrolled: 1543,
-    rating: 4.6,
-    price: 0,
-    modules: 6,
-    lessons: 24,
-  },
-  {
-    id: "5",
-    title: "Entrepreneurship & Business Strategy",
-    description: "Build and scale your startup with proven frameworks",
-    thumbnail: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400",
-    category: "Business",
-    difficulty: "Intermediate",
-    duration: 30,
-    enrolled: 432,
-    rating: 4.8,
-    price: 59,
-    modules: 10,
-    lessons: 40,
-  },
-  {
-    id: "6",
-    title: "Mobile App Development with React Native",
-    description: "Build cross-platform apps for iOS and Android",
-    thumbnail: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400",
-    category: "Development",
-    difficulty: "Intermediate",
-    duration: 35,
-    enrolled: 765,
-    rating: 4.7,
-    price: 69,
-    modules: 11,
-    lessons: 44,
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
+import {
+  PARTNER_COURSE_SELECT,
+  isLivePartnerCourse,
+  type PartnerCourse,
+} from "@/lib/courses/partnered-courses";
 
 const CourseCatalogue = () => {
+  const [courses, setCourses] = useState<PartnerCourse[]>([]);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
-  const filteredCourses =
-    activeCategory === "All"
-      ? mockCourses
-      : mockCourses.filter((course) => course.category === activeCategory);
+  const fetchCourses = useCallback(async () => {
+    setIsLoading(true);
+    setHasError(false);
+
+    const { data, error } = await (supabase as any)
+      .from("courses")
+      .select(PARTNER_COURSE_SELECT)
+      .eq("is_partnered", true)
+      .eq("is_published", true)
+      .eq("status", "published")
+      .is("deleted_at", null)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(6);
+
+    if (error) {
+      setCourses([]);
+      setHasError(true);
+    } else {
+      setCourses(((data || []) as PartnerCourse[]).filter(isLivePartnerCourse));
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void fetchCourses();
+  }, [fetchCourses]);
+
+  const categories = useMemo(
+    () => ["All", ...Array.from(new Set(courses.map((course) => course.category).filter(Boolean) as string[])).sort()],
+    [courses],
+  );
+  const filteredCourses = activeCategory === "All"
+    ? courses
+    : courses.filter((course) => course.category === activeCategory);
 
   return (
     <section id="courses" className="w-full bg-white py-20 md:py-32">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
+        <div className="mb-12 text-center">
           <Badge variant="secondary" className="mb-4">
-            <BookOpen className="w-3 h-3 mr-1" />
-            Learning Platform
+            <BookOpen className="mr-1 h-3 w-3" />
+            Partner course directory
           </Badge>
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Explore Our Course <span className="text-primary">Catalogue</span>
+          <h2 className="mb-4 font-display text-3xl font-bold md:text-4xl">
+            Explore Partner <span className="text-primary">Courses</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Master in-demand skills with our comprehensive courses featuring videos, 
-            PDFs, quizzes, and hands-on assignments.
+          <p className="mx-auto max-w-2xl text-muted-foreground">
+            Discover approved listings on MeroTalent, then continue to learn.merotalent.com for enrollment and learning.
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={activeCategory === category ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveCategory(category)}
-              className="rounded-full"
-            >
-              {category}
+        {categories.length > 1 && (
+          <div className="mb-10 flex flex-wrap justify-center gap-2">
+            {categories.map((category) => (
+              <Button
+                key={category}
+                variant={activeCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveCategory(category)}
+                className="rounded-full"
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex min-h-48 items-center justify-center gap-3 text-sm font-semibold text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            Loading partner courses…
+          </div>
+        ) : hasError ? (
+          <div className="flex min-h-48 flex-col items-center justify-center text-center">
+            <p className="font-semibold">Partner courses are temporarily unavailable.</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => void fetchCourses()}>
+              Try again
             </Button>
-          ))}
-        </div>
-
-        {/* Course Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          {filteredCourses.map((course) => (
-            <Card
-              key={course.id}
-              className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50"
-            >
-              {/* Thumbnail */}
-              <div className="relative aspect-video overflow-hidden">
-                <img
-                  src={course.thumbnail}
-                  alt={course.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <Badge
-                  className={cn(
-                    "absolute top-3 left-3",
-                    course.price === 0 ? "bg-green-500" : "bg-primary"
-                  )}
-                >
-                  {course.price === 0 ? "Free" : `$${course.price}`}
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="absolute top-3 right-3 bg-background/80 backdrop-blur"
-                >
-                  {course.difficulty}
-                </Badge>
-                {/* Content Types */}
-                <div className="absolute bottom-3 left-3 flex gap-1.5">
-                  <div className="w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center" title="Videos">
-                    <Play className="w-3.5 h-3.5 text-primary" />
+          </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="flex min-h-48 flex-col items-center justify-center text-center text-muted-foreground">
+            <BookOpen className="mb-3 h-10 w-10" />
+            <p>{courses.length === 0 ? "No partner courses are published yet." : "No listings are available in this category."}</p>
+          </div>
+        ) : (
+          <div className="mb-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredCourses.map((course) => (
+              <Link key={course.id} to={`/courses/${course.id}`} className="h-full">
+                <Card className="group h-full overflow-hidden border-border/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+                  <div className="relative aspect-video overflow-hidden">
+                    <PartnerCourseThumbnail
+                      source={course.thumbnail_url}
+                      title={course.title}
+                      className="h-full w-full"
+                      imageClassName="transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                    <Badge className="absolute left-3 top-3 bg-emerald-600">Partner course</Badge>
                   </div>
-                  <div className="w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center" title="Documents">
-                    <FileText className="w-3.5 h-3.5 text-secondary" />
-                  </div>
-                  <div className="w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center" title="Quizzes">
-                    <HelpCircle className="w-3.5 h-3.5 text-accent" />
-                  </div>
-                </div>
-              </div>
 
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                  <span className="text-primary font-medium">{course.category}</span>
-                  <span>•</span>
-                  <span>{course.modules} modules</span>
-                  <span>•</span>
-                  <span>{course.lessons} lessons</span>
-                </div>
-                <h3 className="font-semibold text-lg leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                  {course.title}
-                </h3>
-              </CardHeader>
+                  <CardHeader className="pb-2">
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-primary">{course.category || "Course"}</span>
+                      {course.partner_name && <><span>•</span><span>{course.partner_name}</span></>}
+                    </div>
+                    <h3 className="line-clamp-2 text-lg font-semibold leading-snug transition-colors group-hover:text-primary">
+                      {course.title}
+                    </h3>
+                  </CardHeader>
 
-              <CardContent className="pb-2">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {course.description}
-                </p>
-              </CardContent>
+                  <CardContent className="pb-3">
+                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                      {course.description || "View this partner listing and continue to the course platform."}
+                    </p>
+                  </CardContent>
 
-              <CardFooter className="pt-2 border-t border-border/50">
-                <div className="flex items-center justify-between w-full text-sm">
-                  <div className="flex items-center gap-4 text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {course.duration}h
+                  <CardFooter className="border-t border-border/50 pt-3">
+                    <span className="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+                      View listing <ExternalLink className="h-4 w-4" />
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {course.enrolled.toLocaleString()}
-                    </span>
-                    <span className="flex items-center gap-1 text-amber-500">
-                      <Star className="w-4 h-4 fill-current" />
-                      {course.rating}
-                    </span>
-                  </div>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                  </CardFooter>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
 
-        {/* View All CTA */}
         <div className="text-center">
           <Button variant="hero" size="lg" asChild>
-            <Link to="/signup">
-              Explore All Courses
-              <ArrowRight className="w-4 h-4 ml-2" />
+            <Link to="/courses">
+              Explore all partner courses
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>

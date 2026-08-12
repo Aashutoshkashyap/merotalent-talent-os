@@ -23,10 +23,70 @@ interface PackageItem {
   price: number;
   currency: string;
   billing_interval: string;
+  features: Record<string, unknown> | null;
+  lead_access_mode: "none" | "read_only" | "full";
   is_active: boolean;
   sort_order: number;
+  package_kind: "free" | "paid" | "complimentary";
+  module_scope: string[];
+  is_default_free: boolean;
+  duration_days: number | null;
+  is_publicly_selectable: boolean;
   created_at: string;
 }
+
+const MODULE_OPTIONS = [
+  { value: "student", label: "Student" },
+  { value: "college", label: "College" },
+  { value: "mentor", label: "Mentor" },
+  { value: "jobs", label: "Jobs" },
+  { value: "events", label: "Events" },
+  { value: "partnered_courses", label: "Partnered courses" },
+] as const;
+
+const FEATURE_OPTIONS = [
+  { value: "application_submit", label: "Submit applications" },
+  { value: "college_applications", label: "College application leads" },
+  { value: "mentor_bookings", label: "Mentor booking leads" },
+  { value: "job_applications", label: "Job application leads" },
+  { value: "event_registrations", label: "Event registration leads" },
+  { value: "partnered_course_referrals", label: "Course referrals" },
+  { value: "partnered_courses", label: "Partner course operations" },
+] as const;
+
+interface PackageFormData {
+  code: string;
+  name: string;
+  description: string;
+  audience: string;
+  price: string;
+  billing_interval: string;
+  features: Record<string, unknown>;
+  lead_access_mode: "none" | "read_only" | "full";
+  is_active: boolean;
+  package_kind: "free" | "paid" | "complimentary";
+  module_scope: string[];
+  is_default_free: boolean;
+  duration_days: string;
+  is_publicly_selectable: boolean;
+}
+
+const createEmptyForm = (): PackageFormData => ({
+  code: "",
+  name: "",
+  description: "",
+  audience: "institution",
+  price: "0",
+  billing_interval: "month",
+  features: {},
+  lead_access_mode: "full",
+  is_active: true,
+  package_kind: "paid",
+  module_scope: [],
+  is_default_free: false,
+  duration_days: "",
+  is_publicly_selectable: true,
+});
 
 export default function AdminPackages() {
   const { toast } = useToast();
@@ -37,15 +97,7 @@ export default function AdminPackages() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPackage, setEditingPackage] = useState<PackageItem | null>(null);
 
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    description: "",
-    audience: "institution",
-    price: "0",
-    billing_interval: "month",
-    is_active: true,
-  });
+  const [formData, setFormData] = useState<PackageFormData>(createEmptyForm);
 
   useEffect(() => {
     fetchPackages();
@@ -67,17 +119,52 @@ export default function AdminPackages() {
       return;
     }
 
+    const price = Number(formData.price);
+    const durationDays = formData.duration_days === "" ? null : Number(formData.duration_days);
+    if (!Number.isFinite(price) || price < 0) {
+      toast({ variant: "destructive", title: "Enter a valid non-negative price" });
+      return;
+    }
+    if (durationDays !== null && (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 3650)) {
+      toast({ variant: "destructive", title: "Duration must be between 1 and 3650 days" });
+      return;
+    }
+    if (
+      formData.is_default_free &&
+      (formData.package_kind !== "free" || price !== 0 || durationDays === null ||
+        formData.module_scope.length === 0 || formData.is_publicly_selectable)
+    ) {
+      toast({
+        variant: "destructive",
+        title: "Default free package is incomplete",
+        description: "Use the Free kind, NPR 0, a duration and module, and keep it hidden from public selection.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
+
+    const moduleOrder = new Map(MODULE_OPTIONS.map((module, index) => [module.value, index]));
 
     const payload = {
       code: formData.code.toLowerCase().trim(),
       name: formData.name.trim(),
       description: formData.description || null,
-      audience: formData.audience,
-      price: parseFloat(formData.price || "0"),
+      audience: formData.audience === "all" ? null : formData.audience,
+      price,
       currency: "NPR",
       billing_interval: formData.billing_interval,
+      features: formData.features,
+      lead_access_mode: formData.lead_access_mode,
       is_active: formData.is_active,
+      package_kind: formData.package_kind,
+      module_scope: [...formData.module_scope].sort(
+        (a, b) => (moduleOrder.get(a as typeof MODULE_OPTIONS[number]["value"]) ?? 0) -
+          (moduleOrder.get(b as typeof MODULE_OPTIONS[number]["value"]) ?? 0),
+      ),
+      is_default_free: formData.is_default_free,
+      duration_days: durationDays,
+      is_publicly_selectable: formData.is_publicly_selectable,
     };
 
     let error;
@@ -115,24 +202,23 @@ export default function AdminPackages() {
       code: pkg.code,
       name: pkg.name,
       description: pkg.description || "",
-      audience: pkg.audience || "institution",
+      audience: pkg.audience || "all",
       price: pkg.price ? pkg.price.toString() : "0",
       billing_interval: pkg.billing_interval || "month",
+      features: pkg.features && typeof pkg.features === "object" ? { ...pkg.features } : {},
+      lead_access_mode: pkg.lead_access_mode || "full",
       is_active: pkg.is_active ?? true,
+      package_kind: pkg.package_kind || "paid",
+      module_scope: Array.isArray(pkg.module_scope) ? pkg.module_scope : [],
+      is_default_free: pkg.is_default_free ?? false,
+      duration_days: pkg.duration_days?.toString() || "",
+      is_publicly_selectable: pkg.is_publicly_selectable ?? true,
     });
     setIsDialogOpen(true);
   };
 
   const resetForm = () => {
-    setFormData({
-      code: "",
-      name: "",
-      description: "",
-      audience: "institution",
-      price: "0",
-      billing_interval: "month",
-      is_active: true,
-    });
+    setFormData(createEmptyForm());
     setEditingPackage(null);
     setIsDialogOpen(false);
   };
@@ -141,6 +227,22 @@ export default function AdminPackages() {
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const toggleModule = (module: string, enabled: boolean) => {
+    setFormData((current) => ({
+      ...current,
+      module_scope: enabled
+        ? [...new Set([...current.module_scope, module])]
+        : current.module_scope.filter((item) => item !== module),
+    }));
+  };
+
+  const toggleFeature = (feature: string, enabled: boolean) => {
+    setFormData((current) => ({
+      ...current,
+      features: { ...current.features, [feature]: enabled },
+    }));
+  };
 
   return (
     <OperationsPage>
@@ -156,10 +258,10 @@ export default function AdminPackages() {
               Add Package
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingPackage ? "Edit Package" : "Create Subscription Package"}</DialogTitle>
-              <DialogDescription>Set up pricing and features</DialogDescription>
+              <DialogDescription>Configure pricing, module scope, entitlement behavior and visibility.</DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
@@ -202,9 +304,32 @@ export default function AdminPackages() {
                       <SelectItem value="institution">Colleges (Institution)</SelectItem>
                       <SelectItem value="mentor">Mentors</SelectItem>
                       <SelectItem value="company">Companies / Employers</SelectItem>
+                      <SelectItem value="talent">Students / Talent</SelectItem>
+                      <SelectItem value="all">Any matching role</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Package Kind</Label>
+                  <Select
+                    value={formData.package_kind}
+                    onValueChange={(v: PackageFormData["package_kind"]) => setFormData({
+                      ...formData,
+                      package_kind: v,
+                      is_default_free: v === "free" ? formData.is_default_free : false,
+                    })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="free">Free</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="complimentary">Complimentary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Billing Cycle</Label>
                   <Select value={formData.billing_interval} onValueChange={(v) => setFormData({ ...formData, billing_interval: v })}>
@@ -217,23 +342,105 @@ export default function AdminPackages() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Lead Access</Label>
+                  <Select
+                    value={formData.lead_access_mode}
+                    onValueChange={(v: PackageFormData["lead_access_mode"]) => setFormData({ ...formData, lead_access_mode: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="read_only">Read only</SelectItem>
+                      <SelectItem value="full">Full access</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Price (NPR)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.price}
+                    disabled={formData.is_default_free}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Duration (Days)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    placeholder="Optional; required for default free"
+                    value={formData.duration_days}
+                    onChange={(e) => setFormData({ ...formData, duration_days: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Price (NPR)</Label>
-                <Input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                />
+                <Label>Module Scope</Label>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 rounded-lg border p-3">
+                  {MODULE_OPTIONS.map((module) => (
+                    <label key={module.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Switch
+                        checked={formData.module_scope.includes(module.value)}
+                        onCheckedChange={(checked) => toggleModule(module.value, checked)}
+                      />
+                      {module.label}
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(v) => setFormData({ ...formData, is_active: v })}
-                />
-                <Label>Active Package</Label>
+              <div className="space-y-2">
+                <Label>Basic Features</Label>
+                <div className="grid sm:grid-cols-2 gap-2 rounded-lg border p-3">
+                  {FEATURE_OPTIONS.map((feature) => (
+                    <label key={feature.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Switch
+                        checked={formData.features[feature.value] === true}
+                        onCheckedChange={(checked) => toggleFeature(feature.value, checked)}
+                      />
+                      {feature.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-3 pt-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Switch
+                    checked={formData.is_active}
+                    onCheckedChange={(v) => setFormData({ ...formData, is_active: v })}
+                  />
+                  Active package
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Switch
+                    checked={formData.is_publicly_selectable}
+                    disabled={formData.is_default_free}
+                    onCheckedChange={(v) => setFormData({ ...formData, is_publicly_selectable: v })}
+                  />
+                  Publicly selectable
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Switch
+                    checked={formData.is_default_free}
+                    onCheckedChange={(v) => setFormData({
+                      ...formData,
+                      is_default_free: v,
+                      package_kind: v ? "free" : formData.package_kind,
+                      price: v ? "0" : formData.price,
+                      is_publicly_selectable: v ? false : formData.is_publicly_selectable,
+                    })}
+                  />
+                  Default free tier
+                </label>
               </div>
             </div>
 
@@ -263,7 +470,8 @@ export default function AdminPackages() {
             <TableRow>
               <TableHead>Code & Name</TableHead>
               <TableHead>Audience</TableHead>
-              <TableHead>Billing</TableHead>
+              <TableHead>Kind & Scope</TableHead>
+              <TableHead>Access</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -282,12 +490,33 @@ export default function AdminPackages() {
                   </div>
                 </TableCell>
                 <TableCell className="capitalize">{pkg.audience || "all"}</TableCell>
-                <TableCell className="capitalize">{pkg.billing_interval}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant={pkg.package_kind === "paid" ? "outline" : "secondary"} className="capitalize">
+                      {pkg.package_kind}
+                    </Badge>
+                    {pkg.is_default_free && <Badge>Default</Badge>}
+                  </div>
+                  <p className="mt-1 max-w-[220px] text-xs text-muted-foreground">
+                    {pkg.module_scope?.length ? pkg.module_scope.join(", ").replaceAll("_", " ") : "No module scope"}
+                  </p>
+                </TableCell>
+                <TableCell>
+                  <p className="capitalize">{pkg.lead_access_mode.replaceAll("_", " ")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {pkg.duration_days ? `${pkg.duration_days} days` : pkg.billing_interval.replaceAll("_", " ")}
+                  </p>
+                </TableCell>
                 <TableCell className="font-semibold">NPR {pkg.price}</TableCell>
                 <TableCell>
-                  <Badge variant={pkg.is_active ? "default" : "secondary"}>
-                    {pkg.is_active ? "Active" : "Disabled"}
-                  </Badge>
+                  <div className="flex flex-col items-start gap-1">
+                    <Badge variant={pkg.is_active ? "default" : "secondary"}>
+                      {pkg.is_active ? "Active" : "Disabled"}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {pkg.is_publicly_selectable ? "Public" : "Internal"}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
@@ -303,7 +532,7 @@ export default function AdminPackages() {
             ))}
             {filteredPackages.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   {isLoading ? "Loading..." : "No packages found."}
                 </TableCell>
               </TableRow>

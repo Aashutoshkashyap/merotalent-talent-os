@@ -39,7 +39,6 @@ import {
   Building2,
   Briefcase,
   UserCog,
-  BookOpen,
   Settings,
 } from "lucide-react";
 
@@ -76,11 +75,6 @@ const roleConfig = {
     icon: UserCog,
     color: "bg-primary/10 text-primary",
     description: "Conduct mentorship sessions",
-  },
-  instructor: {
-    icon: BookOpen,
-    color: "bg-accent/10 text-accent",
-    description: "Upload courses and manage LMS content",
   },
   institution: {
     icon: GraduationCap,
@@ -281,14 +275,14 @@ const AdminRoleManagement = () => {
   return (
     <OperationsPage>
       <div>
-        <h1 className="text-2xl font-display font-bold">Role Management</h1>
+        <h1 className="text-2xl font-display font-bold">Primary roles</h1>
         <p className="text-muted-foreground">
-          Assign and manage user roles with granular permissions
+          Assign one primary workspace role per account.
         </p>
       </div>
 
       {/* Role Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {Object.entries(roleConfig).map(([role, config]) => {
           const count = users.filter((u) => u.roles.includes(role)).length;
           const Icon = config.icon;
@@ -309,8 +303,10 @@ const AdminRoleManagement = () => {
       {/* Users Table */}
       <Card className="border-border/50">
         <CardHeader>
-          <CardTitle>Primary Roles</CardTitle>
-          <CardDescription>Manage one primary role per account; delegated permissions are configured separately</CardDescription>
+          <CardTitle>Account roles</CardTitle>
+          <CardDescription>
+            Delegated module access is reviewed separately under Access requests.
+          </CardDescription>
           <div className="relative max-w-md mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -326,7 +322,7 @@ const AdminRoleManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Roles</TableHead>
+                <TableHead>Primary role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -377,7 +373,7 @@ const AdminRoleManagement = () => {
                         }}
                       >
                         <Shield className="w-4 h-4 mr-2" />
-                        Assign Role
+                        Change role
                       </Button>
                       <Button
                         variant="ghost"
@@ -399,19 +395,19 @@ const AdminRoleManagement = () => {
                           if (error) {
                             toast({
                               variant: "destructive",
-                              title: "Revocation failed",
+                              title: "Suspension failed",
                               description: error.message,
                             });
                           } else {
                             toast({
-                              title: "Access Revoked",
-                              description: `All admin access and roles for ${user.full_name || user.email} have been revoked.`,
+                              title: "Account suspended",
+                              description: `${user.full_name || user.email} was suspended and reset to the talent role.`,
                             });
                             fetchUsers();
                           }
                         }}
                       >
-                        Revoke Access
+                        Suspend access
                       </Button>
                     </div>
                   </TableCell>

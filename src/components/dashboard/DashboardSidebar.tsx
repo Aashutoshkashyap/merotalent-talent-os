@@ -7,7 +7,6 @@ import {
   Trophy,
   User,
   Users,
-  Building2,
   Briefcase,
   GraduationCap,
   Settings,
@@ -61,13 +60,7 @@ const DashboardSidebar = ({
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
 
-  const adminNavItems = [
-    { icon: Shield, label: "Admin Panel", href: "/admin" },
-    { icon: Users, label: "Manage Users", href: "/admin/users" },
-    { icon: Trophy, label: "Manage Competitions", href: "/admin/competitions" },
-    { icon: Building2, label: "Institutions", href: "/admin/institutions" },
-    { icon: Briefcase, label: "Companies", href: "/admin/companies" },
-  ];
+  const adminNavItems = [{ icon: Shield, label: "Admin Panel", href: "/admin" }];
 
   const NavItem = ({ icon: Icon, label, href }: { icon: typeof Home; label: string; href: string }) => {
     const isActive =
