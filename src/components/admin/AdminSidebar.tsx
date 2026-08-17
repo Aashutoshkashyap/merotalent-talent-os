@@ -49,7 +49,6 @@ const primaryItems = [
   { icon: GraduationCap, label: "Mentors", href: "/admin/mentors" },
   { icon: Building2, label: "Institutions", href: "/admin/institutions" },
   { icon: Building, label: "Companies", href: "/admin/companies" },
-  { icon: Award, label: "Badges", href: "/admin/badges" },
   { icon: CalendarDays, label: "Events", href: "/admin/events" },
   { icon: FileText, label: "Applications", href: "/admin/applications" },
   { icon: CalendarCheck, label: "Bookings", href: "/admin/bookings" },
