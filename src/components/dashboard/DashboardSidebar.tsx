@@ -9,6 +9,7 @@ import {
   Users,
   Briefcase,
   GraduationCap,
+  Building2,
   Settings,
   LogOut,
   Shield,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   MessageCircle,
   ChevronRight,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -38,6 +40,9 @@ const DashboardSidebar = ({
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const isAdmin = roles.includes("admin");
+  const isMentor = roles.includes("mentor");
+  const isCompany = roles.includes("company");
+  const isInstitution = roles.includes("institution");
   const previewSuffix =
     process.env.NODE_ENV === "development" &&
     new URLSearchParams(location.search).get("preview") === "ui"
@@ -60,6 +65,12 @@ const DashboardSidebar = ({
   ];
 
   const adminNavItems = [{ icon: Shield, label: "Admin Panel", href: "/admin" }];
+
+  const workspaceNavItems = [
+    ...(isMentor ? [{ icon: UserCog, label: "Mentor Workspace", href: "/mentor" }] : []),
+    ...(isCompany ? [{ icon: Briefcase, label: "Company Workspace", href: "/company" }] : []),
+    ...(isInstitution ? [{ icon: Building2, label: "Institute Dashboard", href: "/institute" }] : []),
+  ];
 
   const NavItem = ({ icon: Icon, label, href }: { icon: typeof Home; label: string; href: string }) => {
     const isActive =
@@ -176,6 +187,15 @@ const DashboardSidebar = ({
               <NavItem key={item.href} {...item} />
             ))}
           </div>
+
+          {workspaceNavItems.length > 0 && (
+            <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-white/10 pt-5")}>
+              {!compact && <p className="px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#7fa4d7]">Workspaces</p>}
+              {workspaceNavItems.map((item) => (
+                <NavItem key={item.href} {...item} />
+              ))}
+            </div>
+          )}
 
           {isAdmin && (
             <div className={cn("space-y-1.5", compact && "flex flex-col items-center border-t border-white/10 pt-5")}>

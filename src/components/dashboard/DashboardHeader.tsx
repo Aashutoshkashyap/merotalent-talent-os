@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command } from "lucide-react";
+import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command, Briefcase, Building2, UserCog } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
@@ -18,7 +18,7 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
-  const { profile, signOut } = useAuth();
+  const { profile, roles, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
@@ -162,6 +162,31 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 Settings
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {roles.includes("mentor") && (
+              <DropdownMenuItem asChild>
+                <Link to="/mentor" className="cursor-pointer">
+                  <UserCog className="w-4 h-4 mr-2" />
+                  Mentor Workspace
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {roles.includes("company") && (
+              <DropdownMenuItem asChild>
+                <Link to="/company" className="cursor-pointer">
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  Company Workspace
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {roles.includes("institution") && (
+              <DropdownMenuItem asChild>
+                <Link to="/institute" className="cursor-pointer">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Institute Dashboard
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={signOut}

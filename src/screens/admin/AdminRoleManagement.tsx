@@ -180,10 +180,9 @@ const AdminRoleManagement = () => {
         args: Record<string, unknown>,
       ) => Promise<{ error: { code?: string; message: string } | null }>;
     };
-    const { error } = await rpcClient.rpc("admin_update_user_access", {
+    const { error } = await rpcClient.rpc("admin_grant_role", {
       p_user_id: selectedUser.user_id,
       p_role: selectedRole,
-      p_account_status: null,
     });
 
     if (error) {
@@ -193,16 +192,9 @@ const AdminRoleManagement = () => {
         description: error.message,
       });
     } else {
-      // The audited RPC replaces the single primary role transactionally.
-      if (selectedRole === "mentor") {
-        await supabase.from("mentors").upsert({
-          user_id: selectedUser.user_id,
-        }, { onConflict: "user_id" });
-      }
-
       toast({
-        title: "Primary role updated",
-        description: `${selectedUser.full_name || selectedUser.email} is now a ${selectedRole}.`,
+        title: "Role added",
+        description: `${selectedUser.full_name || selectedUser.email} now has the ${selectedRole} role.`,
       });
       fetchUsers();
       fetchMentors();
@@ -218,18 +210,18 @@ const AdminRoleManagement = () => {
         args: Record<string, unknown>,
       ) => Promise<{ error: { message: string } | null }>;
     };
-    const { error } = await rpcClient.rpc("admin_update_user_access", {
+    const { error } = await rpcClient.rpc("admin_revoke_role", {
       p_user_id: userId,
-      p_role: "talent",
-      p_account_status: null,
+      p_role: role,
     });
 
     if (!error) {
       toast({
-        title: "Primary role reset",
-        description: `${role} was replaced with the talent role.`,
+        title: "Role removed",
+        description: `${role} role was removed. The talent role is preserved.`,
       });
       fetchUsers();
+      fetchMentors();
     } else {
       toast({
         variant: "destructive",
@@ -322,7 +314,7 @@ const AdminRoleManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Primary role</TableHead>
+                <TableHead>Roles</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -367,13 +359,14 @@ const AdminRoleManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        title="Add another role to this user"
                         onClick={() => {
                           setSelectedUser(user);
                           setIsRoleDialogOpen(true);
                         }}
                       >
                         <Shield className="w-4 h-4 mr-2" />
-                        Change role
+                        Add role
                       </Button>
                       <Button
                         variant="ghost"
@@ -486,9 +479,9 @@ const AdminRoleManagement = () => {
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Primary Role</DialogTitle>
+            <DialogTitle>Add Role</DialogTitle>
             <DialogDescription>
-              Replace the primary role for {selectedUser?.full_name || selectedUser?.email}
+              Grant an additional role to {selectedUser?.full_name || selectedUser?.email}. One user can hold multiple roles simultaneously.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -521,7 +514,7 @@ const AdminRoleManagement = () => {
               Cancel
             </Button>
             <Button onClick={assignRole} disabled={!selectedRole}>
-              Change Role
+              Add Role
             </Button>
           </DialogFooter>
         </DialogContent>
