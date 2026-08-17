@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Star, Trash2, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SEED_FEATURED_ITEMS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface FeaturedItem {
   id: string;
@@ -121,7 +122,11 @@ export default function AdminFeaturedItems() {
       .select("*")
       .order("priority", { ascending: false });
 
-    if (data) setFeatured(data as FeaturedItem[]);
+    if (data && data.length > 0) {
+      setFeatured(data as FeaturedItem[]);
+    } else {
+      setFeatured(SEED_FEATURED_ITEMS as FeaturedItem[]);
+    }
     setIsLoading(false);
   };
 

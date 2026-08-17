@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
 import { generateEventDetails } from "@/lib/ai/ai-generator";
+import { SEED_EVENTS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface EventItem {
   id: string;
@@ -107,7 +108,11 @@ export default function AdminEvents() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (data) setEvents(data as EventItem[]);
+    if (data && data.length > 0) {
+      setEvents(data as EventItem[]);
+    } else {
+      setEvents(SEED_EVENTS as unknown as EventItem[]);
+    }
     setIsLoading(false);
   };
 

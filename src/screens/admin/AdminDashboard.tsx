@@ -26,6 +26,7 @@ import {
   Star,
   Layers,
   ArrowUpRight,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,7 +40,9 @@ import {
   SEED_MENTORS,
   SEED_JOBS,
   SEED_COURSES,
+  SEED_COMPETITIONS,
 } from "@/lib/admin/admin-seed-fallbacks";
+import { getCachedOrFetch, invalidateCache } from "@/lib/cache/data-cache";
 
 interface AdminStats {
   users: number;
@@ -229,90 +232,122 @@ const AdminDashboard = () => {
   const [competitionsList, setCompetitionsList] = useState<any[]>([]);
   const [coursesList, setCoursesList] = useState<any[]>([]);
   const [mentorsList, setMentorsList] = useState<any[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+
+  const fetchLiveData = async (forceRefresh: boolean = false) => {
+    if (forceRefresh) {
+      setIsSyncing(true);
+      invalidateCache("admin:dashboard");
+    } else {
+      setIsLoading(true);
+    }
+    setDataLoadState("loading");
+
+    try {
+      const payload = await getCachedOrFetch(
+        "admin:dashboard:data",
+        async () => {
+          const [
+            usersRes,
+            competitionsRes,
+            institutionsRes,
+            companiesRes,
+            mentorsRes,
+            jobsRes,
+            coursesRes,
+            instituteVerificationRes,
+          ] = await Promise.all([
+            supabase.from("profiles").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+            supabase.from("competitions").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+            supabase.from("institutes").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+            supabase.from("companies").select("id", { count: "exact", head: true }),
+            supabase.from("mentors").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+            supabase.from("jobs").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+            supabase.from("courses").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+            supabase.from("institute_directory").select("id, payment_verified"),
+          ]);
+
+          const usersData = (usersRes.data && usersRes.data.length > 0) ? usersRes.data : SEED_USERS;
+          const jobsData = (jobsRes.data && jobsRes.data.length > 0) ? jobsRes.data : SEED_JOBS;
+          const institutesData = (institutionsRes.data && institutionsRes.data.length > 0) ? institutionsRes.data : SEED_INSTITUTES;
+          const mentorsData = (mentorsRes.data && mentorsRes.data.length > 0) ? mentorsRes.data : SEED_MENTORS;
+          const coursesData = (coursesRes.data && coursesRes.data.length > 0) ? coursesRes.data : SEED_COURSES;
+          const competitionsData = (competitionsRes.data && competitionsRes.data.length > 0) ? competitionsRes.data : SEED_COMPETITIONS;
+
+          const calculatedStats: AdminStats = {
+            users: Math.max(usersRes.count ?? 0, usersData.length),
+            competitions: Math.max(competitionsRes.count ?? 0, competitionsData.length),
+            institutions: Math.max(institutionsRes.count ?? 0, institutesData.length),
+            companies: Math.max(companiesRes.count ?? 0, SEED_COMPANIES.length),
+            mentors: Math.max(mentorsRes.count ?? 0, mentorsData.length),
+            jobs: Math.max(jobsRes.count ?? 0, jobsData.length),
+            courses: Math.max(coursesRes.count ?? 0, coursesData.length),
+          };
+
+          const paymentByInstitute = new Map(
+            (instituteVerificationRes.data ?? []).map((institute) => [
+              institute.id,
+              institute.payment_verified === true,
+            ]),
+          );
+
+          const formattedInstitutions = institutesData.map((institute) => ({
+            ...institute,
+            payment_verified: paymentByInstitute.get(institute.id) ?? true,
+          }));
+
+          const results = [
+            usersRes,
+            competitionsRes,
+            institutionsRes,
+            companiesRes,
+            mentorsRes,
+            jobsRes,
+            coursesRes,
+            instituteVerificationRes,
+          ];
+          const failedRequests = results.filter((result) => result.error).length;
+
+          return {
+            stats: calculatedStats,
+            usersList: usersData,
+            jobsList: jobsData,
+            institutionsList: formattedInstitutions,
+            competitionsList: competitionsData,
+            coursesList: coursesData,
+            mentorsList: mentorsData,
+            dataLoadState:
+              failedRequests === 0
+                ? "ready"
+                : failedRequests === results.length
+                  ? "error"
+                  : "partial",
+          };
+        },
+        3 * 60 * 1000,
+        forceRefresh
+      );
+
+      setStats(payload.stats);
+      setUsersList(payload.usersList);
+      setJobsList(payload.jobsList);
+      setInstitutionsList(payload.institutionsList);
+      setCompetitionsList(payload.competitionsList);
+      setCoursesList(payload.coursesList);
+      setMentorsList(payload.mentorsList);
+      setDataLoadState(payload.dataLoadState as any);
+      setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    } catch {
+      setDataLoadState("partial");
+    } finally {
+      setIsLoading(false);
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLiveData = async () => {
-      setIsLoading(true);
-      setDataLoadState("loading");
-
-      const [
-        usersRes,
-        competitionsRes,
-        institutionsRes,
-        companiesRes,
-        mentorsRes,
-        jobsRes,
-        coursesRes,
-        instituteVerificationRes,
-      ] = await Promise.all([
-        supabase.from("profiles").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
-        supabase.from("competitions").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
-        supabase.from("institutes").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
-        supabase.from("companies").select("id", { count: "exact", head: true }),
-        supabase.from("mentors").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
-        supabase.from("jobs").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
-        supabase.from("courses").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
-        supabase.from("institute_directory").select("id, payment_verified"),
-      ]);
-
-      const usersData = (usersRes.data && usersRes.data.length > 0) ? usersRes.data : SEED_USERS;
-      const jobsData = (jobsRes.data && jobsRes.data.length > 0) ? jobsRes.data : SEED_JOBS;
-      const institutesData = (institutionsRes.data && institutionsRes.data.length > 0) ? institutionsRes.data : SEED_INSTITUTES;
-      const mentorsData = (mentorsRes.data && mentorsRes.data.length > 0) ? mentorsRes.data : SEED_MENTORS;
-      const coursesData = (coursesRes.data && coursesRes.data.length > 0) ? coursesRes.data : SEED_COURSES;
-
-      setStats({
-        users: Math.max(usersRes.count ?? 0, usersData.length),
-        competitions: competitionsRes.count ?? 0,
-        institutions: Math.max(institutionsRes.count ?? 0, institutesData.length),
-        companies: Math.max(companiesRes.count ?? 0, SEED_COMPANIES.length),
-        mentors: Math.max(mentorsRes.count ?? 0, mentorsData.length),
-        jobs: Math.max(jobsRes.count ?? 0, jobsData.length),
-        courses: Math.max(coursesRes.count ?? 0, coursesData.length),
-      });
-
-      const paymentByInstitute = new Map(
-        (instituteVerificationRes.data ?? []).map((institute) => [
-          institute.id,
-          institute.payment_verified === true,
-        ]),
-      );
-
-      setUsersList(usersData);
-      setJobsList(jobsData);
-      setInstitutionsList(
-        institutesData.map((institute) => ({
-          ...institute,
-          payment_verified: paymentByInstitute.get(institute.id) ?? true,
-        })),
-      );
-      setCompetitionsList(competitionsRes.data ?? []);
-      setCoursesList(coursesData);
-      setMentorsList(mentorsData);
-
-      const results = [
-        usersRes,
-        competitionsRes,
-        institutionsRes,
-        companiesRes,
-        mentorsRes,
-        jobsRes,
-        coursesRes,
-        instituteVerificationRes,
-      ];
-      const failedRequests = results.filter((result) => result.error).length;
-      setDataLoadState(
-        failedRequests === 0
-          ? "ready"
-          : failedRequests === results.length
-            ? "error"
-            : "partial",
-      );
-
-      setIsLoading(false);
-    };
-
-    void fetchLiveData();
+    void fetchLiveData(false);
   }, []);
 
   const quickActions = [
@@ -385,19 +420,40 @@ const AdminDashboard = () => {
         <motion.div
           {...cardMotion}
           transition={{ duration: 0.35 }}
-          className="rounded-[24px] border border-[#e2e8f0] bg-[#f8fafc] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.04)] sm:p-6"
+          className="rounded-[24px] border border-[#e2e8f0] bg-[#f8fafc] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.04)] sm:p-6 flex flex-col justify-between"
         >
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#071a3d]">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Live Command Centre
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#071a3d]">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Live Command Centre
+              </div>
+              <div className="flex items-center gap-2">
+                {lastSyncedAt && (
+                  <span className="text-[11px] text-[#64748b] font-medium hidden sm:inline">
+                    Synced {lastSyncedAt}
+                  </span>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fetchLiveData(true)}
+                  disabled={isSyncing}
+                  className="h-8 rounded-lg border-[#cbd5e1] bg-white text-xs font-bold text-[#071a3d] hover:bg-[#f1f5f9] flex items-center gap-1.5 shadow-sm"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-[#0073e6]" : ""}`} />
+                  <span>{isSyncing ? "Pulling..." : "Pull / Sync"}</span>
+                </Button>
+              </div>
+            </div>
+            <h1 className="mt-4 text-balance font-display text-3xl font-bold leading-[1.06] tracking-[-0.035em] sm:text-[42px] text-[#0f172a]">
+              Hi, {profile?.full_name?.split(" ")[0] || "Admin"}.
+              <span className="block text-[#475569]">What are your plans today?</span>
+            </h1>
+            <p className="mt-4 max-w-md text-sm leading-6 text-[#64748b]">
+              One calm workspace for people, programs, partners and every opportunity across MeroTalent.
+            </p>
           </div>
-          <h1 className="mt-4 text-balance font-display text-3xl font-bold leading-[1.06] tracking-[-0.035em] sm:text-[42px] text-[#0f172a]">
-            Hi, {profile?.full_name?.split(" ")[0] || "Admin"}.
-            <span className="block text-[#475569]">What are your plans today?</span>
-          </h1>
-          <p className="mt-4 max-w-md text-sm leading-6 text-[#64748b]">
-            One calm workspace for people, programs, partners and every opportunity across MeroTalent.
-          </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button className="rounded-xl bg-[#071a3d] text-white shadow-lg shadow-[#071a3d]/20 hover:bg-[#05132d]" asChild>
               <Link to="/admin/jobs">

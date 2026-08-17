@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Pencil, Trash2, Image, ExternalLink, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SEED_ADVERTISEMENTS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface AdItem {
   id: string;
@@ -61,7 +62,11 @@ export default function AdminAdvertisements() {
       .select("*")
       .order("priority", { ascending: false });
 
-    if (data) setAds(data as AdItem[]);
+    if (data && data.length > 0) {
+      setAds(data as AdItem[]);
+    } else {
+      setAds(SEED_ADVERTISEMENTS as AdItem[]);
+    }
     setIsLoading(false);
   };
 

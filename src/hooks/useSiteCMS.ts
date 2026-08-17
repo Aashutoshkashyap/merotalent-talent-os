@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SEED_PAGE_SECTIONS, SEED_SITE_SETTINGS } from "@/lib/admin/admin-seed-fallbacks";
 
 export interface PageSection {
   id: string;
@@ -28,13 +29,8 @@ export interface SiteSettings {
 }
 
 export function useSiteCMS(page = "home") {
-  const [sections, setSections] = useState<PageSection[]>([]);
-  const [settings, setSettings] = useState<SiteSettings>({
-    site_title: "MeroTalent - Higher Education & Career OS",
-    meta_description: "Connect with top colleges, mentors, jobs, and competitions across Nepal.",
-    contact_email: "support@merotalent.com",
-    contact_phone: "+977-01-4400000",
-  });
+  const [sections, setSections] = useState<PageSection[]>(SEED_PAGE_SECTIONS as PageSection[]);
+  const [settings, setSettings] = useState<SiteSettings>(SEED_SITE_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -47,8 +43,10 @@ export function useSiteCMS(page = "home") {
           db.from("site_settings").select("*"),
         ]);
 
-        if (sectionsRes.data) {
+        if (sectionsRes.data && sectionsRes.data.length > 0) {
           setSections(sectionsRes.data);
+        } else {
+          setSections(SEED_PAGE_SECTIONS as PageSection[]);
         }
 
         if (settingsRes.data && settingsRes.data.length > 0) {

@@ -53,6 +53,7 @@ import {
   Trash2,
   ShieldCheck,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { generateInstituteDetails } from "@/lib/ai/ai-generator";
 import {
@@ -79,6 +80,8 @@ interface InstituteFormData {
   contact_email: string;
   contact_phone: string;
   admission_status: string;
+  ranking: string;
+  is_featured: boolean;
   total_seats: string;
   available_seats: string;
   courses_offered: string;
@@ -103,6 +106,8 @@ const emptyFormData = (): InstituteFormData => ({
   contact_email: "",
   contact_phone: "",
   admission_status: "closed",
+  ranking: "",
+  is_featured: false,
   total_seats: "",
   available_seats: "",
   courses_offered: "",
@@ -277,6 +282,8 @@ const AdminInstitutions = () => {
       contact_email: formData.contact_email || null,
       contact_phone: formData.contact_phone || null,
       admission_status: formData.admission_status,
+      ranking: formData.ranking ? parseInt(formData.ranking, 10) : null,
+      is_featured: formData.is_featured,
       total_seats: formData.total_seats ? parseInt(formData.total_seats) : null,
       available_seats: formData.available_seats ? parseInt(formData.available_seats) : null,
       courses_offered: courses,
@@ -318,16 +325,22 @@ const AdminInstitutions = () => {
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("institutes").delete().eq("id", id);
-
     if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
+      toast({
+        variant: "destructive",
+        title: "Error deleting institute",
+        description: error.message,
+      });
     } else {
-      toast({ title: "Institute deleted", description: "The institute has been removed." });
+      toast({
+        title: "Institute deleted",
+        description: "The institute has been removed successfully.",
+      });
       fetchInstitutes();
     }
   };
 
-  const openEdit = (institute: Institute) => {
+  const handleEdit = (institute: Institute) => {
     setEditingInstitute(institute);
     setFormData({
       name: institute.name,
@@ -335,7 +348,8 @@ const AdminInstitutions = () => {
       type: institute.type || "engineering",
       institution_category:
         institute.institution_category === "school" ||
-        institute.institution_category === "plus_two"
+        institute.institution_category === "plus_two" ||
+        institute.institution_category === "college"
           ? institute.institution_category
           : "college",
       affiliation: institute.affiliation || "",
@@ -347,6 +361,8 @@ const AdminInstitutions = () => {
       contact_email: institute.contact_email || "",
       contact_phone: institute.contact_phone || "",
       admission_status: institute.admission_status || "closed",
+      ranking: (institute as any).ranking ? String((institute as any).ranking) : "",
+      is_featured: (institute as any).is_featured ?? false,
       total_seats: institute.total_seats?.toString() || "",
       available_seats: institute.available_seats?.toString() || "",
       courses_offered: courseNames(institute.courses_offered),
@@ -593,6 +609,37 @@ const AdminInstitutions = () => {
                 </div>
               </div>
 
+              <div className="grid sm:grid-cols-2 gap-4 rounded-lg border bg-muted/10 p-4">
+                <div className="space-y-2">
+                  <Label>Top Position Number (Super Admin Priority)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 1 (Top position), 2 (Second)"
+                    value={formData.ranking}
+                    onChange={(e) => setFormData({ ...formData, ranking: e.target.value })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Assigns exact position (1, 2, 3...) when admissions are open. Lower numbers appear first.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-4 rounded-md bg-background p-3">
+                  <div>
+                    <Label htmlFor="is-featured">Feature on Top</Label>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Pins this institution with a Featured badge in recommendations.
+                    </p>
+                  </div>
+                  <Switch
+                    id="is-featured"
+                    checked={formData.is_featured}
+                    onCheckedChange={(is_featured) =>
+                      setFormData({ ...formData, is_featured })
+                    }
+                  />
+                </div>
+              </div>
+
               <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Listing status</Label>
@@ -778,6 +825,7 @@ const AdminInstitutions = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Institute</TableHead>
+                <TableHead className="text-center">Priority Pos</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Admission</TableHead>
@@ -791,11 +839,28 @@ const AdminInstitutions = () => {
                 <TableRow key={institute.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{institute.name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-medium">{institute.name}</p>
+                        {(institute as any).is_featured && (
+                          <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 py-0 px-1.5">
+                            <Star className="w-2.5 h-2.5 mr-0.5 fill-amber-500 text-amber-500" />
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs capitalize text-muted-foreground">
                         {[institute.short_name, institute.status].filter(Boolean).join(" · ")}
                       </p>
                     </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {(institute as any).ranking ? (
+                      <Badge variant="outline" className="font-mono text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        #{(institute as any).ranking}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -856,7 +921,7 @@ const AdminInstitutions = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(institute)}>
+                        <DropdownMenuItem onClick={() => handleEdit(institute)}>
                           <Pencil className="w-4 h-4 mr-2" />Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem 
@@ -872,7 +937,7 @@ const AdminInstitutions = () => {
               ))}
               {filteredInstitutes.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {isLoading ? "Loading..." : "No institutes found"}
                   </TableCell>
                 </TableRow>

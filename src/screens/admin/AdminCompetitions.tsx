@@ -35,6 +35,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Calendar, Users, Trophy, Loader2, Sparkles, Pencil, Trash2 } from "lucide-react";
 import { generateCompetitionDetails } from "@/lib/ai/ai-generator";
+import { SEED_COMPETITIONS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface Competition {
   id: string;
@@ -83,7 +84,11 @@ const AdminCompetitions = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (data) setCompetitions(data);
+    if (data && data.length > 0) {
+      setCompetitions(data);
+    } else {
+      setCompetitions(SEED_COMPETITIONS);
+    }
     setIsLoading(false);
   };
 

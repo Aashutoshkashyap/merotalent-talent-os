@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { generateJobDetails } from "@/lib/ai/ai-generator";
+import { SEED_JOBS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface Job {
   id: string;
@@ -63,6 +64,7 @@ const AdminJobs = () => {
     is_active: true,
     is_remote: false,
     external_link: "",
+    application_deadline: "",
   });
 
   const handleAIGenerate = async () => {
@@ -109,7 +111,11 @@ const AdminJobs = () => {
       .select("*")
       .order("created_at", { ascending: false });
     
-    if (data) setJobs(data);
+    if (data && data.length > 0) {
+      setJobs(data);
+    } else {
+      setJobs(SEED_JOBS as unknown as Job[]);
+    }
     setIsLoading(false);
   };
 
@@ -189,6 +195,7 @@ const AdminJobs = () => {
       is_active: job.is_active ?? true,
       is_remote: job.is_remote ?? false,
       external_link: job.external_link || "",
+      application_deadline: job.application_deadline || "",
     });
     setIsDialogOpen(true);
   };
@@ -207,6 +214,7 @@ const AdminJobs = () => {
       is_active: true,
       is_remote: false,
       external_link: "",
+      application_deadline: "",
     });
     setEditingJob(null);
     setIsDialogOpen(false);

@@ -405,7 +405,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         }
 
         const mentorId = mentor?.id ?? null;
-        let [servicesResult, bookingsResult, subscription] = await Promise.all([
+        const [servicesResult, bookingsResult, loadedSubscription] = await Promise.all([
           mentorId
             ? db
                 .from("mentor_services")
@@ -425,6 +425,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
           loadSubscription(db, user.id, "mentor", mentorId, addFailure),
         ]);
 
+        let subscription = loadedSubscription;
         if (!subscription.active) {
           subscription = {
             packageName: "Mentor Free",

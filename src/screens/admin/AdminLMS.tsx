@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
+import { SEED_COURSES } from "@/lib/admin/admin-seed-fallbacks";
 
 interface Course {
   id: string;
@@ -32,7 +33,7 @@ interface Course {
   thumbnail_url: string | null;
   redirect_url: string | null;
   learning_outcomes: string[] | null;
-  syllabus: string | null;
+  syllabus: any;
   is_published: boolean | null;
   created_at: string;
 }
@@ -93,7 +94,11 @@ const AdminLMS = () => {
       supabase.from("quizzes").select("*").order("created_at", { ascending: false }),
     ]);
     
-    if (coursesRes.data) setCourses(coursesRes.data);
+    if (coursesRes.data && coursesRes.data.length > 0) {
+      setCourses(coursesRes.data);
+    } else {
+      setCourses(SEED_COURSES as unknown as Course[]);
+    }
     if (quizzesRes.data) setQuizzes(quizzesRes.data);
     setIsLoading(false);
   };

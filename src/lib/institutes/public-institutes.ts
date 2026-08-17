@@ -227,16 +227,42 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
     request = request.order("created_at", { ascending: false });
   } else {
     request = request
-      .order("is_featured", { ascending: false })
+      .order("admission_status", { ascending: false })
       .order("ranking", { ascending: true, nullsFirst: false })
+      .order("is_featured", { ascending: false })
       .order("name", { ascending: true });
   }
 
   const { data, error, count } = await request.range(0, Math.max(0, limit - 1));
   if (error) throw new Error(error.message);
 
+  let rawList = (data ?? []) as InstituteRecord[];
+
+  // Apply canonical multi-tier sort: Open Admissions > Admin Ranking/Position > Featured > Alphabetical
+  if (!sort || sort === "recommended") {
+    rawList = [...rawList].sort((a, b) => {
+      // 1. Admission open first
+      const aOpen = a.admission_status === "open" ? 1 : 0;
+      const bOpen = b.admission_status === "open" ? 1 : 0;
+      if (aOpen !== bOpen) return bOpen - aOpen;
+
+      // 2. Ranking / Position number set by admin (1 is top, null/0 is unranked)
+      const aRank = typeof a.ranking === "number" && a.ranking > 0 ? a.ranking : 999999;
+      const bRank = typeof b.ranking === "number" && b.ranking > 0 ? b.ranking : 999999;
+      if (aRank !== bRank) return aRank - bRank;
+
+      // 3. Featured flag
+      const aFeat = a.is_featured ? 1 : 0;
+      const bFeat = b.is_featured ? 1 : 0;
+      if (aFeat !== bFeat) return bFeat - aFeat;
+
+      // 4. Alphabetical order
+      return a.name.localeCompare(b.name);
+    });
+  }
+
   const result: PublicInstituteResult = {
-    institutes: (data ?? []) as InstituteRecord[],
+    institutes: rawList,
     count: count ?? data?.length ?? 0,
   };
 

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "talent" | "institution" | "company" | "mentor";
+export type AppRole = "admin" | "super_admin" | "talent" | "institution" | "company" | "mentor";
 
 interface Profile {
   id: string;
@@ -277,7 +277,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRoles([]);
   };
 
-  const isAdmin = roles.includes("admin");
+  const isSuperAdmin = roles.includes("super_admin");
+  const isAdmin = roles.includes("admin") || isSuperAdmin;
 
   return (
     <AuthContext.Provider

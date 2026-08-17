@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Users, Clock, ArrowRight, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { SEED_MENTORS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface MentorItem {
   id: string;
@@ -18,71 +20,93 @@ interface MentorItem {
   sessions: string;
 }
 
-const mockMentors: MentorItem[] = [
-  {
-    id: "m-1",
-    name: "Dr. Rohan Adhikari",
-    category: "Computer Science",
-    bio: "Senior Researcher at IOE Pulchowk, specializing in Machine Learning & Distributed Systems.",
-    experience: "12+ Years",
-    hourlyRate: "NPR 2,000",
-    rating: "4.9",
-    avatarText: "RA",
-    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
-    sessions: "150+",
-  },
-  {
-    id: "m-2",
-    name: "Aastha Shrestha",
-    category: "Software Engineering",
-    bio: "Tech Lead at Leapfrog Technology, mentoring React, Node.js, and System Architecture.",
-    experience: "7+ Years",
-    hourlyRate: "NPR 1,500",
-    rating: "4.8",
-    avatarText: "AS",
-    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
-    sessions: "90+",
-  },
-  {
-    id: "m-3",
-    name: "Saurav Sharma",
-    category: "UI/UX Design",
-    bio: "Senior Product Designer at Yarsa Labs, expert in visual design systems and user research.",
-    experience: "6+ Years",
-    hourlyRate: "NPR 1,200",
-    rating: "5.0",
-    avatarText: "SS",
-    photoUrl: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=400",
-    sessions: "65+",
-  },
-  {
-    id: "m-4",
-    name: "Bijay Thapa",
-    category: "Academic Advisor",
-    bio: "Professor at Kathmandu University, counseling for higher studies, GATE prep, and GRE.",
-    experience: "15+ Years",
-    hourlyRate: "NPR 2,500",
-    rating: "4.7",
-    avatarText: "BT",
-    photoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400",
-    sessions: "210+",
-  },
+/* ── fallback photo when none exists ── */
+const FALLBACK_PHOTOS = [
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+  "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=400",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400",
 ];
 
-const categories = [
-  { label: "All Areas", count: "4" },
-  { label: "Computer Science", count: "1" },
-  { label: "Software Eng.", count: "1" },
-  { label: "UI/UX Design", count: "1" },
-  { label: "Academic", count: "1" },
-];
+/* ── map a DB/seed row to the UI model ── */
+function toDisplayItem(row: Record<string, unknown>, idx: number): MentorItem {
+  const profiles = (row.profiles ?? {}) as Record<string, unknown>;
+  const name = String(profiles.full_name ?? row.full_name ?? "Mentor");
+  const avatarText = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+  const expertise = Array.isArray(row.expertise) ? row.expertise : [];
+  const category =
+    expertise.length > 0
+      ? String(expertise[0])
+      : String(row.specialization ?? "General");
+
+  return {
+    id: String(row.id),
+    name,
+    category,
+    bio: String(row.headline ?? row.description ?? ""),
+    experience: row.years_experience ? `${row.years_experience}+ Years` : "",
+    hourlyRate: row.hourly_rate ? `NPR ${Number(row.hourly_rate).toLocaleString()}` : "",
+    rating: String(row.rating ?? "5.0"),
+    avatarText,
+    photoUrl: String(row.profile_image_url ?? FALLBACK_PHOTOS[idx % FALLBACK_PHOTOS.length]),
+    sessions: row.total_sessions ? `${row.total_sessions}+` : "0",
+  };
+}
 
 export default function MentorshipPage() {
+  const [mentors, setMentors] = useState<MentorItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All Areas");
 
-  const filtered = selectedCategory === "All Areas"
-    ? mockMentors
-    : mockMentors.filter(m => m.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase()));
+  useEffect(() => {
+    fetchMentors();
+  }, []);
+
+  const fetchMentors = async () => {
+    try {
+      const { data } = await (supabase as any)
+        .from("mentors")
+        .select("*, profiles(full_name, email)")
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        setMentors(data.map(toDisplayItem));
+      } else {
+        setMentors(SEED_MENTORS.map(toDisplayItem));
+      }
+    } catch {
+      setMentors(SEED_MENTORS.map(toDisplayItem));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* ── derive categories from loaded data ── */
+  const categoryMap = new Map<string, number>();
+  mentors.forEach((m) => {
+    categoryMap.set(m.category, (categoryMap.get(m.category) ?? 0) + 1);
+  });
+  const categories = [
+    { label: "All Areas", count: String(mentors.length) },
+    ...Array.from(categoryMap.entries()).map(([label, count]) => ({
+      label,
+      count: String(count),
+    })),
+  ];
+
+  const filtered =
+    selectedCategory === "All Areas"
+      ? mentors
+      : mentors.filter((m) =>
+          m.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase())
+        );
 
   return (
     <PublicPageLayout activeNavId="mentors">
@@ -120,7 +144,9 @@ export default function MentorshipPage() {
 
         {/* Listing header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <span className="text-base font-black text-slate-800">Verified Mentors ({filtered.length})</span>
+          <span className="text-base font-black text-slate-800">
+            {isLoading ? "Loading…" : `Verified Mentors (${filtered.length})`}
+          </span>
           <select className="text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none">
             <option>Highest Rated</option>
             <option>Experience</option>
@@ -183,3 +209,4 @@ export default function MentorshipPage() {
     </PublicPageLayout>
   );
 }
+

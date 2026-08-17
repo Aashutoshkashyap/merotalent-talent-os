@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Briefcase, MapPin, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { SEED_JOBS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface JobItem {
   id: string;
@@ -17,66 +19,104 @@ interface JobItem {
   logoBg: string;
 }
 
-const mockJobs: JobItem[] = [
-  {
-    id: "j-1",
-    title: "Senior Full Stack Engineer",
-    category: "Software Development",
-    salary: "NPR 1.5L – 2L / Month",
-    description: "Lead developers to build high-performance React and Node apps with cloud orchestration.",
-    company: "Leapfrog Technology",
-    location: "Durbarmarg, Kathmandu",
-    avatarText: "LF",
-    logoBg: "bg-emerald-600 text-white",
-  },
-  {
-    id: "j-2",
-    title: "Rust Core Systems Developer",
-    category: "Software Engineering",
-    salary: "NPR 1.8L – 2.2L / Month",
-    description: "Architect gaming engines and ledger microservices at Yarsa Labs Pokhara office.",
-    company: "Yarsa Labs",
-    location: "Lakeside, Pokhara",
-    avatarText: "YL",
-    logoBg: "bg-amber-500 text-slate-900",
-  },
-  {
-    id: "j-3",
-    title: "QA Automation Specialist",
-    category: "Quality Assurance",
-    salary: "NPR 80K – 1.2L / Month",
-    description: "Write end-to-end automation scripts and perform load testing with Selenium or Cypress.",
-    company: "Cotiviti Nepal",
-    location: "Hattisar, Kathmandu",
-    avatarText: "CT",
-    logoBg: "bg-cyan-600 text-white",
-  },
-  {
-    id: "j-4",
-    title: "Cloud & DevSecOps Engineer",
-    category: "DevOps",
-    salary: "NPR 1.2L – 1.6L / Month",
-    description: "Manage log analytics platforms, deploy CI/CD pipelines, and administer K8s clusters.",
-    company: "Logpoint Nepal",
-    location: "Jawalakhel, Lalitpur",
-    avatarText: "LP",
-    logoBg: "bg-slate-900 text-blue-400",
-  },
+/* ── colour rotation for company logos ── */
+const LOGO_COLORS = [
+  "bg-emerald-600 text-white",
+  "bg-amber-500 text-slate-900",
+  "bg-cyan-600 text-white",
+  "bg-slate-900 text-blue-400",
+  "bg-violet-600 text-white",
+  "bg-rose-600 text-white",
 ];
 
-const categories = [
-  { label: "All Jobs", count: "4" },
-  { label: "Software", count: "2" },
-  { label: "QA", count: "1" },
-  { label: "DevOps", count: "1" },
-];
+/* ── map a DB/seed row to the UI model ── */
+function toDisplayItem(row: Record<string, unknown>, idx: number): JobItem {
+  const title = String(row.title ?? "");
+  const companyName =
+    (row.companies as Record<string, unknown>)?.name ??
+    row.company_name ??
+    "";
+  const avatarText = String(companyName)
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase() || title.substring(0, 2).toUpperCase();
+
+  const salaryMin = Number(row.salary_min ?? 0);
+  const salaryMax = Number(row.salary_max ?? 0);
+  let salary = "";
+  if (salaryMin && salaryMax) {
+    salary = `NPR ${(salaryMin / 1000).toFixed(0)}K – ${(salaryMax / 1000).toFixed(0)}K / Month`;
+  } else if (salaryMax) {
+    salary = `Up to NPR ${(salaryMax / 1000).toFixed(0)}K / Month`;
+  }
+
+  return {
+    id: String(row.id),
+    title,
+    category: String(
+      row.job_type ?? row.experience_level ?? "General"
+    )
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase()),
+    salary,
+    description: String(row.description ?? ""),
+    company: String(companyName),
+    location: String(row.location ?? "Nepal"),
+    avatarText,
+    logoBg: LOGO_COLORS[idx % LOGO_COLORS.length],
+  };
+}
 
 export default function JobsPage() {
+  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All Jobs");
 
-  const filtered = selectedCategory === "All Jobs"
-    ? mockJobs
-    : mockJobs.filter(j => j.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase()));
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    try {
+      const { data } = await (supabase as any)
+        .from("jobs")
+        .select("*, companies(name)")
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        setJobs(data.map(toDisplayItem));
+      } else {
+        setJobs(SEED_JOBS.map(toDisplayItem));
+      }
+    } catch {
+      setJobs(SEED_JOBS.map(toDisplayItem));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* ── derive categories from loaded data ── */
+  const categoryMap = new Map<string, number>();
+  jobs.forEach((j) => {
+    categoryMap.set(j.category, (categoryMap.get(j.category) ?? 0) + 1);
+  });
+  const categories = [
+    { label: "All Jobs", count: String(jobs.length) },
+    ...Array.from(categoryMap.entries()).map(([label, count]) => ({
+      label,
+      count: String(count),
+    })),
+  ];
+
+  const filtered =
+    selectedCategory === "All Jobs"
+      ? jobs
+      : jobs.filter((j) =>
+          j.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase())
+        );
 
   return (
     <PublicPageLayout activeNavId="jobs">
@@ -114,7 +154,9 @@ export default function JobsPage() {
 
         {/* Listing header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <span className="text-base font-black text-slate-800">Open Positions ({filtered.length})</span>
+          <span className="text-base font-black text-slate-800">
+            {isLoading ? "Loading…" : `Open Positions (${filtered.length})`}
+          </span>
           <select className="text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none">
             <option>Newest</option>
             <option>Salary Range</option>
@@ -174,3 +216,4 @@ export default function JobsPage() {
     </PublicPageLayout>
   );
 }
+

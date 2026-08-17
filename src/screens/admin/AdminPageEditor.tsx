@@ -46,6 +46,10 @@ import {
   SignedMediaUploader,
   type SignedMediaAsset,
 } from "@/components/media/SignedMediaUploader";
+import {
+  SEED_PAGE_SECTIONS,
+  SEED_SITE_SETTINGS,
+} from "@/lib/admin/admin-seed-fallbacks";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -109,14 +113,7 @@ const AdminPageEditor = () => {
   const [filterPage, setFilterPage] = useState("all");
 
   // Site Branding & Favicon settings state
-  const [siteSettings, setSiteSettings] = useState({
-    site_title: "MeroTalent - Nepal's Premier Talent Platform",
-    favicon_url: "",
-    logo_url: "",
-    meta_description: "Connect with top colleges, mentors, jobs, and competitions across Nepal.",
-    contact_email: "support@merotalent.com",
-    contact_phone: "+977-01-4400000",
-  });
+  const [siteSettings, setSiteSettings] = useState(SEED_SITE_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const fetchSections = useCallback(async () => {
@@ -127,10 +124,10 @@ const AdminPageEditor = () => {
       .order("page")
       .order("display_order", { ascending: true });
 
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       setSections(data);
     } else {
-      setSections([]);
+      setSections(SEED_PAGE_SECTIONS as PageSection[]);
     }
     setIsLoading(false);
   }, []);
@@ -146,6 +143,8 @@ const AdminPageEditor = () => {
         ...current,
         ...settingsMap,
       }));
+    } else {
+      setSiteSettings(SEED_SITE_SETTINGS);
     }
   }, []);
 

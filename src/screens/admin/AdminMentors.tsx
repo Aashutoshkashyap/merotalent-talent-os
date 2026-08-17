@@ -43,10 +43,13 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { generateMentorDetails } from "@/lib/ai/ai-generator";
+import { SEED_MENTORS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface Mentor {
   id: string;
   user_id: string;
+  headline?: string | null;
+  description?: string | null;
   expertise: string[];
   hourly_rate: number;
   is_available: boolean;
@@ -95,7 +98,7 @@ const AdminMentors = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (mentorsData) {
+    if (mentorsData && mentorsData.length > 0) {
       const userIds = mentorsData.map(m => m.user_id);
       const { data: profiles } = await (supabase as any)
         .from("profiles")
@@ -108,6 +111,8 @@ const AdminMentors = () => {
         const prof = profileMap.get(m.user_id);
         return {
           ...m,
+          headline: (m as any).headline || null,
+          description: (m as any).description || null,
           hourly_rate: Number(m.hourly_rate) || 0,
           rating: Number(m.rating) || 0,
           years_experience: Number(m.years_experience) || 0,
@@ -120,6 +125,17 @@ const AdminMentors = () => {
         };
       });
       setMentors(combined);
+    } else {
+      setMentors(
+        SEED_MENTORS.map((m) => ({
+          ...m,
+          full_name: m.profiles?.full_name || "QA Mentor",
+          email: m.profiles?.email || "mentor@example.com",
+          location: "Pokhara, Nepal",
+          is_verified: true,
+          bio: m.description,
+        })) as unknown as Mentor[],
+      );
     }
     setIsLoading(false);
   };

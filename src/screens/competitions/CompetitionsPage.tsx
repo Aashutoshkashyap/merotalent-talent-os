@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Trophy, Clock, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { SEED_COMPETITIONS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface CompetitionItem {
   id: string;
@@ -18,71 +20,93 @@ interface CompetitionItem {
   imageIcon: string;
 }
 
-const mockCompetitions: CompetitionItem[] = [
-  {
-    id: "locus-robotics-2026",
-    title: "LOCUS Hardware & Robotics Competition",
-    category: "Robotics",
-    timeRead: "Rs. 5,00,000 Prizes",
-    description: "Build robust autonomous robots and battle it out in the arena at Pulchowk Campus.",
-    organizer: "Pulchowk IOE",
-    date: "Feb 20, 2026",
-    avatarText: "IOE",
-    bgGradient: "from-purple-950 via-slate-900 to-indigo-900",
-    imageIcon: "🤖",
-  },
-  {
-    id: "ku-hackfest-2026",
-    title: "KU HackFest 2026 Open Source Challenge",
-    category: "Hackathon",
-    timeRead: "Rs. 2,00,000 Prizes",
-    description: "A 48-hour sprint in Dhulikhel designing software utilities to aid local community development.",
-    organizer: "Kathmandu University",
-    date: "Feb 15, 2026",
-    avatarText: "KU",
-    bgGradient: "from-emerald-800 via-teal-900 to-cyan-950",
-    imageIcon: "💻",
-  },
-  {
-    id: "yarsa-game-jam-2026",
-    title: "Yarsa Games Engine Hackathon",
-    category: "Game Jam",
-    timeRead: "Rs. 2,50,000 Prizes",
-    description: "Write game modules and render engines in Pokhara. Top performance awards for Rust developers.",
-    organizer: "Yarsa Labs",
-    date: "Feb 28, 2026",
-    avatarText: "YL",
-    bgGradient: "from-red-800 via-rose-900 to-orange-950",
-    imageIcon: "🎮",
-  },
-  {
-    id: "ioe-software-hack",
-    title: "National Student Software Olympiad",
-    category: "Olympiad",
-    timeRead: "Rs. 1,50,000 Prizes",
-    description: "Show off algorithmic speed and clean code in this nationwide educational logic competition.",
-    organizer: "Nepal Engineers Association",
-    date: "Mar 10, 2026",
-    avatarText: "NEA",
-    bgGradient: "from-indigo-900 via-purple-900 to-pink-900",
-    imageIcon: "💡",
-  },
-];
+/* ── visual config per competition type ── */
+const TYPE_CONFIG: Record<string, { icon: string; gradient: string }> = {
+  robotics:  { icon: "🤖", gradient: "from-purple-950 via-slate-900 to-indigo-900" },
+  hackathon: { icon: "💻", gradient: "from-emerald-800 via-teal-900 to-cyan-950" },
+  game_jam:  { icon: "🎮", gradient: "from-red-800 via-rose-900 to-orange-950" },
+  olympiad:  { icon: "💡", gradient: "from-indigo-900 via-purple-900 to-pink-900" },
+  default:   { icon: "🏆", gradient: "from-slate-800 via-gray-900 to-slate-900" },
+};
 
-const categories = [
-  { label: "All Events", count: "4" },
-  { label: "Hackathons", count: "1" },
-  { label: "Robotics", count: "1" },
-  { label: "Game Jams", count: "1" },
-  { label: "Olympiads", count: "1" },
-];
+/* ── map a DB/seed row to the UI model ── */
+function toDisplayItem(row: Record<string, unknown>): CompetitionItem {
+  const t = String(row.type ?? "default").toLowerCase();
+  const cfg = TYPE_CONFIG[t] ?? TYPE_CONFIG.default;
+  const title = String(row.title ?? "");
+  const avatarText = title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+  const startDate = row.start_date ? new Date(String(row.start_date)) : null;
+  const dateStr = startDate
+    ? startDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "";
+
+  return {
+    id: String(row.id),
+    title,
+    category: t.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+    timeRead: String(row.prize_pool ?? ""),
+    description: String(row.description ?? ""),
+    organizer: String(row.organizer_name ?? title.split(" ")[0] ?? ""),
+    date: dateStr,
+    avatarText,
+    bgGradient: cfg.gradient,
+    imageIcon: cfg.icon,
+  };
+}
 
 export default function CompetitionsPage() {
+  const [competitions, setCompetitions] = useState<CompetitionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All Events");
 
-  const filtered = selectedCategory === "All Events"
-    ? mockCompetitions
-    : mockCompetitions.filter(c => c.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase()));
+  useEffect(() => {
+    fetchCompetitions();
+  }, []);
+
+  const fetchCompetitions = async () => {
+    try {
+      const { data } = await (supabase as any)
+        .from("competitions")
+        .select("*")
+        .order("start_date", { ascending: true });
+
+      if (data && data.length > 0) {
+        setCompetitions(data.map(toDisplayItem));
+      } else {
+        setCompetitions(SEED_COMPETITIONS.map(toDisplayItem));
+      }
+    } catch {
+      setCompetitions(SEED_COMPETITIONS.map(toDisplayItem));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* ── derive categories from loaded data ── */
+  const categoryMap = new Map<string, number>();
+  competitions.forEach((c) => {
+    categoryMap.set(c.category, (categoryMap.get(c.category) ?? 0) + 1);
+  });
+  const categories = [
+    { label: "All Events", count: String(competitions.length) },
+    ...Array.from(categoryMap.entries()).map(([label, count]) => ({
+      label,
+      count: String(count),
+    })),
+  ];
+
+  const filtered =
+    selectedCategory === "All Events"
+      ? competitions
+      : competitions.filter((c) =>
+          c.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase())
+        );
 
   return (
     <PublicPageLayout activeNavId="events">
@@ -120,7 +144,9 @@ export default function CompetitionsPage() {
 
         {/* Listing header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <span className="text-base font-black text-slate-800">Latest Challenges ({filtered.length})</span>
+          <span className="text-base font-black text-slate-800">
+            {isLoading ? "Loading…" : `Latest Challenges (${filtered.length})`}
+          </span>
           <select className="text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none">
             <option>Newest</option>
             <option>Deadline</option>
@@ -178,3 +204,4 @@ export default function CompetitionsPage() {
     </PublicPageLayout>
   );
 }
+

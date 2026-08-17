@@ -66,59 +66,130 @@ const apiErrorMessage = (payload: UploadSigningResponse) =>
     ? payload.error.message
     : "The upload could not be prepared.";
 
-async function compressImage(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.size < 500 * 1024) {
+const MODULE_MAX_DIMENSIONS: Partial<Record<CollegeMediaModule, number>> = {
+  college_logo: 600,
+  company_logo: 600,
+  mentor_profile: 800,
+  college_cover: 1920,
+  college_gallery: 1600,
+  event_cover: 1920,
+  course_thumbnail: 1200,
+  advertisement: 1920,
+};
+
+async function compressImage(file: File, module?: CollegeMediaModule): Promise<File> {
+  // If not in browser, not an image, small file (< 200KB), or SVG/GIF: return original file
+  if (
+    typeof window === "undefined" ||
+    typeof document === "undefined" ||
+    typeof Image === "undefined" ||
+    !file.type.startsWith("image/") ||
+    file.size < 200 * 1024 ||
+    file.type === "image/svg+xml" ||
+    file.type === "image/gif"
+  ) {
     return file;
   }
 
+  const maxDim = (module && MODULE_MAX_DIMENSIONS[module]) || 1920;
+
   return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const maxDim = 1920;
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        if (width > height) {
-          height = Math.round((height * maxDim) / width);
-          width = maxDim;
-        } else {
-          width = Math.round((width * maxDim) / height);
-          height = maxDim;
-        }
+    let resolved = false;
+    const safeResolve = (result: File) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(result);
       }
+    };
 
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        resolve(file);
-        return;
-      }
-      ctx.drawImage(img, 0, 0, width, height);
+    // Safety timeout to prevent hangs in headless/jsdom environments
+    const timer = setTimeout(() => {
+      safeResolve(file);
+    }, 1000);
 
-      canvas.toBlob(
-        (blob) => {
-          if (!blob || blob.size >= file.size) {
-            resolve(file);
-            return;
+    try {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        clearTimeout(timer);
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
           }
-          const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-            type: "image/jpeg",
-            lastModified: Date.now(),
-          });
-          resolve(compressedFile);
-        },
-        "image/jpeg",
-        0.85
-      );
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(file);
-    };
-    img.src = url;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          safeResolve(file);
+          return;
+        }
+
+        // Smooth resizing quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Attempt high-quality WebP first (supported by all modern browsers)
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              const compressedFile = new File(
+                [blob],
+                file.name.replace(/\.[^/.]+$/, ".webp"),
+                {
+                  type: "image/webp",
+                  lastModified: Date.now(),
+                }
+              );
+              safeResolve(compressedFile);
+              return;
+            }
+
+            // Fallback to high-quality JPEG if WebP wasn't smaller or failed
+            canvas.toBlob(
+              (jpegBlob) => {
+                if (jpegBlob && jpegBlob.size < file.size) {
+                  const jpegFile = new File(
+                    [jpegBlob],
+                    file.name.replace(/\.[^/.]+$/, ".jpg"),
+                    {
+                      type: "image/jpeg",
+                      lastModified: Date.now(),
+                    }
+                  );
+                  safeResolve(jpegFile);
+                  return;
+                }
+                safeResolve(file);
+              },
+              "image/jpeg",
+              0.88
+            );
+          },
+          "image/webp",
+          0.88
+        );
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        URL.revokeObjectURL(url);
+        safeResolve(file);
+      };
+      img.src = url;
+    } catch {
+      clearTimeout(timer);
+      safeResolve(file);
+    }
   });
 }
 
@@ -132,7 +203,7 @@ export async function uploadSignedCollegeMedia(
   module: CollegeMediaModule,
   resourceId: string,
 ): Promise<SignedMediaAsset> {
-  const processedFile = await compressImage(file);
+  const processedFile = await compressImage(file, module);
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
 
