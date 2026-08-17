@@ -486,7 +486,7 @@ const AdminMentors = () => {
                         </Avatar>
                         <div>
                           <p className="font-medium">{mentor.full_name || "No Name"}</p>
-                          <p className="text-xs text-muted-foreground">{mentor.years_experience} years exp.</p>
+                          <p className="text-xs text-primary/80 font-medium line-clamp-1">{mentor.headline || `${mentor.years_experience} years exp.`}</p>
                         </div>
                       </div>
                     </TableCell>

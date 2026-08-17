@@ -456,8 +456,11 @@ const AdminJobs = () => {
                 <TableCell>
                   <div>
                     <p className="font-medium">{job.title}</p>
+                    <p className="text-xs font-semibold text-primary/80">
+                      {(job as any).companies?.name || (job as any).company_name || "MeroTalent Employer"}
+                    </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      <Badge variant="outline" className="text-xs capitalize">{job.job_type}</Badge>
+                      <Badge variant="outline" className="text-xs capitalize">{job.job_type?.replace(/_/g, " ")}</Badge>
                       {job.is_remote && <Badge variant="secondary" className="text-xs">Remote</Badge>}
                     </div>
                   </div>
