@@ -37,7 +37,6 @@ import Profile from "./screens/dashboard/Profile";
 import Competitions from "./screens/dashboard/Competitions";
 import Mentors from "./screens/dashboard/Mentors";
 import Jobs from "./screens/dashboard/Jobs";
-import Badges from "./screens/dashboard/Badges";
 import Sessions from "./screens/dashboard/Sessions";
 import Messages from "./screens/dashboard/Messages";
 import Settings from "./screens/dashboard/Settings";
@@ -121,7 +120,6 @@ const App = () => (
                 <Route path="competitions" element={<Competitions />} />
                 <Route path="mentors" element={<Mentors />} />
                 <Route path="jobs" element={<Jobs />} />
-                <Route path="badges" element={<Badges />} />
                 <Route path="sessions" element={<Sessions />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="settings" element={<Settings />} />

@@ -104,6 +104,7 @@ export default function FeaturedSection({
         path: string;
         brand: string;
         label: string;
+        actionLabel: string;
       };
       const entities = new Map<string, HydratedEntity>();
       for (const college of collegeResult.data || []) {
@@ -114,6 +115,7 @@ export default function FeaturedSection({
           path: `/institutes/${college.slug || college.id}`,
           brand: college.type || college.location || "College",
           label: "College",
+          actionLabel: "Explore College",
         });
       }
       for (const mentor of mentorRows) {
@@ -126,6 +128,7 @@ export default function FeaturedSection({
           path: `/mentorship?mentor=${encodeURIComponent(mentor.id)}`,
           brand: mentor.headline || profile?.location || "Mentor",
           label: "Mentor",
+          actionLabel: "Book Mentor",
         });
       }
       for (const course of courseResult.data || []) {
@@ -136,6 +139,7 @@ export default function FeaturedSection({
           path: `/courses/${course.id}`,
           brand: course.partner_name || course.category || "Partner course",
           label: "Course",
+          actionLabel: "View Course",
         });
       }
       for (const job of jobResult.data || []) {
@@ -147,6 +151,7 @@ export default function FeaturedSection({
           path: `/jobs?job=${encodeURIComponent(job.id)}`,
           brand: company?.name || job.location || "Job",
           label: job.job_type ? String(job.job_type).replace(/_/g, " ") : "Job",
+          actionLabel: "Apply Now",
         });
       }
       for (const event of eventResult.data || []) {
@@ -157,6 +162,7 @@ export default function FeaturedSection({
           path: `/events?event=${encodeURIComponent(event.id)}`,
           brand: event.location || event.format || "Event",
           label: event.event_type === "paid" ? "Paid event" : "Event",
+          actionLabel: "Register Now",
         });
       }
 
@@ -175,6 +181,7 @@ export default function FeaturedSection({
           posterImage: entity.image,
           badgeTag: entity.label,
           title: displayTitle,
+          actionLabel: entity.actionLabel,
           path: entity.path,
           posterContent: {
             brandTag: entity.brand,

@@ -9,6 +9,7 @@ export interface FeaturedCardData {
   posterImage?: string | null;
   badgeTag: string;
   title: string;
+  actionLabel?: string;
   posterContent: {
     bannerTitle: string;
     subtitle: string;
@@ -59,7 +60,7 @@ export default function FeaturedPosterCard({ data }: FeaturedPosterCardProps) {
         {/* Bottom Poster Action Hint */}
         <div className="relative z-10 pt-3">
           <span className="inline-flex items-center text-xs font-bold text-white bg-white/20 hover:bg-white/30 backdrop-blur-md px-4.5 py-2 rounded-full transition-all">
-            Register Now
+            {data.actionLabel || "Explore"}
           </span>
         </div>
       </div>

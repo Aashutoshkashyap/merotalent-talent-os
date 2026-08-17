@@ -327,7 +327,7 @@ const Dashboard = () => {
 
       <motion.section variants={rise} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { icon: Building2, value: collegeApplications.length, label: "College applications", href: "/colleges", color: "bg-blue-50 text-blue-700" },
+          { icon: Building2, value: collegeApplications.length, label: "College applications", href: "/institutes", color: "bg-blue-50 text-blue-700" },
           { icon: BriefcaseBusiness, value: jobApplications.length, label: "Job applications", href: "/dashboard/jobs", color: "bg-[#f3ecff] text-[#7758b5]" },
           { icon: CalendarDays, value: eventRegistrations.length, label: "Event registrations", href: "/events", color: "bg-[#e8faf4] text-[#30987c]" },
           { icon: Clock3, value: mentorBookings.length, label: "Mentor sessions", href: "/dashboard/sessions", color: "bg-[#fff0e4] text-[#c2410c]" },

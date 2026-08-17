@@ -208,7 +208,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
           phone,
           scheduledDate: format(selectedDate, "yyyy-MM-dd"),
           scheduledTime: selectedTime,
-          durationMinutes: duration,
+          durationMinutes: String(durationMinutes),
           topic,
           notes,
           paymentMethod,
