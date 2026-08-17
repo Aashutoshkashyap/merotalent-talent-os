@@ -67,7 +67,17 @@ const PERSONAS: PersonaItem[] = [
   },
 ];
 
-export default function AboutUs() {
+interface AboutUsProps {
+  title?: string;
+  eyebrow?: string;
+  description?: React.ReactNode;
+}
+
+export default function AboutUs({
+  title = "About Us & Who We Serve",
+  eyebrow = "USER PERSONA",
+  description,
+}: AboutUsProps) {
   const [activePersona, setActivePersona] = useState<PersonaItem>(PERSONAS[0]);
 
   return (
@@ -76,7 +86,7 @@ export default function AboutUs() {
       <div className="flex items-center gap-3 mb-8">
         <div className="w-1.5 h-7 rounded-full bg-[#0073e6]" />
         <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          About Us & Who We Serve
+          {title}
         </h2>
       </div>
 
@@ -86,15 +96,19 @@ export default function AboutUs() {
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-[#0073e6]" />
           <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-            USER PERSONA
+            {eyebrow}
           </span>
         </div>
 
         {/* Top Right Description */}
         <p className="text-xl sm:text-2xl text-slate-700 font-medium leading-relaxed tracking-tight max-w-5xl">
-          Students work with{" "}
-          <span className="text-[#0073e6] font-semibold">practical courses, mentorship, events, and jobs</span>{" "}
-          to showcase their proof-of-skill, connect with expert guides, and build their careers in Nepal.
+          {description ?? (
+            <>
+              Students work with{" "}
+              <span className="text-[#0073e6] font-semibold">practical courses, mentorship, events, and jobs</span>{" "}
+              to showcase their proof-of-skill, connect with expert guides, and build their careers in Nepal.
+            </>
+          )}
         </p>
       </div>
 

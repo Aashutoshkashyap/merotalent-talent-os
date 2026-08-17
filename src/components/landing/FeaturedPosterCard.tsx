@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 export interface FeaturedCardData {
   id: string;
   posterBg: string;
+  posterImage?: string | null;
   badgeTag: string;
   title: string;
   posterContent: {
@@ -29,10 +30,11 @@ export default function FeaturedPosterCard({ data }: FeaturedPosterCardProps) {
     >
       {/* Top Visual Poster Area */}
       <div
-        className={`relative h-88 sm:h-[400px] w-full ${data.posterBg} p-6 sm:p-7 flex flex-col justify-between overflow-hidden`}
+        className={`relative h-88 sm:h-[400px] w-full ${data.posterBg} bg-cover bg-center p-6 sm:p-7 flex flex-col justify-between overflow-hidden`}
+        style={data.posterImage ? { backgroundImage: `url(${data.posterImage})` } : undefined}
       >
         {/* Subtle overlay */}
-        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+        <div className={`absolute inset-0 transition-colors ${data.posterImage ? "bg-slate-950/55 group-hover:bg-slate-950/45" : "bg-black/10 group-hover:bg-transparent"}`} />
 
         {/* Poster Top Brand / Tag */}
         <div className="relative z-10 flex items-center justify-between">

@@ -65,7 +65,7 @@ const Competitions = () => {
     const { data } = await supabase
       .from("competitions")
       .select("*")
-      .neq("status", "draft")
+      .in("status", ["upcoming", "ongoing"])
       .order("created_at", { ascending: false });
     
     if (data) setCompetitions(data);
@@ -141,56 +141,7 @@ const Competitions = () => {
     }
   };
 
-  // Mock data for demonstration
-  const mockCompetitions: Competition[] = [
-    {
-      id: "1",
-      title: "Nepal AI Challenge 2026",
-      description: "Build innovative AI solutions to solve real-world problems in Nepal. Cash prizes and internship opportunities await!",
-      type: "hackathon",
-      format: "hybrid",
-      start_date: "2026-02-15",
-      end_date: "2026-02-17",
-      registration_deadline: "2026-02-10",
-      max_participants: 500,
-      prize_pool: "NPR 500,000",
-      status: "upcoming",
-      is_team_based: true,
-      cover_image: null,
-    },
-    {
-      id: "2",
-      title: "Code Sprint Nepal",
-      description: "48-hour coding marathon. Solve algorithmic challenges and compete with the best programmers in Nepal.",
-      type: "coding",
-      format: "online",
-      start_date: "2026-02-20",
-      end_date: "2026-02-22",
-      registration_deadline: "2026-02-18",
-      max_participants: 300,
-      prize_pool: "NPR 200,000",
-      status: "upcoming",
-      is_team_based: false,
-      cover_image: null,
-    },
-    {
-      id: "3",
-      title: "Design Innovation Summit",
-      description: "Showcase your UI/UX design skills. Create solutions that make a difference.",
-      type: "design",
-      format: "online",
-      start_date: "2026-03-01",
-      end_date: "2026-03-05",
-      registration_deadline: "2026-02-25",
-      max_participants: 200,
-      prize_pool: "NPR 150,000",
-      status: "upcoming",
-      is_team_based: false,
-      cover_image: null,
-    },
-  ];
-
-  const displayCompetitions = competitions.length > 0 ? filteredCompetitions : mockCompetitions;
+  const displayCompetitions = filteredCompetitions;
 
   const openRegistration = (comp: Competition) => {
     if (!user) {

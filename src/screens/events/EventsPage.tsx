@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Calendar, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import ModuleSubmissionDialog from "@/components/forms/ModuleSubmissionDialog";
 
 interface EventItem {
   id: string;
@@ -20,52 +22,15 @@ interface EventItem {
   organizer_type: string;
 }
 
-const mockEvents: EventItem[] = [
-  {
-    id: "locus-2026",
-    title: "LOCUS National Tech Exhibition 2026",
-    description: "Annual hardware, software, and robotics exhibition organized by Pulchowk Campus students.",
-    event_type: "free",
-    format: "offline",
-    location: "Pulchowk Campus, Lalitpur",
-    start_date: "2026-02-20T09:00:00Z",
-    end_date: "2026-02-22T17:00:00Z",
-    ticket_price: 0,
-    cover_image_url: null,
-    organizer_type: "college",
-  },
-  {
-    id: "ku-hackfest",
-    title: "KU HackFest 2026 Open Community Sprint",
-    description: "48-hour hackathon bringing together developer talents to solve real-world civic challenges.",
-    event_type: "free",
-    format: "hybrid",
-    location: "Kathmandu University, Dhulikhel",
-    start_date: "2026-02-25T10:00:00Z",
-    end_date: "2026-02-27T16:00:00Z",
-    ticket_price: 0,
-    cover_image_url: null,
-    organizer_type: "college",
-  },
-  {
-    id: "ai-career-summit",
-    title: "Nepal AI & Tech Talent Summit 2026",
-    description: "Industry keynotes, mentorship roundtables, and career fairs for tech graduates in Nepal.",
-    event_type: "paid",
-    format: "offline",
-    location: "Hotel Himalaya, Kupondole",
-    start_date: "2026-03-05T09:00:00Z",
-    end_date: "2026-03-05T18:00:00Z",
-    ticket_price: 500,
-    cover_image_url: null,
-    organizer_type: "company",
-  },
-];
-
 export default function EventsPage() {
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedFormat, setSelectedFormat] = useState("all");
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchEvents();
@@ -73,18 +38,22 @@ export default function EventsPage() {
 
   const fetchEvents = async () => {
     try {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("events")
         .select("*")
+        .in("status", ["approved", "published"])
+        .eq("approval_status", "approved")
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .gt("end_date", new Date().toISOString())
         .order("start_date", { ascending: true });
 
-      if (data && data.length > 0) {
-        setEvents(data as EventItem[]);
-      } else {
-        setEvents(mockEvents);
-      }
-    } catch {
-      setEvents(mockEvents);
+      if (error) throw error;
+      setEvents((data || []) as EventItem[]);
+      setLoadError(null);
+    } catch (error) {
+      setEvents([]);
+      setLoadError(error instanceof Error ? error.message : "Events could not be loaded.");
     } finally {
       setIsLoading(false);
     }
@@ -94,6 +63,14 @@ export default function EventsPage() {
     if (selectedFormat === "all") return true;
     return e.format === selectedFormat || e.event_type === selectedFormat;
   });
+
+  const openRegistration = (event: EventItem) => {
+    if (!session) {
+      navigate("/login", { state: { from: { pathname: "/events" } } });
+      return;
+    }
+    setSelectedEvent(event);
+  };
 
   return (
     <PublicPageLayout activeNavId="events">
@@ -191,13 +168,15 @@ export default function EventsPage() {
                   <span className="text-xs font-bold text-slate-700 capitalize">
                     {event.organizer_type} Event
                   </span>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#0073e6] hover:bg-[#0062c4] text-white text-xs font-bold rounded-full transition-all"
+                  <button
+                    type="button"
+                    onClick={() => openRegistration(event)}
+                    disabled={registeredEventIds.has(event.id)}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#0073e6] hover:bg-[#0062c4] disabled:bg-emerald-600 text-white text-xs font-bold rounded-full transition-all"
                   >
-                    <span>Register</span>
+                    <span>{registeredEventIds.has(event.id) ? "Registered" : "Register"}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  </button>
                 </div>
               </div>
             );
@@ -208,8 +187,25 @@ export default function EventsPage() {
           <div className="text-center py-16 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <Calendar className="w-10 h-10 text-slate-400 mx-auto mb-3" />
             <p className="text-base font-bold text-slate-700">No events found</p>
-            <p className="text-xs text-slate-400 mt-1">Try switching categories or check back soon.</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {loadError || "Approved upcoming events created in Admin will appear here automatically."}
+            </p>
           </div>
+        )}
+
+        {selectedEvent && (
+          <ModuleSubmissionDialog
+            module="event_registration"
+            targetId={selectedEvent.id}
+            targetName={selectedEvent.title}
+            open={Boolean(selectedEvent)}
+            onOpenChange={(open) => { if (!open) setSelectedEvent(null); }}
+            onSubmitted={() => {
+              setRegisteredEventIds((current) => new Set(current).add(selectedEvent.id));
+            }}
+            successTitle="Event registration submitted"
+            successDescription={`Your registration for ${selectedEvent.title} is stored in MeroTalent. Any required payment remains pending until it is verified.`}
+          />
         )}
       </div>
     </PublicPageLayout>

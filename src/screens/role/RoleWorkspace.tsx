@@ -22,15 +22,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  SEED_COMPANIES,
-  SEED_JOBS,
-  SEED_EVENTS,
-  SEED_JOB_APPLICATIONS,
-  SEED_EVENT_REGISTRATIONS,
-  SEED_MENTORS,
-  SEED_MENTOR_BOOKINGS,
-} from "@/lib/admin/admin-seed-fallbacks";
+import RoleOwnerManagement, {
+  type RoleOwnerSnapshot,
+} from "@/components/owner/RoleOwnerManagement";
 
 type WorkspaceRole = "company" | "mentor";
 
@@ -79,6 +73,17 @@ const emptySubscription: SubscriptionSummary = {
   accessMode: "none",
   expiryDate: null,
   active: false,
+};
+
+const emptyOwnerSnapshot: RoleOwnerSnapshot = {
+  company: null,
+  mentor: null,
+  jobs: [],
+  events: [],
+  services: [],
+  jobApplications: [],
+  eventRegistrations: [],
+  mentorBookings: [],
 };
 
 const workspaceContent = {
@@ -193,6 +198,8 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [failedSources, setFailedSources] = useState<string[]>([]);
+  const [reloadVersion, setReloadVersion] = useState(0);
+  const [ownerSnapshot, setOwnerSnapshot] = useState<RoleOwnerSnapshot>(emptyOwnerSnapshot);
   const [liveData, setLiveData] = useState<WorkspaceLiveData>({
     stats: [],
     queue: [],
@@ -210,6 +217,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
     const loadWorkspace = async () => {
       setIsLoading(true);
       setFailedSources([]);
+      setOwnerSnapshot(emptyOwnerSnapshot);
       const db = supabase as any;
       const failures = new Set<string>();
       const addFailure = (label: string) => failures.add(label);
@@ -224,13 +232,13 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
             .maybeSingle(),
           db
             .from("jobs")
-            .select("id, title, status, is_active, created_at")
+            .select("id, company_id, title, description, location, job_type, experience_level, is_remote, application_deadline, expires_at, status, is_active, created_at")
             .eq("owner_user_id", user.id)
             .is("deleted_at", null)
             .order("created_at", { ascending: false }),
           db
             .from("events")
-            .select("id, title, status, start_date, created_at")
+            .select("id, organizer_type, organizer_id, title, description, event_type, format, location, meeting_url, start_date, end_date, registration_deadline, capacity, ticket_price, currency, status, created_at")
             .eq("organizer_user_id", user.id)
             .eq("organizer_type", "company")
             .is("deleted_at", null)
@@ -241,33 +249,16 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         if (jobsResult.error) addFailure("owned jobs");
         if (eventsResult.error) addFailure("owned events");
 
-        let company = companyResult.data;
-        let jobs = jobsResult.data ?? [];
-        let events = eventsResult.data ?? [];
-        if (!company) {
-          company = SEED_COMPANIES[0];
-          if (jobs.length === 0) jobs = SEED_JOBS;
-          if (events.length === 0) events = SEED_EVENTS;
-        }
-
-        let subscription = await loadSubscription(
+        const company = companyResult.data;
+        const jobs = jobsResult.data ?? [];
+        const events = eventsResult.data ?? [];
+        const subscription = await loadSubscription(
           db,
           user.id,
           "company",
           company?.id ?? null,
           addFailure,
         );
-        if (!subscription.active) {
-          subscription = {
-            packageName: "Company Jobs Free",
-            status: "active",
-            paymentStatus: "not_required",
-            accessMode: "full",
-            expiryDate: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
-            active: true,
-          };
-        }
-
         const jobIds = jobs.map((job: any) => job.id);
         const eventIds = events.map((event: any) => event.id);
 
@@ -275,14 +266,14 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
           jobIds.length
             ? db
                 .from("job_applications")
-                .select("id, job_id, status, applied_at", { count: "exact" })
+                .select("id, job_id, full_name, email, status, applied_at", { count: "exact" })
                 .in("job_id", jobIds)
                 .is("deleted_at", null)
             : Promise.resolve({ data: [], count: 0, error: null }),
           eventIds.length
             ? db
                 .from("event_registrations")
-                .select("id, event_id, status, registered_at", { count: "exact" })
+                .select("id, event_id, status, payment_status, ticket_quantity, form_data, registered_at", { count: "exact" })
                 .in("event_id", eventIds)
                 .is("deleted_at", null)
             : Promise.resolve({ data: [], count: 0, error: null }),
@@ -291,13 +282,8 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         if (applicationsResult.error) addFailure("job applications");
         if (registrationsResult.error) addFailure("event registrations");
 
-        const applications = (applicationsResult.data && applicationsResult.data.length > 0)
-          ? applicationsResult.data
-          : SEED_JOB_APPLICATIONS;
-        const registrations = (registrationsResult.data && registrationsResult.data.length > 0)
-          ? registrationsResult.data
-          : SEED_EVENT_REGISTRATIONS;
-
+        const applications = applicationsResult.data ?? [];
+        const registrations = registrationsResult.data ?? [];
         const applicationCountByJob = new Map<string, number>();
         applications.forEach((application: any) => {
           applicationCountByJob.set(
@@ -317,30 +303,30 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
           ...jobs.map((job: any) => ({
             id: `job-${job.id}`,
             title: job.title,
-            detail: `${applicationCountByJob.get(job.id) ?? 1} applications · ${prettify(job.status)}`,
+            detail: `${applicationCountByJob.get(job.id) ?? 0} applications · ${prettify(job.status)}`,
             action: "View listing",
             href: "/jobs",
-            sortAt: new Date(job.created_at || Date.now()).getTime(),
+            sortAt: new Date(job.created_at).getTime(),
           })),
           ...events.map((event: any) => ({
             id: `event-${event.id}`,
             title: event.title,
-            detail: `${registrationCountByEvent.get(event.id) ?? 1} registrations · ${formatDateTime(event.start_date)}`,
+            detail: `${registrationCountByEvent.get(event.id) ?? 0} registrations · ${formatDateTime(event.start_date)}`,
             action: "View event",
             href: "/events",
-            sortAt: new Date(event.created_at || Date.now()).getTime(),
+            sortAt: new Date(event.created_at).getTime(),
           })),
         ]
           .sort((a, b) => b.sortAt - a.sortAt)
           .slice(0, 5);
 
-        const applicationsCount = Math.max(applicationsResult.count ?? 0, applications.length);
-        const registrationsCount = Math.max(registrationsResult.count ?? 0, registrations.length);
+        const applicationsCount = applicationsResult.count ?? applications.length;
+        const registrationsCount = registrationsResult.count ?? registrations.length;
         const canReadLeads = subscription.active && subscription.accessMode !== "none";
         const stats: WorkspaceStat[] = [
           {
             label: "Published jobs",
-            value: String(jobs.filter((job: any) => job.status === "published" && job.is_active).length || jobs.length),
+            value: String(jobs.filter((job: any) => job.status === "published" && job.is_active).length),
             note: `${jobs.length} total`,
           },
           {
@@ -351,7 +337,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
           {
             label: "Owned events",
             value: String(events.length),
-            note: `${events.filter((event: any) => ["approved", "published"].includes(event.status)).length || events.length} published`,
+            note: `${events.filter((event: any) => ["approved", "published"].includes(event.status)).length} published`,
           },
           {
             label: "Registrations",
@@ -361,27 +347,37 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         ];
 
         if (isCurrent) {
+          setOwnerSnapshot({
+            company: company ? { id: company.id, name: company.name } : null,
+            mentor: null,
+            jobs,
+            events,
+            services: [],
+            jobApplications: applications,
+            eventRegistrations: registrations,
+            mentorBookings: [],
+          });
           setLiveData({
             stats,
             queue,
             subscription,
             activityCount: canReadLeads ? applicationsCount + registrationsCount : 0,
             activityLabel: canReadLeads ? "application and registration records" : "lead records locked by plan",
-            statusLabel: company?.status ? prettify(company.status) : "approved",
-            profileMissing: false,
+            statusLabel: company?.status ? prettify(company.status) : "Profile missing",
+            profileMissing: !company,
           });
         }
       } else {
         const [mentorResult, eventsResult, unreadMessagesResult] = await Promise.all([
           db
             .from("mentors")
-            .select("id, approval_status, rating, total_sessions")
+            .select("id, headline, description, expertise, hourly_rate, years_experience, is_available, approval_status, rating, total_sessions")
             .eq("user_id", user.id)
             .is("deleted_at", null)
             .maybeSingle(),
           db
             .from("events")
-            .select("id, title, status, start_date, created_at")
+            .select("id, organizer_type, organizer_id, title, description, event_type, format, location, meeting_url, start_date, end_date, registration_deadline, capacity, ticket_price, currency, status, created_at")
             .eq("organizer_user_id", user.id)
             .eq("organizer_type", "mentor")
             .is("deleted_at", null)
@@ -397,19 +393,15 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         if (eventsResult.error) addFailure("owned events");
         if (unreadMessagesResult.error) addFailure("unread messages");
 
-        let mentor = mentorResult.data;
-        let events = eventsResult.data ?? [];
-        if (!mentor) {
-          mentor = SEED_MENTORS[0];
-          if (events.length === 0) events = SEED_EVENTS;
-        }
-
+        const mentor = mentorResult.data;
+        const events = eventsResult.data ?? [];
         const mentorId = mentor?.id ?? null;
-        const [servicesResult, bookingsResult, loadedSubscription] = await Promise.all([
+        const mentorEventIds = events.map((event: any) => event.id);
+        const [servicesResult, bookingsResult, registrationsResult, subscription] = await Promise.all([
           mentorId
             ? db
                 .from("mentor_services")
-                .select("id, title, is_active, price, currency, created_at")
+                .select("id, mentor_id, title, description, session_type, duration_minutes, capacity, is_active, price, currency, created_at")
                 .eq("mentor_id", mentorId)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: false })
@@ -417,31 +409,28 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
           mentorId
             ? db
                 .from("mentor_bookings")
-                .select("id, mentor_service_id, status, payment_status, scheduled_start, scheduled_end, created_at")
+                .select("id, mentor_service_id, status, payment_status, amount, currency, scheduled_start, scheduled_end, form_data, created_at")
                 .eq("mentor_id", mentorId)
                 .is("deleted_at", null)
                 .order("scheduled_start", { ascending: true })
             : Promise.resolve({ data: [], error: null }),
+          mentorEventIds.length
+            ? db
+                .from("event_registrations")
+                .select("id, event_id, status, payment_status, ticket_quantity, form_data, registered_at")
+                .in("event_id", mentorEventIds)
+                .is("deleted_at", null)
+                .order("registered_at", { ascending: false })
+            : Promise.resolve({ data: [], error: null }),
           loadSubscription(db, user.id, "mentor", mentorId, addFailure),
         ]);
 
-        let subscription = loadedSubscription;
-        if (!subscription.active) {
-          subscription = {
-            packageName: "Mentor Free",
-            status: "active",
-            paymentStatus: "not_required",
-            accessMode: "full",
-            expiryDate: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
-            active: true,
-          };
-        }
-
         if (servicesResult.error) addFailure("mentor services");
         if (bookingsResult.error) addFailure("mentor bookings");
+        if (registrationsResult.error) addFailure("event registrations");
 
-        const services = (servicesResult.data && servicesResult.data.length > 0) ? servicesResult.data : [{ id: "seed-srv-001", title: "QA Session", is_active: true, price: 0 }];
-        const bookings = (bookingsResult.data && bookingsResult.data.length > 0) ? bookingsResult.data : SEED_MENTOR_BOOKINGS;
+        const services = servicesResult.data ?? [];
+        const bookings = bookingsResult.data ?? [];
         const now = Date.now();
         const upcomingBookings = bookings.filter((booking: any) => {
           const scheduledAt = new Date(booking.scheduled_start).getTime();
@@ -454,9 +443,9 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
           services.map((service: any) => [service.id, service.title]),
         );
         const queue: QueueItem[] = [
-          ...(upcomingBookings.length > 0 ? upcomingBookings : bookings).map((booking: any) => ({
+          ...upcomingBookings.map((booking: any) => ({
             id: `booking-${booking.id}`,
-            title: serviceById.get(booking.mentor_service_id) ?? "QA Session",
+            title: serviceById.get(booking.mentor_service_id) ?? "Mentoring session",
             detail: `${formatDateTime(booking.scheduled_start)} · ${prettify(booking.status)}`,
             action: "Upcoming",
             href: "/mentor#pipeline",
@@ -477,35 +466,56 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         const stats: WorkspaceStat[] = [
           {
             label: "Upcoming",
-            value: String(Math.max(upcomingBookings.length, 1)),
-            note: `${Math.max(bookings.length, 1)} bookings`,
+            value: String(upcomingBookings.length),
+            note: `${bookings.length} bookings`,
           },
           {
             label: "Active services",
-            value: String(services.filter((service: any) => service.is_active).length || services.length),
+            value: String(services.filter((service: any) => service.is_active).length),
             note: `${services.length} total`,
           },
           {
             label: "Mentor rating",
-            value: mentor?.rating == null ? "4.9" : String(mentor.rating),
-            note: `${mentor?.total_sessions ?? 24} sessions`,
+            value: mentor?.rating == null ? "—" : String(mentor.rating),
+            note: `${mentor?.total_sessions ?? 0} sessions`,
           },
           {
             label: "Owned events",
             value: String(events.length),
-            note: `${events.filter((event: any) => ["approved", "published"].includes(event.status)).length || events.length} published`,
+            note: `${events.filter((event: any) => ["approved", "published"].includes(event.status)).length} published`,
           },
         ];
 
         if (isCurrent) {
+          setOwnerSnapshot({
+            company: null,
+            mentor: mentor
+              ? {
+                  id: mentor.id,
+                  headline: mentor.headline,
+                  description: mentor.description,
+                  expertise: mentor.expertise,
+                  hourly_rate: mentor.hourly_rate,
+                  years_experience: mentor.years_experience,
+                  is_available: mentor.is_available,
+                  approval_status: mentor.approval_status,
+                }
+              : null,
+            jobs: [],
+            events,
+            services,
+            jobApplications: [],
+            eventRegistrations: registrationsResult.data ?? [],
+            mentorBookings: bookings,
+          });
           setLiveData({
             stats,
             queue,
             subscription,
             activityCount: unreadMessagesResult.count ?? 0,
             activityLabel: "unread mentor messages",
-            statusLabel: mentor?.approval_status ? prettify(mentor.approval_status) : "approved",
-            profileMissing: false,
+            statusLabel: mentor?.approval_status ? prettify(mentor.approval_status) : "Profile missing",
+            profileMissing: !mentor,
           });
         }
       }
@@ -520,7 +530,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
     return () => {
       isCurrent = false;
     };
-  }, [role, user]);
+  }, [reloadVersion, role, user]);
 
   const filteredQueue = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -668,6 +678,15 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
               );
             })}
           </section>
+
+          {!isLoading && user && (
+            <RoleOwnerManagement
+              role={role}
+              userId={user.id}
+              snapshot={ownerSnapshot}
+              onSaved={() => setReloadVersion((version) => version + 1)}
+            />
+          )}
 
           <section id="pipeline" className="grid scroll-mt-20 gap-4 lg:grid-cols-[1.5fr_1fr]">
             <article className="rounded-[24px] border border-[#f0e3da] bg-white p-5 shadow-[0_14px_38px_rgba(79,48,30,0.06)] sm:p-6">

@@ -45,6 +45,25 @@ describe("admin resource registry", () => {
       expect(definition.fields.status.update).toBe(true);
     }
   });
+
+  it("keeps the featured display title in the validated admin contract", () => {
+    const definition = getAdminResource("featured-items");
+    expect(definition.select.split(",")).toContain("title");
+    expect(
+      sanitizeAdminWrite(definition, "create", {
+        entity_type: "job",
+        entity_id: uuid,
+        title: "Frontend internship",
+        placement: "homepage",
+        priority: 10,
+        is_active: true,
+      }),
+    ).toMatchObject({
+      entity_type: "job",
+      entity_id: uuid,
+      title: "Frontend internship",
+    });
+  });
 });
 
 describe("admin list query parsing", () => {

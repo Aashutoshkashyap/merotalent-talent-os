@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import InstituteProfileEditor from "@/components/owner/InstituteProfileEditor";
+import OwnerStatusActions from "@/components/owner/OwnerStatusActions";
 import {
   AlertCircle,
   Building2,
@@ -18,17 +20,19 @@ import {
   Calendar,
   ChevronLeft,
   CreditCard,
+  Edit3,
 } from "lucide-react";
-import {
-  SEED_INSTITUTES,
-  SEED_COLLEGE_APPLICATIONS,
-} from "@/lib/admin/admin-seed-fallbacks";
 
 interface InstituteData {
   id: string;
   name: string;
+  short_name: string | null;
   description: string | null;
   location: string | null;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  youtube_url: string | null;
   logo_url: string | null;
   type: string | null;
   is_verified: boolean | null;
@@ -129,6 +133,7 @@ const InstituteDashboard = () => {
   const [subscription, setSubscription] = useState<SubscriptionSummary>(emptySubscription);
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
 
   const fetchInstituteData = useCallback(async () => {
     if (!user) return;
@@ -176,12 +181,18 @@ const InstituteDashboard = () => {
     }
 
     if (!instituteRecord) {
-      instituteRecord = SEED_INSTITUTES[0] as unknown as InstituteData;
-      instituteAccess = {
-        can_edit_profile: true,
-        can_manage_courses: true,
-        can_post_notices: true,
-      };
+      setInstitute(null);
+      setAccess(null);
+      setFailedSources([...failures]);
+      setIsLoading(false);
+      if (failures.size === 0) {
+        toast({
+          variant: "destructive",
+          title: "No institute assigned",
+          description: "This account does not own or administer an institute profile.",
+        });
+      }
+      return;
     }
 
     setInstitute(instituteRecord);
@@ -221,14 +232,7 @@ const InstituteDashboard = () => {
     const subscriptionCandidates = [...entitySubscriptions, ...userSubscriptions];
     const subscriptionRecord =
       subscriptionCandidates.find(isSubscriptionActive) ?? subscriptionCandidates[0];
-    let subscriptionSummary = {
-      packageName: "College Free",
-      status: "active",
-      paymentStatus: "not_required",
-      leadAccessMode: "full",
-      expiryDate: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
-      active: true,
-    };
+    let subscriptionSummary = emptySubscription;
 
     if (subscriptionRecord) {
       const packageResult = await db
@@ -239,25 +243,22 @@ const InstituteDashboard = () => {
 
       if (packageResult.error) failures.add("package details");
       subscriptionSummary = {
-        packageName: packageResult.data?.name ?? "College Free",
+        packageName: packageResult.data?.name ?? "Assigned package",
         status: subscriptionRecord.status,
         paymentStatus: subscriptionRecord.payment_status,
-        leadAccessMode: packageResult.data?.lead_access_mode ?? "full",
+        leadAccessMode: packageResult.data?.lead_access_mode ?? "none",
         expiryDate: subscriptionRecord.expiry_date,
         active: isSubscriptionActive(subscriptionRecord),
       };
     }
 
-    const fetchedApps = (applicationsResult.data ?? []) as ApplicationPreview[];
-    const displayApps = fetchedApps.length > 0 ? fetchedApps : (SEED_COLLEGE_APPLICATIONS as unknown as ApplicationPreview[]);
-
     setRecentNotices((noticesResult.data ?? []) as NoticePreview[]);
-    setRecentApplications(displayApps);
+    setRecentApplications((applicationsResult.data ?? []) as ApplicationPreview[]);
     setSubscription(subscriptionSummary);
     setStats({
       notices: noticesResult.count ?? 0,
       courses: countCourses(instituteRecord.courses_offered),
-      applications: Math.max(applicationsResult.count ?? 0, displayApps.length),
+      applications: applicationsResult.count ?? 0,
     });
     setFailedSources([...failures]);
     setIsLoading(false);
@@ -312,6 +313,7 @@ const InstituteDashboard = () => {
     { path: "/courses", icon: BookOpen, label: "Course catalog" },
   ];
   const canAccessApplications = subscription.active && subscription.leadAccessMode !== "none";
+  const canEditOwnedProfile = access?.can_edit_profile === true && institute.owner_user_id === user?.id;
 
   return (
     <div className="min-h-screen w-full overflow-hidden bg-white text-[#17162e]">
@@ -356,6 +358,16 @@ const InstituteDashboard = () => {
                 </div>
               </div>
             </div>
+            {canEditOwnedProfile && (
+              <Button
+                variant="outline"
+                className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]"
+                onClick={() => setProfileEditorOpen(true)}
+              >
+                <Edit3 className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Edit profile</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -530,6 +542,12 @@ const InstituteDashboard = () => {
                       </Link>
                     </Button>
                   )}
+                  {canEditOwnedProfile && (
+                    <Button variant="outline" className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]" onClick={() => setProfileEditorOpen(true)}>
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      Edit profile
+                    </Button>
+                  )}
                   <Button asChild variant="outline" className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]">
                     <Link to="/institute#applications">
                       <Users className="mr-2 h-4 w-4" />
@@ -638,6 +656,12 @@ const InstituteDashboard = () => {
                           </Badge>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground">Submitted {formatDate(application.submitted_at)}</p>
+                        <OwnerStatusActions
+                          workflow="college_application"
+                          recordId={application.id}
+                          status={application.status}
+                          onSaved={() => void fetchInstituteData()}
+                        />
                       </div>
                     ))}
                   </div>
@@ -648,6 +672,15 @@ const InstituteDashboard = () => {
           </main>
         </div>
       </div>
+      {canEditOwnedProfile && user && (
+        <InstituteProfileEditor
+          open={profileEditorOpen}
+          onOpenChange={setProfileEditorOpen}
+          institute={institute}
+          ownerUserId={user.id}
+          onSaved={() => void fetchInstituteData()}
+        />
+      )}
       </div>
     </div>
   );

@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Users, Clock, ArrowRight, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SEED_MENTORS } from "@/lib/admin/admin-seed-fallbacks";
+import { useAuth } from "@/contexts/AuthContext";
+import BookingDialog from "@/components/mentors/BookingDialog";
 
 interface MentorItem {
   id: string;
@@ -14,22 +15,16 @@ interface MentorItem {
   bio: string;
   experience: string;
   hourlyRate: string;
+  hourlyRateAmount: number;
+  expertise: string[];
   rating: string;
   avatarText: string;
   photoUrl: string;
   sessions: string;
 }
 
-/* ── fallback photo when none exists ── */
-const FALLBACK_PHOTOS = [
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
-  "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=400",
-  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400",
-];
-
-/* ── map a DB/seed row to the UI model ── */
-function toDisplayItem(row: Record<string, unknown>, idx: number): MentorItem {
+/* ── map a database row to the UI model ── */
+function toDisplayItem(row: Record<string, unknown>): MentorItem {
   const profiles = (row.profiles ?? {}) as Record<string, unknown>;
   const name = String(profiles.full_name ?? row.full_name ?? "Mentor");
   const avatarText = name
@@ -53,17 +48,22 @@ function toDisplayItem(row: Record<string, unknown>, idx: number): MentorItem {
     bio: String(row.headline ?? row.description ?? ""),
     experience: row.years_experience ? `${row.years_experience}+ Years` : "",
     hourlyRate: row.hourly_rate ? `NPR ${Number(row.hourly_rate).toLocaleString()}` : "",
-    rating: String(row.rating ?? "5.0"),
+    hourlyRateAmount: Number(row.hourly_rate ?? 0),
+    expertise: expertise.map(String),
+    rating: row.rating == null ? "—" : String(row.rating),
     avatarText,
-    photoUrl: String(row.profile_image_url ?? FALLBACK_PHOTOS[idx % FALLBACK_PHOTOS.length]),
+    photoUrl: String(row.profile_image_url ?? "/placeholder.svg"),
     sessions: row.total_sessions ? `${row.total_sessions}+` : "0",
   };
 }
 
 export default function MentorshipPage() {
+  const { user } = useAuth();
   const [mentors, setMentors] = useState<MentorItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All Areas");
+  const [selectedMentor, setSelectedMentor] = useState<MentorItem | null>(null);
 
   useEffect(() => {
     fetchMentors();
@@ -71,18 +71,39 @@ export default function MentorshipPage() {
 
   const fetchMentors = async () => {
     try {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("mentors")
-        .select("*, profiles(full_name, email)")
+        .select("*")
+        .eq("approval_status", "approved")
+        .eq("is_available", true)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
-      if (data && data.length > 0) {
-        setMentors(data.map(toDisplayItem));
-      } else {
-        setMentors(SEED_MENTORS.map(toDisplayItem));
-      }
-    } catch {
-      setMentors(SEED_MENTORS.map(toDisplayItem));
+      if (error) throw error;
+      const userIds = (data || []).map((mentor: Record<string, unknown>) => String(mentor.user_id));
+      const { data: profiles, error: profilesError } = userIds.length > 0
+        ? await (supabase as any)
+            .from("public_profile_directory")
+            .select("user_id, full_name, avatar_url, bio, location")
+            .in("user_id", userIds)
+        : { data: [], error: null };
+      if (profilesError) throw profilesError;
+      const profileByUser = new Map<string, Record<string, unknown>>(
+        (profiles || []).map((profile: Record<string, unknown>) => [String(profile.user_id), profile]),
+      );
+      setMentors((data || []).map((mentor: Record<string, unknown>) => {
+        const profile = profileByUser.get(String(mentor.user_id)) || {};
+        return toDisplayItem({
+          ...mentor,
+          profiles: profile,
+          description: mentor.description || profile.bio,
+          profile_image_url: mentor.profile_image_url || profile.avatar_url,
+        });
+      }));
+      setLoadError(null);
+    } catch (error) {
+      setMentors([]);
+      setLoadError(error instanceof Error ? error.message : "Mentors could not be loaded.");
     } finally {
       setIsLoading(false);
     }
@@ -198,15 +219,47 @@ export default function MentorshipPage() {
                     <span className="text-[10px] text-slate-400 font-semibold truncate">{item.hourlyRate} / Session</span>
                   </div>
                 </div>
-                <Link to="/login" className="w-7 h-7 rounded-full bg-slate-50 hover:bg-blue-50 flex items-center justify-center text-slate-400 hover:text-[#0073e6] border border-slate-100 transition-colors flex-shrink-0">
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                {user ? (
+                  <button
+                    type="button"
+                    aria-label={`Book a session with ${item.name}`}
+                    onClick={() => setSelectedMentor(item)}
+                    className="w-7 h-7 rounded-full bg-slate-50 hover:bg-blue-50 flex items-center justify-center text-slate-400 hover:text-[#0073e6] border border-slate-100 transition-colors flex-shrink-0"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <Link to="/login" aria-label={`Sign in to book ${item.name}`} className="w-7 h-7 rounded-full bg-slate-50 hover:bg-blue-50 flex items-center justify-center text-slate-400 hover:text-[#0073e6] border border-slate-100 transition-colors flex-shrink-0">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
               </div>
             </div>
           ))}
         </div>
+
+        {!isLoading && filtered.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
+            <Users className="mx-auto mb-3 h-9 w-9 text-slate-400" />
+            <p className="font-bold text-slate-700">No approved mentors found</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {loadError || "Approved mentor profiles created in Admin will appear here automatically."}
+            </p>
+          </div>
+        )}
+        {selectedMentor && (
+          <BookingDialog
+            isOpen
+            onClose={() => setSelectedMentor(null)}
+            mentor={{
+              id: selectedMentor.id,
+              name: selectedMentor.name,
+              hourlyRate: selectedMentor.hourlyRateAmount,
+              expertise: selectedMentor.expertise,
+            }}
+          />
+        )}
       </div>
     </PublicPageLayout>
   );
 }
-

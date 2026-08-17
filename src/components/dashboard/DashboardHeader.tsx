@@ -44,7 +44,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     const route = [
       ["competition challenge", "/dashboard/competitions"],
       ["mentor coaching", "/dashboard/mentors"],
-      ["course learn lesson", "/dashboard/learning"],
+      ["course learning partner", "/courses"],
       ["job career role", "/dashboard/jobs"],
       ["profile portfolio", "/dashboard/profile"],
       ["badge achievement", "/dashboard/badges"],
@@ -61,7 +61,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     "/dashboard": "My workspace",
     "/dashboard/competitions": "Competitions",
     "/dashboard/mentors": "Mentors",
-    "/dashboard/learning": "Learning",
     "/dashboard/jobs": "Jobs",
     "/dashboard/profile": "My profile",
     "/dashboard/badges": "Achievements",

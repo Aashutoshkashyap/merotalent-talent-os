@@ -87,6 +87,39 @@ describe("signed college media upload client", () => {
     );
   });
 
+  it("uploads a job resume to the private job bucket and returns only its canonical path", async () => {
+    const jobPath =
+      "a70c51ac-e25e-42fd-b596-a2972836ca9e/job_attachment/95920411-b7dd-48c7-95d4-a3fba9cd7f75/150c3fb5-a401-4d24-9527-2d6e577fb716.pdf";
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            bucket: "job-files",
+            path: jobPath,
+            token: "one-time-upload-token",
+          },
+          error: null,
+        }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    storageMocks.uploadToSignedUrl.mockResolvedValue({ data: { path: jobPath }, error: null });
+    const file = new File(["resume"], "resume.pdf", { type: "application/pdf" });
+
+    await expect(
+      uploadSignedCollegeMedia(file, "job_attachment", resourceId),
+    ).resolves.toEqual({ bucket: "job-files", path: jobPath, publicUrl: "" });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
+      module: "job_attachment",
+      resourceId,
+      fileName: "resume.pdf",
+      contentType: "application/pdf",
+    });
+    expect(storageMocks.from).toHaveBeenCalledWith("job-files");
+    expect(storageMocks.getPublicUrl).not.toHaveBeenCalled();
+  });
+
   it("rejects a signed destination outside the public college bucket", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(

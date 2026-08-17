@@ -50,7 +50,6 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { generateCompanyDetails } from "@/lib/ai/ai-generator";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
-import { SEED_COMPANIES } from "@/lib/admin/admin-seed-fallbacks";
 
 interface Company {
   id: string;
@@ -102,12 +101,9 @@ const AdminCompanies = () => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      setCompanies(SEED_COMPANIES as unknown as Company[]);
-    } else if (data && data.length > 0) {
-      setCompanies(data as Company[]);
-    } else {
-      setCompanies(SEED_COMPANIES as unknown as Company[]);
+      toast({ variant: "destructive", title: "Unable to load companies", description: error.message });
     }
+    setCompanies((data || []) as Company[]);
     setIsLoading(false);
   };
 

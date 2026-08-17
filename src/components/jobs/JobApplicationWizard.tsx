@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,13 +13,22 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Briefcase, MapPin, Building2, Clock, DollarSign, ChevronRight, ChevronLeft,
-  Upload, FileText, Check, Star, Loader2, X
+  SignedMediaUploader,
+  type SignedMediaAsset,
+} from "@/components/media/SignedMediaUploader";
+import {
+  ModuleFormClientError,
+  submitAuthenticatedModuleForm,
+} from "@/lib/forms/module-form-client";
+import {
+  MapPin, Building2, DollarSign, ChevronRight, ChevronLeft,
+  Check, Star, Loader2
 } from "lucide-react";
 
 interface JobApplicationWizardProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmitted?: (jobId: string) => void;
   job: {
     id: string;
     title: string;
@@ -40,50 +48,38 @@ const steps = [
   { id: 5, title: "Submit", description: "Review and apply" },
 ];
 
-const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProps) => {
-  const { user } = useAuth();
+const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicationWizardProps) => {
+  const { profile, session, user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeUrl, setResumeUrl] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const { toast } = useToast();
 
   const progress = (currentStep / steps.length) * 100;
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        variant: "destructive",
-        title: "File too large",
-        description: "Please upload a file smaller than 5MB",
-      });
-      return;
-    }
+  useEffect(() => {
+    if (!isOpen) return;
+    setFullName((current) => current || profile?.full_name || "");
+    setEmail((current) => current || profile?.email || user?.email || "");
+    setPhone((current) => current || profile?.phone || "");
+  }, [isOpen, profile?.email, profile?.full_name, profile?.phone, user?.email]);
 
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${user.id}/resume-${Date.now()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('resumes')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: uploadError.message,
-      });
-      return;
-    }
-
-    setResumeFile(file);
-    setResumeUrl(filePath);
+  const handleResumeUploaded = (assets: SignedMediaAsset[]) => {
+    const asset = assets[0];
+    if (!asset) return;
+    setResumeUrl(asset.path);
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next.resumeUrl;
+      return next;
+    });
   };
 
   const toggleSkill = (skill: string) => {
@@ -98,7 +94,7 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
   };
 
   const handleSubmit = async () => {
-    if (!user) {
+    if (!user || !session) {
       toast({
         variant: "destructive",
         title: "Login required",
@@ -108,43 +104,56 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
     }
 
     setIsSubmitting(true);
-    
-    const { error } = await supabase
-      .from('job_applications')
-      .insert({
-        user_id: user.id,
-        job_id: job.id,
-        resume_url: resumeUrl,
-        cover_letter: coverLetter,
-        portfolio_url: portfolioUrl,
-        skills_match_score: calculateMatchScore(),
-        status: 'pending',
+    setFieldErrors({});
+
+    try {
+      await submitAuthenticatedModuleForm({
+        accessToken: session.access_token,
+        module: "job_application",
+        values: {
+          jobId: job.id,
+          fullName,
+          email,
+          phone,
+          resumeUrl,
+          coverLetter,
+          portfolioUrl,
+          skills: selectedSkills,
+        },
       });
 
-    if (error) {
+      toast({
+        title: "Application submitted!",
+        description: "Your application is stored in MeroTalent for the hiring team.",
+      });
+
+      onSubmitted?.(job.id);
+      onClose();
+      setCurrentStep(1);
+      setResumeUrl("");
+      setCoverLetter("");
+      setPortfolioUrl("");
+      setSelectedSkills([]);
+    } catch (error) {
+      if (error instanceof ModuleFormClientError) {
+        setFieldErrors(error.fields);
+        const keys = Object.keys(error.fields);
+        if (keys.includes("resumeUrl") || keys.includes("portfolioUrl")) {
+          setCurrentStep(2);
+        } else if (keys.some((key) => ["fullName", "email", "phone", "coverLetter"].includes(key))) {
+          setCurrentStep(3);
+        } else if (keys.includes("skills")) {
+          setCurrentStep(4);
+        }
+      }
       toast({
         variant: "destructive",
         title: "Submission failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "The application could not be submitted.",
       });
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-    
-    toast({
-      title: "Application submitted!",
-      description: "Your application has been sent to the employer.",
-    });
-    
-    setIsSubmitting(false);
-    onClose();
-    // Reset form
-    setCurrentStep(1);
-    setResumeFile(null);
-    setResumeUrl("");
-    setCoverLetter("");
-    setPortfolioUrl("");
-    setSelectedSkills([]);
   };
 
   const canProceed = () => {
@@ -152,11 +161,11 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
       case 1:
         return true;
       case 2:
-        return !!resumeFile;
+        return !!resumeUrl;
       case 3:
-        return true; // Cover letter is optional
+        return fullName.trim().length >= 2 && !!email.trim() && !!phone.trim();
       case 4:
-        return selectedSkills.length > 0;
+        return job.skills.length === 0 || selectedSkills.length > 0;
       case 5:
         return true;
       default:
@@ -258,58 +267,21 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
           {/* Step 2: Resume Upload */}
           {currentStep === 2 && (
             <div className="space-y-4">
-              <div
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                  resumeFile ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
-              >
-                {resumeFile ? (
-                  <div className="space-y-3">
-                    <div className="w-16 h-16 mx-auto bg-primary/10 rounded-xl flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{resumeFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(resumeFile.size / 1024).toFixed(1)} KB
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setResumeFile(null)}
-                      className="text-destructive"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <Label htmlFor="resume-upload" className="cursor-pointer block">
-                    <div className="space-y-3">
-                      <div className="w-16 h-16 mx-auto bg-muted rounded-xl flex items-center justify-center">
-                        <Upload className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Upload your resume</p>
-                        <p className="text-sm text-muted-foreground">
-                          PDF, DOC, or DOCX (max 5MB)
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm" asChild>
-                        <span>Choose File</span>
-                      </Button>
-                    </div>
-                    <input
-                      id="resume-upload"
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                  </Label>
-                )}
-              </div>
+              <SignedMediaUploader
+                label="Resume"
+                module="job_attachment"
+                resourceId={job.id}
+                onUploaded={handleResumeUploaded}
+              />
+              {resumeUrl && (
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
+                  <Check className="h-4 w-4" />
+                  Resume securely uploaded and linked to this job.
+                </div>
+              )}
+              {fieldErrors.resumeUrl?.[0] && (
+                <p className="text-xs font-semibold text-destructive">{fieldErrors.resumeUrl[0]}</p>
+              )}
 
               <div className="space-y-2">
                 <Label>Portfolio URL (optional)</Label>
@@ -319,6 +291,7 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
                   value={portfolioUrl}
                   onChange={(e) => setPortfolioUrl(e.target.value)}
                 />
+                {fieldErrors.portfolioUrl?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.portfolioUrl[0]}</p>}
               </div>
             </div>
           )}
@@ -326,6 +299,45 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
           {/* Step 3: Cover Letter */}
           {currentStep === 3 && (
             <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="job-applicant-name">Full name</Label>
+                  <Input
+                    id="job-applicant-name"
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    required
+                  />
+                  {fieldErrors.fullName?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.fullName[0]}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="job-applicant-email">Email</Label>
+                  <Input
+                    id="job-applicant-email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                  />
+                  {fieldErrors.email?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.email[0]}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="job-applicant-phone">Phone</Label>
+                  <Input
+                    id="job-applicant-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="+977 98XXXXXXXX"
+                    required
+                  />
+                  {fieldErrors.phone?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.phone[0]}</p>}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Cover Letter (optional)</Label>
                 <Textarea
@@ -334,39 +346,7 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
                   onChange={(e) => setCoverLetter(e.target.value)}
                   rows={6}
                 />
-              </div>
-
-              {/* Cover Letter File Upload */}
-              <div className="space-y-2">
-                <Label>Or upload a cover letter file</Label>
-                <div
-                  className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                >
-                  <Label htmlFor="cover-letter-upload" className="cursor-pointer block">
-                    <div className="flex flex-col items-center gap-2">
-                      <FileText className="w-8 h-8 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        Click to upload PDF, DOC, or DOCX (max 5MB)
-                      </p>
-                    </div>
-                    <input
-                      id="cover-letter-upload"
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          // Handle file upload - for now just show toast
-                          console.log("Cover letter file:", file.name);
-                        }
-                      }}
-                    />
-                  </Label>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  A personalized cover letter can significantly improve your chances.
-                </p>
+                {fieldErrors.coverLetter?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.coverLetter[0]}</p>}
               </div>
             </div>
           )}
@@ -451,7 +431,7 @@ const JobApplicationWizard = ({ isOpen, onClose, job }: JobApplicationWizardProp
                   </div>
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-muted-foreground">Resume</span>
-                    <span className="font-medium">{resumeFile?.name || "Not uploaded"}</span>
+                    <span className="font-medium">{resumeUrl ? "Securely uploaded" : "Not uploaded"}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-muted-foreground">Cover Letter</span>

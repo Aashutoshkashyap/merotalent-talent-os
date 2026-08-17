@@ -3,7 +3,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
-  Award,
   BarChart3,
   Bell,
   BookOpen,
@@ -43,7 +42,7 @@ interface AdminSidebarProps {
 const primaryItems = [
   { icon: LayoutDashboard, label: "Overview", href: "/admin" },
   { icon: Users, label: "People", href: "/admin/users" },
-  { icon: BookOpen, label: "Learning", href: "/admin/lms" },
+  { icon: BookOpen, label: "Partner courses", href: "/admin/lms" },
   { icon: BriefcaseBusiness, label: "Jobs", href: "/admin/jobs" },
   { icon: Trophy, label: "Competitions", href: "/admin/competitions" },
   { icon: GraduationCap, label: "Mentors", href: "/admin/mentors" },
@@ -88,12 +87,10 @@ const AdminSidebar = ({
     icon: Icon,
     label,
     href,
-    badge,
   }: {
     icon: typeof LayoutDashboard;
     label: string;
     href: string;
-    badge?: number;
   }) => {
     const isActive =
       href === "/admin"
@@ -130,16 +127,6 @@ const AdminSidebar = ({
           strokeWidth={1.9}
         />
         {!compact ? <span className="relative z-10 min-w-0 flex-1 truncate">{label}</span> : null}
-        {badge && !compact ? (
-          <span
-            className={cn(
-              "relative z-10 grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-xs font-bold",
-              isActive ? "bg-white/20 text-white" : "bg-[#17396c] text-[#bfdbfe]",
-            )}
-          >
-            {badge}
-          </span>
-        ) : null}
       </Link>
     );
 

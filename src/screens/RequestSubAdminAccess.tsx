@@ -19,7 +19,7 @@ const MODULE_OPTIONS = [
   { id: "mentors", label: "Mentorship Directory", desc: "Manage mentor profiles, schedules, & session rates" },
   { id: "events", label: "Events & Webinars", desc: "Host campus events, workshops, & live sessions" },
   { id: "competitions", label: "Competitions & Hackathons", desc: "Organize student hackathons & skill contests" },
-  { id: "lms", label: "LMS & Learning Courses", desc: "Publish skill courses, quizzes, and learning materials" },
+  { id: "lms", label: "Partner Course Directory", desc: "Publish approved course listings and partner redirect links" },
   { id: "companies", label: "Company Partners", desc: "Manage company brand profile and recruiter accounts" },
 ];
 

@@ -12,7 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Star, Trash2, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
-import { SEED_FEATURED_ITEMS } from "@/lib/admin/admin-seed-fallbacks";
+import {
+  createAdminResource,
+  deleteAdminResource,
+  listAdminResource,
+} from "@/lib/admin/admin-client";
 
 interface FeaturedItem {
   id: string;
@@ -67,12 +71,26 @@ export default function AdminFeaturedItems() {
             }));
           }
         } else if (formData.entity_type === "job") {
-          const { data } = await (supabase as any).from("jobs").select("id, title, company_name").order("title").limit(100);
+          const { data, error } = await (supabase as any)
+            .from("jobs")
+            .select("id,title,company_id")
+            .is("deleted_at", null)
+            .order("title")
+            .limit(100);
+          if (error) throw error;
           if (data) {
+            const companyIds = [...new Set((data as any[]).map((item) => item.company_id).filter(Boolean))];
+            const { data: companies, error: companiesError } = companyIds.length
+              ? await (supabase as any).from("companies").select("id,name").in("id", companyIds)
+              : { data: [], error: null };
+            if (companiesError) throw companiesError;
+            const companyNames = new Map<string, string>(
+              (companies || []).map((company: any) => [company.id, company.name]),
+            );
             options = (data as any[]).map((item) => ({
               id: item.id,
               label: item.title,
-              subtitle: item.company_name || "Job listing",
+              subtitle: (item.company_id && companyNames.get(item.company_id)) || "Independent job listing",
             }));
           }
         } else if (formData.entity_type === "course") {
@@ -81,7 +99,7 @@ export default function AdminFeaturedItems() {
             options = data.map((item) => ({
               id: item.id,
               label: item.title,
-              subtitle: "LMS Course",
+              subtitle: "Partner Course",
             }));
           }
         } else if (formData.entity_type === "event") {
@@ -94,17 +112,40 @@ export default function AdminFeaturedItems() {
             }));
           }
         } else if (formData.entity_type === "mentor") {
-          const { data } = await supabase.from("mentors").select("id, profiles(full_name, email)").limit(100);
+          const { data, error } = await (supabase as any)
+            .from("mentors")
+            .select("id,user_id,headline")
+            .is("deleted_at", null)
+            .limit(100);
+          if (error) throw error;
           if (data) {
-            options = data.map((item: any) => ({
-              id: item.id,
-              label: item.profiles?.full_name || "Mentor Profile",
-              subtitle: item.profiles?.email || "Mentor",
-            }));
+            const userIds = (data as any[]).map((item) => item.user_id);
+            const { data: profiles, error: profilesError } = userIds.length
+              ? await (supabase as any)
+                .from("profiles")
+                .select("user_id,full_name,email")
+                .in("user_id", userIds)
+              : { data: [], error: null };
+            if (profilesError) throw profilesError;
+            const profilesByUserId = new Map<string, any>(
+              (profiles || []).map((profile: any) => [profile.user_id, profile]),
+            );
+            options = data.map((item: any) => {
+              const profile = profilesByUserId.get(item.user_id);
+              return {
+                id: item.id,
+                label: profile?.full_name || item.headline || "Mentor Profile",
+                subtitle: profile?.email || item.headline || "Mentor",
+              };
+            });
           }
         }
-      } catch {
-        // Fall back gracefully
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: `Unable to load ${formData.entity_type} records`,
+          description: error instanceof Error ? error.message : "The available records could not be loaded.",
+        });
       }
 
       setAvailableEntities(options);
@@ -117,18 +158,29 @@ export default function AdminFeaturedItems() {
   }, [formData.entity_type, isDialogOpen]);
 
   const fetchFeatured = async () => {
-    const { data } = await (supabase as any)
-      .from("featured_items")
-      .select("*")
-      .order("priority", { ascending: false });
-
-    if (data && data.length > 0) {
-      setFeatured(data as FeaturedItem[]);
-    } else {
-      setFeatured(SEED_FEATURED_ITEMS as FeaturedItem[]);
+    setIsLoading(true);
+    try {
+      const data = await listAdminResource<FeaturedItem>("featured-items", {
+        page_size: 100,
+        sort_by: "priority",
+        sort_direction: "desc",
+      });
+      setFeatured(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to load featured content",
+        description: error instanceof Error ? error.message : "Featured content could not be loaded.",
+      });
+      setFeatured([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
+
+  useEffect(() => {
+    void fetchFeatured();
+  }, []);
 
   const handleSubmit = async () => {
     if (!formData.entity_id.trim()) {
@@ -147,26 +199,34 @@ export default function AdminFeaturedItems() {
       is_active: formData.is_active,
     };
 
-    const { error } = await (supabase as any).from("featured_items").insert(payload);
-
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
+    try {
+      await createAdminResource<FeaturedItem>("featured-items", payload);
       toast({ title: "Featured item added" });
       setIsDialogOpen(false);
       resetForm();
-      fetchFeatured();
+      await fetchFeatured();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to feature item",
+        description: error instanceof Error ? error.message : "The item could not be featured.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await (supabase as any).from("featured_items").delete().eq("id", id);
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
+    try {
+      await deleteAdminResource("featured-items", id);
       toast({ title: "Featured item removed" });
-      fetchFeatured();
+      await fetchFeatured();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to remove featured item",
+        description: error instanceof Error ? error.message : "The featured item could not be removed.",
+      });
     }
   };
 

@@ -103,21 +103,27 @@ export const DEFAULT_CATEGORIES: CategoryCardData[] = [
 interface HeroCategorySectionProps {
   categories?: CategoryCardData[];
   metricText?: string;
+  heading?: string;
 }
 
 export default function HeroCategorySection({
   categories = DEFAULT_CATEGORIES,
   metricText = "Nepal's #1 Educational Hub",
+  heading = "Unlock Your Career!",
 }: HeroCategorySectionProps) {
+  const headingWords = heading.trim().split(/\s+/).filter(Boolean);
+  const highlightedWord = headingWords.pop() || "Career!";
+  const headingPrefix = headingWords.join(" ");
+
   return (
     <section className="relative pt-4 pb-6 px-6 sm:px-10 max-w-7xl mx-auto flex flex-col items-center">
       {/* Top Header Row: Headline & Right Metric Badge */}
       <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
         <div className="text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-none">
-            Unlock Your{" "}
+            {headingPrefix ? `${headingPrefix} ` : null}
             <span className="text-[#0073e6] bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-              Career!
+              {highlightedWord}
             </span>
           </h1>
         </div>

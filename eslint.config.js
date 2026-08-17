@@ -19,5 +19,11 @@ export default defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
-  globalIgnores([".next/**", "coverage/**", "dist/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "coverage/**",
+    "dist/**",
+    "Edusanjal - Your Guide to Education in Nepal_files/**",
+    "next-env.d.ts",
+  ]),
 ]);

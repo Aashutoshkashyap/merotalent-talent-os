@@ -13,6 +13,12 @@ const acceptedImageTypes = [
   "image/webp",
 ] as const;
 
+const acceptedDocumentTypes = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+] as const;
+
 export type CollegeMediaModule =
   | "college_logo"
   | "college_cover"
@@ -21,7 +27,8 @@ export type CollegeMediaModule =
   | "course_thumbnail"
   | "mentor_profile"
   | "advertisement"
-  | "company_logo";
+  | "company_logo"
+  | "job_attachment";
 
 export interface SignedMediaAsset {
   bucket: string;
@@ -37,6 +44,7 @@ const signedBucketByModule: Partial<Record<CollegeMediaModule, string>> = {
   event_cover: "event-media",
   course_thumbnail: "course-media",
   advertisement: "ad-media",
+  job_attachment: "job-files",
 };
 
 interface UploadSigningResponse {
@@ -265,7 +273,11 @@ export async function uploadSignedCollegeMedia(
     throw new Error("The signed media upload failed. Please try again.");
   }
 
-  const publicUrl = supabase.storage.from(expectedBucket).getPublicUrl(path).data.publicUrl;
+  // Applicant documents live in a private bucket. Consumers should retain the
+  // canonical object path and request a short-lived download URL server-side.
+  const publicUrl = module === "job_attachment"
+    ? ""
+    : supabase.storage.from(expectedBucket).getPublicUrl(path).data.publicUrl;
   return { bucket: expectedBucket, path, publicUrl };
 }
 
@@ -283,6 +295,10 @@ export function SignedMediaUploader({
   const [error, setError] = useState<string | null>(null);
   const [uploadedCount, setUploadedCount] = useState(0);
   const [totalFiles, setTotalFiles] = useState(0);
+  const isDocumentUpload = module === "job_attachment";
+  const acceptedTypes = isDocumentUpload
+    ? acceptedDocumentTypes
+    : acceptedImageTypes;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -293,11 +309,11 @@ export function SignedMediaUploader({
 
     try {
       if (files.length > maxFiles) {
-        throw new Error(`Choose no more than ${Math.max(0, maxFiles)} images.`);
+        throw new Error(`Choose no more than ${Math.max(0, maxFiles)} files.`);
       }
       const selectedFiles = Array.from(files);
       if (selectedFiles.length === 0) {
-        throw new Error("The gallery already contains the maximum number of images.");
+        throw new Error("No files were selected.");
       }
       setTotalFiles(selectedFiles.length);
 
@@ -330,7 +346,7 @@ export function SignedMediaUploader({
         <Input
           ref={inputRef}
           type="file"
-          accept={acceptedImageTypes.join(",")}
+          accept={acceptedTypes.join(",")}
           multiple={multiple}
           disabled={disabled || isUploading}
           className="sr-only"
@@ -350,18 +366,22 @@ export function SignedMediaUploader({
           )}
           {isUploading
             ? `Uploading${multiple ? ` (${uploadedCount}/${totalFiles})` : ""}...`
-            : multiple
+            : isDocumentUpload
+              ? "Choose file"
+              : multiple
               ? "Choose images"
               : "Choose image"}
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
-          AVIF, JPEG, PNG or WebP. Files are validated and signed by the server.
+          {isDocumentUpload
+            ? "PDF, DOC or DOCX, up to 5 MB. The private upload is validated and signed by the server."
+            : "AVIF, JPEG, PNG or WebP. Files are validated and signed by the server."}
         </p>
         {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
         {!error && uploadedCount > 0 && !isUploading && (
           <p className="mt-2 flex items-center gap-1 text-xs text-success">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            {uploadedCount} {uploadedCount === 1 ? "image" : "images"} uploaded
+            {uploadedCount} {uploadedCount === 1 ? "file" : "files"} uploaded
           </p>
         )}
       </div>

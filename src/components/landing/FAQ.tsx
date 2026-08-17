@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
-interface FAQItem {
+export interface FAQItem {
   question: string;
   answer: string;
 }
@@ -27,7 +27,25 @@ const FAQ_ITEMS: FAQItem[] = [
   },
 ];
 
-export default function FAQ() {
+interface FAQProps {
+  eyebrow?: string;
+  title?: string;
+  contactTitle?: string;
+  contactBody?: string;
+  contactLabel?: string;
+  contactUrl?: string;
+  items?: FAQItem[];
+}
+
+export default function FAQ({
+  eyebrow = "MeroTalent FAQ",
+  title = "Frequently asked questions",
+  contactTitle = "Still have a question?",
+  contactBody = "Can't find the answer to your question? Send us an email and we'll get back to you as soon as possible!",
+  contactLabel = "Send email",
+  contactUrl = "mailto:hello@merotalent.com",
+  items = FAQ_ITEMS,
+}: FAQProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0); // Default open first item like Dataly
 
   const toggleOpen = (index: number) => {
@@ -42,28 +60,28 @@ export default function FAQ() {
           <div className="flex flex-col gap-4">
             <div>
               <span className="text-[#0073e6] font-bold text-xs uppercase tracking-wider bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
-                MeroTalent FAQ
+                {eyebrow}
               </span>
             </div>
             <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none">
-              Frequently asked questions
+              {title}
             </h2>
           </div>
 
           {/* Still have questions Card */}
           <div className="rounded-[28px] bg-gradient-to-br from-indigo-50/50 to-purple-50/30 border border-slate-200/50 p-7 sm:p-9 flex flex-col gap-5 max-w-md">
             <h3 className="text-2xl font-black text-slate-800 tracking-tight">
-              Still have a questions?
+              {contactTitle}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 font-semibold leading-relaxed">
-              Can&apos;t find the answer to your question? Send us an email and we&apos;ll get back to you as soon as possible!
+              {contactBody}
             </p>
             <div>
               <a
-                href="mailto:hello@merotalent.com"
+                href={contactUrl}
                 className="inline-flex items-center justify-center px-6 py-3 bg-[#0073e6] hover:bg-[#0062c4] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all active:scale-95"
               >
-                Send email
+                {contactLabel}
               </a>
             </div>
           </div>
@@ -71,7 +89,7 @@ export default function FAQ() {
 
         {/* Right Column Accordions matching Dataly style */}
         <div className="flex flex-col gap-4">
-          {FAQ_ITEMS.map((item, index) => {
+          {items.map((item, index) => {
             const isOpen = openIndex === index;
             return (
               <div

@@ -162,6 +162,12 @@ const definitions = {
         type: "hidden",
         required: true,
       },
+      {
+        key: "mentorServiceId",
+        label: "Mentor service",
+        type: "hidden",
+        required: false,
+      },
       ...contactFields,
       {
         key: "scheduledDate",
@@ -178,14 +184,10 @@ const definitions = {
       {
         key: "durationMinutes",
         label: "Duration",
-        type: "select",
+        type: "text",
         required: true,
-        options: [
-          { label: "30 minutes", value: "30" },
-          { label: "60 minutes", value: "60" },
-          { label: "90 minutes", value: "90" },
-          { label: "120 minutes", value: "120" },
-        ],
+        minLength: 2,
+        maxLength: 3,
       },
       {
         key: "topic",

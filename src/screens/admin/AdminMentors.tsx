@@ -20,7 +20,6 @@ import {
   Users, 
   CheckCircle, 
   XCircle,
-  Eye,
   Pencil,
   Trash2,
   Star,
@@ -28,7 +27,8 @@ import {
   MessageCircle,
   Plus,
   Loader2,
-  Sparkles
+  Sparkles,
+  Ban,
 } from "lucide-react";
 import {
   Dialog,
@@ -43,7 +43,12 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { generateMentorDetails } from "@/lib/ai/ai-generator";
-import { SEED_MENTORS } from "@/lib/admin/admin-seed-fallbacks";
+import {
+  createAdminResource,
+  deleteAdminResource,
+  listAdminResource,
+  updateAdminResource,
+} from "@/lib/admin/admin-client";
 
 interface Mentor {
   id: string;
@@ -56,12 +61,11 @@ interface Mentor {
   years_experience: number;
   rating: number;
   total_sessions: number;
+  approval_status: "pending" | "approved" | "rejected" | "suspended";
   created_at: string;
   full_name: string | null;
   email: string | null;
   location: string | null;
-  is_verified: boolean;
-  bio?: string;
 }
 
 const AdminMentors = () => {
@@ -77,12 +81,13 @@ const AdminMentors = () => {
 
   const [formData, setFormData] = useState({
     user_id: "",
+    headline: "",
     expertise: "",
     hourly_rate: "",
     years_experience: "",
     is_available: true,
-    is_verified: false,
     bio: "",
+    approval_status: "pending" as Mentor["approval_status"],
   });
 
   useEffect(() => {
@@ -92,18 +97,20 @@ const AdminMentors = () => {
 
   const fetchMentors = async () => {
     setIsLoading(true);
-    // Fetch mentors with profiles
-    const { data: mentorsData } = await supabase
-      .from("mentors")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (mentorsData && mentorsData.length > 0) {
+    try {
+      const mentorsData = await listAdminResource<Mentor>("mentors", {
+        page_size: 100,
+        sort_by: "created_at",
+        sort_direction: "desc",
+      });
+      if (mentorsData.length > 0) {
       const userIds = mentorsData.map(m => m.user_id);
-      const { data: profiles } = await (supabase as any)
+      const { data: profiles, error: profileError } = await (supabase as any)
         .from("profiles")
-        .select("user_id, full_name, email, location, is_verified, bio")
+        .select("user_id,full_name,email,location")
         .in("user_id", userIds);
+
+      if (profileError) throw profileError;
 
       const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.user_id, p]));
 
@@ -113,46 +120,69 @@ const AdminMentors = () => {
           ...m,
           headline: (m as any).headline || null,
           description: (m as any).description || null,
+          expertise: Array.isArray(m.expertise) ? m.expertise : [],
           hourly_rate: Number(m.hourly_rate) || 0,
+          is_available: Boolean(m.is_available),
           rating: Number(m.rating) || 0,
           years_experience: Number(m.years_experience) || 0,
           total_sessions: Number(m.total_sessions) || 0,
+          approval_status: m.approval_status || "pending",
           full_name: prof?.full_name || null,
           email: prof?.email || null,
           location: prof?.location || null,
-          is_verified: prof?.is_verified ?? false,
-          bio: prof?.bio || "",
         };
       });
       setMentors(combined);
-    } else {
-      setMentors(
-        SEED_MENTORS.map((m) => ({
-          ...m,
-          full_name: m.profiles?.full_name || "QA Mentor",
-          email: m.profiles?.email || "mentor@example.com",
-          location: "Pokhara, Nepal",
-          is_verified: true,
-          bio: m.description,
-        })) as unknown as Mentor[],
-      );
+      } else setMentors([]);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to load mentors",
+        description: error instanceof Error ? error.message : "The mentor records could not be loaded.",
+      });
+      setMentors([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const fetchAvailableUsers = async () => {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, email, full_name")
-      .limit(100);
-    
-    if (profiles) {
-      setAvailableUsers(profiles.map(p => ({
-        id: p.user_id,
-        email: p.email || "",
-        full_name: p.full_name,
-      })));
+    const [{ data: roleRows, error: roleError }, { data: mentorRows, error: mentorError }] =
+      await Promise.all([
+        (supabase as any).from("user_roles").select("user_id").eq("role", "mentor"),
+        (supabase as any).from("mentors").select("user_id").is("deleted_at", null),
+      ]);
+    if (roleError || mentorError) {
+      toast({
+        variant: "destructive",
+        title: "Unable to load mentor users",
+        description: roleError?.message || mentorError?.message,
+      });
+      return;
     }
+
+    const userIds = [...new Set([...(roleRows || []), ...(mentorRows || [])].map((row: any) => row.user_id))];
+    if (userIds.length === 0) {
+      setAvailableUsers([]);
+      return;
+    }
+    const { data: profiles, error } = await (supabase as any)
+      .from("profiles")
+      .select("user_id,email,full_name")
+      .in("user_id", userIds)
+      .eq("account_status", "active")
+      .is("deleted_at", null)
+      .order("full_name");
+
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load mentor users", description: error.message });
+      return;
+    }
+    setAvailableUsers((profiles || []).map((profile: any) => ({
+      id: profile.user_id,
+      email: profile.email || "",
+      full_name: profile.full_name,
+    })));
   };
 
   const handleAIGenerate = async () => {
@@ -192,81 +222,78 @@ const AdminMentors = () => {
     setIsSubmitting(true);
     const mentorPayload = {
       user_id: formData.user_id,
+      headline: formData.headline || null,
+      description: formData.bio || null,
       expertise: formData.expertise ? formData.expertise.split(",").map(s => s.trim()) : [],
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : 0,
       years_experience: formData.years_experience ? parseInt(formData.years_experience) : 0,
       is_available: formData.is_available,
+      approval_status: formData.approval_status,
     };
 
-    // Save mentor record first
-    let error;
-    if (editingMentor) {
-      const result = await supabase.from("mentors").update(mentorPayload).eq("id", editingMentor.id);
-      error = result.error;
-    } else {
-      const result = await supabase.from("mentors").insert(mentorPayload);
-      error = result.error;
-    }
-
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Try updating profile optional fields non-blockingly
     try {
-      await (supabase as any)
-        .from("profiles")
-        .update({
-          is_verified: formData.is_verified,
-          bio: formData.bio || null
-        })
-        .eq("user_id", formData.user_id);
-    } catch {
-      // Non-critical if optional profile columns are not migrated yet
+      if (editingMentor) {
+        await updateAdminResource<Mentor>("mentors", editingMentor.id, mentorPayload);
+      } else {
+        await createAdminResource<Mentor>("mentors", mentorPayload);
+      }
+      toast({ title: editingMentor ? "Mentor profile updated!" : "Mentor added successfully!" });
+      resetForm();
+      await Promise.all([fetchMentors(), fetchAvailableUsers()]);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to save mentor",
+        description: error instanceof Error ? error.message : "The mentor could not be saved.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast({ title: editingMentor ? "Mentor profile updated!" : "Mentor added successfully!" });
-    resetForm();
-    fetchMentors();
-    setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string, _userId: string) => {
-    if (!window.confirm("Are you sure you want to permanently remove this mentor profile?")) return;
-    const { error } = await supabase.from("mentors").delete().eq("id", id);
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
+    if (!window.confirm("Remove this mentor profile from active administration views?")) return;
+    try {
+      await deleteAdminResource("mentors", id);
       toast({ title: "Mentor profile removed" });
-      fetchMentors();
+      await fetchMentors();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to remove mentor",
+        description: error instanceof Error ? error.message : "The mentor could not be removed.",
+      });
     }
   };
 
-  const toggleVerification = async (mentor: Mentor) => {
+  const updateApprovalStatus = async (mentor: Mentor, approvalStatus: Mentor["approval_status"]) => {
     try {
-      await (supabase as any)
-        .from("profiles")
-        .update({ is_verified: !mentor.is_verified })
-        .eq("user_id", mentor.user_id);
-      toast({ title: mentor.is_verified ? "Verification revoked" : "Mentor verified" });
-    } catch {
-      toast({ title: "Verification status toggled" });
+      await updateAdminResource<Mentor>("mentors", mentor.id, {
+        approval_status: approvalStatus,
+        ...(approvalStatus === "approved" ? {} : { is_available: false }),
+      });
+      toast({ title: `Mentor ${approvalStatus}` });
+      await fetchMentors();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to change mentor approval",
+        description: error instanceof Error ? error.message : "The approval status could not be changed.",
+      });
     }
-    fetchMentors();
   };
 
   const openEdit = (mentor: Mentor) => {
     setEditingMentor(mentor);
     setFormData({
       user_id: mentor.user_id,
+      headline: mentor.headline || "",
       expertise: mentor.expertise.join(", "),
       hourly_rate: mentor.hourly_rate.toString(),
       years_experience: mentor.years_experience.toString(),
       is_available: mentor.is_available,
-      is_verified: mentor.is_verified,
-      bio: mentor.bio || "",
+      bio: mentor.description || "",
+      approval_status: mentor.approval_status,
     });
     setIsDialogOpen(true);
   };
@@ -274,12 +301,13 @@ const AdminMentors = () => {
   const resetForm = () => {
     setFormData({
       user_id: "",
+      headline: "",
       expertise: "",
       hourly_rate: "",
       years_experience: "",
       is_available: true,
-      is_verified: false,
       bio: "",
+      approval_status: "pending",
     });
     setEditingMentor(null);
     setIsDialogOpen(false);
@@ -294,7 +322,7 @@ const AdminMentors = () => {
 
   const stats = [
     { label: "Total Mentors", value: mentors.length, icon: Users, color: "text-primary" },
-    { label: "Verified", value: mentors.filter(m => m.is_verified).length, icon: CheckCircle, color: "text-success" },
+    { label: "Approved", value: mentors.filter(m => m.approval_status === "approved").length, icon: CheckCircle, color: "text-success" },
     { label: "Available", value: mentors.filter(m => m.is_available).length, icon: Clock, color: "text-accent" },
     { label: "Total Sessions", value: mentors.reduce((sum, m) => sum + m.total_sessions, 0), icon: MessageCircle, color: "text-secondary" },
   ];
@@ -345,6 +373,15 @@ const AdminMentors = () => {
                   placeholder="e.g. React, Python, Data Science"
                   value={formData.expertise}
                   onChange={(e) => setFormData({ ...formData, expertise: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Professional Headline</Label>
+                <Input
+                  placeholder="e.g. Product leader and startup mentor"
+                  value={formData.headline}
+                  onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
                 />
               </div>
 
@@ -399,7 +436,7 @@ const AdminMentors = () => {
                 </div>
               </div>
 
-              <div className="flex gap-6 items-center">
+              <div className="grid sm:grid-cols-2 gap-4 items-end">
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={formData.is_available}
@@ -407,12 +444,21 @@ const AdminMentors = () => {
                   />
                   <Label>Available for bookings</Label>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.is_verified}
-                    onCheckedChange={(v) => setFormData({ ...formData, is_verified: v })}
-                  />
-                  <Label>Verified Mentor Badge</Label>
+                <div className="space-y-2">
+                  <Label>Approval Status</Label>
+                  <select
+                    value={formData.approval_status}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      approval_status: e.target.value as Mentor["approval_status"],
+                    })}
+                    className="w-full rounded-xl border border-[#eadfd7] bg-[#fcfbfa] p-2.5 text-sm"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -519,15 +565,12 @@ const AdminMentors = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        {mentor.is_verified ? (
-                          <Badge className="bg-success/10 text-success border-success/20 w-fit">
-                            Verified
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 w-fit">
-                            Pending
-                          </Badge>
-                        )}
+                        <Badge
+                          variant={mentor.approval_status === "approved" ? "default" : "outline"}
+                          className="w-fit capitalize"
+                        >
+                          {mentor.approval_status}
+                        </Badge>
                         {mentor.is_available ? (
                           <Badge variant="outline" className="w-fit text-xs">Available</Badge>
                         ) : (
@@ -540,15 +583,39 @@ const AdminMentors = () => {
                         <Button variant="ghost" size="icon" onClick={() => openEdit(mentor)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={mentor.is_verified ? "text-amber-600" : "text-emerald-600"}
-                          onClick={() => void toggleVerification(mentor)}
-                          title={mentor.is_verified ? "Revoke Verification" : "Verify Mentor"}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
+                        {mentor.approval_status !== "approved" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-emerald-600"
+                            onClick={() => void updateApprovalStatus(mentor, "approved")}
+                            title="Approve mentor"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {mentor.approval_status !== "rejected" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-amber-600"
+                            onClick={() => void updateApprovalStatus(mentor, "rejected")}
+                            title="Reject mentor"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {mentor.approval_status !== "suspended" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            onClick={() => void updateApprovalStatus(mentor, "suspended")}
+                            title="Suspend mentor"
+                          >
+                            <Ban className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

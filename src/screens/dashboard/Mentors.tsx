@@ -50,10 +50,19 @@ const Mentors = () => {
   }, []);
 
   const fetchMentors = async () => {
-    const { data } = await supabase
+    const { data, error } = await (supabase as any)
       .from("mentors")
       .select("*")
-      .eq("is_available", true);
+      .eq("is_available", true)
+      .eq("approval_status", "approved")
+      .is("deleted_at", null);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load mentors", description: error.message });
+      setMentors([]);
+      setIsLoading(false);
+      return;
+    }
     
     if (data) {
       const userIds = data.map(m => m.user_id);
@@ -71,62 +80,7 @@ const Mentors = () => {
     setIsLoading(false);
   };
 
-  // Mock data for demonstration
-  const mockMentors: Mentor[] = [
-    {
-      id: "1",
-      user_id: "1",
-      expertise: ["Machine Learning", "Python", "Data Science"],
-      hourly_rate: 2500,
-      is_available: true,
-      years_experience: 8,
-      rating: 4.9,
-      total_sessions: 156,
-      profile: {
-        user_id: "1",
-        full_name: "Dr. Aarav Sharma",
-        avatar_url: null,
-        bio: "Senior ML Engineer at Google. PhD in Computer Science. Passionate about teaching and mentoring the next generation of tech talent.",
-        location: "Kathmandu, Nepal",
-      },
-    },
-    {
-      id: "2",
-      user_id: "2",
-      expertise: ["UI/UX Design", "Product Design", "Figma"],
-      hourly_rate: 2000,
-      is_available: true,
-      years_experience: 6,
-      rating: 4.8,
-      total_sessions: 98,
-      profile: {
-        user_id: "2",
-        full_name: "Priya Thapa",
-        avatar_url: null,
-        bio: "Lead Product Designer at a Y Combinator startup. Former design lead at Daraz. Love helping designers grow.",
-        location: "Pokhara, Nepal",
-      },
-    },
-    {
-      id: "3",
-      user_id: "3",
-      expertise: ["Full Stack Development", "React", "Node.js"],
-      hourly_rate: 1800,
-      is_available: true,
-      years_experience: 5,
-      rating: 4.7,
-      total_sessions: 72,
-      profile: {
-        user_id: "3",
-        full_name: "Bikash Gurung",
-        avatar_url: null,
-        bio: "Full Stack Developer with experience at multiple startups. Love building products and teaching others to code.",
-        location: "Lalitpur, Nepal",
-      },
-    },
-  ];
-
-  const displayMentors = mentors.length > 0 ? mentors : mockMentors;
+  const displayMentors = mentors;
 
   const filteredMentors = displayMentors.filter(
     (mentor) =>

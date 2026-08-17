@@ -71,11 +71,11 @@ const AuthShell = ({
             <Sparkles className="h-4.5 w-4.5" />
           </span>
           <div>
-            <p className="text-xs font-black text-slate-800">Your talent workspace</p>
-            <p className="text-[11px] text-slate-400 font-bold">Proof, progress and possibilities</p>
+            <p className="text-xs font-black text-slate-800">Workspace preview</p>
+            <p className="text-[11px] text-slate-400 font-bold">Your live activity appears after sign in</p>
           </div>
           <span className="ml-auto rounded-full bg-emerald-50 border border-emerald-100 px-3 py-1 text-xs font-extrabold text-emerald-600 shadow-3xs">
-            Profile 82%
+            Preview
           </span>
         </div>
 
@@ -84,7 +84,7 @@ const AuthShell = ({
             <div className="rounded-[28px] bg-[#0073e6] p-6 text-white shadow-[0_20px_40px_rgba(0,115,230,0.16)]">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/70">Good morning, Aarav</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/70">Your personal workspace</p>
                   <h2 className="mt-2.5 max-w-xs text-xl sm:text-2xl font-black leading-tight">
                     Ready to make today count?
                   </h2>
@@ -93,9 +93,9 @@ const AuthShell = ({
               </div>
               <div className="mt-6 grid grid-cols-3 gap-3">
                 {[
-                  [Trophy, "12", "Challenges"],
-                  [BriefcaseBusiness, "4", "Matches"],
-                  [Users, "#247", "Rank"],
+                  [Trophy, "—", "Challenges"],
+                  [BriefcaseBusiness, "—", "Applications"],
+                  [Users, "—", "Sessions"],
                 ].map(([Icon, value, label]) => {
                   const TileIcon = Icon as typeof Trophy;
                   return (
@@ -118,14 +118,14 @@ const AuthShell = ({
                   <p className="mt-0.5 text-xs text-slate-400 font-bold">Small moves, visible progress</p>
                 </div>
                 <span className="rounded-full bg-blue-50 border border-blue-100 px-3 py-1 text-xs font-black text-[#0073e6]">
-                  3 active
+                  Live
                 </span>
               </div>
               <div className="mt-5 space-y-2.5">
                 {[
-                  ["Finish portfolio story", "86%"],
-                  ["Apply to design challenge", "62%"],
-                  ["Prepare mentor questions", "38%"],
+                  ["Track applications", "Ready"],
+                  ["Discover opportunities", "Ready"],
+                  ["Manage mentor sessions", "Ready"],
                 ].map(([label, progress], index) => (
                   <div key={label} className="flex items-center gap-3.5 rounded-[14px] bg-slate-50 border border-slate-100 p-3.5">
                     <span className={`grid h-8 w-8 place-items-center rounded-xl ${index === 0 ? "bg-emerald-50 border border-emerald-100 text-emerald-600" : "bg-blue-50 border border-blue-100 text-[#0073e6]"}`}>
@@ -146,12 +146,12 @@ const AuthShell = ({
                   <BriefcaseBusiness className="h-4.5 w-4.5" />
                 </span>
                 <span className="rounded-full bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 text-xs font-extrabold text-emerald-600 shadow-3xs">
-                  94% match
+                  Updated live
                 </span>
               </div>
-              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.13em] text-[#0073e6]">Best opportunity</p>
-              <h3 className="mt-1.5 text-base font-black text-slate-800 leading-snug">Product Design Intern</h3>
-              <p className="mt-1 text-xs text-slate-400 font-bold">Kathmandu · Hybrid</p>
+              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.13em] text-[#0073e6]">Opportunity feed</p>
+              <h3 className="mt-1.5 text-base font-black text-slate-800 leading-snug">Approved roles appear here</h3>
+              <p className="mt-1 text-xs text-slate-400 font-bold">Filtered to your interests</p>
               <Link to="/jobs" className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-[#0073e6] hover:underline">
                 View opportunity <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
@@ -159,15 +159,15 @@ const AuthShell = ({
 
             <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-2xs">
               <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-xs font-black">PS</span>
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-xs font-black">MT</span>
                 <div>
-                  <p className="text-xs font-black text-slate-800">Priya Shrestha</p>
-                  <p className="text-[11px] text-slate-400 font-bold">Design mentor</p>
+                  <p className="text-xs font-black text-slate-800">Mentor sessions</p>
+                  <p className="text-[11px] text-slate-400 font-bold">Confirmed bookings appear here</p>
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2 rounded-[14px] bg-slate-50 border border-slate-100 p-3 text-xs font-bold text-slate-700">
                 <CalendarDays className="h-4 w-4 text-[#0073e6]" />
-                Today · 4:30 PM
+                Your next confirmed time
               </div>
             </div>
           </div>

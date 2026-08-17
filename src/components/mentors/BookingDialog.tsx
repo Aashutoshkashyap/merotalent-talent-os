@@ -1,12 +1,16 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { AlertCircle, Calendar as CalendarIcon, CreditCard, Loader2, Wallet } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  ModuleFormClientError,
+  submitAuthenticatedModuleForm,
+} from "@/lib/forms/module-form-client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -22,9 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Clock, Loader2, CreditCard, Wallet, Gift, Sparkles } from "lucide-react";
-import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Mentor {
   id: string;
@@ -33,167 +39,137 @@ interface Mentor {
   expertise: string[];
 }
 
-interface TrialSettings {
-  free_trial_enabled: boolean;
-  free_trial_type: string;
-  free_trial_duration_minutes: number;
-}
-
 interface BookingDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmitted?: (bookingId: string) => void;
   mentor: Mentor;
 }
 
+interface MentorService {
+  id: string;
+  title: string;
+  description: string | null;
+  session_type: "one_to_one" | "group";
+  duration_minutes: number;
+  capacity: number;
+  price: number;
+  currency: string;
+}
+
 const timeSlots = [
-  "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-  "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM", "06:00 PM"
+  "09:00 AM",
+  "10:00 AM",
+  "11:00 AM",
+  "12:00 PM",
+  "02:00 PM",
+  "03:00 PM",
+  "04:00 PM",
+  "05:00 PM",
+  "06:00 PM",
 ];
 
-const BookingDialog = ({ isOpen, onClose, mentor }: BookingDialogProps) => {
+const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { profile, session, user } = useAuth();
   const [step, setStep] = useState(1);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState("");
   const [duration, setDuration] = useState("60");
   const [topic, setTopic] = useState("");
   const [notes, setNotes] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("khalti");
+  const [services, setServices] = useState<MentorService[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesError, setServicesError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Free trial states
-  const [trialSettings, setTrialSettings] = useState<TrialSettings | null>(null);
-  const [hasUsedTrial, setHasUsedTrial] = useState(false);
-  const [useFreeTrial, setUseFreeTrial] = useState(false);
 
   useEffect(() => {
-    if (isOpen && mentor.id && user) {
-      checkTrialAvailability();
-    }
-  }, [isOpen, mentor.id, user]);
+    if (!isOpen) return;
+    setFullName((current) => current || profile?.full_name || "");
+    setEmail((current) => current || profile?.email || user?.email || "");
+    setPhone((current) => current || profile?.phone || "");
+  }, [isOpen, profile?.email, profile?.full_name, profile?.phone, user?.email]);
 
-  const checkTrialAvailability = async () => {
-    // Check trial settings for this mentor
-    const { data: settings } = await supabase
-      .from("mentor_trial_settings")
-      .select("*")
-      .eq("mentor_id", mentor.id)
-      .eq("free_trial_enabled", true)
-      .maybeSingle();
+  useEffect(() => {
+    if (!isOpen) return;
+    let current = true;
+    setServicesLoading(true);
+    setServicesError(null);
+    setServices([]);
+    setSelectedServiceId("");
 
-    if (settings) {
-      setTrialSettings(settings);
-      
-      // Check if user has already used trial with this mentor
-      if (user) {
-        const { data: usage } = await supabase
-          .from("mentor_trial_usage")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("mentor_id", mentor.id)
-          .maybeSingle();
-        
-        setHasUsedTrial(!!usage?.trial_used);
+    void (async () => {
+      const { data, error } = await (supabase as any)
+        .from("mentor_services")
+        .select("id, title, description, session_type, duration_minutes, capacity, price, currency")
+        .eq("mentor_id", mentor.id)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true });
+      if (!current) return;
+      if (error) {
+        setServicesError(error.message);
+        setServicesLoading(false);
+        return;
       }
-    }
-  };
+      const availableServices = (data ?? []) as MentorService[];
+      setServices(availableServices);
+      setSelectedServiceId(availableServices[0]?.id ?? "");
+      setServicesLoading(false);
+    })();
 
-  const trialAvailable = trialSettings && !hasUsedTrial;
-  const effectiveDuration = useFreeTrial && trialSettings 
-    ? trialSettings.free_trial_duration_minutes 
-    : parseInt(duration);
-  const totalAmount = useFreeTrial ? 0 : mentor.hourlyRate * (parseInt(duration) / 60);
+    return () => {
+      current = false;
+    };
+  }, [isOpen, mentor.id]);
+
+  const selectedService = services.find((service) => service.id === selectedServiceId) ?? null;
+  const durationMinutes = selectedService?.duration_minutes ?? Number(duration);
+  const estimatedAmount = selectedService?.price ?? mentor.hourlyRate * (durationMinutes / 60);
 
   const handleNext = () => {
+    if (step === 1 && servicesError) {
+      toast({
+        variant: "destructive",
+        title: "Services are unavailable",
+        description: "The mentor's live services could not be verified. Please try again.",
+      });
+      return;
+    }
+    if (step === 1 && services.length > 0 && !selectedService) {
+      toast({
+        variant: "destructive",
+        title: "Select a service",
+        description: "Choose one of the mentor's active services before continuing.",
+      });
+      return;
+    }
     if (step === 1 && (!selectedDate || !selectedTime)) {
       toast({
         variant: "destructive",
         title: "Select date and time",
-        description: "Please choose when you'd like to have the session.",
+        description: "Choose when you would like to have the session.",
       });
       return;
     }
-    if (step === 2 && !topic.trim()) {
+    if (
+      step === 2 &&
+      (!topic.trim() || fullName.trim().length < 2 || !email.trim() || !phone.trim())
+    ) {
       toast({
         variant: "destructive",
-        title: "Topic required",
-        description: "Please tell us about what you'd like to discuss.",
+        title: "Complete your details",
+        description: "A topic, full name, email, and phone number are required.",
       });
       return;
     }
-    setStep(step + 1);
-  };
-
-  const handleBack = () => {
-    setStep(step - 1);
-  };
-
-  const handlePayment = async () => {
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Login required",
-        description: "Please login to book a session.",
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    // Create appointment
-    const { data: appointment, error } = await supabase
-      .from('appointments')
-      .insert({
-        student_id: user.id,
-        mentor_id: mentor.id,
-        scheduled_date: format(selectedDate!, "yyyy-MM-dd"),
-        scheduled_time: selectedTime,
-        duration_minutes: effectiveDuration,
-        notes: `Topic: ${topic}\n${notes}`,
-        amount: totalAmount,
-        status: 'confirmed',
-        payment_status: useFreeTrial ? 'trial' : 'pending',
-      })
-      .select()
-      .single();
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Booking failed",
-        description: error.message,
-      });
-      setIsProcessing(false);
-      return;
-    }
-
-    // If using free trial, record the usage
-    if (useFreeTrial && trialSettings) {
-      await supabase.from('mentor_trial_usage').upsert({
-        user_id: user.id,
-        mentor_id: mentor.id,
-        trial_used: true,
-        trial_started_at: new Date().toISOString(),
-      });
-    }
-
-    // Create conversation for messaging (unlocked after payment/trial)
-    await supabase.from('conversations').insert({
-      mentor_id: mentor.id,
-      mentee_id: user.id,
-      appointment_id: appointment.id,
-      is_active: true,
-    });
-    
-    toast({
-      title: useFreeTrial ? "Free trial booked!" : "Booking confirmed!",
-      description: `Your ${useFreeTrial ? "free trial " : ""}session with ${mentor.name} is scheduled for ${format(selectedDate!, "PPP")} at ${selectedTime}.`,
-    });
-    
-    setIsProcessing(false);
-    resetForm();
-    onClose();
+    setStep((current) => Math.min(3, current + 1));
   };
 
   const resetForm = () => {
@@ -204,75 +180,80 @@ const BookingDialog = ({ isOpen, onClose, mentor }: BookingDialogProps) => {
     setTopic("");
     setNotes("");
     setPaymentMethod("khalti");
-    setUseFreeTrial(false);
+    setSelectedServiceId("");
+    setFieldErrors({});
   };
 
-  const getTrialTypeLabel = (type: string) => {
-    switch (type) {
-      case "one_session": return "One Free Session";
-      case "time_limited": return "Time-Limited Trial";
-      case "intro_call": return "Free Intro Call";
-      default: return "Free Trial";
+  const handleBooking = async () => {
+    if (!session || !user || !selectedDate) {
+      toast({
+        variant: "destructive",
+        title: "Login required",
+        description: "Sign in again before booking a session.",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    setFieldErrors({});
+    try {
+      const result = await submitAuthenticatedModuleForm({
+        accessToken: session.access_token,
+        module: "mentor_booking",
+        values: {
+          mentorId: mentor.id,
+          ...(selectedService ? { mentorServiceId: selectedService.id } : {}),
+          fullName,
+          email,
+          phone,
+          scheduledDate: format(selectedDate, "yyyy-MM-dd"),
+          scheduledTime: selectedTime,
+          durationMinutes: duration,
+          topic,
+          notes,
+          paymentMethod,
+        },
+      });
+
+      toast({
+        title: "Booking request created",
+        description: `Your session request with ${mentor.name} is stored. Complete payment when a configured gateway is available.`,
+      });
+      onSubmitted?.(result.id);
+      resetForm();
+      onClose();
+    } catch (error) {
+      if (error instanceof ModuleFormClientError) {
+        setFieldErrors(error.fields);
+        const keys = Object.keys(error.fields);
+        if (keys.some((key) => ["scheduledDate", "scheduledTime", "durationMinutes"].includes(key))) {
+          setStep(1);
+        } else if (keys.some((key) => ["fullName", "email", "phone", "topic", "notes"].includes(key))) {
+          setStep(2);
+        }
+      }
+      toast({
+        variant: "destructive",
+        title: "Booking failed",
+        description: error instanceof Error ? error.message : "The booking could not be created.",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Book Session with {mentor.name}</DialogTitle>
           <DialogDescription>
             {step === 1 && "Choose your preferred date and time"}
-            {step === 2 && "Tell us about what you'd like to discuss"}
-            {step === 3 && (useFreeTrial ? "Confirm your free trial session" : "Complete payment to confirm your booking")}
+            {step === 2 && "Tell the mentor what you would like to discuss"}
+            {step === 3 && "Review the server-calculated booking request"}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Free Trial Banner */}
-        {trialAvailable && step === 1 && (
-          <div 
-            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-              useFreeTrial 
-                ? "border-success bg-success/10" 
-                : "border-dashed border-success/50 hover:border-success"
-            }`}
-            onClick={() => setUseFreeTrial(!useFreeTrial)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                <Gift className="w-5 h-5 text-success" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-success">
-                    {getTrialTypeLabel(trialSettings!.free_trial_type)}
-                  </p>
-                  <Badge variant="secondary" className="bg-success/20 text-success">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    FREE
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {trialSettings!.free_trial_duration_minutes} minute session • No payment required
-                </p>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={useFreeTrial} 
-                onChange={(e) => setUseFreeTrial(e.target.checked)}
-                className="w-5 h-5 rounded"
-              />
-            </div>
-          </div>
-        )}
-
-        {hasUsedTrial && step === 1 && (
-          <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-            You've already used your free trial with this mentor.
-          </div>
-        )}
-
-        {/* Step 1: Date & Time Selection */}
         {step === 1 && (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -281,9 +262,10 @@ const BookingDialog = ({ isOpen, onClose, mentor }: BookingDialogProps) => {
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                disabled={(date) => date < new Date() || date.getDay() === 0}
+                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || date.getDay() === 0}
                 className="rounded-md border"
               />
+              {fieldErrors.scheduledDate?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.scheduledDate[0]}</p>}
             </div>
 
             <div className="space-y-2">
@@ -292,6 +274,7 @@ const BookingDialog = ({ isOpen, onClose, mentor }: BookingDialogProps) => {
                 {timeSlots.map((time) => (
                   <Button
                     key={time}
+                    type="button"
                     variant={selectedTime === time ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedTime(time)}
@@ -301,199 +284,157 @@ const BookingDialog = ({ isOpen, onClose, mentor }: BookingDialogProps) => {
                   </Button>
                 ))}
               </div>
+              {fieldErrors.scheduledTime?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.scheduledTime[0]}</p>}
             </div>
 
-            {!useFreeTrial && (
-              <div className="space-y-2">
-                <Label>Duration</Label>
-                <Select value={duration} onValueChange={setDuration}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="45">45 minutes</SelectItem>
-                    <SelectItem value="60">1 hour</SelectItem>
-                    <SelectItem value="90">1.5 hours</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {useFreeTrial && (
-              <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-                <p className="text-sm font-medium text-success">
-                  Free trial: {trialSettings?.free_trial_duration_minutes} minutes
-                </p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label>Mentor service</Label>
+              {servicesLoading ? (
+                <div className="flex items-center gap-2 rounded-xl border p-3 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading live services…</div>
+              ) : servicesError ? (
+                <div role="alert" className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span>Services could not be verified. {servicesError}</span></div>
+              ) : services.length > 0 ? (
+                <>
+                  <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
+                    <SelectTrigger><SelectValue placeholder="Choose a service" /></SelectTrigger>
+                    <SelectContent>
+                      {services.map((service) => (
+                        <SelectItem key={service.id} value={service.id}>
+                          {service.title} · {service.duration_minutes} min · {service.currency} {Number(service.price).toLocaleString()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedService && (
+                    <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+                      <p className="font-semibold text-foreground">{selectedService.title}</p>
+                      <p className="mt-1">{selectedService.duration_minutes} minutes · {selectedService.session_type === "group" ? `Group up to ${selectedService.capacity}` : "One-to-one"}</p>
+                      {selectedService.description && <p className="mt-1">{selectedService.description}</p>}
+                    </div>
+                  )}
+                  {fieldErrors.mentorServiceId?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.mentorServiceId[0]}</p>}
+                </>
+              ) : (
+                <>
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">This mentor has no active packaged service. You can request an hourly session at the mentor's published rate.</p>
+                  <Select value={duration} onValueChange={setDuration}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="90">1.5 hours</SelectItem>
+                      <SelectItem value="120">2 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              {fieldErrors.durationMinutes?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.durationMinutes[0]}</p>}
+            </div>
           </div>
         )}
 
-        {/* Step 2: Topic & Notes */}
         {step === 2 && (
           <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="booking-full-name">Full name</Label>
+                <Input id="booking-full-name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
+                {fieldErrors.fullName?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.fullName[0]}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="booking-email">Email</Label>
+                <Input id="booking-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                {fieldErrors.email?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.email[0]}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="booking-phone">Phone</Label>
+                <Input id="booking-phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+977 98XXXXXXXX" />
+                {fieldErrors.phone?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.phone[0]}</p>}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="topic">What would you like to discuss?</Label>
               <Input
                 id="topic"
-                placeholder="e.g., Career guidance, Portfolio review, Technical help"
+                placeholder="e.g. Career guidance or portfolio review"
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={(event) => setTopic(event.target.value)}
+                maxLength={180}
               />
+              {fieldErrors.topic?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.topic[0]}</p>}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="notes">Additional notes (optional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Any specific questions or topics you'd like to cover..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Date</span>
-                <span className="font-medium">{selectedDate ? format(selectedDate, "PPP") : "-"}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Time</span>
-                <span className="font-medium">{selectedTime}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Duration</span>
-                <span className="font-medium">{effectiveDuration} minutes</span>
-              </div>
-              {useFreeTrial && (
-                <div className="flex justify-between text-sm pt-2 border-t">
-                  <span className="text-success font-medium">Free Trial</span>
-                  <Badge className="bg-success text-success-foreground">
-                    <Gift className="w-3 h-3 mr-1" />
-                    FREE
-                  </Badge>
-                </div>
-              )}
+              <Textarea id="notes" value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} maxLength={2000} />
+              {fieldErrors.notes?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.notes[0]}</p>}
             </div>
           </div>
         )}
 
-        {/* Step 3: Payment (or Confirmation for free trial) */}
         {step === 3 && (
           <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-2 rounded-lg bg-muted/50 p-4">
+              <div className="flex justify-between gap-3 text-sm">
                 <span className="text-muted-foreground">Session with</span>
                 <span className="font-medium">{mentor.name}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Date & Time</span>
-                <span className="font-medium">{selectedDate ? format(selectedDate, "PPP") : "-"} at {selectedTime}</span>
+              {selectedService && (
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-muted-foreground">Service</span>
+                  <span className="text-right font-medium">{selectedService.title}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">Date & time</span>
+                <span className="text-right font-medium">{selectedDate ? format(selectedDate, "PPP") : "-"} at {selectedTime}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between gap-3 text-sm">
                 <span className="text-muted-foreground">Duration</span>
-                <span className="font-medium">{effectiveDuration} minutes</span>
+                <span className="font-medium">{durationMinutes} minutes</span>
               </div>
-              <div className="flex justify-between text-sm border-t pt-2 mt-2">
-                <span className="font-medium">Total</span>
-                {useFreeTrial ? (
-                  <span className="font-bold text-success">FREE TRIAL</span>
-                ) : (
-                  <span className="font-bold text-primary">NPR {totalAmount.toLocaleString()}</span>
-                )}
+              <div className="mt-2 flex justify-between gap-3 border-t pt-2 text-sm">
+                <span className="font-medium">Estimated amount</span>
+                <span className="font-bold text-primary">NPR {estimatedAmount.toLocaleString()}</span>
               </div>
             </div>
 
-            {!useFreeTrial && (
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <div className="space-y-2">
-                  <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer ${
-                      paymentMethod === "khalti" ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                    onClick={() => setPaymentMethod("khalti")}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                      <Wallet className="w-4 h-4 text-purple-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">Khalti</p>
-                      <p className="text-xs text-muted-foreground">Pay with Khalti wallet</p>
-                    </div>
-                  </div>
-                  <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer ${
-                      paymentMethod === "esewa" ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                    onClick={() => setPaymentMethod("esewa")}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                      <Wallet className="w-4 h-4 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">eSewa</p>
-                      <p className="text-xs text-muted-foreground">Pay with eSewa wallet</p>
-                    </div>
-                  </div>
-                  <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer ${
-                      paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                    onClick={() => setPaymentMethod("card")}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <CreditCard className="w-4 h-4 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">Card Payment</p>
-                      <p className="text-xs text-muted-foreground">Debit or Credit card</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {useFreeTrial && (
-              <div className="p-4 rounded-lg bg-success/10 border border-success/20">
-                <div className="flex items-center gap-3">
-                  <Gift className="w-6 h-6 text-success" />
-                  <div>
-                    <p className="font-medium text-success">Free Trial Session</p>
-                    <p className="text-sm text-muted-foreground">
-                      No payment required. Messaging will be enabled after this session.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label>Preferred payment method</Label>
+              {[
+                { id: "khalti", label: "Khalti", icon: Wallet },
+                { id: "esewa", label: "eSewa", icon: Wallet },
+                { id: "card", label: "Card", icon: CreditCard },
+                { id: "bank_transfer", label: "Bank transfer", icon: CreditCard },
+              ].map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPaymentMethod(id)}
+                  className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${paymentMethod === id ? "border-primary bg-primary/5" : "border-border"}`}
+                >
+                  <Icon className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{label}</span>
+                </button>
+              ))}
+              {fieldErrors.paymentMethod?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.paymentMethod[0]}</p>}
+              <p className="text-xs text-muted-foreground">
+                The database will calculate the final amount and create a pending payment record. This screen does not mark a payment as complete.
+              </p>
+            </div>
           </div>
         )}
 
         <DialogFooter className="flex gap-2">
-          {step > 1 && (
-            <Button variant="outline" onClick={handleBack}>
-              Back
-            </Button>
-          )}
+          {step > 1 && <Button type="button" variant="outline" onClick={() => setStep((current) => current - 1)}>Back</Button>}
           {step < 3 ? (
-            <Button variant="hero" onClick={handleNext}>
-              Continue
+            <Button type="button" variant="hero" onClick={handleNext} disabled={step === 1 && servicesLoading}>
+              <CalendarIcon className="mr-2 h-4 w-4" />Continue
             </Button>
           ) : (
-            <Button variant="hero" onClick={handlePayment} disabled={isProcessing}>
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Processing...
-                </>
-              ) : useFreeTrial ? (
-                "Confirm Free Trial"
-              ) : (
-                `Pay NPR ${totalAmount.toLocaleString()}`
-              )}
+            <Button type="button" variant="hero" onClick={handleBooking} disabled={isProcessing}>
+              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create booking request
             </Button>
           )}
         </DialogFooter>

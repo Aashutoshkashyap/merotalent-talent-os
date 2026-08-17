@@ -48,7 +48,7 @@ const DashboardSidebar = ({
     { icon: Home, label: "Dashboard", href: "/dashboard" },
     { icon: Trophy, label: "Competitions", href: "/dashboard/competitions" },
     { icon: Users, label: "Mentors", href: "/dashboard/mentors" },
-    { icon: GraduationCap, label: "Learning", href: "/dashboard/learning" },
+    { icon: GraduationCap, label: "Partner Courses", href: "/courses" },
     { icon: Briefcase, label: "Jobs", href: "/dashboard/jobs" },
   ];
 

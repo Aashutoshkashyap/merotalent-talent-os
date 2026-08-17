@@ -1,63 +1,9 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import FeaturedPosterCard, { FeaturedCardData } from "./FeaturedPosterCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-export const DEFAULT_FEATURED_CARDS: FeaturedCardData[] = [
-  {
-    id: "locus-hackathon-2026",
-    posterBg: "bg-gradient-to-br from-purple-950 via-slate-900 to-indigo-900",
-    badgeTag: "Register Now!",
-    title: "LOCUS 2026 Engineering Hackathon",
-    path: "/competitions",
-    posterContent: {
-      brandTag: "Pulchowk IOE",
-      bannerTitle: "LOCUS 2026 Hackathon",
-      subtitle: "Innovate for Nepal: Build AI & Hardware Solutions",
-      description: "Compete with top engineering minds across TU, KU, and PU campuses.",
-    },
-  },
-  {
-    id: "ku-hackfest-2026",
-    posterBg: "bg-gradient-to-br from-emerald-800 via-teal-900 to-cyan-950",
-    badgeTag: "Register Now",
-    title: "KU HackFest 2026",
-    path: "/competitions",
-    posterContent: {
-      brandTag: "Kathmandu University",
-      bannerTitle: "KU HackFest 2026",
-      subtitle: "48-HOUR OPEN SOURCE SPRINT",
-      description: "Nepal's premier student-led hackathon in Dhulikhel. Build next-gen software.",
-    },
-  },
-  {
-    id: "yarsa-game-jam",
-    posterBg: "bg-gradient-to-br from-red-800 via-rose-900 to-orange-950",
-    badgeTag: "Rs. 2,50,000 Cash Prize!",
-    title: "Yarsa Labs Game Jam 2026",
-    path: "/competitions",
-    posterContent: {
-      brandTag: "Yarsa Labs",
-      bannerTitle: "YARSA GAME JAM",
-      subtitle: "RUST & GRAPHICS INNOVATION",
-      description: "Build high performance game titles & mobile engines in Pokhara.",
-    },
-  },
-  {
-    id: "deerwalk-tech-summit",
-    posterBg: "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900",
-    badgeTag: "Register Now",
-    title: "Deerwalk Tech Summit 2026",
-    path: "/competitions",
-    posterContent: {
-      brandTag: "Deerwalk",
-      bannerTitle: "Deerwalk Summit",
-      subtitle: "Reinventing Software & Data Engineering",
-      description: "Present research papers and compete in algorithmic coding challenges.",
-    },
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 interface FeaturedSectionProps {
   cards?: FeaturedCardData[];
@@ -65,10 +11,189 @@ interface FeaturedSectionProps {
 }
 
 export default function FeaturedSection({
-  cards = DEFAULT_FEATURED_CARDS,
+  cards: suppliedCards,
   title = "Featured",
 }: FeaturedSectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [liveCards, setLiveCards] = useState<FeaturedCardData[]>([]);
+
+  useEffect(() => {
+    if (suppliedCards) return;
+    let isCancelled = false;
+
+    const loadFeatured = async () => {
+      const now = new Date().toISOString();
+      const { data, error } = await (supabase as any)
+        .from("featured_items")
+        .select("id, entity_type, entity_id, title, placement, priority, start_date, end_date")
+        .eq("is_active", true)
+        .or(`start_date.is.null,start_date.lte.${now}`)
+        .or(`end_date.is.null,end_date.gte.${now}`)
+        .order("priority", { ascending: false })
+        .limit(12);
+      if (error) {
+        if (!isCancelled) setLiveCards([]);
+        return;
+      }
+
+      const featuredRows = (data || []) as Array<{
+        id: string;
+        entity_type: "college" | "mentor" | "course" | "job" | "event";
+        entity_id: string;
+        title: string | null;
+      }>;
+      const idsFor = (entityType: string) => featuredRows
+        .filter((item) => item.entity_type === entityType)
+        .map((item) => item.entity_id);
+      const collegeIds = idsFor("college");
+      const mentorIds = idsFor("mentor");
+      const courseIds = idsFor("course");
+      const jobIds = idsFor("job");
+      const eventIds = idsFor("event");
+
+      const emptyResult = { data: [], error: null };
+      const [collegeResult, mentorResult, courseResult, jobResult, eventResult] = await Promise.all([
+        collegeIds.length
+          ? (supabase as any)
+            .from("institute_directory")
+            .select("id,name,slug,type,location,description,logo_url,cover_image_url")
+            .in("id", collegeIds)
+          : emptyResult,
+        mentorIds.length
+          ? (supabase as any)
+            .from("mentors")
+            .select("id,user_id,headline,description,expertise,profile_image_url,cover_image_url")
+            .in("id", mentorIds)
+          : emptyResult,
+        courseIds.length
+          ? (supabase as any)
+            .from("courses")
+            .select("id,title,description,category,thumbnail_url,partner_name")
+            .in("id", courseIds)
+          : emptyResult,
+        jobIds.length
+          ? (supabase as any)
+            .from("jobs")
+            .select("id,title,description,location,job_type,companies(name,logo_url)")
+            .in("id", jobIds)
+          : emptyResult,
+        eventIds.length
+          ? (supabase as any)
+            .from("events")
+            .select("id,title,description,event_type,format,location,cover_image_url")
+            .in("id", eventIds)
+          : emptyResult,
+      ]);
+
+      const mentorRows = mentorResult.data || [];
+      const mentorUserIds = mentorRows.map((mentor: any) => mentor.user_id).filter(Boolean);
+      const { data: mentorProfiles } = mentorUserIds.length
+        ? await (supabase as any)
+          .from("public_profile_directory")
+          .select("user_id,full_name,avatar_url,bio,location")
+          .in("user_id", mentorUserIds)
+        : emptyResult;
+      const mentorProfilesByUserId = new Map<string, any>(
+        (mentorProfiles || []).map((profile: any) => [profile.user_id, profile]),
+      );
+
+      type HydratedEntity = {
+        title: string;
+        description: string | null;
+        image: string | null;
+        path: string;
+        brand: string;
+        label: string;
+      };
+      const entities = new Map<string, HydratedEntity>();
+      for (const college of collegeResult.data || []) {
+        entities.set(`college:${college.id}`, {
+          title: college.name,
+          description: college.description || college.location || null,
+          image: college.cover_image_url || college.logo_url || null,
+          path: `/institutes/${college.slug || college.id}`,
+          brand: college.type || college.location || "College",
+          label: "College",
+        });
+      }
+      for (const mentor of mentorRows) {
+        const profile = mentorProfilesByUserId.get(mentor.user_id);
+        const expertise = Array.isArray(mentor.expertise) ? mentor.expertise.join(", ") : null;
+        entities.set(`mentor:${mentor.id}`, {
+          title: profile?.full_name || mentor.headline || "Name unavailable",
+          description: mentor.description || profile?.bio || expertise,
+          image: mentor.cover_image_url || mentor.profile_image_url || profile?.avatar_url || null,
+          path: `/mentorship?mentor=${encodeURIComponent(mentor.id)}`,
+          brand: mentor.headline || profile?.location || "Mentor",
+          label: "Mentor",
+        });
+      }
+      for (const course of courseResult.data || []) {
+        entities.set(`course:${course.id}`, {
+          title: course.title,
+          description: course.description || course.category || null,
+          image: course.thumbnail_url || null,
+          path: `/courses/${course.id}`,
+          brand: course.partner_name || course.category || "Partner course",
+          label: "Course",
+        });
+      }
+      for (const job of jobResult.data || []) {
+        const company = Array.isArray(job.companies) ? job.companies[0] : job.companies;
+        entities.set(`job:${job.id}`, {
+          title: job.title,
+          description: job.description || job.location || null,
+          image: company?.logo_url || null,
+          path: `/jobs?job=${encodeURIComponent(job.id)}`,
+          brand: company?.name || job.location || "Job",
+          label: job.job_type ? String(job.job_type).replace(/_/g, " ") : "Job",
+        });
+      }
+      for (const event of eventResult.data || []) {
+        entities.set(`event:${event.id}`, {
+          title: event.title,
+          description: event.description || event.location || null,
+          image: event.cover_image_url || null,
+          path: `/events?event=${encodeURIComponent(event.id)}`,
+          brand: event.location || event.format || "Event",
+          label: event.event_type === "paid" ? "Paid event" : "Event",
+        });
+      }
+
+      const gradients = [
+        "bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-700",
+        "bg-gradient-to-br from-emerald-800 via-teal-900 to-cyan-950",
+        "bg-gradient-to-br from-violet-900 via-purple-900 to-fuchsia-800",
+      ];
+      const hydratedCards = featuredRows.flatMap((item, index) => {
+        const entity = entities.get(`${item.entity_type}:${item.entity_id}`);
+        if (!entity) return [];
+        const displayTitle = item.title?.trim() || entity.title;
+        return [{
+          id: String(item.id),
+          posterBg: gradients[index % gradients.length],
+          posterImage: entity.image,
+          badgeTag: entity.label,
+          title: displayTitle,
+          path: entity.path,
+          posterContent: {
+            brandTag: entity.brand,
+            bannerTitle: entity.label,
+            subtitle: displayTitle,
+            description: entity.description || "No description provided.",
+          },
+        } satisfies FeaturedCardData];
+      });
+      if (!isCancelled) setLiveCards(hydratedCards);
+    };
+    void loadFeatured();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [suppliedCards]);
+
+  const cards = suppliedCards ?? liveCards;
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -114,7 +239,11 @@ export default function FeaturedSection({
         className="flex items-center gap-5 overflow-x-auto pb-4 pt-1 scrollbar-none scroll-smooth"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {cards.map((card) => (
+        {cards.length === 0 ? (
+          <div className="w-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center text-sm font-semibold text-slate-500">
+            Featured items enabled in Admin will appear here.
+          </div>
+        ) : cards.map((card) => (
           <FeaturedPosterCard key={card.id} data={card} />
         ))}
       </div>

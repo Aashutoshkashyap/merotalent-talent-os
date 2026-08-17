@@ -20,7 +20,6 @@ import ResetPassword from "./screens/ResetPassword";
 // Public Pages
 import CoursesPage from "./screens/courses/CoursesPage";
 import CourseDetailPage from "./screens/courses/CourseDetailPage";
-import CourseCheckoutPage from "./screens/courses/CourseCheckoutPage";
 import JobsPage from "./screens/jobs/JobsPage";
 import InstitutesPage from "./screens/institutes/InstitutesPage";
 import InstituteDetailPage from "./screens/institutes/InstituteDetailPage";
@@ -37,9 +36,6 @@ import Dashboard from "./screens/dashboard/Dashboard";
 import Profile from "./screens/dashboard/Profile";
 import Competitions from "./screens/dashboard/Competitions";
 import Mentors from "./screens/dashboard/Mentors";
-import Learning from "./screens/dashboard/Learning";
-import LessonPlayer from "./screens/dashboard/LessonPlayer";
-import QuizPage from "./screens/dashboard/QuizPage";
 import Jobs from "./screens/dashboard/Jobs";
 import Badges from "./screens/dashboard/Badges";
 import Sessions from "./screens/dashboard/Sessions";
@@ -53,7 +49,6 @@ import AdminCompetitions from "./screens/admin/AdminCompetitions";
 import AdminInstitutions from "./screens/admin/AdminInstitutions";
 import AdminCompanies from "./screens/admin/AdminCompanies";
 import AdminMentors from "./screens/admin/AdminMentors";
-import AdminBadges from "./screens/admin/AdminBadges";
 import AdminSettings from "./screens/admin/AdminSettings";
 import AdminLMS from "./screens/admin/AdminLMS";
 import AdminJobs from "./screens/admin/AdminJobs";
@@ -102,7 +97,6 @@ const App = () => (
               {/* Public Landing Pages */}
               <Route path="/courses" element={<CoursesPage />} />
               <Route path="/courses/:id" element={<CourseDetailPage />} />
-              <Route path="/courses/:id/checkout" element={<CourseCheckoutPage />} />
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/institutes" element={<InstitutesPage />} />
               <Route path="/institutes/:slug" element={<InstituteDetailPage />} />
@@ -126,10 +120,6 @@ const App = () => (
                 <Route path="profile" element={<Profile />} />
                 <Route path="competitions" element={<Competitions />} />
                 <Route path="mentors" element={<Mentors />} />
-                <Route path="learning" element={<Learning />} />
-                <Route path="learn/:courseId" element={<LessonPlayer />} />
-                <Route path="learn/:courseId/:lessonId" element={<LessonPlayer />} />
-                <Route path="quiz/:quizId" element={<QuizPage />} />
                 <Route path="jobs" element={<Jobs />} />
                 <Route path="badges" element={<Badges />} />
                 <Route path="sessions" element={<Sessions />} />
@@ -152,7 +142,6 @@ const App = () => (
                 <Route path="institutions" element={<AdminInstitutions />} />
                 <Route path="companies" element={<AdminCompanies />} />
                 <Route path="mentors" element={<AdminMentors />} />
-                <Route path="badges" element={<AdminBadges />} />
                 <Route path="lms" element={<AdminLMS />} />
                 <Route path="jobs" element={<AdminJobs />} />
                 <Route path="events" element={<AdminEvents />} />

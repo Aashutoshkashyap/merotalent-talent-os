@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Inbox, Eye, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
-import { SEED_LEADS } from "@/lib/admin/admin-seed-fallbacks";
+import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
 
 interface LeadItem {
   id: string;
@@ -21,7 +21,7 @@ interface LeadItem {
   status: string;
   payload: any;
   created_at: string;
-  profiles?: { email: string; full_name: string };
+  profiles?: { email: string | null; full_name: string | null };
 }
 
 export default function AdminLeads() {
@@ -35,15 +35,23 @@ export default function AdminLeads() {
   }, []);
 
   const fetchLeads = async () => {
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("leads")
-      .select("*, profiles:applicant_user_id(email, full_name)")
+      .select("*")
       .order("created_at", { ascending: false });
 
-    if (data && data.length > 0) {
-      setLeads(data as LeadItem[]);
-    } else {
-      setLeads(SEED_LEADS as unknown as LeadItem[]);
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load leads", description: error.message });
+      setLeads([]);
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const profiles = await loadAdminProfiles((data || []).map((lead: LeadItem) => lead.applicant_user_id));
+      setLeads((data || []).map((lead: LeadItem) => ({ ...lead, profiles: profiles.get(lead.applicant_user_id || "") })) as LeadItem[]);
+    } catch (profileError) {
+      toast({ variant: "destructive", title: "Unable to load lead profiles", description: profileError instanceof Error ? profileError.message : "Profile lookup failed." });
+      setLeads((data || []) as LeadItem[]);
     }
     setIsLoading(false);
   };

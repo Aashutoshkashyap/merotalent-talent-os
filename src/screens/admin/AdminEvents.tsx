@@ -15,10 +15,20 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
 import { generateEventDetails } from "@/lib/ai/ai-generator";
-import { SEED_EVENTS } from "@/lib/admin/admin-seed-fallbacks";
+import {
+  createAdminResource,
+  deleteAdminResource,
+  listAdminResource,
+  updateAdminResource,
+} from "@/lib/admin/admin-client";
+
+type EventStatus = "pending_approval" | "approved" | "published" | "rejected" | "completed" | "cancelled";
 
 interface EventItem {
   id: string;
+  organizer_user_id: string;
+  organizer_type: "user" | "college" | "mentor" | "company";
+  organizer_id: string | null;
   title: string;
   description: string | null;
   event_type: string;
@@ -30,12 +40,19 @@ interface EventItem {
   capacity: number | null;
   ticket_price: number;
   currency: string;
-  status: string;
-  approval_status: string;
+  status: EventStatus;
+  approval_status: "pending" | "approved" | "rejected";
+  rejection_reason: string | null;
   is_active: boolean;
   is_featured: boolean;
   cover_image_url?: string | null;
   created_at: string;
+}
+
+interface OrganizerOption {
+  user_id: string;
+  full_name: string | null;
+  email: string;
 }
 
 export default function AdminEvents() {
@@ -47,9 +64,13 @@ export default function AdminEvents() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [organizers, setOrganizers] = useState<OrganizerOption[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
+    organizer_user_id: "",
+    organizer_type: "user" as EventItem["organizer_type"],
+    organizer_id: "",
     description: "",
     event_type: "free",
     format: "offline",
@@ -60,10 +81,9 @@ export default function AdminEvents() {
     capacity: "",
     ticket_price: "0",
     cover_image_url: "",
-    is_active: true,
     is_featured: false,
-    approval_status: "approved",
-    status: "approved",
+    status: "pending_approval" as EventStatus,
+    rejection_reason: "",
   });
 
   const handleAIGenerate = async () => {
@@ -99,26 +119,65 @@ export default function AdminEvents() {
   };
 
   useEffect(() => {
-    fetchEvents();
+    void Promise.all([fetchEvents(), fetchOrganizers()]);
   }, []);
 
   const fetchEvents = async () => {
-    const { data } = await (supabase as any)
-      .from("events")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (data && data.length > 0) {
-      setEvents(data as EventItem[]);
-    } else {
-      setEvents(SEED_EVENTS as unknown as EventItem[]);
+    setIsLoading(true);
+    try {
+      const data = await listAdminResource<EventItem>("events", {
+        page_size: 100,
+        sort_by: "created_at",
+        sort_direction: "desc",
+      });
+      setEvents(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to load events",
+        description: error instanceof Error ? error.message : "The events could not be loaded.",
+      });
+      setEvents([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
+  };
+
+  const fetchOrganizers = async () => {
+    const { data, error } = await (supabase as any)
+      .from("profiles")
+      .select("user_id,full_name,email")
+      .eq("account_status", "active")
+      .is("deleted_at", null)
+      .order("full_name")
+      .limit(100);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load event organizers", description: error.message });
+      setOrganizers([]);
+      return;
+    }
+    setOrganizers((data || []) as OrganizerOption[]);
   };
 
   const handleSubmit = async () => {
-    if (!formData.title.trim() || !formData.start_date || !formData.end_date) {
-      toast({ variant: "destructive", title: "Title, start date, and end date are required" });
+    if (!formData.organizer_user_id || !formData.title.trim() || !formData.start_date || !formData.end_date) {
+      toast({ variant: "destructive", title: "Organizer, title, start date, and end date are required" });
+      return;
+    }
+
+    if (new Date(formData.end_date) <= new Date(formData.start_date)) {
+      toast({ variant: "destructive", title: "End date must be after the start date" });
+      return;
+    }
+
+    if (formData.organizer_type !== "user" && !formData.organizer_id.trim()) {
+      toast({ variant: "destructive", title: "The organizer entity UUID is required" });
+      return;
+    }
+
+    if (formData.status === "rejected" && !formData.rejection_reason.trim()) {
+      toast({ variant: "destructive", title: "A rejection reason is required" });
       return;
     }
 
@@ -126,6 +185,9 @@ export default function AdminEvents() {
 
     const payload = {
       title: formData.title,
+      organizer_user_id: formData.organizer_user_id,
+      organizer_type: formData.organizer_type,
+      organizer_id: formData.organizer_type === "user" ? null : formData.organizer_id || null,
       description: formData.description || null,
       event_type: formData.event_type,
       format: formData.format,
@@ -136,48 +198,70 @@ export default function AdminEvents() {
       capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
       ticket_price: parseFloat(formData.ticket_price || "0"),
       cover_image_url: formData.cover_image_url || null,
-      is_active: formData.is_active,
       is_featured: formData.is_featured,
-      approval_status: formData.approval_status,
       status: formData.status,
+      rejection_reason: formData.status === "rejected" ? formData.rejection_reason.trim() : null,
     };
 
-    let error;
-    if (editingEvent) {
-      const res = await (supabase as any).from("events").update(payload).eq("id", editingEvent.id);
-      error = res.error;
-    } else {
-      const res = await (supabase as any).from("events").insert(payload);
-      error = res.error;
-    }
-
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
+    try {
+      if (editingEvent) {
+        await updateAdminResource<EventItem>("events", editingEvent.id, payload);
+      } else {
+        await createAdminResource<EventItem>("events", payload);
+      }
       toast({ title: editingEvent ? "Event updated" : "Event created" });
       resetForm();
-      fetchEvents();
+      await fetchEvents();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to save event",
+        description: error instanceof Error ? error.message : "The event could not be saved.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this event?")) return;
-    const { error } = await (supabase as any).from("events").delete().eq("id", id);
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
-      toast({ title: "Event deleted" });
-      fetchEvents();
+    if (!window.confirm("Remove this event from active administration views?")) return;
+    try {
+      await deleteAdminResource("events", id);
+      toast({ title: "Event removed" });
+      await fetchEvents();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to remove event",
+        description: error instanceof Error ? error.message : "The event could not be removed.",
+      });
     }
   };
 
-  const toggleApproval = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === "approved" ? "pending" : "approved";
-    const { error } = await (supabase as any).from("events").update({ approval_status: newStatus, status: newStatus }).eq("id", id);
-    if (!error) {
-      toast({ title: `Event status changed to ${newStatus}` });
-      fetchEvents();
+  const updateEventStatus = async (event: EventItem, status: EventStatus) => {
+    let rejectionReason: string | null | undefined;
+    if (status === "rejected") {
+      rejectionReason = window.prompt("Reason for rejecting this event:", event.rejection_reason || "");
+      if (rejectionReason === null) return;
+      if (!rejectionReason.trim()) {
+        toast({ variant: "destructive", title: "A rejection reason is required" });
+        return;
+      }
+    }
+
+    try {
+      await updateAdminResource<EventItem>("events", event.id, {
+        status,
+        ...(status === "rejected" ? { rejection_reason: rejectionReason?.trim() } : {}),
+      });
+      toast({ title: `Event marked ${status.replace(/_/g, " ")}` });
+      await fetchEvents();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to update event status",
+        description: error instanceof Error ? error.message : "The event status could not be changed.",
+      });
     }
   };
 
@@ -185,6 +269,9 @@ export default function AdminEvents() {
     setEditingEvent(event);
     setFormData({
       title: event.title,
+      organizer_user_id: event.organizer_user_id,
+      organizer_type: event.organizer_type,
+      organizer_id: event.organizer_id || "",
       description: event.description || "",
       event_type: event.event_type || "free",
       format: event.format || "offline",
@@ -195,10 +282,9 @@ export default function AdminEvents() {
       capacity: event.capacity ? event.capacity.toString() : "",
       ticket_price: event.ticket_price ? event.ticket_price.toString() : "0",
       cover_image_url: event.cover_image_url || "",
-      is_active: event.is_active ?? true,
       is_featured: event.is_featured ?? false,
-      approval_status: event.approval_status || "approved",
-      status: event.status || "approved",
+      status: event.status || "pending_approval",
+      rejection_reason: event.rejection_reason || "",
     });
     setIsDialogOpen(true);
   };
@@ -206,6 +292,9 @@ export default function AdminEvents() {
   const resetForm = () => {
     setFormData({
       title: "",
+      organizer_user_id: "",
+      organizer_type: "user",
+      organizer_id: "",
       description: "",
       event_type: "free",
       format: "offline",
@@ -216,10 +305,9 @@ export default function AdminEvents() {
       capacity: "",
       ticket_price: "0",
       cover_image_url: "",
-      is_active: true,
       is_featured: false,
-      approval_status: "approved",
-      status: "approved",
+      status: "pending_approval",
+      rejection_reason: "",
     });
     setEditingEvent(null);
     setIsDialogOpen(false);
@@ -227,6 +315,13 @@ export default function AdminEvents() {
 
   const filteredEvents = events.filter((e) =>
     e.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const organizerNames = new Map(
+    organizers.map((organizer) => [
+      organizer.user_id,
+      organizer.full_name || organizer.email,
+    ]),
   );
 
   return (
@@ -250,6 +345,57 @@ export default function AdminEvents() {
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Organizer *</Label>
+                  <Select
+                    value={formData.organizer_user_id}
+                    onValueChange={(organizer_user_id) => setFormData({ ...formData, organizer_user_id })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select an organizer" /></SelectTrigger>
+                    <SelectContent>
+                      {organizers.map((organizer) => (
+                        <SelectItem key={organizer.user_id} value={organizer.user_id}>
+                          {organizer.full_name || organizer.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Organizer Type</Label>
+                  <Select
+                    value={formData.organizer_type}
+                    onValueChange={(organizer_type: EventItem["organizer_type"]) =>
+                      setFormData({
+                        ...formData,
+                        organizer_type,
+                        organizer_id: organizer_type === "user" ? "" : formData.organizer_id,
+                      })
+                    }
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="college">College</SelectItem>
+                      <SelectItem value="mentor">Mentor</SelectItem>
+                      <SelectItem value="company">Company</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {formData.organizer_type !== "user" && (
+                <div className="space-y-2">
+                  <Label>Organizer Entity UUID</Label>
+                  <Input
+                    placeholder={`Select the ${formData.organizer_type} record UUID`}
+                    value={formData.organizer_id}
+                    onChange={(e) => setFormData({ ...formData, organizer_id: e.target.value })}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Event Title *</Label>
                 <Input
@@ -352,13 +498,23 @@ export default function AdminEvents() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Location</Label>
-                <Input
-                  placeholder="e.g. Kathmandu University, Dhulikhel"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input
+                    placeholder="e.g. Kathmandu University, Dhulikhel"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Online Meeting URL</Label>
+                  <Input
+                    placeholder="https://meet.example.com/event"
+                    value={formData.meeting_url}
+                    onChange={(e) => setFormData({ ...formData, meeting_url: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -379,13 +535,23 @@ export default function AdminEvents() {
                 )}
               </div>
 
-              <div className="flex items-center gap-6 pt-2">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.is_active}
-                    onCheckedChange={(v) => setFormData({ ...formData, is_active: v })}
-                  />
-                  <Label>Active</Label>
+              <div className="grid sm:grid-cols-2 gap-4 pt-2 items-end">
+                <div className="space-y-2">
+                  <Label>Workflow Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(status: EventStatus) => setFormData({ ...formData, status })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending_approval">Pending approval</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
@@ -395,6 +561,18 @@ export default function AdminEvents() {
                   <Label>Featured</Label>
                 </div>
               </div>
+
+              {formData.status === "rejected" && (
+                <div className="space-y-2">
+                  <Label>Rejection Reason *</Label>
+                  <Textarea
+                    value={formData.rejection_reason}
+                    onChange={(e) => setFormData({ ...formData, rejection_reason: e.target.value })}
+                    placeholder="Explain what the organizer should correct."
+                    rows={2}
+                  />
+                </div>
+              )}
             </div>
 
             <DialogFooter>
@@ -437,6 +615,9 @@ export default function AdminEvents() {
                     {event.is_featured && <Star className="w-4 h-4 text-amber-500 fill-amber-500" />}
                     {event.title}
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {organizerNames.get(event.organizer_user_id) || event.organizer_user_id}
+                  </p>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5 capitalize">
@@ -455,8 +636,8 @@ export default function AdminEvents() {
                   {event.event_type === "free" ? "Free" : `NPR ${event.ticket_price}`}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={event.approval_status === "approved" ? "default" : "secondary"}>
-                    {event.approval_status}
+                  <Badge variant={event.status === "published" ? "default" : "secondary"} className="capitalize">
+                    {event.status.replace(/_/g, " ")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -464,9 +645,36 @@ export default function AdminEvents() {
                     <Button variant="ghost" size="icon" onClick={() => openEdit(event)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => toggleApproval(event.id, event.approval_status)}>
-                      {event.approval_status === "approved" ? <XCircle className="w-4 h-4 text-amber-500" /> : <CheckCircle className="w-4 h-4 text-green-500" />}
-                    </Button>
+                    {event.approval_status !== "approved" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Approve event"
+                        onClick={() => updateEventStatus(event, "approved")}
+                      >
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      </Button>
+                    )}
+                    {event.status !== "published" && event.approval_status === "approved" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Publish event"
+                        onClick={() => updateEventStatus(event, "published")}
+                      >
+                        <Star className="w-4 h-4 text-amber-500" />
+                      </Button>
+                    )}
+                    {event.status !== "rejected" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Reject event"
+                        onClick={() => updateEventStatus(event, "rejected")}
+                      >
+                        <XCircle className="w-4 h-4 text-amber-600" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(event.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>

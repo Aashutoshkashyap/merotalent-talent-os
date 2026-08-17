@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Briefcase, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SEED_JOBS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface JobItem {
   id: string;
@@ -73,6 +72,7 @@ function toDisplayItem(row: Record<string, unknown>, idx: number): JobItem {
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All Jobs");
 
   useEffect(() => {
@@ -81,18 +81,23 @@ export default function JobsPage() {
 
   const fetchJobs = async () => {
     try {
-      const { data } = await (supabase as any)
+      const now = new Date().toISOString();
+      const { data, error } = await (supabase as any)
         .from("jobs")
         .select("*, companies(name)")
+        .eq("status", "published")
+        .eq("approval_status", "approved")
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .or(`expires_at.is.null,expires_at.gt.${now}`)
         .order("created_at", { ascending: false });
 
-      if (data && data.length > 0) {
-        setJobs(data.map(toDisplayItem));
-      } else {
-        setJobs(SEED_JOBS.map(toDisplayItem));
-      }
-    } catch {
-      setJobs(SEED_JOBS.map(toDisplayItem));
+      if (error) throw error;
+      setJobs((data || []).map(toDisplayItem));
+      setLoadError(null);
+    } catch (error) {
+      setJobs([]);
+      setLoadError(error instanceof Error ? error.message : "Jobs could not be loaded.");
     } finally {
       setIsLoading(false);
     }
@@ -212,8 +217,17 @@ export default function JobsPage() {
             </div>
           ))}
         </div>
+
+        {!isLoading && filtered.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
+            <Briefcase className="mx-auto mb-3 h-9 w-9 text-slate-400" />
+            <p className="font-bold text-slate-700">No published jobs found</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {loadError || "Approved jobs created in Admin will appear here automatically."}
+            </p>
+          </div>
+        )}
       </div>
     </PublicPageLayout>
   );
 }
-

@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
-import { SEED_COLLEGE_APPLICATIONS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface CollegeApp {
   id: string;
@@ -35,16 +34,15 @@ export default function AdminApplications() {
   }, []);
 
   const fetchApplications = async () => {
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("college_applications")
       .select("*, institutes(name)")
       .order("submitted_at", { ascending: false });
 
-    if (data && data.length > 0) {
-      setApplications(data as CollegeApp[]);
-    } else {
-      setApplications(SEED_COLLEGE_APPLICATIONS as unknown as CollegeApp[]);
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load applications", description: error.message });
     }
+    setApplications((data || []) as CollegeApp[]);
     setIsLoading(false);
   };
 

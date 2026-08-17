@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Calendar, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
-import { SEED_MENTOR_BOOKINGS } from "@/lib/admin/admin-seed-fallbacks";
+import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
 
 interface MentorBooking {
   id: string;
@@ -21,8 +21,8 @@ interface MentorBooking {
   amount: number;
   currency: string;
   created_at: string;
-  mentors?: { title: string; profiles?: { full_name: string } };
-  students?: { email: string; full_name: string };
+  mentors?: { profiles?: { full_name: string | null } };
+  students?: { email: string | null; full_name: string | null };
 }
 
 export default function AdminBookings() {
@@ -36,15 +36,38 @@ export default function AdminBookings() {
   }, []);
 
   const fetchBookings = async () => {
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("mentor_bookings")
-      .select("*, mentors(title, profiles:user_id(full_name)), students:student_id(email, full_name)")
+      .select("*")
       .order("scheduled_start", { ascending: false });
 
-    if (data && data.length > 0) {
-      setBookings(data as MentorBooking[]);
-    } else {
-      setBookings(SEED_MENTOR_BOOKINGS as unknown as MentorBooking[]);
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load bookings", description: error.message });
+      setBookings([]);
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const mentorIds = [...new Set((data || []).map((booking: MentorBooking) => booking.mentor_id))];
+      const { data: mentors, error: mentorError } = mentorIds.length
+        ? await (supabase as any).from("mentors").select("id,user_id").in("id", mentorIds)
+        : { data: [], error: null };
+      if (mentorError) throw mentorError;
+      const mentorUserById = new Map<string, string>(
+        (mentors || []).map((mentor: { id: string; user_id: string }) => [mentor.id, mentor.user_id]),
+      );
+      const profiles = await loadAdminProfiles([
+        ...(data || []).map((booking: MentorBooking) => booking.student_id),
+        ...[...mentorUserById.values()],
+      ]);
+      setBookings((data || []).map((booking: MentorBooking) => ({
+        ...booking,
+        students: profiles.get(booking.student_id),
+        mentors: { profiles: profiles.get(mentorUserById.get(booking.mentor_id) || "") },
+      })) as MentorBooking[]);
+    } catch (profileError) {
+      toast({ variant: "destructive", title: "Unable to load booking profiles", description: profileError instanceof Error ? profileError.message : "Profile lookup failed." });
+      setBookings((data || []) as MentorBooking[]);
     }
     setIsLoading(false);
   };

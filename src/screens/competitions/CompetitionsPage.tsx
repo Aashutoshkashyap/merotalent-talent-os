@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Trophy, Clock, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SEED_COMPETITIONS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface CompetitionItem {
   id: string;
@@ -29,7 +28,7 @@ const TYPE_CONFIG: Record<string, { icon: string; gradient: string }> = {
   default:   { icon: "🏆", gradient: "from-slate-800 via-gray-900 to-slate-900" },
 };
 
-/* ── map a DB/seed row to the UI model ── */
+/* ── map a database row to the UI model ── */
 function toDisplayItem(row: Record<string, unknown>): CompetitionItem {
   const t = String(row.type ?? "default").toLowerCase();
   const cfg = TYPE_CONFIG[t] ?? TYPE_CONFIG.default;
@@ -52,7 +51,7 @@ function toDisplayItem(row: Record<string, unknown>): CompetitionItem {
     category: t.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
     timeRead: String(row.prize_pool ?? ""),
     description: String(row.description ?? ""),
-    organizer: String(row.organizer_name ?? title.split(" ")[0] ?? ""),
+    organizer: String(row.organizer_type ?? "MeroTalent partner").replace(/_/g, " "),
     date: dateStr,
     avatarText,
     bgGradient: cfg.gradient,
@@ -63,6 +62,7 @@ function toDisplayItem(row: Record<string, unknown>): CompetitionItem {
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState<CompetitionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All Events");
 
   useEffect(() => {
@@ -71,18 +71,18 @@ export default function CompetitionsPage() {
 
   const fetchCompetitions = async () => {
     try {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("competitions")
         .select("*")
+        .in("status", ["upcoming", "ongoing"])
         .order("start_date", { ascending: true });
 
-      if (data && data.length > 0) {
-        setCompetitions(data.map(toDisplayItem));
-      } else {
-        setCompetitions(SEED_COMPETITIONS.map(toDisplayItem));
-      }
-    } catch {
-      setCompetitions(SEED_COMPETITIONS.map(toDisplayItem));
+      if (error) throw error;
+      setCompetitions((data || []).map(toDisplayItem));
+      setLoadError(null);
+    } catch (error) {
+      setCompetitions([]);
+      setLoadError(error instanceof Error ? error.message : "Competitions could not be loaded.");
     } finally {
       setIsLoading(false);
     }
@@ -200,8 +200,17 @@ export default function CompetitionsPage() {
             </div>
           ))}
         </div>
+
+        {!isLoading && filtered.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
+            <Trophy className="mx-auto mb-3 h-9 w-9 text-slate-400" />
+            <p className="font-bold text-slate-700">No published competitions found</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {loadError || "Published competitions created in Admin will appear here automatically."}
+            </p>
+          </div>
+        )}
       </div>
     </PublicPageLayout>
   );
 }
-

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import SidebarNav from "@/components/landing/SidebarNav";
 import HeaderNav from "@/components/landing/HeaderNav";
 import HeroCategorySection from "@/components/landing/HeroCategorySection";
 import FeaturedSection from "@/components/landing/FeaturedSection";
+import ActiveAdvertisements from "@/components/landing/ActiveAdvertisements";
 import TrustStrip from "@/components/landing/TrustStrip";
 import OpportunitiesSection from "@/components/landing/OpportunitiesSection";
 import AboutUs from "@/components/landing/AboutUs";
@@ -13,230 +14,186 @@ import FAQ from "@/components/landing/FAQ";
 import ContactForm from "@/components/landing/ContactForm";
 import CTA from "@/components/landing/CTA";
 import Footer from "@/components/landing/Footer";
-import { OpportunityCardData } from "@/components/landing/OpportunityCard";
+import type { OpportunityCardData } from "@/components/landing/OpportunityCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useSiteCMS } from "@/hooks/useSiteCMS";
 
-// Mockup Data tailored to Nepal Educational & Tech Ecosystem
-const COMPETITIONS_DATA: OpportunityCardData[] = [
-  {
-    id: "locus-robotics-2026",
-    title: "LOCUS Hardware & Robotics Competition",
-    organizer: "Pulchowk Campus, IOE",
-    prizes: "Prizes worth Rs. 5,00,000",
-    isOnline: false,
-    location: "Pulchowk, Lalitpur",
-    logo: (
-      <div className="flex flex-col items-center justify-center text-center">
-        <span className="text-xs font-black text-blue-900 tracking-tighter">IOE</span>
-        <span className="text-[7px] font-bold text-[#0073e6] uppercase leading-none">LOCUS</span>
-      </div>
-    ),
-  },
-  {
-    id: "ku-hackfest-2026",
-    title: "KU HackFest 2026 Open Source Challenge",
-    organizer: "Kathmandu University",
-    prizes: "Prizes worth Rs. 2,00,000",
-    isOnline: true,
-    logo: (
-      <div className="w-full h-full bg-slate-900 text-yellow-400 font-extrabold text-[9px] flex items-center justify-center rounded">
-        KU
-      </div>
-    ),
-  },
-  {
-    id: "yarsa-game-jam-2026",
-    title: "Yarsa Games Engine Hackathon",
-    organizer: "Yarsa Labs",
-    prizes: "Prizes worth Rs. 2,50,000",
-    isOnline: true,
-    logo: (
-      <div className="w-full h-full bg-amber-500 text-white font-black text-[9px] flex items-center justify-center rounded">
-        YARSA
-      </div>
-    ),
-  },
-  {
-    id: "ioe-software-hack",
-    title: "National Student Software Olympiad",
-    organizer: "Nepal Engineers Association",
-    prizes: "Prizes worth Rs. 1,50,000",
-    isOnline: true,
-    logo: (
-      <div className="w-full h-full bg-blue-700 text-white font-extrabold text-[8px] flex items-center justify-center rounded text-center">
-        NEA
-      </div>
-    ),
-  },
-];
+const companyMark = (name: string) => (
+  <span className="text-center text-[9px] font-black uppercase leading-tight text-blue-700">
+    {name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("") || "MT"}
+  </span>
+);
 
-const INTERNSHIPS_DATA: OpportunityCardData[] = [
-  {
-    id: "logpoint-qa-intern",
-    title: "Software Engineering Intern",
-    organizer: "Logpoint Nepal",
-    prizes: "Rs. 25,000 / Month",
-    location: "In Office | Jawalakhel",
-    logo: (
-      <div className="w-full h-full bg-slate-900 text-blue-400 font-black text-[9px] flex items-center justify-center rounded">
-        LOGPOINT
-      </div>
-    ),
-  },
-  {
-    id: "deerhold-backend-intern",
-    title: "Backend Developer Intern (Python)",
-    organizer: "Deerhold Ltd",
-    prizes: "Rs. 20,000 / Month",
-    location: "In Office | Sano Gaucharan",
-    logo: (
-      <div className="w-full h-full bg-emerald-50 text-emerald-800 font-black text-[8px] flex items-center justify-center rounded border border-emerald-100">
-        DEERHOLD
-      </div>
-    ),
-  },
-  {
-    id: "cotiviti-devops-intern",
-    title: "QA Engineering Intern",
-    organizer: "Cotiviti Nepal",
-    prizes: "Rs. 22,000 / Month",
-    location: "Hybrid | Hattisar",
-    logo: (
-      <div className="w-full h-full bg-cyan-50 text-cyan-700 font-extrabold text-[8px] flex items-center justify-center rounded border border-cyan-100">
-        COTIVITI
-      </div>
-    ),
-  },
-  {
-    id: "f1soft-mobile-intern",
-    title: "Mobile App Intern (Flutter)",
-    organizer: "F1Soft International",
-    prizes: "Rs. 18,000 / Month",
-    location: "In Office | Pulchowk",
-    logo: (
-      <div className="w-full h-full bg-red-50 text-red-600 font-black text-[9px] flex items-center justify-center rounded border border-red-100">
-        F1SOFT
-      </div>
-    ),
-  },
-];
+const formatSalary = (row: Record<string, any>) => {
+  const minimum = Number(row.salary_min || 0);
+  const maximum = Number(row.salary_max || 0);
+  if (minimum && maximum) return `NPR ${minimum.toLocaleString()} – ${maximum.toLocaleString()}`;
+  if (maximum) return `Up to NPR ${maximum.toLocaleString()}`;
+  return undefined;
+};
 
-const JOBS_DATA: OpportunityCardData[] = [
-  {
-    id: "cotiviti-fullstack",
-    title: "Full Stack Software Engineer I (Java/React)",
-    organizer: "Cotiviti Nepal",
-    prizes: "Rs. 75,000 / Month",
-    location: "In Office | Hattisar",
-    logo: (
-      <div className="w-full h-full bg-cyan-600 text-white font-extrabold text-[8px] flex items-center justify-center rounded">
-        COTIVITI
-      </div>
-    ),
-  },
-  {
-    id: "leapfrog-frontend-dev",
-    title: "Associate Frontend Developer",
-    organizer: "Leapfrog Technology",
-    prizes: "Rs. 60,000 / Month",
-    location: "In Office | Durbarmarg",
-    logo: (
-      <div className="w-full h-full bg-emerald-600 text-white font-extrabold text-[8px] flex items-center justify-center rounded">
-        LEAPFROG
-      </div>
-    ),
-  },
-  {
-    id: "yarsa-rust-engineer",
-    title: "Rust Software Engineer",
-    organizer: "Yarsa Labs",
-    prizes: "Rs. 90,000 / Month",
-    location: "In Office | Pokhara",
-    logo: (
-      <div className="w-full h-full bg-amber-500 text-slate-900 font-black text-[9px] flex items-center justify-center rounded">
-        YARSA
-      </div>
-    ),
-  },
-  {
-    id: "logpoint-cloud-security",
-    title: "Cloud Security & DevOps Specialist",
-    organizer: "Logpoint Nepal",
-    prizes: "Rs. 1,10,000 / Month",
-    location: "In Office | Jawalakhel",
-    logo: (
-      <div className="w-full h-full bg-slate-900 text-blue-400 font-extrabold text-[8px] flex items-center justify-center rounded">
-        LOGPOINT
-      </div>
-    ),
-  },
-];
+const asText = (value: unknown) => typeof value === "string" ? value : "";
 
-const Index = () => {
+const splitFirstWord = (value: string) => {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  return {
+    first: words.shift() || "",
+    rest: words.join(" "),
+  };
+};
+
+export default function Index() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [competitions, setCompetitions] = useState<OpportunityCardData[]>([]);
+  const [jobs, setJobs] = useState<OpportunityCardData[]>([]);
+  const [internships, setInternships] = useState<OpportunityCardData[]>([]);
+  const { getSection, getChildSections } = useSiteCMS("home");
+
+  const heroSection = getSection("hero_banner");
+  const featuredSection = getSection("featured_content") || getSection("latest_news");
+  const trustSection = getSection("trust_strip");
+  const aboutSection = getSection("about_us") || getSection("features_grid");
+  const testimonialsSection = getSection("testimonials");
+  const faqSection = getSection("faq");
+
+  const trustHeading = splitFirstWord(trustSection?.title || "");
+  const trustItems = trustSection ? getChildSections(trustSection) : [];
+  const trustPartners = trustItems.length > 0
+    ? trustItems.map((item) => ({
+      id: item.id,
+      name: item.title,
+      logo: item.image_url ? (
+        <img
+          src={item.image_url}
+          alt={item.image_alt || item.title}
+          className="h-8 max-w-32 object-contain"
+        />
+      ) : (
+        <span className="text-base font-extrabold tracking-tight text-slate-800">{item.title}</span>
+      ),
+    }))
+    : undefined;
+
+  const testimonialItems = testimonialsSection ? getChildSections(testimonialsSection) : [];
+  const testimonials = testimonialItems.length > 0
+    ? testimonialItems.map((item) => {
+      const subtitleParts = (item.subtitle || "").split(/\s*[|•]\s*/).filter(Boolean);
+      return {
+        id: item.id,
+        quote: item.body || "",
+        author: item.title,
+        role: asText(item.extra_data?.role) || subtitleParts[0] || "",
+        institution: asText(item.extra_data?.institution) || subtitleParts.slice(1).join(" • "),
+      };
+    })
+    : undefined;
+
+  const faqItems = faqSection ? getChildSections(faqSection) : [];
+  const faqs = faqItems.length > 0
+    ? faqItems.map((item) => ({ question: item.title, answer: item.body || item.subtitle || "" }))
+    : undefined;
+
+  useEffect(() => {
+    const loadOpportunities = async () => {
+      const now = new Date().toISOString();
+      const [competitionResult, jobResult] = await Promise.all([
+        (supabase as any)
+          .from("competitions")
+          .select("id, title, organizer_type, prize_pool, format")
+          .in("status", ["upcoming", "ongoing"])
+          .order("created_at", { ascending: false })
+          .limit(12),
+        (supabase as any)
+          .from("jobs")
+          .select("id, title, job_type, salary_min, salary_max, location, companies(name)")
+          .eq("status", "published")
+          .eq("approval_status", "approved")
+          .eq("is_active", true)
+          .is("deleted_at", null)
+          .or(`expires_at.is.null,expires_at.gt.${now}`)
+          .order("created_at", { ascending: false })
+          .limit(18),
+      ]);
+
+      if (!competitionResult.error) {
+        setCompetitions((competitionResult.data || []).map((row: Record<string, any>) => {
+          const organizer = String(row.organizer_type || "MeroTalent partner").replace(/_/g, " ");
+          return {
+            id: String(row.id),
+            title: String(row.title),
+            organizer,
+            prizes: row.prize_pool ? String(row.prize_pool) : undefined,
+            isOnline: String(row.format || "").toLowerCase() === "online",
+            logo: companyMark(organizer),
+            path: "/competitions",
+          };
+        }));
+      }
+
+      if (!jobResult.error) {
+        const mapped = (jobResult.data || []).map((row: Record<string, any>) => {
+          const employer = String(row.companies?.name || "MeroTalent employer");
+          return {
+            id: String(row.id),
+            title: String(row.title),
+            organizer: employer,
+            prizes: formatSalary(row),
+            location: row.location ? String(row.location) : undefined,
+            logo: companyMark(employer),
+            path: "/jobs",
+            jobType: String(row.job_type || "").toLowerCase(),
+          };
+        });
+        setInternships(mapped.filter((row: any) => row.jobType.includes("intern")).map(({ jobType: _jobType, ...row }: any) => row));
+        setJobs(mapped.filter((row: any) => !row.jobType.includes("intern")).map(({ jobType: _jobType, ...row }: any) => row));
+      }
+    };
+    void loadOpportunities();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 flex overflow-x-hidden">
-      {/* 1. Left Navigation Sidebar */}
-      <SidebarNav
-        activeRole="talent"
-        activeNavId="home"
-        onHoverChange={setIsSidebarExpanded}
-      />
-
-      {/* 2. Main Content Area */}
-      <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out"
-        style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}
-      >
-        {/* Header Nav */}
+    <div className="flex min-h-screen overflow-x-hidden bg-white font-sans text-slate-900">
+      <SidebarNav activeRole="talent" activeNavId="home" onHoverChange={setIsSidebarExpanded} />
+      <div className="flex min-h-screen flex-1 flex-col transition-all duration-300 ease-in-out" style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}>
         <HeaderNav />
-
-        {/* Main Body content */}
         <main className="flex-1 bg-gradient-to-b from-slate-50/50 via-white to-slate-50/30 pb-16">
-          {/* Hero & Category Cards (Courses, Events, Mentors, Colleges, Jobs) */}
-          <HeroCategorySection />
-
-          {/* Featured Section */}
-          <FeaturedSection />
-
-          {/* Trust Strip */}
-          <TrustStrip />
-
-          {/* Opportunity Listing Sections (Competitions, Internships, Jobs) */}
-          <OpportunitiesSection
-            title="Competitions"
-            subtitle="Uncover the most talked-about educational competitions in Nepal today."
-            viewAllPath="/competitions"
-            opportunities={COMPETITIONS_DATA}
+          <HeroCategorySection
+            heading={heroSection?.title || undefined}
+            metricText={heroSection?.subtitle || undefined}
           />
-
-          <OpportunitiesSection
-            title="Internships"
-            subtitle="Unleash educational internships tailored to your career aspirations."
-            viewAllPath="/courses"
-            opportunities={INTERNSHIPS_DATA}
+          <FeaturedSection title={featuredSection?.title || undefined} />
+          <ActiveAdvertisements />
+          <TrustStrip
+            highlightWord={trustHeading.first || undefined}
+            title={trustHeading.rest || undefined}
+            partners={trustPartners}
           />
-
-          <OpportunitiesSection
-            title="Jobs"
-            subtitle="Unveil tech and education jobs designed for your next big move."
-            viewAllPath="/jobs"
-            opportunities={JOBS_DATA}
+          <OpportunitiesSection title="Competitions" subtitle="Discover current competitions published by MeroTalent partners." viewAllPath="/competitions" opportunities={competitions} />
+          <OpportunitiesSection title="Internships" subtitle="Explore approved internships from active employers." viewAllPath="/jobs" opportunities={internships} />
+          <OpportunitiesSection title="Jobs" subtitle="Explore approved roles from active employers." viewAllPath="/jobs" opportunities={jobs} />
+          <AboutUs
+            title={aboutSection?.title || undefined}
+            eyebrow={aboutSection?.subtitle || undefined}
+            description={aboutSection?.body || undefined}
           />
-
-          {/* Brand Presentation & Feedback Sections (Added before footer) */}
-          <AboutUs />
-          <Testimonials />
-          <FAQ />
+          <Testimonials
+            eyebrow={testimonialsSection?.subtitle || undefined}
+            title={testimonialsSection?.title || undefined}
+            testimonials={testimonials}
+          />
+          <FAQ
+            eyebrow={faqSection?.subtitle || undefined}
+            title={faqSection?.title || undefined}
+            contactBody={faqSection?.body || undefined}
+            contactLabel={faqSection?.cta_label || undefined}
+            contactUrl={faqSection?.cta_url || undefined}
+            items={faqs}
+          />
           <ContactForm />
           <CTA />
         </main>
-
-        {/* Footer */}
         <Footer />
       </div>
     </div>
   );
-};
-
-export default Index;
+}

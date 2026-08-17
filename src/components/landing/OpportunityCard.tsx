@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Link } from "react-router-dom";
 
 export interface OpportunityCardData {
   id: string;
@@ -10,6 +11,7 @@ export interface OpportunityCardData {
   prizes?: string;
   location?: string;
   isOnline?: boolean;
+  path?: string;
 }
 
 interface OpportunityCardProps {
@@ -17,8 +19,8 @@ interface OpportunityCardProps {
 }
 
 export default function OpportunityCard({ data }: OpportunityCardProps) {
-  return (
-    <div className="flex flex-col justify-between p-6 bg-white border border-slate-200/90 hover:border-blue-400 rounded-3xl shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 min-w-[320px] sm:min-w-[350px] max-w-[380px] flex-shrink-0 cursor-pointer min-h-[215px]">
+  const card = (
+    <div className="flex min-h-[215px] min-w-[320px] max-w-[380px] flex-shrink-0 cursor-pointer flex-col justify-between rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all duration-300 hover:scale-[1.01] hover:border-blue-400 hover:shadow-md sm:min-w-[350px]">
       {/* Top Header Row */}
       <div className="flex justify-between items-start gap-4">
         {/* Left: Metadata badges */}
@@ -60,4 +62,6 @@ export default function OpportunityCard({ data }: OpportunityCardProps) {
       </div>
     </div>
   );
+
+  return data.path ? <Link to={data.path}>{card}</Link> : card;
 }

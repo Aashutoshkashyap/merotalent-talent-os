@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, CreditCard, DollarSign, ArrowUpRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
-import { SEED_PAYMENTS } from "@/lib/admin/admin-seed-fallbacks";
+import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
 
 interface PaymentItem {
   id: string;
@@ -22,7 +22,7 @@ interface PaymentItem {
   gateway: string | null;
   gateway_transaction_id: string | null;
   created_at: string;
-  profiles?: { email: string; full_name: string };
+  profiles?: { email: string | null; full_name: string | null };
 }
 
 export default function AdminPayments() {
@@ -36,15 +36,23 @@ export default function AdminPayments() {
   }, []);
 
   const fetchPayments = async () => {
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("payments")
-      .select("*, profiles:user_id(email, full_name)")
+      .select("*")
       .order("created_at", { ascending: false });
 
-    if (data && data.length > 0) {
-      setPayments(data as PaymentItem[]);
-    } else {
-      setPayments(SEED_PAYMENTS as unknown as PaymentItem[]);
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load payments", description: error.message });
+      setPayments([]);
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const profiles = await loadAdminProfiles((data || []).map((payment: PaymentItem) => payment.user_id));
+      setPayments((data || []).map((payment: PaymentItem) => ({ ...payment, profiles: profiles.get(payment.user_id) })) as PaymentItem[]);
+    } catch (profileError) {
+      toast({ variant: "destructive", title: "Unable to load payment profiles", description: profileError instanceof Error ? profileError.message : "Profile lookup failed." });
+      setPayments((data || []) as PaymentItem[]);
     }
     setIsLoading(false);
   };

@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Calendar, Loader2, Gift, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
-import { SEED_SUBSCRIPTIONS } from "@/lib/admin/admin-seed-fallbacks";
+import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
 
 interface SubscriptionItem {
   id: string;
@@ -32,7 +32,7 @@ interface SubscriptionItem {
     is_default_free: boolean;
     module_scope: string[];
   };
-  profiles?: { email: string; full_name: string };
+  profiles?: { email: string | null; full_name: string | null };
 }
 
 const FREE_TIER_MODULES = [
@@ -80,15 +80,23 @@ export default function AdminSubscriptions() {
   }, []);
 
   const fetchSubscriptions = async () => {
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("subscriptions")
-      .select("*, packages(name, code, package_kind, is_default_free, module_scope), profiles:user_id(email, full_name)")
+      .select("*, packages(name, code, package_kind, is_default_free, module_scope)")
       .order("created_at", { ascending: false });
 
-    if (data && data.length > 0) {
-      setSubscriptions(data as SubscriptionItem[]);
-    } else {
-      setSubscriptions(SEED_SUBSCRIPTIONS as unknown as SubscriptionItem[]);
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load subscriptions", description: error.message });
+      setSubscriptions([]);
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const profiles = await loadAdminProfiles((data || []).map((subscription: SubscriptionItem) => subscription.user_id));
+      setSubscriptions((data || []).map((subscription: SubscriptionItem) => ({ ...subscription, profiles: profiles.get(subscription.user_id) })) as SubscriptionItem[]);
+    } catch (profileError) {
+      toast({ variant: "destructive", title: "Unable to load subscription profiles", description: profileError instanceof Error ? profileError.message : "Profile lookup failed." });
+      setSubscriptions((data || []) as SubscriptionItem[]);
     }
     setIsLoading(false);
   };

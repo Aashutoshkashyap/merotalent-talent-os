@@ -46,10 +46,6 @@ import {
   SignedMediaUploader,
   type SignedMediaAsset,
 } from "@/components/media/SignedMediaUploader";
-import {
-  SEED_PAGE_SECTIONS,
-  SEED_SITE_SETTINGS,
-} from "@/lib/admin/admin-seed-fallbacks";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -83,6 +79,15 @@ const PAGES = [
   { value: "header_footer", label: "Header & Footer" },
 ];
 
+const defaultSiteSettings = {
+  site_title: "MeroTalent",
+  favicon_url: "",
+  logo_url: "",
+  meta_description: "",
+  contact_email: "",
+  contact_phone: "",
+};
+
 const emptyForm = (): SectionFormData => ({
   parent_id: null,
   section_key: "",
@@ -113,7 +118,7 @@ const AdminPageEditor = () => {
   const [filterPage, setFilterPage] = useState("all");
 
   // Site Branding & Favicon settings state
-  const [siteSettings, setSiteSettings] = useState(SEED_SITE_SETTINGS);
+  const [siteSettings, setSiteSettings] = useState(defaultSiteSettings);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const fetchSections = useCallback(async () => {
@@ -124,16 +129,19 @@ const AdminPageEditor = () => {
       .order("page")
       .order("display_order", { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      setSections(data);
-    } else {
-      setSections(SEED_PAGE_SECTIONS as PageSection[]);
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load page sections", description: error.message });
     }
+    setSections(data || []);
     setIsLoading(false);
-  }, []);
+  }, [toast]);
 
   const fetchSiteSettings = useCallback(async () => {
-    const { data } = await (supabase as any).from("site_settings").select("*");
+    const { data, error } = await (supabase as any).from("site_settings").select("*");
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load site settings", description: error.message });
+      return;
+    }
     if (data && data.length > 0) {
       const settingsMap: Record<string, string> = {};
       data.forEach((row: { key: string; value: string }) => {
@@ -143,10 +151,8 @@ const AdminPageEditor = () => {
         ...current,
         ...settingsMap,
       }));
-    } else {
-      setSiteSettings(SEED_SITE_SETTINGS);
-    }
-  }, []);
+    } else setSiteSettings(defaultSiteSettings);
+  }, [toast]);
 
   useEffect(() => {
     fetchSections();

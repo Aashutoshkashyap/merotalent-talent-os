@@ -31,17 +31,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  SEED_USERS,
-  SEED_INSTITUTES,
-  SEED_COMPANIES,
-  SEED_MENTORS,
-  SEED_JOBS,
-  SEED_COURSES,
-  SEED_COMPETITIONS,
-} from "@/lib/admin/admin-seed-fallbacks";
 import { getCachedOrFetch, invalidateCache } from "@/lib/cache/data-cache";
 
 interface AdminStats {
@@ -238,7 +229,7 @@ const AdminDashboard = () => {
   const fetchLiveData = async (forceRefresh: boolean = false) => {
     if (forceRefresh) {
       setIsSyncing(true);
-      invalidateCache("admin:dashboard");
+      invalidateCache("admin:dashboard:data");
     } else {
       setIsLoading(true);
     }
@@ -264,25 +255,55 @@ const AdminDashboard = () => {
             supabase.from("companies").select("id", { count: "exact", head: true }),
             supabase.from("mentors").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
             supabase.from("jobs").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
-            supabase.from("courses").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+            (supabase as any)
+              .from("courses")
+              .select("*", { count: "exact" })
+              .eq("is_partnered", true)
+              .is("deleted_at", null)
+              .order("display_order", { ascending: true })
+              .limit(10),
             supabase.from("institute_directory").select("id, payment_verified"),
           ]);
 
-          const usersData = (usersRes.data && usersRes.data.length > 0) ? usersRes.data : SEED_USERS;
-          const jobsData = (jobsRes.data && jobsRes.data.length > 0) ? jobsRes.data : SEED_JOBS;
-          const institutesData = (institutionsRes.data && institutionsRes.data.length > 0) ? institutionsRes.data : SEED_INSTITUTES;
-          const mentorsData = (mentorsRes.data && mentorsRes.data.length > 0) ? mentorsRes.data : SEED_MENTORS;
-          const coursesData = (coursesRes.data && coursesRes.data.length > 0) ? coursesRes.data : SEED_COURSES;
-          const competitionsData = (competitionsRes.data && competitionsRes.data.length > 0) ? competitionsRes.data : SEED_COMPETITIONS;
+          const usersData = usersRes.data ?? [];
+          const jobsData = jobsRes.data ?? [];
+          const institutesData = institutionsRes.data ?? [];
+          const mentorsData = mentorsRes.data ?? [];
+          const coursesData = coursesRes.data ?? [];
+          const competitionsData = competitionsRes.data ?? [];
+
+          const mentorUserIds = mentorsData
+            .map((mentor: any) => mentor.user_id)
+            .filter((userId: unknown): userId is string => typeof userId === "string");
+          const mentorProfilesRes = mentorUserIds.length > 0
+            ? await (supabase as any)
+              .from("profiles")
+              .select("user_id,full_name,avatar_url")
+              .in("user_id", mentorUserIds)
+            : { data: [], error: null };
+          const mentorProfileByUserId = new Map<string, any>(
+            (mentorProfilesRes.data ?? []).map((profile: any) => [profile.user_id, profile]),
+          );
+          const formattedMentors = mentorsData.map((mentor: any) => {
+            const profile = mentorProfileByUserId.get(mentor.user_id);
+            return {
+              ...mentor,
+              full_name: profile?.full_name ?? null,
+              avatar_url: profile?.avatar_url ?? mentor.profile_image_url ?? null,
+              years_experience: mentor.years_experience == null ? null : Number(mentor.years_experience),
+              rating: mentor.rating == null ? null : Number(mentor.rating),
+              hourly_rate: mentor.hourly_rate == null ? null : Number(mentor.hourly_rate),
+            };
+          });
 
           const calculatedStats: AdminStats = {
-            users: Math.max(usersRes.count ?? 0, usersData.length),
-            competitions: Math.max(competitionsRes.count ?? 0, competitionsData.length),
-            institutions: Math.max(institutionsRes.count ?? 0, institutesData.length),
-            companies: Math.max(companiesRes.count ?? 0, SEED_COMPANIES.length),
-            mentors: Math.max(mentorsRes.count ?? 0, mentorsData.length),
-            jobs: Math.max(jobsRes.count ?? 0, jobsData.length),
-            courses: Math.max(coursesRes.count ?? 0, coursesData.length),
+            users: usersRes.count ?? 0,
+            competitions: competitionsRes.count ?? 0,
+            institutions: institutionsRes.count ?? 0,
+            companies: companiesRes.count ?? 0,
+            mentors: mentorsRes.count ?? 0,
+            jobs: jobsRes.count ?? 0,
+            courses: coursesRes.count ?? 0,
           };
 
           const paymentByInstitute = new Map(
@@ -294,7 +315,7 @@ const AdminDashboard = () => {
 
           const formattedInstitutions = institutesData.map((institute) => ({
             ...institute,
-            payment_verified: paymentByInstitute.get(institute.id) ?? true,
+            payment_verified: paymentByInstitute.get(institute.id) ?? false,
           }));
 
           const results = [
@@ -306,6 +327,7 @@ const AdminDashboard = () => {
             jobsRes,
             coursesRes,
             instituteVerificationRes,
+            mentorProfilesRes,
           ];
           const failedRequests = results.filter((result) => result.error).length;
 
@@ -316,7 +338,7 @@ const AdminDashboard = () => {
             institutionsList: formattedInstitutions,
             competitionsList: competitionsData,
             coursesList: coursesData,
-            mentorsList: mentorsData,
+            mentorsList: formattedMentors,
             dataLoadState:
               failedRequests === 0
                 ? "ready"
@@ -339,7 +361,7 @@ const AdminDashboard = () => {
       setDataLoadState(payload.dataLoadState as any);
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
     } catch {
-      setDataLoadState("partial");
+      setDataLoadState("error");
     } finally {
       setIsLoading(false);
       setIsSyncing(false);
@@ -359,8 +381,8 @@ const AdminDashboard = () => {
       tone: "bg-[#071a3d]/10 text-[#071a3d]",
     },
     {
-      label: "Learning Programs",
-      description: "Manage LMS courses and curricula",
+      label: "Partner Courses",
+      description: "Manage approved listings and redirect links",
       icon: BookOpen,
       href: "/admin/lms",
       tone: "bg-[#0f766e]/10 text-[#0f766e]",
@@ -405,8 +427,8 @@ const AdminDashboard = () => {
       href: "/admin/mentors",
     },
     {
-      title: "Publish learning updates",
-      subtitle: `${stats.courses} courses in the workspace`,
+      title: "Review partner courses",
+      subtitle: `${stats.courses} directory listings`,
       progress: 34,
       icon: BookOpen,
       href: "/admin/lms",
@@ -642,12 +664,12 @@ const AdminDashboard = () => {
         )}
       />
 
-      {/* 5. LMS COURSES CAROUSEL */}
+      {/* 5. PARTNER COURSE DIRECTORY */}
       <ModuleCarouselSection
-        title="Learning & LMS Courses"
-        subtitle="Skill development courses and masterclasses"
+        title="Partner Course Directory"
+        subtitle="Approved course listings that redirect to learn.merotalent.com"
         viewMoreLink="/admin/lms"
-        viewMoreLabel="View More Courses"
+        viewMoreLabel="Manage Partner Courses"
         icon={BookOpen}
         items={coursesList}
         isLoading={isLoading}
@@ -657,15 +679,15 @@ const AdminDashboard = () => {
             <div>
               <h3 className="font-semibold text-sm text-[#0f172a] line-clamp-1">{course.title}</h3>
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                {course.description || "Master new industry skills with self-paced modules and quizzes."}
+                {course.description || "Approved partner course listing."}
               </p>
             </div>
             <div className="pt-2 border-t flex items-center justify-between text-xs">
               <Badge variant="outline" className="text-[10px] bg-[#f1f5f9]">
-                {course.level || "Beginner"}
+                {course.category || "Course"}
               </Badge>
               <span className="font-semibold text-[#071a3d]">
-                {course.price ? `NPR ${course.price}` : "Free Course"}
+                {course.partner_name || "Partner listing"}
               </span>
             </div>
           </div>
@@ -686,22 +708,31 @@ const AdminDashboard = () => {
           <div className="h-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm hover:border-[#071a3d]/40 transition space-y-3 flex flex-col justify-between">
             <div className="flex items-center gap-3">
               <Avatar>
+                {mentor.avatar_url && (
+                  <AvatarImage src={mentor.avatar_url} alt={mentor.full_name || "Mentor profile"} />
+                )}
                 <AvatarFallback className="bg-emerald-700 text-white font-bold">
-                  {(mentor.full_name || "M").charAt(0).toUpperCase()}
+                  {(mentor.full_name || "?").charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm text-[#0f172a] truncate">{mentor.full_name || "Mentor Profile"}</h3>
-                <p className="text-xs text-muted-foreground truncate">{mentor.years_experience || 5} years experience</p>
+                <h3 className="font-semibold text-sm text-[#0f172a] truncate">{mentor.full_name || "Name unavailable"}</h3>
+                <p className="text-xs text-muted-foreground truncate">
+                  {mentor.years_experience == null
+                    ? "Experience not provided"
+                    : `${mentor.years_experience} ${mentor.years_experience === 1 ? "year" : "years"} experience`}
+                </p>
               </div>
             </div>
             <div className="pt-2 border-t flex items-center justify-between text-xs">
               <span className="flex items-center gap-1 font-semibold">
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                {mentor.rating || 4.9}
+                {mentor.rating == null ? "Not rated" : mentor.rating.toLocaleString()}
               </span>
               <span className="font-bold text-[#071a3d]">
-                NPR {mentor.hourly_rate || 1500}/hr
+                {mentor.hourly_rate == null
+                  ? "Rate not provided"
+                  : `NPR ${mentor.hourly_rate.toLocaleString()}/hr`}
               </span>
             </div>
           </div>

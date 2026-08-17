@@ -35,7 +35,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Calendar, Users, Trophy, Loader2, Sparkles, Pencil, Trash2 } from "lucide-react";
 import { generateCompetitionDetails } from "@/lib/ai/ai-generator";
-import { SEED_COMPETITIONS } from "@/lib/admin/admin-seed-fallbacks";
 
 interface Competition {
   id: string;
@@ -79,16 +78,15 @@ const AdminCompetitions = () => {
   }, []);
 
   const fetchCompetitions = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("competitions")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (data && data.length > 0) {
-      setCompetitions(data);
-    } else {
-      setCompetitions(SEED_COMPETITIONS);
+    if (error) {
+      toast({ variant: "destructive", title: "Unable to load competitions", description: error.message });
     }
+    setCompetitions(data || []);
     setIsLoading(false);
   };
 

@@ -24,10 +24,6 @@ import {
 import { Search, MoreHorizontal, RefreshCw, Shield, UserRoundCog } from "lucide-react";
 import { OperationsPage } from "./OperationsUI";
 
-import {
-  SEED_USERS,
-} from "@/lib/admin/admin-seed-fallbacks";
-
 interface User {
   id: string;
   user_id: string;
@@ -66,9 +62,7 @@ const AdminUsers = () => {
       }));
 
       setUsers(usersWithRoles);
-    } else {
-      setUsers(SEED_USERS.map((user) => ({ ...user, roles: [user.role] })));
-    }
+    } else setUsers([]);
     setIsLoading(false);
   };
 

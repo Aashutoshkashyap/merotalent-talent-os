@@ -733,7 +733,7 @@ const resources = {
   "featured-items": {
     resource: "featured-items",
     table: "featured_items",
-    select: "id,entity_type,entity_id,placement,priority,start_date,end_date,is_active,metadata,created_by,created_at,updated_at,deleted_at",
+    select: "id,entity_type,entity_id,title,placement,priority,start_date,end_date,is_active,metadata,created_by,created_at,updated_at,deleted_at",
     sortColumns: ["priority", "start_date", "created_at", "updated_at"],
     defaultSort: "priority",
     filters: {
@@ -750,6 +750,7 @@ const resources = {
         values: ["college", "mentor", "course", "job", "event"],
       }),
       entity_id: uuid({ create: true, update: true, requiredOnCreate: true }),
+      title: text({ create: true, update: true, nullable: true, maxLength: 240 }),
       placement: text({ create: true, update: true, requiredOnCreate: true, maxLength: 80 }),
       priority: { kind: "integer", create: true, update: true, min: 0 },
       start_date: timestamp({ create: true, update: true, nullable: true }),
