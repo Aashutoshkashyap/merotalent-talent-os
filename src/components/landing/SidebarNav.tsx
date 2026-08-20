@@ -39,7 +39,6 @@ export interface NavItem {
 const DEFAULT_ROLES: RoleOption[] = [
   { id: "talent", label: "Talent", icon: Sparkles },
   { id: "mentor", label: "Mentor", icon: UserCheck },
-  { id: "recruiter", label: "Recruiter", icon: Building2 },
 ];
 
 const TALENT_NAV_ITEMS: NavItem[] = [

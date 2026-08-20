@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
   Bell,
+  Bookmark,
   BriefcaseBusiness,
   Building2,
   CalendarDays,
@@ -20,7 +21,15 @@ import { Link } from "react-router-dom";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudentActivity } from "@/hooks/useStudentActivity";
+import { getBookmarkedJobIds, getLoggedActivities, type LoggedActivity } from "@/lib/activityLogger";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const surface =
   "rounded-[24px] border border-[#f0e2d7] bg-white shadow-[0_18px_55px_rgba(69,42,21,0.065)]";
@@ -90,6 +99,16 @@ const Dashboard = () => {
   const firstName = profile?.full_name?.split(" ")[0] || "Talent";
   const now = useMemo(() => new Date(), []);
 
+  // Real bookmarked job IDs from localStorage
+  const [bookmarkedJobIds, setBookmarkedJobIds] = useState<string[]>([]);
+  const [clickLogs, setClickLogs] = useState<LoggedActivity[]>([]);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<number | null>(null);
+
+  useEffect(() => {
+    setBookmarkedJobIds(getBookmarkedJobIds());
+    setClickLogs(getLoggedActivities());
+  }, []);
+
   const activities = useMemo<ActivityItem[]>(() => {
     const rows: ActivityItem[] = [
       ...collegeApplications.map((application) => ({
@@ -130,11 +149,28 @@ const Dashboard = () => {
         scheduledAt: booking.scheduledStart,
         href: "/dashboard/sessions",
       })),
+      // Include real click logs (last 3) as recent activity
+      ...clickLogs.slice(0, 3).map((log) => ({
+        id: log.id,
+        kind: log.kind === "competition" ? ("event" as const) : (log.kind as ActivityKind),
+        title: log.title,
+        detail: log.detail,
+        status: log.status,
+        occurredAt: log.occurredAt,
+        href: log.href,
+      })),
     ];
-    return rows.sort(
-      (left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),
-    );
-  }, [collegeApplications, eventRegistrations, jobApplications, mentorBookings]);
+    // De-duplicate by id, keep most recent
+    const seen = new Set<string>();
+    const deduped: ActivityItem[] = [];
+    for (const item of rows.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        deduped.push(item);
+      }
+    }
+    return deduped;
+  }, [collegeApplications, eventRegistrations, jobApplications, mentorBookings, clickLogs]);
 
   const upcoming = useMemo(
     () => activities
@@ -151,10 +187,61 @@ const Dashboard = () => {
     .filter((booking) => new Date(booking.scheduledStart).getTime() >= now.getTime() && ["pending", "confirmed"].includes(booking.status))
     .sort((left, right) => new Date(left.scheduledStart).getTime() - new Date(right.scheduledStart).getTime())[0];
   const uniqueMentors = new Set(mentorBookings.map((booking) => booking.mentorId)).size;
-  const weekAhead = upcoming.filter((item) => {
-    const scheduled = new Date(item.scheduledAt!).getTime();
-    return scheduled <= now.getTime() + 7 * 86_400_000;
-  });
+  const weekAhead = useMemo(() => {
+    const items = upcoming.filter((item) => {
+      const scheduled = new Date(item.scheduledAt!).getTime();
+      return scheduled <= now.getTime() + 7 * 86_400_000;
+    });
+    // Also include bookmarked jobs from click logs in next 7 days
+    const bookmarkedInWeek = clickLogs
+      .filter((l) => l.status === "bookmarked" && l.kind === "job")
+      .slice(0, 3)
+      .map((l) => ({
+        id: l.id,
+        kind: "job" as ActivityKind,
+        title: l.title,
+        detail: l.detail,
+        status: "bookmarked",
+        occurredAt: l.occurredAt,
+        scheduledAt: l.occurredAt,
+        href: l.href,
+      }));
+    return [...items, ...bookmarkedInWeek];
+  }, [upcoming, now, clickLogs]);
+
+  // Compute calendar dot dates (days with events/bookings/bookmarked jobs)
+  const calendarDotDates = useMemo(() => {
+    const dots = new Set<number>();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+
+    const addIfCurrentMonth = (dateStr: string | null | undefined) => {
+      if (!dateStr) return;
+      const d = new Date(dateStr);
+      if (!Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
+        dots.add(d.getDate());
+      }
+    };
+
+    // Event dates
+    eventRegistrations.forEach((reg) => {
+      addIfCurrentMonth(reg.eventStart);
+      addIfCurrentMonth(reg.eventEnd);
+    });
+
+    // Mentor booking dates
+    mentorBookings.forEach((booking) => {
+      addIfCurrentMonth(booking.scheduledStart);
+    });
+
+    // Bookmarked job dates (from click log)
+    clickLogs
+      .filter((l) => l.status === "bookmarked")
+      .forEach((l) => addIfCurrentMonth(l.occurredAt));
+
+    return dots;
+  }, [eventRegistrations, mentorBookings, clickLogs, now]);
+
   const profileFields = [
     profile?.full_name,
     profile?.phone,
@@ -278,18 +365,93 @@ const Dashboard = () => {
               <Link to={upcoming[0].href} className="mt-auto pt-4 text-xs font-black text-[#c2410c]">View details →</Link>
             </div>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center py-6 text-center"><CalendarDays className="h-8 w-8 text-[#c9c1c6]" /><p className="mt-3 text-sm font-bold">Nothing upcoming</p><p className="mt-1 text-xs text-[#9a939c]">Book a mentor or register for an event.</p></div>
+            <div className="flex flex-1 flex-col space-y-3 pt-1">
+              <div className="bg-[#fff7f2] p-4 rounded-2xl border border-[#ffe4d1]">
+                {/* Month & Year Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-[#ffd9bd]">
+                  <span className="text-xs font-black text-[#19172b] uppercase tracking-wider">
+                    {now.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </span>
+                  <span className="bg-[#c2410c] text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    Today: {now.getDate()} {now.toLocaleDateString("en-US", { month: "short" })}
+                  </span>
+                </div>
+
+                {/* Days of Week Header */}
+                <div className="grid grid-cols-7 text-center text-[10px] font-bold text-[#9a939c] pt-3 pb-1">
+                  <span>Su</span>
+                  <span>Mo</span>
+                  <span>Tu</span>
+                  <span>We</span>
+                  <span>Th</span>
+                  <span>Fr</span>
+                  <span>Sa</span>
+                </div>
+
+                {/* Calendar Grid Days */}
+                <div className="grid grid-cols-7 text-center text-xs font-bold gap-y-0.5">
+                  {(() => {
+                    const year = now.getFullYear();
+                    const month = now.getMonth();
+                    const firstDay = new Date(year, month, 1).getDay();
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const todayDate = now.getDate();
+
+                    const blanks = Array.from({ length: firstDay });
+                    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+                    return [
+                      ...blanks.map((_, i) => <span key={`blank-${i}`} className="p-1.5" />),
+                      ...days.map((day) => {
+                        const isToday = day === todayDate;
+                        const hasDot = calendarDotDates.has(day);
+                        return (
+                          <button
+                            key={`day-${day}`}
+                            type="button"
+                            onClick={() => setSelectedCalendarDate(day)}
+                            className={`relative flex flex-col items-center p-1 rounded-xl transition-all cursor-pointer hover:scale-105 ${
+                              isToday
+                                ? "bg-[#c2410c] text-white shadow-sm font-extrabold"
+                                : hasDot
+                                  ? "text-[#19172b] font-extrabold hover:bg-[#fff0e4]"
+                                  : "text-slate-600 hover:bg-[#fff0e4]"
+                            }`}
+                          >
+                            {day}
+                            {hasDot && !isToday && (
+                              <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-[#c2410c]" />
+                            )}
+                            {hasDot && isToday && (
+                              <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-white" />
+                            )}
+                          </button>
+                        );
+                      }),
+                    ];
+                  })()}
+                </div>
+              </div>
+              <p className="text-[11px] text-center text-[#9a939c] font-semibold">
+                Monthly Schedule View · Click any date to view events
+              </p>
+            </div>
           )}
         </div>
 
         <div className={`${surface} p-5`}>
-          <div className="flex items-start justify-between"><div><p className="text-base font-black">Next 7 days</p><p className="text-xs text-[#9a939c]">Events and mentor sessions</p></div><span className="rounded-xl bg-[#fff1e5] px-2.5 py-1.5 text-xs font-black text-[#c2410c]">{weekAhead.length}</span></div>
+          <div className="flex items-start justify-between"><div><p className="text-base font-black">Next 7 days</p><p className="text-xs text-[#9a939c]">Mentors, jobs bookmarked, events</p></div><span className="rounded-xl bg-[#fff1e5] px-2.5 py-1.5 text-xs font-black text-[#c2410c]">{weekAhead.length}</span></div>
           <div className="my-4 border-t border-dashed border-[#dcd0c7]" />
           <div className="space-y-3">
-            {weekAhead.slice(0, 3).map((item) => (
+            {weekAhead.slice(0, 5).map((item) => (
               <Link key={item.id} to={item.href} className="flex items-start gap-3">
-                <span className={`mt-1 h-2.5 w-2.5 rounded-full ${item.kind === "mentor" ? "bg-[#c2410c]" : "bg-[#68c9ad]"}`} />
-                <div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold">{item.title}</p><p className="mt-0.5 text-xs text-[#9b949d]">{formatDate(item.scheduledAt || null, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</p></div>
+                <span className={`mt-1 h-2.5 w-2.5 rounded-full ${item.kind === "mentor" ? "bg-[#c2410c]" : item.status === "bookmarked" ? "bg-[#f59e0b]" : "bg-[#68c9ad]"}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-extrabold">{item.title}</p>
+                  <p className="mt-0.5 text-xs text-[#9b949d]">
+                    {item.status === "bookmarked" ? `Bookmarked · ${formatDate(item.occurredAt)}` : formatDate(item.scheduledAt || null, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                  </p>
+                </div>
               </Link>
             ))}
             {weekAhead.length === 0 && <p className="py-6 text-center text-xs text-[#9a939c]">No scheduled activity this week.</p>}
@@ -316,7 +478,23 @@ const Dashboard = () => {
         </div>
 
         <div className="relative overflow-hidden rounded-[24px] bg-[#c2410c] p-5 text-white shadow-[0_20px_44px_rgba(249,115,22,0.23)] xl:col-span-2">
-          <div className="relative flex h-full min-h-56 flex-col"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><GraduationCap className="h-5 w-5" /></div><p className="mt-5 text-xl font-black leading-tight">Explore partner courses.</p><p className="mt-2 text-xs leading-5 text-white/75">Compare published partner listings before continuing to the learning platform.</p><Link to="/courses" className="mt-auto flex items-center justify-between rounded-2xl bg-[#19172b] px-3.5 py-3 text-xs font-bold">Browse courses <ArrowRight className="h-4 w-4" /></Link></div>
+          <div className="relative flex h-full min-h-56 flex-col">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <p className="mt-5 text-xl font-black leading-tight">Explore partner courses.</p>
+            <p className="mt-2 text-xs leading-5 text-white/75">
+              Continue to our dedicated partner learning platform for certified courses and skill tracks.
+            </p>
+            <a
+              href="https://learn.merotalent.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-auto flex items-center justify-between rounded-2xl bg-[#19172b] px-3.5 py-3 text-xs font-bold hover:bg-[#071a3d] transition-colors"
+            >
+              Browse courses <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:col-span-3 xl:grid-cols-1">
@@ -327,14 +505,106 @@ const Dashboard = () => {
 
       <motion.section variants={rise} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { icon: Building2, value: collegeApplications.length, label: "College applications", href: "/institutes", color: "bg-blue-50 text-blue-700" },
-          { icon: BriefcaseBusiness, value: jobApplications.length, label: "Job applications", href: "/dashboard/jobs", color: "bg-[#f3ecff] text-[#7758b5]" },
-          { icon: CalendarDays, value: eventRegistrations.length, label: "Event registrations", href: "/events", color: "bg-[#e8faf4] text-[#30987c]" },
-          { icon: Clock3, value: mentorBookings.length, label: "Mentor sessions", href: "/dashboard/sessions", color: "bg-[#fff0e4] text-[#c2410c]" },
+          {
+            icon: Building2,
+            value: collegeApplications.length + clickLogs.filter((l) => l.kind === "college" && l.status === "applied").length,
+            label: "College applications",
+            href: "/institutes",
+            color: "bg-blue-50 text-blue-700",
+          },
+          {
+            icon: BriefcaseBusiness,
+            value: jobApplications.length + bookmarkedJobIds.length,
+            label: `Job applications (${bookmarkedJobIds.length} bookmarked)`,
+            href: "/dashboard/jobs",
+            color: "bg-[#f3ecff] text-[#7758b5]",
+          },
+          {
+            icon: CalendarDays,
+            value: eventRegistrations.length + clickLogs.filter((l) => l.kind === "competition" || l.kind === "event").length,
+            label: "Event registrations",
+            href: "/events",
+            color: "bg-[#e8faf4] text-[#30987c]",
+          },
+          {
+            icon: Clock3,
+            value: mentorBookings.length,
+            label: "Mentor sessions",
+            href: "/dashboard/sessions",
+            color: "bg-[#fff0e4] text-[#c2410c]",
+          },
         ].map((stat) => (
-          <Link key={stat.label} to={stat.href} className={`${surface} group flex items-center gap-3 p-3.5 transition-transform hover:-translate-y-1`}><div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${stat.color}`}><stat.icon className="h-4 w-4" /></div><div className="min-w-0"><p className="text-lg font-black leading-none">{stat.value}</p><p className="mt-1 truncate text-xs font-semibold text-[#98919a]">{stat.label}</p></div></Link>
+          <Link key={stat.label} to={stat.href} className={`${surface} group flex items-center gap-3 p-3.5 transition-transform hover:-translate-y-1`}>
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${stat.color}`}>
+              <stat.icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg font-black leading-none">{stat.value}</p>
+              <p className="mt-1 truncate text-xs font-semibold text-[#98919a]">{stat.label}</p>
+            </div>
+          </Link>
         ))}
       </motion.section>
+
+      {/* Date Details Modal Dialog */}
+      <Dialog open={selectedCalendarDate !== null} onOpenChange={(open) => { if (!open) setSelectedCalendarDate(null); }}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Schedule for {now.toLocaleDateString("en-US", { month: "long" })} {selectedCalendarDate}, {now.getFullYear()}
+            </DialogTitle>
+            <DialogDescription>
+              Upcoming events, mentor sessions, job interviews, or bookmarks on this date.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 max-h-72 overflow-y-auto">
+            {(() => {
+              if (selectedCalendarDate === null) return null;
+              const year = now.getFullYear();
+              const month = now.getMonth();
+
+              const dayItems = activities.filter((item) => {
+                const dateStr = item.scheduledAt || item.occurredAt;
+                if (!dateStr) return false;
+                const d = new Date(dateStr);
+                return d.getFullYear() === year && d.getMonth() === month && d.getDate() === selectedCalendarDate;
+              });
+
+              if (dayItems.length === 0) {
+                return (
+                  <div className="text-center py-6 text-slate-400 text-xs">
+                    <CalendarDays className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                    <p className="font-bold text-slate-700">No scheduled items on this date</p>
+                    <p className="mt-1 text-slate-400">Explore jobs, competitions, or book a mentor session to add items to your calendar.</p>
+                  </div>
+                );
+              }
+
+              return dayItems.map((item) => {
+                const Icon = activityIcon[item.kind];
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.href}
+                    onClick={() => setSelectedCalendarDate(null)}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-orange-50/50 transition-colors"
+                  >
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${activityTone[item.kind]}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-900 truncate">{item.title}</p>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">{item.detail} · {formatStatus(item.status)}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </Link>
+                );
+              });
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };

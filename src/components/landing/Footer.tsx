@@ -13,17 +13,15 @@ export default function Footer() {
     <footer className="w-full bg-white border-t border-slate-200/80 pt-12 pb-8 px-6 sm:px-10 lg:px-16 font-sans">
       <div className="w-full max-w-[1400px] mx-auto flex flex-col justify-between min-h-[420px]">
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-14 pb-12 border-b border-slate-200/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 pb-12 border-b border-slate-200/80">
           {/* Column 1: Brand Logo, Description & Social Icons */}
           <div className="flex flex-col gap-5">
             <Link to="/" className="inline-flex items-center gap-2.5">
-              {settings.logo_url ? (
-                <img src={settings.logo_url} alt="Logo" className="h-9 w-auto object-contain rounded-lg" />
-              ) : (
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#071a3d] text-white">
-                  <Sparkles className="h-5 w-5" />
-                </span>
-              )}
+              <img
+                src={settings.logo_url || "/logo.png"}
+                alt={settings.site_title || "MeroTalent Logo"}
+                className="h-9 w-auto object-contain rounded-lg"
+              />
               <span className="text-2xl font-black text-slate-900 tracking-tight">
                 {settings.site_title ? settings.site_title.split(" - ")[0] : (
                   <>Mero<span className="text-[#071a3d]">Talent</span></>
@@ -76,85 +74,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 2: Quick Links */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-base font-extrabold text-slate-900 tracking-tight">
-              Quick Links
-            </h4>
-            <ul className="flex flex-col gap-3">
-              <li>
-                <Link to="/" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  About MeroTalent
-                </Link>
-              </li>
-              <li>
-                <Link to="/courses" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Engineering Courses
-                </Link>
-              </li>
-              <li>
-                <Link to="/competitions" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  IOE & KU Hackathons
-                </Link>
-              </li>
-              <li>
-                <Link to="/mentorship" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Engineering Mentorship
-                </Link>
-              </li>
-              <li>
-                <Link to="/institutes" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Partner Colleges
-                </Link>
-              </li>
-              <li>
-                <Link to="/jobs" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Nepal Tech Jobs
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: Our Services */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-base font-extrabold text-slate-900 tracking-tight">
-              Our Services
-            </h4>
-            <ul className="flex flex-col gap-3">
-              <li>
-                <Link to="/jobs" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Engineering Sourcing
-                </Link>
-              </li>
-              <li>
-                <Link to="/competitions" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Hackathon Hosting
-                </Link>
-              </li>
-              <li>
-                <Link to="/competitions" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  AI Skill Assessment
-                </Link>
-              </li>
-              <li>
-                <Link to="/mentorship" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Technical Mentorship
-                </Link>
-              </li>
-              <li>
-                <Link to="/institutes" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Campus Recruitment
-                </Link>
-              </li>
-              <li>
-                <Link to="/courses" className="text-sm font-semibold text-slate-600 hover:text-[#0073e6] transition-colors">
-                  Code Evaluation
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4: Contact Us */}
+          {/* Column 2: Contact Us */}
           <div className="flex flex-col gap-4">
             <h4 className="text-base font-extrabold text-slate-900 tracking-tight">
               Contact Us

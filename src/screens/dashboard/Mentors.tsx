@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Star, Clock, Calendar, MessageCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import BookingDialog from "@/components/mentors/BookingDialog";
 import { useToast } from "@/hooks/use-toast";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
@@ -43,6 +50,7 @@ const Mentors = () => {
     hourlyRate: number;
     expertise: string[];
   } | null>(null);
+  const [selectedDetailMentor, setSelectedDetailMentor] = useState<Mentor | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   useEffect(() => {
@@ -182,18 +190,17 @@ const Mentors = () => {
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  className="flex-1 rounded-xl border-[#e9dad0] bg-white hover:border-[#c2410c]/50 hover:bg-[#fff7f0]"
-                  onClick={() => handleMessage(mentor.profile?.full_name || "Mentor")}
+                  className="flex-1 rounded-xl text-xs font-bold border-[#e9dad0] bg-white hover:bg-slate-50"
+                  onClick={() => setSelectedDetailMentor(mentor)}
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Message
+                  View Profile
                 </Button>
                 <Button 
                   variant="hero" 
-                  className={`flex-1 ${dashboardPrimaryButton}`}
+                  className={`flex-1 text-xs font-extrabold ${dashboardPrimaryButton}`}
                   onClick={() => handleBookSession(mentor)}
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
+                  <Calendar className="w-3.5 h-3.5 mr-1.5" />
                   Book
                 </Button>
               </div>
@@ -207,6 +214,86 @@ const Mentors = () => {
           <p className="text-muted-foreground">No mentors found matching your search.</p>
         </div>
       )}
+
+      {/* Individual Mentor Profile Detail Modal Dialog */}
+      <Dialog open={selectedDetailMentor !== null} onOpenChange={(open) => { if (!open) setSelectedDetailMentor(null); }}>
+        <DialogContent className="max-w-md rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+          {selectedDetailMentor && (
+            <div className="space-y-5">
+              <DialogHeader>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-[22px] bg-[#fff0e4] text-xl font-black text-[#e76509] ring-4 ring-[#fff8f2]">
+                    {selectedDetailMentor.profile?.full_name?.charAt(0) || "M"}
+                  </div>
+                  <div>
+                    <DialogTitle className="text-xl font-black text-slate-900">
+                      {selectedDetailMentor.profile?.full_name}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs font-semibold text-slate-500 mt-0.5">
+                      {selectedDetailMentor.profile?.location || "Nepal"} · {selectedDetailMentor.years_experience || 3}+ Years Experience
+                    </DialogDescription>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-yellow-600 mt-1">
+                      <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
+                      <span>{selectedDetailMentor.rating || 5.0}</span>
+                      <span className="text-slate-400 font-medium">({selectedDetailMentor.total_sessions || 12} sessions completed)</span>
+                    </div>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="bg-[#fff7f2] p-3.5 rounded-2xl border border-[#ffe4d1] flex items-center justify-between text-xs font-bold">
+                <span className="text-[#9a939c]">1-on-1 Session Rate</span>
+                <span className="text-[#c2410c] text-sm font-black">NPR {selectedDetailMentor.hourly_rate || 1000} / hr</span>
+              </div>
+
+              {selectedDetailMentor.profile?.bio && (
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider mb-1">About & Background</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{selectedDetailMentor.profile.bio}</p>
+                </div>
+              )}
+
+              {selectedDetailMentor.expertise.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider mb-2">Areas of Expertise</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedDetailMentor.expertise.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="text-xs font-semibold">{skill}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 border-t flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 rounded-xl text-xs font-bold"
+                  onClick={() => {
+                    const name = selectedDetailMentor.profile?.full_name || "Mentor";
+                    setSelectedDetailMentor(null);
+                    handleMessage(name);
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Message
+                </Button>
+                <Button 
+                  variant="hero" 
+                  className={`flex-1 text-xs font-extrabold ${dashboardPrimaryButton}`}
+                  onClick={() => {
+                    const m = selectedDetailMentor;
+                    setSelectedDetailMentor(null);
+                    handleBookSession(m);
+                  }}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Book Session
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Booking Dialog */}
       {selectedMentor && (

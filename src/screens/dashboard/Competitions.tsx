@@ -43,12 +43,13 @@ interface Competition {
 }
 
 const Competitions = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
+  const [selectedDetailCompetition, setSelectedDetailCompetition] = useState<Competition | null>(null);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -237,11 +238,21 @@ const Competitions = () => {
                       </div>
                     </div>
 
-                    <div className="flex gap-2 pt-2">
-                      {comp.is_team_based && (
-                        <Badge variant="outline" className="text-xs">Team</Badge>
-                      )}
-                      <Badge variant="outline" className="text-xs capitalize">{comp.type}</Badge>
+                    <div className="flex gap-2 pt-2 items-center justify-between">
+                      <div className="flex gap-1.5">
+                        {comp.is_team_based && (
+                          <Badge variant="outline" className="text-xs">Team</Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs capitalize">{comp.type}</Badge>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-xs font-bold"
+                        onClick={() => setSelectedDetailCompetition(comp)}
+                      >
+                        View Details
+                      </Button>
                     </div>
 
                     <Button 
@@ -279,15 +290,26 @@ const Competitions = () => {
                     <CardTitle>{comp.title}</CardTitle>
                     <CardDescription>{comp.description}</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Button 
-                      className={`w-full ${dashboardPrimaryButton}`}
-                      variant="hero"
-                      onClick={() => openRegistration(comp)}
-                      disabled={registeredIds.has(comp.id)}
-                    >
-                      {registeredIds.has(comp.id) ? "Already Registered" : "Register Now"}
-                    </Button>
+                  <CardContent className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-1/2 rounded-xl text-xs font-bold"
+                        onClick={() => setSelectedDetailCompetition(comp)}
+                      >
+                        View Details
+                      </Button>
+                      <Button 
+                        className={`w-1/2 rounded-xl ${dashboardPrimaryButton}`}
+                        variant="hero"
+                        size="sm"
+                        onClick={() => openRegistration(comp)}
+                        disabled={registeredIds.has(comp.id)}
+                      >
+                        {registeredIds.has(comp.id) ? "Registered" : "Register"}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -308,10 +330,18 @@ const Competitions = () => {
                       </div>
                       <CardDescription>{comp.description}</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex items-center justify-between">
                       <div className="text-sm text-muted-foreground">
                         Starts: {comp.start_date ? new Date(comp.start_date).toLocaleDateString() : "TBD"}
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-xs font-bold"
+                        onClick={() => setSelectedDetailCompetition(comp)}
+                      >
+                        View Details
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
@@ -328,6 +358,71 @@ const Competitions = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Individual Competition Detail Modal Dialog */}
+      <Dialog open={selectedDetailCompetition !== null} onOpenChange={(open) => { if (!open) setSelectedDetailCompetition(null); }}>
+        <DialogContent className="max-w-xl rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+          {selectedDetailCompetition && (
+            <div className="space-y-5">
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="capitalize text-xs font-bold">
+                    {selectedDetailCompetition.type || "Competition"}
+                  </Badge>
+                  <Badge className="bg-primary/10 text-primary capitalize text-xs font-bold">
+                    {selectedDetailCompetition.status}
+                  </Badge>
+                </div>
+                <DialogTitle className="text-xl font-black text-slate-900 mt-2">
+                  {selectedDetailCompetition.title}
+                </DialogTitle>
+                <DialogDescription className="text-xs font-semibold text-slate-500 mt-1">
+                  Format: {selectedDetailCompetition.format || "Online"} · {selectedDetailCompetition.is_team_based ? "Team Participation" : "Individual Event"}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-3 gap-2 bg-[#fff7f2] p-3 rounded-2xl border border-[#ffe3d1] text-center text-xs font-bold">
+                <div>
+                  <span className="text-[10px] uppercase text-[#9a939c] block font-extrabold">Prize Pool</span>
+                  <span className="text-[#c2410c]">{selectedDetailCompetition.prize_pool || "Recognition Award"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase text-[#9a939c] block font-extrabold">Start Date</span>
+                  <span className="text-slate-800">
+                    {selectedDetailCompetition.start_date ? new Date(selectedDetailCompetition.start_date).toLocaleDateString() : "TBD"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase text-[#9a939c] block font-extrabold">Spots Limit</span>
+                  <span className="text-slate-800">{selectedDetailCompetition.max_participants || "Open"}</span>
+                </div>
+              </div>
+
+              {selectedDetailCompetition.description && (
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider mb-1">Competition Details</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{selectedDetailCompetition.description}</p>
+                </div>
+              )}
+
+              <div className="pt-4 border-t flex justify-end gap-3">
+                <Button
+                  className={`rounded-xl px-6 ${registeredIds.has(selectedDetailCompetition.id) ? "" : dashboardPrimaryButton}`}
+                  variant={registeredIds.has(selectedDetailCompetition.id) ? "outline" : "hero"}
+                  disabled={registeredIds.has(selectedDetailCompetition.id)}
+                  onClick={() => {
+                    const comp = selectedDetailCompetition;
+                    setSelectedDetailCompetition(null);
+                    openRegistration(comp);
+                  }}
+                >
+                  {registeredIds.has(selectedDetailCompetition.id) ? "Already Registered" : "Register / Participate Now"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Registration Dialog */}
       <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
         <DialogContent>
@@ -340,15 +435,38 @@ const Competitions = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Full Name *</Label>
+                <Input value={user?.user_metadata?.full_name || profile?.full_name || ""} disabled className="bg-slate-100 text-xs h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Email *</Label>
+                <Input value={user?.email || ""} disabled className="bg-slate-100 text-xs h-9" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Contact Phone (Nepal) *</Label>
+                <Input placeholder="e.g. 9801010802" className="text-xs h-9" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Address *</Label>
+                <Input placeholder="e.g. Lalitpur, Nepal" className="text-xs h-9" required />
+              </div>
+            </div>
+
             {selectedCompetition?.is_team_based && (
               <div className="space-y-2">
-                <Label htmlFor="team-name">Team Name</Label>
+                <Label htmlFor="team-name" className="text-xs font-bold">Team Name *</Label>
                 <Input
                   id="team-name"
                   placeholder="Enter your team name"
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
+                  className="text-xs h-9"
                 />
               </div>
             )}

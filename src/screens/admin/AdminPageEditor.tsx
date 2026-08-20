@@ -121,9 +121,76 @@ const AdminPageEditor = () => {
   const [siteSettings, setSiteSettings] = useState(defaultSiteSettings);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
+const STANDARD_HOME_SECTIONS = [
+  {
+    page: "home",
+    section_key: "trust_strip",
+    title: "Trusted Partners",
+    subtitle: "TRUSTED BY LEADING BRANDS & INSTITUTIONS",
+    body: "",
+    display_order: 4,
+    is_visible: true,
+  },
+  {
+    page: "home",
+    section_key: "competitions_section",
+    title: "Competitions",
+    subtitle: "Discover current competitions published by MeroTalent partners.",
+    body: "",
+    display_order: 5,
+    is_visible: true,
+  },
+  {
+    page: "home",
+    section_key: "internships_section",
+    title: "Internships",
+    subtitle: "Explore approved internships from active employers.",
+    body: "",
+    display_order: 6,
+    is_visible: true,
+  },
+  {
+    page: "home",
+    section_key: "jobs_section",
+    title: "Jobs",
+    subtitle: "Explore approved roles from active employers.",
+    body: "",
+    display_order: 7,
+    is_visible: true,
+  },
+  {
+    page: "home",
+    section_key: "about_us",
+    title: "Why MeroTalent?",
+    subtitle: "Built for students, academic institutions, and industry leaders",
+    body: "Comprehensive OS offering verified profiles, mentor sessions, university admissions, and hiring pipelines.",
+    display_order: 8,
+    is_visible: true,
+  },
+  {
+    page: "home",
+    section_key: "testimonials",
+    title: "Success Stories",
+    subtitle: "What our community says",
+    body: "",
+    display_order: 9,
+    is_visible: true,
+  },
+  {
+    page: "home",
+    section_key: "faq",
+    title: "Frequently asked questions",
+    subtitle: "MeroTalent FAQ",
+    body: "Can't find the answer to your question? Connect with our helpdesk team directly.",
+    display_order: 10,
+    is_visible: true,
+  },
+];
+
   const fetchSections = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
+    const db = supabase as any;
+    const { data, error } = await db
       .from("page_sections")
       .select("*")
       .order("page")
@@ -131,8 +198,27 @@ const AdminPageEditor = () => {
 
     if (error) {
       toast({ variant: "destructive", title: "Unable to load page sections", description: error.message });
+      setSections([]);
+    } else {
+      const fetched: PageSection[] = data || [];
+      const existingKeys = new Set(fetched.map((s) => s.section_key));
+      const missing = STANDARD_HOME_SECTIONS.filter((s) => !existingKeys.has(s.section_key));
+
+      if (missing.length > 0) {
+        const { error: seedError } = await db.from("page_sections").insert(missing);
+        if (!seedError) {
+          const { data: reloaded } = await db
+            .from("page_sections")
+            .select("*")
+            .order("page")
+            .order("display_order", { ascending: true });
+          setSections(reloaded || fetched);
+          setIsLoading(false);
+          return;
+        }
+      }
+      setSections(fetched);
     }
-    setSections(data || []);
     setIsLoading(false);
   }, [toast]);
 

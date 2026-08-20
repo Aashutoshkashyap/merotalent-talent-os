@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Briefcase, Sparkles } from "lucide-react";
+import { Search, Briefcase, Sparkles, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderNavProps {
   onSearch?: (query: string) => void;
@@ -41,6 +42,31 @@ export const LoginButton: React.FC<{ label?: string; onClick?: () => void }> = (
   label = "Login",
   onClick,
 }) => {
+  const { user, roles } = useAuth();
+  
+  if (user) {
+    const targetDashboard = roles.includes("admin") || roles.includes("super_admin")
+      ? "/admin"
+      : roles.includes("institution")
+        ? "/institute"
+        : roles.includes("company")
+          ? "/company"
+          : roles.includes("mentor")
+            ? "/mentor"
+            : "/dashboard";
+
+    return (
+      <Link
+        to={targetDashboard}
+        onClick={onClick}
+        className="inline-flex items-center gap-2 px-5 py-[9px] bg-[#0073e6] hover:bg-[#0062c4] text-white font-bold text-[13px] rounded-full shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-500/20 active:scale-95"
+      >
+        <UserIcon className="w-4 h-4" />
+        <span>Dashboard</span>
+      </Link>
+    );
+  }
+
   return (
     <Link
       to="/login"
@@ -80,11 +106,9 @@ export default function HeaderNav({
       <div className="flex items-center gap-4 flex-shrink-0">
         <Link
           to={brandHref}
-          className="flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 hover:opacity-90 transition-opacity"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#0073e6] text-white">
-            <Sparkles className="h-4 w-4" />
-          </span>
+          <img src="/logo.png" alt="MeroTalent Logo" className="h-8 w-auto object-contain rounded-lg" />
           <span className="text-xl font-black text-slate-900 tracking-tight">
             Mero<span className="text-[#0073e6]">Talent</span>
           </span>
@@ -96,10 +120,9 @@ export default function HeaderNav({
         <SearchBar onSearch={onSearch} />
       </div>
 
-      {/* Right: Actions (Login & For Business) */}
+      {/* Right: Actions */}
       <div className="flex items-center gap-3 flex-shrink-0">
         <LoginButton />
-        <BusinessButton />
       </div>
     </header>
   );

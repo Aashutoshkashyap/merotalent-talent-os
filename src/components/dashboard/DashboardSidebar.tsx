@@ -18,7 +18,10 @@ import {
   Sparkles,
   MessageCircle,
   ChevronRight,
+  ShieldAlert,
   UserCog,
+  Activity,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -51,17 +54,21 @@ const DashboardSidebar = ({
 
   const mainNavItems = [
     { icon: Home, label: "Dashboard", href: "/dashboard" },
+    { icon: Building2, label: "Colleges & Institutes", href: "/dashboard/colleges" },
+    { icon: Briefcase, label: "Jobs", href: "/dashboard/jobs" },
     { icon: Trophy, label: "Competitions", href: "/dashboard/competitions" },
     { icon: Users, label: "Mentors", href: "/dashboard/mentors" },
-    { icon: GraduationCap, label: "Partner Courses", href: "/courses" },
-    { icon: Briefcase, label: "Jobs", href: "/dashboard/jobs" },
+    { icon: GraduationCap, label: "Partner Courses", href: "https://learn.merotalent.com", isExternal: true },
   ];
 
   const userNavItems = [
     { icon: User, label: "My Profile", href: "/dashboard/profile" },
     { icon: Calendar, label: "My Sessions", href: "/dashboard/sessions" },
+    { icon: Activity, label: "My Activity", href: "/dashboard/activity" },
+    { icon: CreditCard, label: "Payments", href: "/dashboard/payments" },
     { icon: MessageCircle, label: "Messages", href: "/dashboard/messages" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+    { icon: ShieldAlert, label: "Request Access / Discard", href: "/request-access" },
   ];
 
   const adminNavItems = [{ icon: Shield, label: "Admin Panel", href: "/admin" }];
@@ -72,40 +79,27 @@ const DashboardSidebar = ({
     ...(isInstitution ? [{ icon: Building2, label: "Institute Dashboard", href: "/institute" }] : []),
   ];
 
-  const NavItem = ({ icon: Icon, label, href }: { icon: typeof Home; label: string; href: string }) => {
+  const NavItem = ({
+    icon: Icon,
+    label,
+    href,
+    isExternal,
+  }: {
+    icon: typeof Home;
+    label: string;
+    href: string;
+    isExternal?: boolean;
+  }) => {
     const isActive =
-      href === "/dashboard" || href === "/admin"
+      !isExternal &&
+      (href === "/dashboard" || href === "/admin"
         ? location.pathname === href
-        : location.pathname === href || location.pathname.startsWith(`${href}/`);
+        : location.pathname === href || location.pathname.startsWith(`${href}/`));
 
-    const navLink = (
-      <Link
-        to={`${href}${previewSuffix}`}
-        onClick={onNavigate}
-        aria-label={label}
-        aria-current={isActive ? "page" : undefined}
-        className={cn(
-          "group relative isolate flex min-h-12 items-center rounded-xl text-base font-semibold outline-none transition-[color,background-color,box-shadow,transform] duration-200 focus-visible:ring-2 focus-visible:ring-[#93c5fd] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071a3d] active:scale-[0.97]",
-          compact ? "w-12 justify-center" : "gap-3 px-3 py-2",
-          isActive
-            ? "text-white"
-            : "text-[#c5d8f3] hover:bg-white/10 hover:text-white"
-        )}
-      >
-        {isActive && (
-          <motion.span
-            layoutId={`talent-active-nav-item-${motionScope}`}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-0 rounded-xl bg-[#2563eb] shadow-[0_10px_24px_rgba(37,99,235,0.36)] ring-1 ring-inset ring-[#60a5fa]/60"
-            transition={
-              reduceMotion
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 430, damping: 34, mass: 0.75 }
-            }
-          />
-        )}
+    const content = (
+      <>
         <Icon
-          className="relative z-10 h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110"
+          className="relative z-10 h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105"
           strokeWidth={isActive ? 2.3 : 1.9}
         />
         {!compact && (
@@ -114,6 +108,24 @@ const DashboardSidebar = ({
             <ChevronRight className="relative z-10 h-4 w-4 opacity-0 transition-opacity duration-200 group-hover:opacity-70" />
           </>
         )}
+      </>
+    );
+
+    const className = cn(
+      "group relative flex min-h-12 items-center rounded-xl text-base font-semibold outline-none transition-colors duration-150 active:scale-[0.98]",
+      compact ? "w-12 justify-center" : "gap-3 px-3 py-2",
+      isActive
+        ? "bg-[#2563eb] text-white shadow-md font-bold"
+        : "text-[#c5d8f3] hover:bg-white/10 hover:text-white"
+    );
+
+    const navLink = isExternal ? (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className} aria-label={label}>
+        {content}
+      </a>
+    ) : (
+      <Link to={`${href}${previewSuffix}`} onClick={onNavigate} aria-label={label} aria-current={isActive ? "page" : undefined} className={className}>
+        {content}
       </Link>
     );
 

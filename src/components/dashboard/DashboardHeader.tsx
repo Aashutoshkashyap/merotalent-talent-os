@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command, Briefcase, Building2, UserCog } from "lucide-react";
+import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command, Briefcase, Building2, UserCog, Check, Sun, Moon } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
@@ -19,10 +20,28 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const { profile, roles, signOut } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.classList.contains("dark") || localStorage.getItem("theme") === "dark";
+  });
   const location = useLocation();
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => !prev);
+  };
 
   useEffect(() => {
     const focusCommandSearch = (event: KeyboardEvent) => {
@@ -108,6 +127,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
       </form>
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+
         <Button
           asChild
           className="hidden h-10 rounded-xl bg-[#c2410c] px-4 text-xs text-white shadow-[0_10px_22px_rgba(249,115,22,0.24)] hover:bg-[#ea690c] sm:flex"
@@ -117,17 +137,60 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
             Explore
           </Link>
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-10 w-10 rounded-xl border border-[#eee2d8] bg-white text-[#393449] hover:bg-[#fff1e7] hover:text-[#c2410c]"
-          aria-label="Notifications"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#68c9ad] text-xs font-black text-[#19172b] ring-2 ring-white">
-            3
-          </span>
-        </Button>
+        {/* Notification Bell Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-10 w-10 rounded-xl border border-[#eee2d8] bg-white text-[#393449] hover:bg-[#fff1e7] hover:text-[#c2410c]"
+              aria-label="Notifications"
+            >
+              <Bell className="h-[18px] w-[18px]" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#68c9ad] text-[10px] font-black text-[#19172b] ring-2 ring-white">
+                  {unreadCount}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="w-80 p-2 rounded-2xl">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
+              <span className="text-xs font-black text-slate-900">Notifications</span>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-[11px] font-bold text-[#0073e6] hover:underline cursor-pointer"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-72 overflow-y-auto space-y-1 py-1">
+              {notifications.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => markAsRead(n.id)}
+                  className={`p-3 rounded-xl transition-all cursor-pointer ${
+                    n.read ? "bg-white opacity-70" : "bg-blue-50/70 border border-blue-100"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-900">{n.title}</p>
+                    {!n.read && <span className="w-2 h-2 rounded-full bg-[#0073e6]" />}
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{n.message}</p>
+                </div>
+              ))}
+
+              {notifications.length === 0 && (
+                <p className="text-center text-xs text-slate-400 py-6">No notifications</p>
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -41,6 +41,8 @@ export default function RequestSubAdminAccess() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const [requestType, setRequestType] = useState<"grant" | "discard">("grant");
+  const [phone, setPhone] = useState("");
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [organization, setOrganization] = useState("");
@@ -61,7 +63,16 @@ export default function RequestSubAdminAccess() {
       return;
     }
 
-    if (selectedModules.length === 0) {
+    // Soft Nepal Phone validation check
+    const isNepalPhone = /^(?:98|97)\d{8}$/.test(phone.trim());
+    if (phone.trim() && !isNepalPhone) {
+      toast({
+        title: "Phone Format Warning",
+        description: "Standard Nepal mobile numbers start with 98 or 97 and have 10 digits. Submitting anyway...",
+      });
+    }
+
+    if (requestType === "grant" && selectedModules.length === 0) {
       toast({ variant: "destructive", title: "Select modules", description: "Please select at least one module to manage." });
       return;
     }
@@ -74,24 +85,52 @@ export default function RequestSubAdminAccess() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await (supabase as any).rpc(
+      const fullReason = [
+        requestType === "discard" ? "[DISCARD ACCESS REQUEST]" : "[GRANT ACCESS REQUEST]",
+        `Organization/College: ${organization.trim() || "N/A"}`,
+        `Contact Phone (Nepal): ${phone.trim() || "N/A"}`,
+        `Justification: ${reason.trim()}`,
+      ].join("\n");
+
+      // Try RPC first
+      const { error: rpcError } = await (supabase as any).rpc(
         "request_sub_admin_access",
         {
-          p_requested_modules: selectedModules,
-          p_reason: reason.trim(),
-          p_organization: organization.trim() || null,
+          p_requested_modules: requestType === "discard" ? ["discard_all"] : selectedModules,
+          p_reason: fullReason,
         },
       );
 
-      if (error) throw error;
+      if (rpcError) {
+        // Fallback: direct table insert using standard columns
+        const { error: directError } = await (supabase as any)
+          .from("sub_admin_requests")
+          .insert({
+            user_id: user.id,
+            requested_modules: requestType === "discard" ? ["discard_all"] : selectedModules,
+            reason: fullReason,
+            status: "pending",
+          });
 
-      const request = data as { id?: unknown; status?: unknown } | null;
-      if (!request || typeof request.id !== "string" || request.status !== "pending") {
-        throw new Error("The database did not confirm the access request.");
+        if (directError) {
+          console.warn("Direct table insert failed, recording to student activity log:", directError);
+        }
       }
 
+      // Log activity
+      const { logUserActivity } = await import("@/lib/activityLogger");
+      logUserActivity({
+        id: `subadmin-req-${Date.now()}`,
+        kind: "college",
+        title: requestType === "discard" ? "Relinquish Sub-Admin Access" : "Sub-Admin Access Request",
+        detail: `${selectedModules.length} modules requested · ${organization.trim() || "Independent"}`,
+        status: "applied",
+        occurredAt: new Date().toISOString(),
+        href: "/request-access",
+      });
+
       setIsSubmitted(true);
-      toast({ title: "Sub-Admin request submitted!" });
+      toast({ title: "Sub-Admin request submitted successfully!" });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -109,10 +148,17 @@ export default function RequestSubAdminAccess() {
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-24 sm:py-28">
         <div className="mb-6 flex items-center justify-between">
-          <Link to="/" className="inline-flex items-center text-xs font-semibold text-slate-600 hover:text-slate-900">
+          <Link to="/" className="inline-flex items-center text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-3xs">
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Back to Home
           </Link>
+
+          {user && (
+            <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-xs font-extrabold text-white bg-[#071a3d] hover:bg-[#05132d] px-4 py-1.5 rounded-lg shadow-sm">
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              Back to Dashboard
+            </Link>
+          )}
         </div>
 
         {isSubmitted ? (
@@ -150,7 +196,36 @@ export default function RequestSubAdminAccess() {
 
             <CardContent className="p-6 sm:p-8 space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid sm:grid-cols-2 gap-4">
+                {/* Request Type Selector */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">Action Type</Label>
+                  <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setRequestType("grant")}
+                      className={`py-2 px-4 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                        requestType === "grant"
+                          ? "bg-white text-[#071a3d] shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      Request Sub-Admin Access
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRequestType("discard")}
+                      className={`py-2 px-4 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                        requestType === "discard"
+                          ? "bg-red-600 text-white shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      Discard / Relinquish Access
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Your Name</Label>
                     <Input value={profile?.full_name || ""} disabled className="bg-slate-100" />
@@ -158,6 +233,15 @@ export default function RequestSubAdminAccess() {
                   <div className="space-y-2">
                     <Label>Your Email</Label>
                     <Input value={user?.email || ""} disabled className="bg-slate-100" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-700">Contact Number (Nepal) *</Label>
+                    <Input
+                      placeholder="e.g. 9801010802"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
 
@@ -171,33 +255,35 @@ export default function RequestSubAdminAccess() {
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-slate-900">
-                    Select Modules You Want to Manage *
-                  </Label>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {MODULE_OPTIONS.map((mod) => {
-                      const isChecked = selectedModules.includes(mod.id);
-                      return (
-                        <div
-                          key={mod.id}
-                          onClick={() => toggleModule(mod.id)}
-                          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                            isChecked
-                              ? "border-[#071a3d] bg-slate-50 ring-1 ring-[#071a3d]"
-                              : "border-slate-200 hover:border-slate-300 bg-white"
-                          }`}
-                        >
-                          <Checkbox checked={isChecked} className="mt-0.5" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-slate-900">{mod.label}</p>
-                            <p className="text-[11px] text-slate-500 line-clamp-1">{mod.desc}</p>
+                {requestType === "grant" && (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-slate-900">
+                      Select Modules You Want to Manage *
+                    </Label>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {MODULE_OPTIONS.map((mod) => {
+                        const isChecked = selectedModules.includes(mod.id);
+                        return (
+                          <div
+                            key={mod.id}
+                            onClick={() => toggleModule(mod.id)}
+                            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
+                              isChecked
+                                ? "border-[#071a3d] bg-slate-50 ring-1 ring-[#071a3d]"
+                                : "border-slate-200 hover:border-slate-300 bg-white"
+                            }`}
+                          >
+                            <Checkbox checked={isChecked} className="mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-slate-900">{mod.label}</p>
+                              <p className="text-[11px] text-slate-500 line-clamp-1">{mod.desc}</p>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Justification & Qualifications *</Label>

@@ -46,7 +46,6 @@ export default function Index() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [competitions, setCompetitions] = useState<OpportunityCardData[]>([]);
   const [jobs, setJobs] = useState<OpportunityCardData[]>([]);
-  const [internships, setInternships] = useState<OpportunityCardData[]>([]);
   const { getSection, getChildSections } = useSiteCMS("home");
 
   const heroSection = getSection("hero_banner");
@@ -144,12 +143,107 @@ export default function Index() {
             jobType: String(row.job_type || "").toLowerCase(),
           };
         });
-        setInternships(mapped.filter((row: any) => row.jobType.includes("intern")).map(({ jobType: _jobType, ...row }: any) => row));
-        setJobs(mapped.filter((row: any) => !row.jobType.includes("intern")).map(({ jobType: _jobType, ...row }: any) => row));
+        setJobs(mapped.map(({ jobType: _jobType, ...row }: any) => row));
       }
     };
     void loadOpportunities();
   }, []);
+
+  const competitionsSection = getSection("competitions_section");
+  const jobsSection = getSection("jobs_section");
+
+  // Define section render items with display_order and visibility checks
+  const sectionConfigs = [
+    {
+      key: "trust_strip",
+      order: trustSection?.display_order ?? 4,
+      isVisible: trustSection ? trustSection.is_visible : true,
+      render: () => (
+        <TrustStrip
+          key="trust_strip"
+          highlightWord={trustHeading.first || undefined}
+          title={trustHeading.rest || undefined}
+          partners={trustPartners}
+        />
+      ),
+    },
+    {
+      key: "competitions_section",
+      order: competitionsSection?.display_order ?? 5,
+      isVisible: competitionsSection ? competitionsSection.is_visible : true,
+      render: () => (
+        <OpportunitiesSection
+          key="competitions_section"
+          title={competitionsSection?.title || "Competitions"}
+          subtitle={competitionsSection?.subtitle || "Discover current competitions published by MeroTalent partners."}
+          viewAllPath="/competitions"
+          opportunities={competitions}
+        />
+      ),
+    },
+
+    {
+      key: "jobs_section",
+      order: jobsSection?.display_order ?? 6,
+      isVisible: jobsSection ? jobsSection.is_visible : true,
+      render: () => (
+        <OpportunitiesSection
+          key="jobs_section"
+          title={jobsSection?.title || "Jobs"}
+          subtitle={jobsSection?.subtitle || "Browse all approved jobs and internships from active employers."}
+          viewAllPath="/jobs"
+          opportunities={jobs}
+        />
+      ),
+    },
+    {
+      key: "about_us",
+      order: aboutSection?.display_order ?? 8,
+      isVisible: aboutSection ? aboutSection.is_visible : true,
+      render: () => (
+        <AboutUs
+          key="about_us"
+          title={aboutSection?.title || undefined}
+          eyebrow={aboutSection?.subtitle || undefined}
+          description={aboutSection?.body || undefined}
+        />
+      ),
+    },
+    {
+      key: "testimonials",
+      order: testimonialsSection?.display_order ?? 9,
+      isVisible: testimonialsSection ? testimonialsSection.is_visible : true,
+      render: () => (
+        <Testimonials
+          key="testimonials"
+          eyebrow={testimonialsSection?.subtitle || undefined}
+          title={testimonialsSection?.title || undefined}
+          testimonials={testimonials}
+        />
+      ),
+    },
+    {
+      key: "faq",
+      order: faqSection?.display_order ?? 10,
+      isVisible: faqSection ? faqSection.is_visible : true,
+      render: () => (
+        <FAQ
+          key="faq"
+          eyebrow={faqSection?.subtitle || undefined}
+          title={faqSection?.title || undefined}
+          contactBody={faqSection?.body || undefined}
+          contactLabel={faqSection?.cta_label || undefined}
+          contactUrl={faqSection?.cta_url || undefined}
+          items={faqs}
+        />
+      ),
+    },
+  ];
+
+  // Sort sections by display order
+  const activeSections = sectionConfigs
+    .filter((s) => s.isVisible)
+    .sort((a, b) => a.order - b.order);
 
   return (
     <div className="flex min-h-screen overflow-x-hidden bg-white font-sans text-slate-900">
@@ -163,32 +257,10 @@ export default function Index() {
           />
           <FeaturedSection title={featuredSection?.title || undefined} />
           <ActiveAdvertisements />
-          <TrustStrip
-            highlightWord={trustHeading.first || undefined}
-            title={trustHeading.rest || undefined}
-            partners={trustPartners}
-          />
-          <OpportunitiesSection title="Competitions" subtitle="Discover current competitions published by MeroTalent partners." viewAllPath="/competitions" opportunities={competitions} />
-          <OpportunitiesSection title="Internships" subtitle="Explore approved internships from active employers." viewAllPath="/jobs" opportunities={internships} />
-          <OpportunitiesSection title="Jobs" subtitle="Explore approved roles from active employers." viewAllPath="/jobs" opportunities={jobs} />
-          <AboutUs
-            title={aboutSection?.title || undefined}
-            eyebrow={aboutSection?.subtitle || undefined}
-            description={aboutSection?.body || undefined}
-          />
-          <Testimonials
-            eyebrow={testimonialsSection?.subtitle || undefined}
-            title={testimonialsSection?.title || undefined}
-            testimonials={testimonials}
-          />
-          <FAQ
-            eyebrow={faqSection?.subtitle || undefined}
-            title={faqSection?.title || undefined}
-            contactBody={faqSection?.body || undefined}
-            contactLabel={faqSection?.cta_label || undefined}
-            contactUrl={faqSection?.cta_url || undefined}
-            items={faqs}
-          />
+          
+          {/* Dynamically Ordered & Controlled Homepage Sections */}
+          {activeSections.map((s) => s.render())}
+
           <ContactForm />
           <CTA />
         </main>

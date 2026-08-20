@@ -140,8 +140,11 @@ const Signup = () => {
     >
       <div className="space-y-6">
         <div className="space-y-3">
-          <Label className="text-xs font-bold text-slate-700">I&apos;m joining as</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-bold text-slate-700">Account Type</Label>
+            <span className="text-[11px] font-semibold text-slate-400">Default: Student</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {accountTypes.map((type) => {
               const Icon = type.icon;
               const active = accountType === type.value;
@@ -151,20 +154,17 @@ const Signup = () => {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setAccountType(type.value)}
-                  className={`group rounded-[15px] border p-3 text-left transition-all duration-200 cursor-pointer ${
+                  className={`group rounded-[15px] border p-2.5 text-left transition-all duration-200 cursor-pointer ${
                     active
-                      ? "border-[#0073e6] bg-blue-50/50 shadow-sm"
+                      ? "border-[#0073e6] bg-blue-50/50 shadow-xs"
                       : "border-slate-200 bg-white hover:border-[#0073e6]/50"
                   }`}
                 >
-                  <span className="flex items-center gap-2 text-xs sm:text-sm font-semibold">
-                    <span className={`grid h-7 w-7 place-items-center rounded-[9px] flex-shrink-0 ${active ? "bg-[#0073e6] text-white" : "bg-slate-50 text-slate-400"}`}>
+                  <span className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                    <span className={`grid h-6 w-6 place-items-center rounded-[8px] flex-shrink-0 ${active ? "bg-[#0073e6] text-white" : "bg-slate-100 text-slate-500"}`}>
                       <Icon className="h-3.5 w-3.5" />
                     </span>
-                    <span className="truncate text-slate-800">{type.label}</span>
-                  </span>
-                  <span className="mt-1.5 block pl-9 text-[10px] sm:text-xs leading-normal text-slate-400 font-semibold line-clamp-1">
-                    {type.description}
+                    <span className="truncate">{type.label}</span>
                   </span>
                 </button>
               );

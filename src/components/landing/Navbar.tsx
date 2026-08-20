@@ -8,10 +8,11 @@ import {
   Menu,
   Search,
   Sparkles,
+  User as UserIcon,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import { useAuth } from "@/contexts/AuthContext";
 import { useSiteCMS } from "@/hooks/useSiteCMS";
 
 const navLinks = [
@@ -27,6 +28,7 @@ const Navbar = () => {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { settings } = useSiteCMS();
+  const { user, roles } = useAuth();
 
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -35,17 +37,25 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
+  const targetDashboard = roles.includes("admin") || roles.includes("super_admin")
+    ? "/admin"
+    : roles.includes("institution")
+      ? "/institute"
+      : roles.includes("company")
+        ? "/company"
+        : roles.includes("mentor")
+          ? "/mentor"
+          : "/dashboard";
+
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#eadfd9] bg-[#fffdfb]/92 backdrop-blur-xl">
       <div className="flex h-[68px] w-full items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Merotalent home">
-          {settings.logo_url ? (
-            <img src={settings.logo_url} alt={settings.site_title || "Logo"} className="h-9 w-auto object-contain rounded-lg" />
-          ) : (
-            <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#071a3d] text-white shadow-lg shadow-[#071a3d]/20">
-              <Sparkles className="h-4 w-4" />
-            </span>
-          )}
+          <img
+            src={settings.logo_url || "/logo.png"}
+            alt={settings.site_title || "MeroTalent Logo"}
+            className="h-9 w-auto object-contain rounded-lg"
+          />
           <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
             {settings.site_title ? settings.site_title.split(" - ")[0] : (
               <>Mero<span className="text-[#071a3d]">talent</span></>
@@ -77,21 +87,32 @@ const Navbar = () => {
         </div>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <Button variant="ghost" className="h-10 rounded-xl px-3 text-xs font-semibold" asChild>
-            <Link to="/company">
-              For organizations
-              <ChevronDown className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-          <Button variant="ghost" className="h-10 rounded-xl text-xs font-semibold" asChild>
-            <Link to="/login">Log in</Link>
-          </Button>
-          <Button className="h-10 rounded-xl bg-[#c2410c] px-4 text-xs shadow-md shadow-[#c2410c]/15 hover:bg-[#9a3412]" asChild>
-            <Link to="/signup">
-              Join free
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
+          {user ? (
+            <Button className="h-10 rounded-xl bg-[#071a3d] px-5 text-xs font-bold text-white shadow-md hover:bg-[#05132d]" asChild>
+              <Link to={targetDashboard} className="flex items-center gap-2">
+                <UserIcon className="h-4 w-4" />
+                Go to Dashboard
+              </Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" className="h-10 rounded-xl px-3 text-xs font-semibold" asChild>
+                <Link to="/company">
+                  For organizations
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+              <Button variant="ghost" className="h-10 rounded-xl text-xs font-semibold" asChild>
+                <Link to="/login">Log in</Link>
+              </Button>
+              <Button className="h-10 rounded-xl bg-[#c2410c] px-4 text-xs shadow-md shadow-[#c2410c]/15 hover:bg-[#9a3412]" asChild>
+                <Link to="/signup">
+                  Join free
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <button

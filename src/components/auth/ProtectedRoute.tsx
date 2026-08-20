@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, roles, isLoading, isAdmin } = useAuth();
+  const { user, profile, roles, isLoading, isAdmin } = useAuth();
   const location = useLocation();
   const isLocalUiPreview =
     process.env.NODE_ENV === "development" &&
@@ -26,6 +26,10 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
   if (!user && !isLocalUiPreview) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if ((profile as any)?.account_status === "pending_approval" && location.pathname !== "/pending-approval") {
+    return <Navigate to="/pending-approval" replace />;
   }
 
   // If this is the admin route and user is not admin, redirect to dashboard

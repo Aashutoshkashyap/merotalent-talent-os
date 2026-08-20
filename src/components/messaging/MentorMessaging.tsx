@@ -16,6 +16,7 @@ import {
   CheckCheck,
   Search,
   MoreVertical,
+  Image as ImageIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -387,7 +388,15 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                               : "bg-muted rounded-bl-sm"
                           }`}
                         >
-                          <p className="text-sm">{message.content}</p>
+                          {message.content.startsWith("[IMAGE]:") ? (
+                            <img
+                              src={message.content.replace("[IMAGE]:", "")}
+                              alt="Attachment"
+                              className="max-w-xs rounded-xl border my-1 object-cover"
+                            />
+                          ) : (
+                            <p className="text-sm">{message.content}</p>
+                          )}
                           <div
                             className={`flex items-center gap-1 mt-1 text-xs ${
                               isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
@@ -409,8 +418,66 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
             </CardContent>
 
             {/* Message Input */}
-            <div className="p-4 border-t">
-              <div className="flex gap-2">
+            <div className="p-4 border-t space-y-2">
+              <div className="flex gap-2 items-center">
+                <label className="cursor-pointer p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !user || !selectedConversation) return;
+
+                      setIsSending(true);
+                      try {
+                        const fileExt = file.name.split(".").pop();
+                        const filePath = `${selectedConversation.id}/${Date.now()}.${fileExt}`;
+                        const { error: uploadErr } = await supabase.storage
+                          .from("chat-attachments")
+                          .upload(filePath, file);
+
+                        let imageUrl = "";
+                        if (!uploadErr) {
+                          const { data: publicUrlData } = supabase.storage
+                            .from("chat-attachments")
+                            .getPublicUrl(filePath);
+                          imageUrl = publicUrlData.publicUrl;
+                        } else {
+                          // Fallback data URL
+                          imageUrl = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result as string);
+                            reader.readAsDataURL(file);
+                          });
+                        }
+
+                        const receiverId = asMentor
+                          ? selectedConversation.mentee_id
+                          : selectedConversation.mentor.user_id;
+
+                        await supabase.from("messages").insert({
+                          conversation_id: selectedConversation.id,
+                          sender_id: user.id,
+                          receiver_id: receiverId,
+                          content: `[IMAGE]:${imageUrl}`,
+                        });
+
+                        // Refresh messages so image shows up immediately
+                        await fetchMessages(selectedConversation.id);
+                        toast({ title: "Image sent!" });
+                      } catch {
+                        toast({ variant: "destructive", title: "Image upload failed" });
+                      } finally {
+                        setIsSending(false);
+                        // Reset the file input so the same file can be re-selected
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  <ImageIcon className="w-5 h-5" />
+                </label>
+
                 <Input
                   placeholder="Type a message..."
                   value={newMessage}

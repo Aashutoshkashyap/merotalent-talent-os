@@ -17,6 +17,13 @@ import {
   Search,
   Zap,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import JobApplicationWizard from "@/components/jobs/JobApplicationWizard";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import {
@@ -27,6 +34,11 @@ import {
   dashboardTabs,
 } from "@/components/dashboard/dashboardStyles";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getBookmarkedJobIds,
+  toggleBookmarkJobId,
+  logUserActivity,
+} from "@/lib/activityLogger";
 
 interface Job {
   id: string;
@@ -82,9 +94,10 @@ const Jobs = () => {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
+  const [savedJobs, setSavedJobs] = useState<Set<string>>(() => new Set(getBookmarkedJobIds()));
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedDetailJob, setSelectedDetailJob] = useState<Job | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -131,12 +144,30 @@ const Jobs = () => {
   const appliedJobsList = jobs.filter((job) => appliedJobIds.has(job.id));
   const companyCount = new Set(jobs.map((job) => job.company)).size;
 
-  const toggleSaveJob = (jobId: string) => {
+  const toggleSaveJob = (job: Job) => {
+    const isNowSaved = toggleBookmarkJobId(job.id);
     setSavedJobs((current) => {
       const next = new Set(current);
-      if (next.has(jobId)) next.delete(jobId);
-      else next.add(jobId);
+      if (isNowSaved) next.add(job.id);
+      else next.delete(job.id);
       return next;
+    });
+
+    logUserActivity({
+      id: `job-${job.id}`,
+      kind: "job",
+      title: job.title,
+      detail: job.company,
+      status: isNowSaved ? "bookmarked" : "viewed",
+      occurredAt: new Date().toISOString(),
+      href: "/dashboard/jobs",
+    });
+
+    toast({
+      title: isNowSaved ? "Job Bookmarked!" : "Bookmark Removed",
+      description: isNowSaved
+        ? `${job.title} has been added to your bookmarks.`
+        : `${job.title} removed from bookmarks.`,
     });
   };
 
@@ -155,7 +186,7 @@ const Jobs = () => {
                   <Building2 className="h-3 w-3" /> {job.company}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => toggleSaveJob(job.id)} aria-label="Save job">
+              <Button variant="ghost" size="icon" onClick={() => toggleSaveJob(job)} aria-label="Save job">
                 {savedJobs.has(job.id) ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
               </Button>
             </div>
@@ -175,7 +206,15 @@ const Jobs = () => {
           <span className="flex items-center gap-1"><DollarSign className="h-4 w-4" />{job.salary}</span>
           <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{job.postedAt}</span>
         </div>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl text-xs font-bold"
+            onClick={() => setSelectedDetailJob(job)}
+          >
+            View Details
+          </Button>
           <Button
             variant="hero"
             size="sm"
@@ -230,6 +269,92 @@ const Jobs = () => {
         <TabsContent value="saved">{renderJobGrid(savedJobsList)}</TabsContent>
         <TabsContent value="applied">{renderJobGrid(appliedJobsList)}</TabsContent>
       </Tabs>
+
+      {/* Individual Job Detail Modal Dialog */}
+      <Dialog open={selectedDetailJob !== null} onOpenChange={(open) => { if (!open) setSelectedDetailJob(null); }}>
+        <DialogContent className="max-w-xl rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+          {selectedDetailJob && (
+            <div className="space-y-5">
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <Badge className="capitalize text-xs font-bold">{selectedDetailJob.type}</Badge>
+                  <Button variant="ghost" size="icon" onClick={() => toggleSaveJob(selectedDetailJob)}>
+                    {savedJobs.has(selectedDetailJob.id) ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
+                  </Button>
+                </div>
+                <DialogTitle className="text-xl font-black text-slate-900 mt-2">
+                  {selectedDetailJob.title}
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-4 text-xs font-semibold text-slate-500 mt-1">
+                  <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{selectedDetailJob.company}</span>
+                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-red-500" />{selectedDetailJob.location}</span>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs font-bold">
+                <div>
+                  <span className="text-[10px] uppercase text-slate-400 font-extrabold block">Salary</span>
+                  <span className="text-slate-900">{selectedDetailJob.salary}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase text-slate-400 font-extrabold block">Posted Date</span>
+                  <span className="text-slate-900">{selectedDetailJob.postedAt}</span>
+                </div>
+              </div>
+
+              {selectedDetailJob.description && (
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider mb-1">Position Overview</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{selectedDetailJob.description}</p>
+                </div>
+              )}
+
+              {selectedDetailJob.requirements.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider mb-2">Key Requirements</h4>
+                  <ul className="space-y-1.5 text-xs text-slate-700 font-medium">
+                    {selectedDetailJob.requirements.map((req, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-primary font-bold">•</span>
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {selectedDetailJob.skills.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider mb-2">Required Skills</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedDetailJob.skills.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 border-t flex justify-end gap-3">
+                <Button
+                  variant="hero"
+                  className={dashboardPrimaryButton}
+                  disabled={appliedJobIds.has(selectedDetailJob.id)}
+                  onClick={() => {
+                    const target = selectedDetailJob;
+                    setSelectedDetailJob(null);
+                    setSelectedJob(target);
+                    setIsWizardOpen(true);
+                  }}
+                >
+                  <Zap className="mr-1.5 h-4 w-4" />
+                  {appliedJobIds.has(selectedDetailJob.id) ? "Already Applied" : "Apply For Position"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {selectedJob && (
         <JobApplicationWizard
           isOpen={isWizardOpen}

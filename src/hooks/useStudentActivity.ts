@@ -94,10 +94,40 @@ const queryByIds = async (
   return (data || []) as Record<string, unknown>[];
 };
 
+const CACHE_KEY = "merotalent.student_activity_cache";
+const CACHE_TTL = 120000; // 2 minutes
+
+const getCachedActivityData = (userId: string): StudentActivityData | null => {
+  try {
+    const raw = localStorage.getItem(`${CACHE_KEY}_${userId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp < CACHE_TTL) {
+      return parsed.data;
+    }
+  } catch {}
+  return null;
+};
+
+const setCachedActivityData = (userId: string, data: StudentActivityData) => {
+  try {
+    localStorage.setItem(
+      `${CACHE_KEY}_${userId}`,
+      JSON.stringify({ timestamp: Date.now(), data })
+    );
+  } catch {}
+};
+
 export const useStudentActivity = () => {
   const { user } = useAuth();
-  const [data, setData] = useState<StudentActivityData>(emptyData);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<StudentActivityData>(() => {
+    if (!user) return emptyData;
+    return getCachedActivityData(user.id) || emptyData;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    if (!user) return false;
+    return !getCachedActivityData(user.id);
+  });
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -108,7 +138,15 @@ export const useStudentActivity = () => {
       return;
     }
 
-    setIsLoading(true);
+    // Check cache first for zero lag loading
+    const cached = getCachedActivityData(user.id);
+    if (cached) {
+      setData(cached);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
     setError(null);
     try {
       const [collegeResult, jobResult, eventResult, bookingResult] = await Promise.all([
@@ -179,7 +217,7 @@ export const useStudentActivity = () => {
       const serviceById = new Map(services.map((row) => [String(row.id), row]));
       const profileByUserId = new Map(mentorProfiles.map((row) => [String(row.user_id), row]));
 
-      setData({
+      const nextData: StudentActivityData = {
         collegeApplications: collegeRows.map((row) => {
           const institute = instituteById.get(String(row.institute_id));
           return {
@@ -245,7 +283,10 @@ export const useStudentActivity = () => {
             createdAt: String(row.created_at),
           };
         }),
-      });
+      };
+
+      setData(nextData);
+      setCachedActivityData(user.id, nextData);
     } catch (loadError) {
       setData(emptyData);
       setError(loadError instanceof Error ? loadError.message : "Student activity could not be loaded.");

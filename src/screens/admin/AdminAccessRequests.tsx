@@ -104,6 +104,12 @@ export default function AdminAccessRequests() {
         throw new Error("The database did not confirm the requested access decision.");
       }
 
+      // Update target profile account_status
+      await (supabase as any)
+        .from("profiles")
+        .update({ account_status: newStatus === "approved" ? "active" : "disabled" })
+        .eq("user_id", request.user_id);
+
       toast({
         title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
         description: newStatus === "approved"

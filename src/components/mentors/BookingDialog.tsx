@@ -347,9 +347,13 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
                 {fieldErrors.email?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.email[0]}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="booking-phone">Phone</Label>
-                <Input id="booking-phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+977 98XXXXXXXX" />
+                <Label htmlFor="booking-phone">Phone *</Label>
+                <Input id="booking-phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="e.g. 9801010802" />
                 {fieldErrors.phone?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.phone[0]}</p>}
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="booking-address">Address *</Label>
+                <Input id="booking-address" placeholder="e.g. Kathmandu, Nepal" value={notes} onChange={(event) => setNotes(event.target.value)} />
               </div>
             </div>
 

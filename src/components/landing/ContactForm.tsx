@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { MapPin, Phone, Mail } from "lucide-react";
+import { MapPin, Phone, Mail, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -10,11 +12,37 @@ export default function ContactForm() {
     subject: "",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Thank you ${formData.name}, your message has been sent successfully!`);
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from("contact_queries").insert({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        status: "pending",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Message Sent!",
+        description: `Thank you ${formData.name}, your inquiry has been received. Our team will contact you shortly.`,
+      });
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Submission Error",
+        description: error?.message || "Failed to submit query. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -152,9 +180,17 @@ export default function ContactForm() {
             <div className="flex items-center justify-center mt-3">
               <button
                 type="submit"
-                className="px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm rounded-full shadow-md hover:shadow-lg transition-all duration-200 hover:scale-102 active:scale-98"
+                disabled={isSubmitting}
+                className="px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm rounded-full shadow-md hover:shadow-lg transition-all duration-200 hover:scale-102 active:scale-98 disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                Send Message
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send Message"
+                )}
               </button>
             </div>
           </form>

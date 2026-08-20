@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Phone } from "lucide-react";
 
 export interface FAQItem {
   question: string;
@@ -76,13 +76,23 @@ export default function FAQ({
             <p className="text-xs sm:text-sm text-slate-500 font-semibold leading-relaxed">
               {contactBody}
             </p>
-            <div>
-              <a
-                href={contactUrl}
-                className="inline-flex items-center justify-center px-6 py-3 bg-[#0073e6] hover:bg-[#0062c4] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all active:scale-95"
-              >
-                {contactLabel}
-              </a>
+            <div className="flex flex-col gap-2 pt-2 border-t border-slate-200/60">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Direct Hotline</span>
+              <p className="text-xs sm:text-sm font-extrabold text-[#0073e6]">
+                Contact us at:
+              </p>
+              <div className="flex flex-col gap-2 mt-1">
+                {["9801010802", "9801010803", "9801010804", "9801010805"].map((phone) => (
+                  <a
+                    key={phone}
+                    href={`tel:${phone}`}
+                    className="inline-flex items-center gap-2.5 px-4 py-2 bg-white hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-300 rounded-xl text-xs sm:text-sm font-extrabold text-slate-700 hover:text-[#0073e6] shadow-3xs transition-all active:scale-98"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-[#0073e6]" />
+                    <span>{phone}</span>
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </div>

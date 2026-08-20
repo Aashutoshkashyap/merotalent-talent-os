@@ -16,6 +16,7 @@ import Login from "./screens/Login";
 import Signup from "./screens/Signup";
 import Onboarding from "./screens/Onboarding";
 import ResetPassword from "./screens/ResetPassword";
+import PendingApproval from "./screens/auth/PendingApproval";
 
 // Public Pages
 import CoursesPage from "./screens/courses/CoursesPage";
@@ -40,6 +41,10 @@ import Jobs from "./screens/dashboard/Jobs";
 import Sessions from "./screens/dashboard/Sessions";
 import Messages from "./screens/dashboard/Messages";
 import Settings from "./screens/dashboard/Settings";
+
+import Colleges from "./screens/dashboard/Colleges";
+import ActivityTracker from "./screens/dashboard/ActivityTracker";
+import Payments from "./screens/dashboard/Payments";
 
 // Admin Pages
 import AdminDashboard from "./screens/admin/AdminDashboard";
@@ -91,6 +96,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/pending-approval" element={<PendingApproval />} />
               <Route path="/onboarding" element={<Onboarding />} />
               
               {/* Public Landing Pages */}
@@ -115,11 +121,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               >
-              <Route index element={<Dashboard />} />
+                <Route index element={<Dashboard />} />
+                <Route path="colleges" element={<Colleges />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="competitions" element={<Competitions />} />
                 <Route path="mentors" element={<Mentors />} />
                 <Route path="jobs" element={<Jobs />} />
+                <Route path="activity" element={<ActivityTracker />} />
+                <Route path="payments" element={<Payments />} />
                 <Route path="sessions" element={<Sessions />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="settings" element={<Settings />} />
