@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { listAdminResource } from "@/lib/admin/admin-client";
 import { ShieldCheck, CheckCircle2, XCircle, Clock, Loader2, UserCheck, Inbox } from "lucide-react";
 
 interface AccessRequest {
@@ -56,21 +57,24 @@ export default function AdminAccessRequests() {
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("sub_admin_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (!error && data) {
+    try {
+      let data: AccessRequest[] = [];
+      try {
+        data = await listAdminResource<AccessRequest>("access-requests");
+      } catch {
+        const { data: dbData } = await (supabase as any)
+          .from("sub_admin_requests")
+          .select("*")
+          .order("created_at", { ascending: false });
+        data = dbData || [];
+      }
       setRequests(data);
-    } else {
+    } catch (error) {
       setRequests([]);
       toast({
         variant: "destructive",
         title: "Requests could not be loaded",
-        description: error
-          ? errorMessage(error)
-          : "The access request list could not be loaded.",
+        description: errorMessage(error),
       });
     }
     setIsLoading(false);

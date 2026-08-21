@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -503,11 +503,32 @@ const InstituteDashboard = () => {
     }
   };
 
+  const location = useLocation();
+
+  const scrollToHash = useCallback((hashStr?: string) => {
+    const targetHash = hashStr || location.hash;
+    if (targetHash) {
+      const id = targetHash.replace("#", "");
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [location.hash]);
+
   useEffect(() => {
     if (user) {
       void fetchInstituteData();
     }
   }, [fetchInstituteData, user]);
+
+  useEffect(() => {
+    if (location.hash && !isLoading) {
+      setTimeout(() => {
+        scrollToHash(location.hash);
+      }, 150);
+    }
+  }, [location.hash, isLoading, scrollToHash]);
 
   if (isLoading) {
     return (
@@ -745,6 +766,12 @@ const InstituteDashboard = () => {
                       <Link
                         key={item.path}
                         to={item.path}
+                        onClick={() => {
+                          const hash = item.path.split("#")[1];
+                          if (hash) {
+                            setTimeout(() => scrollToHash(`#${hash}`), 50);
+                          }
+                        }}
                         className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#746a64] transition-colors hover:bg-[#fff1e8] hover:text-[#c84f08]"
                       >
                         <item.icon className="h-5 w-5" />
