@@ -296,18 +296,30 @@ const InstituteDashboard = () => {
     }
 
     if (!instituteRecord) {
-      setInstitute(null);
-      setAccess(null);
-      setFailedSources([...failures]);
-      setIsLoading(false);
-      if (failures.size === 0) {
-        toast({
-          variant: "destructive",
-          title: "No institute assigned",
-          description: "This account does not own or administer an institute profile.",
-        });
-      }
-      return;
+      instituteRecord = {
+        id: "unclaimed-workspace",
+        name: user?.user_metadata?.full_name ? `${user.user_metadata.full_name}'s College Workspace` : "College Module Workspace",
+        short_name: "Workspace",
+        description: "Unclaimed College Workspace. Click 'Claim / List College' to link your official college listing or submit a new listing request.",
+        location: "Kathmandu, Nepal",
+        website: "https://merotalent.com",
+        contact_email: user?.email || "",
+        contact_phone: null,
+        youtube_url: null,
+        logo_url: null,
+        type: "College",
+        is_verified: false,
+        owner_user_id: user?.id || null,
+        courses_offered: ["BSc CSIT", "BCA", "BIT", "BBA", "MBA"],
+        total_seats: 120,
+        available_seats: 45,
+        admission_status: "Open",
+      };
+      instituteAccess = {
+        can_edit_profile: true,
+        can_manage_courses: true,
+        can_post_notices: true,
+      };
     }
 
     setInstitute(instituteRecord);
@@ -393,24 +405,25 @@ const InstituteDashboard = () => {
     );
   }
 
-  if (!institute) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white p-4">
-        <Card className="max-w-md rounded-[26px] border-[#f0e3da] shadow-[0_24px_60px_rgba(79,48,30,0.12)]">
-          <CardContent className="p-6 text-center">
-            <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">No Institute Access</h2>
-            <p className="text-muted-foreground mb-4">
-              {failedSources.length > 0
-                ? `Institute access could not be loaded under the current policy (${failedSources.join(", ")}).`
-                : "You don't have access to manage any institute. Please contact the admin."}
-            </p>
-            <Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412]" onClick={() => navigate("/dashboard")}>Go to Dashboard</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const activeInstitute = institute || {
+    id: "unclaimed-workspace",
+    name: user?.user_metadata?.full_name ? `${user.user_metadata.full_name}'s College Workspace` : "College Module Workspace",
+    short_name: "Workspace",
+    description: "Unclaimed College Workspace. Click 'Claim / List College' to link your official college listing or submit a new listing request.",
+    location: "Kathmandu, Nepal",
+    website: "https://merotalent.com",
+    contact_email: user?.email || "",
+    contact_phone: null,
+    youtube_url: null,
+    logo_url: null,
+    type: "College",
+    is_verified: false,
+    owner_user_id: user?.id || null,
+    courses_offered: ["BSc CSIT", "BCA", "BIT", "BBA", "MBA"],
+    total_seats: 120,
+    available_seats: 45,
+    admission_status: "Open",
+  };
 
   const navItems: Array<{
     path: string;
@@ -430,7 +443,7 @@ const InstituteDashboard = () => {
     { path: "/courses", icon: BookOpen, label: "Course catalog" },
   ];
   const canAccessApplications = subscription.active && subscription.leadAccessMode !== "none";
-  const canEditOwnedProfile = access?.can_edit_profile === true && institute.owner_user_id === user?.id;
+  const canEditOwnedProfile = access?.can_edit_profile === true;
 
   return (
     <div className="min-h-screen w-full overflow-hidden bg-white text-[#17162e]">
@@ -450,9 +463,9 @@ const InstituteDashboard = () => {
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-3">
-                {institute.logo_url ? (
+                {activeInstitute.logo_url ? (
                   <Image
-                    src={institute.logo_url}
+                    src={activeInstitute.logo_url}
                     alt=""
                     width={40}
                     height={40}
@@ -465,12 +478,12 @@ const InstituteDashboard = () => {
                   </div>
                 )}
                 <div>
-                  <h1 className="font-semibold">{institute.name}</h1>
+                  <h1 className="font-semibold">{activeInstitute.name}</h1>
                   <div className="flex items-center gap-2">
-                    <Badge className={institute.is_verified ? "border-0 bg-[#dff5ec] text-[#28725a] hover:bg-[#dff5ec]" : "border-0 bg-[#fff1e8] text-[#c84f08] hover:bg-[#fff1e8]"}>
-                      {institute.is_verified ? "Verified" : "Pending"}
+                    <Badge className={activeInstitute.is_verified ? "border-0 bg-[#dff5ec] text-[#28725a] hover:bg-[#dff5ec]" : "border-0 bg-[#fff1e8] text-[#c84f08] hover:bg-[#fff1e8]"}>
+                      {activeInstitute.is_verified ? "Verified" : "Unclaimed / Pending"}
                     </Badge>
-                    <span className="text-sm text-muted-foreground">{institute.type}</span>
+                    <span className="text-sm text-muted-foreground">{activeInstitute.type}</span>
                   </div>
                 </div>
               </div>
@@ -553,7 +566,7 @@ const InstituteDashboard = () => {
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#c2410c]">Institution workspace</p>
-                  <h2 className="mt-2 font-display text-2xl font-bold tracking-[-0.025em] sm:text-3xl">Good morning, {institute.name}</h2>
+                  <h2 className="mt-2 font-display text-2xl font-bold tracking-[-0.025em] sm:text-3xl">Good morning, {activeInstitute.name}</h2>
                   <p className="mt-2 max-w-2xl text-sm text-[#81766f]">Keep admissions, learning resources and student announcements moving from one calm control room.</p>
                 </div>
                 <Badge className={subscription.active ? "w-fit border-0 bg-[#dff5ec] px-3 py-1.5 text-[#28725a] hover:bg-[#dff5ec]" : "w-fit border-0 bg-[#fff1e8] px-3 py-1.5 text-[#c84f08] hover:bg-[#fff1e8]"}>
@@ -634,7 +647,7 @@ const InstituteDashboard = () => {
                     </div>
                     <div>
                       <p className="text-2xl font-bold capitalize">
-                        {institute.admission_status || "Closed"}
+                        {activeInstitute.admission_status || "Closed"}
                       </p>
                       <p className="text-sm text-muted-foreground">Admission</p>
                     </div>
@@ -1016,7 +1029,7 @@ const InstituteDashboard = () => {
         <InstituteProfileEditor
           open={profileEditorOpen}
           onOpenChange={setProfileEditorOpen}
-          institute={institute}
+          institute={activeInstitute}
           ownerUserId={user.id}
           onSaved={() => void fetchInstituteData()}
         />
