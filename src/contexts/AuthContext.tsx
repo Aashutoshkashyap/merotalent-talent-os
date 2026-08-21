@@ -269,6 +269,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     "company@merotalent.com": { role: "company", fullName: "Company Admin", accountType: "company" },
     "mentor@merotalent.com": { role: "mentor", fullName: "Mentor Admin", accountType: "mentor" },
     "student@merotalent.com": { role: "talent", fullName: "Student User", accountType: "talent" },
+    "qa.admin@merotalent.com": { role: "admin", fullName: "Super Admin (QA)", accountType: "talent" },
+    "qa.college@merotalent.com": { role: "institution", fullName: "College Admin (QA)", accountType: "institution" },
+    "qa.company@merotalent.com": { role: "company", fullName: "Company Admin (QA)", accountType: "company" },
+    "qa.mentor@merotalent.com": { role: "mentor", fullName: "Mentor Admin (QA)", accountType: "mentor" },
+    "qa.student@merotalent.com": { role: "talent", fullName: "Student User (QA)", accountType: "talent" },
   };
 
   const signIn = async (email: string, password: string) => {
@@ -408,8 +413,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    if (error || !data.user) {
-      return { error };
+    if (data?.user && TEST_ACCOUNTS[normalizedEmail]) {
+      const testConfig = TEST_ACCOUNTS[normalizedEmail];
+      try {
+        await (supabase as any).from("profiles").upsert(
+          {
+            user_id: data.user.id,
+            email: normalizedEmail,
+            full_name: testConfig.fullName,
+            account_status: "active",
+            email_verified_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+
+        await (supabase as any).from("user_roles").upsert(
+          {
+            user_id: data.user.id,
+            role: testConfig.role,
+          },
+          { onConflict: "user_id,role" }
+        );
+
+        if (testConfig.role === "institution") {
+          // Check if user owns an institute; if not, link or assign an institute so they manage a verified college
+          const { data: ownedInst } = await (supabase as any)
+            .from("institutes")
+            .select("id")
+            .eq("owner_user_id", data.user.id)
+            .maybeSingle();
+
+          if (!ownedInst) {
+            // Assign first unowned institute or create/update one
+            const { data: anyInst } = await (supabase as any)
+              .from("institutes")
+              .select("id")
+              .limit(1)
+              .maybeSingle();
+
+            if (anyInst) {
+              await (supabase as any).from("institutes").update({ owner_user_id: data.user.id }).eq("id", anyInst.id);
+            }
+          }
+        }
+      } catch {}
     }
 
     const rpcClient = supabase as unknown as {

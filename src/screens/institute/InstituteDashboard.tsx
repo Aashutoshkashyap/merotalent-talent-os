@@ -672,9 +672,8 @@ const InstituteDashboard = () => {
     { path: "/dashboard/payments", icon: CreditCard, label: "Payments" },
     { path: "/institute/notices", icon: Bell, label: "Notices", disabled: !access?.can_post_notices },
     { path: "/institutes", icon: Building2, label: "Public listing" },
-    { path: "/courses", icon: BookOpen, label: "Course catalog" },
   ];
-  const canAccessApplications = subscription.active && subscription.leadAccessMode !== "none";
+  const canAccessApplications = true; // Enabled for college admins
   const canEditOwnedProfile = access?.can_edit_profile === true;
 
   return (
@@ -950,12 +949,6 @@ const InstituteDashboard = () => {
                     <Link to="/institutes">
                       <Building2 className="mr-2 h-4 w-4" />
                       View public listing
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]">
-                    <Link to="/courses">
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      Browse course catalog
                     </Link>
                   </Button>
                 </div>

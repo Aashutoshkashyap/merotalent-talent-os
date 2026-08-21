@@ -230,6 +230,8 @@ const AdminMentors = () => {
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : 0,
       years_experience: formData.years_experience ? parseInt(formData.years_experience) : 0,
       is_available: formData.is_available,
+      available_dates: formData.available_dates || null,
+      avatar_url: formData.avatar_url || null,
       approval_status: formData.approval_status,
     };
 

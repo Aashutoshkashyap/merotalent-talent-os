@@ -138,6 +138,7 @@ const AdminCompetitions = () => {
       max_participants: newCompetition.max_participants ? parseInt(newCompetition.max_participants) : null,
       prize_pool: newCompetition.prize_pool || null,
       is_team_based: newCompetition.is_team_based,
+      cover_image: newCompetition.banner_url || null,
       organizer_id: user.id,
       organizer_type: "admin",
     };

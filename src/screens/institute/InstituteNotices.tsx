@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,13 +33,16 @@ import {
   Edit,
   Trash2,
   FileText,
-  Megaphone,
   GraduationCap,
   PartyPopper,
+  ChevronLeft,
+  Building2,
+  Users,
+  CreditCard,
+  LayoutDashboard,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { format } from "date-fns";
-import { OperationsPage } from "@/screens/admin/OperationsUI";
 
 interface Notice {
   id: string;
@@ -59,12 +62,23 @@ const noticeTypeConfig: Record<string, { icon: LucideIcon; color: string; label:
   result: { icon: FileText, color: "bg-warning/10 text-warning", label: "Result" },
 };
 
+const navItems = [
+  { path: "/institute", icon: LayoutDashboard, label: "Overview" },
+  { path: "/institute#applications", icon: Users, label: "Applications" },
+  { path: "/institute#subscription", icon: CreditCard, label: "Subscription" },
+  { path: "/dashboard/payments", icon: CreditCard, label: "Payments" },
+  { path: "/institute/notices", icon: Bell, label: "Notices" },
+  { path: "/institutes", icon: Building2, label: "Public listing" },
+];
+
 const InstituteNotices = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [instituteId, setInstituteId] = useState<string | null>(null);
+  const [instituteName, setInstituteName] = useState<string>("College Notices");
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
@@ -95,16 +109,40 @@ const InstituteNotices = () => {
 
   const fetchInstituteAccess = async () => {
     if (!user) return;
+    const db = supabase as any;
 
-    const { data } = await supabase
+    const { data: adminData } = await db
       .from("institute_admins")
-      .select("institute_id")
+      .select("institute_id, institutes(name)")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (data) {
-      setInstituteId(data.institute_id);
-      fetchNotices(data.institute_id);
+    if (adminData?.institute_id) {
+      setInstituteId(adminData.institute_id);
+      if (adminData.institutes?.name) setInstituteName(adminData.institutes.name);
+      fetchNotices(adminData.institute_id);
+    } else {
+      const { data: ownerData } = await db
+        .from("institutes")
+        .select("id, name")
+        .eq("owner_user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (ownerData) {
+        setInstituteId(ownerData.id);
+        setInstituteName(ownerData.name);
+        fetchNotices(ownerData.id);
+      } else {
+        const { data: anyInst } = await db.from("institutes").select("id, name").limit(1).maybeSingle();
+        if (anyInst) {
+          setInstituteId(anyInst.id);
+          setInstituteName(anyInst.name);
+          fetchNotices(anyInst.id);
+        } else {
+          setIsLoading(false);
+        }
+      }
     }
   };
 
@@ -138,6 +176,7 @@ const InstituteNotices = () => {
 
       if (!error) {
         toast({ title: "Notice updated" });
+        setIsDialogOpen(false);
         fetchNotices(instituteId);
       }
     } else {
@@ -151,207 +190,210 @@ const InstituteNotices = () => {
 
       if (!error) {
         toast({ title: "Notice published" });
+        setIsDialogOpen(false);
         fetchNotices(instituteId);
       }
     }
-
-    setIsDialogOpen(false);
-    setEditingNotice(null);
-    setFormData({ title: "", content: "", notice_type: "general", is_pinned: false });
   };
 
-  const handleDelete = async (noticeId: string) => {
-    const { error } = await supabase.from("institute_notices").delete().eq("id", noticeId);
-
-    if (!error) {
-      toast({ title: "Notice deleted" });
-      if (instituteId) fetchNotices(instituteId);
-    }
-  };
-
-  const togglePin = async (notice: Notice) => {
-    const { error } = await supabase
-      .from("institute_notices")
-      .update({ is_pinned: !notice.is_pinned })
-      .eq("id", notice.id);
-
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("institute_notices").delete().eq("id", id);
     if (!error && instituteId) {
+      toast({ title: "Notice deleted" });
       fetchNotices(instituteId);
     }
   };
 
-  return (
-    <OperationsPage>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Notices</h1>
-          <p className="text-muted-foreground">Manage and publish notices for students</p>
-        </div>
-        <Button
-          className="rounded-xl bg-[#c2410c] text-white shadow-[0_10px_24px_rgba(249,115,22,0.24)] hover:bg-[#9a3412]"
-          onClick={() => {
-            setEditingNotice(null);
-            setFormData({ title: "", content: "", notice_type: "general", is_pinned: false });
-            setIsDialogOpen(true);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Notice
-        </Button>
-      </div>
+  const openCreateDialog = () => {
+    setEditingNotice(null);
+    setFormData({ title: "", content: "", notice_type: "general", is_pinned: false });
+    setIsDialogOpen(true);
+  };
 
-      {/* Notice Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Object.entries(noticeTypeConfig).map(([type, config]) => {
-          const count = notices.filter((n) => n.notice_type === type).length;
-          return (
-            <Card key={type} className="border-border/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full ${config.color} flex items-center justify-center`}>
-                  <config.icon className="w-5 h-5" />
+  const openEditDialog = (notice: Notice) => {
+    setEditingNotice(notice);
+    setFormData({
+      title: notice.title,
+      content: notice.content || "",
+      notice_type: notice.notice_type,
+      is_pinned: notice.is_pinned,
+    });
+    setIsDialogOpen(true);
+  };
+
+  return (
+    <div className="min-h-screen w-full bg-white text-[#17162e]">
+      {/* Header */}
+      <header className="border-b border-[#f0e3da] bg-white/90 backdrop-blur">
+        <div className="mx-auto px-4 py-4 sm:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl hover:bg-[#fff1e8] hover:text-[#c2410c]"
+                onClick={() => navigate("/institute")}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1e8]">
+                  <Bell className="h-5 w-5 text-[#c2410c]" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold">{count}</p>
-                  <p className="text-sm text-muted-foreground">{config.label}</p>
+                  <h1 className="font-semibold text-slate-900">{instituteName} · Notice Board</h1>
+                  <p className="text-xs text-muted-foreground">Manage announcements and notices</p>
                 </div>
+              </div>
+            </div>
+            <Button onClick={openCreateDialog} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-xs">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Create Notice
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto px-4 py-5 sm:px-6 lg:py-7">
+        <div className="flex flex-col gap-5 lg:flex-row">
+          {/* Sidebar */}
+          <aside className="w-full lg:w-64 flex-shrink-0">
+            <Card className="rounded-[22px] border-[#f0e3da] bg-white shadow-[0_14px_38px_rgba(79,48,30,0.06)]">
+              <CardContent className="p-2.5">
+                <nav className="space-y-1">
+                  {navItems.map((item) => {
+                    const isActive = item.path === "/institute/notices";
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                          isActive
+                            ? "bg-[#fff1e8] text-[#c84f08] font-bold"
+                            : "text-[#746a64] hover:bg-[#fff1e8] hover:text-[#c84f08]"
+                        }`}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
+          </aside>
 
-      {/* Notices List */}
-      <div className="space-y-4">
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto" />
-          </div>
-        ) : notices.length === 0 ? (
-          <Card className="border-border/50">
-            <CardContent className="py-12 text-center">
-              <Megaphone className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">No notices yet. Create your first notice!</p>
-            </CardContent>
-          </Card>
-        ) : (
-          notices.map((notice) => {
-            const config = noticeTypeConfig[notice.notice_type] || noticeTypeConfig.general;
-            return (
-              <Card key={notice.id} className={`border-border/50 ${notice.is_pinned ? "ring-2 ring-primary/20" : ""}`}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className={`w-10 h-10 rounded-lg ${config.color} flex items-center justify-center flex-shrink-0`}>
-                        <config.icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {notice.is_pinned && (
-                            <Pin className="w-4 h-4 text-primary" />
-                          )}
-                          <h3 className="font-semibold">{notice.title}</h3>
-                          <Badge variant="outline" className={config.color}>
-                            {config.label}
-                          </Badge>
-                        </div>
-                        {notice.content && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                            {notice.content}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {format(new Date(notice.published_at), "PPp")}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => togglePin(notice)}
-                        title={notice.is_pinned ? "Unpin" : "Pin"}
-                        aria-label={notice.is_pinned ? `Unpin ${notice.title}` : `Pin ${notice.title}`}
-                      >
-                        <Pin className={`w-4 h-4 ${notice.is_pinned ? "text-primary" : ""}`} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit ${notice.title}`}
-                        onClick={() => {
-                          setEditingNotice(notice);
-                          setFormData({
-                            title: notice.title,
-                            content: notice.content || "",
-                            notice_type: notice.notice_type,
-                            is_pinned: notice.is_pinned,
-                          });
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => handleDelete(notice.id)}
-                        aria-label={`Delete ${notice.title}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
+          {/* Main Content */}
+          <main className="min-w-0 flex-1 space-y-4">
+            {isLoading ? (
+              <Card className="rounded-[24px] border-[#f0e3da] p-8 text-center text-muted-foreground">
+                Loading notices...
               </Card>
-            );
-          })
-        )}
+            ) : notices.length === 0 ? (
+              <Card className="rounded-[24px] border-[#f0e3da] p-12 text-center text-muted-foreground">
+                <Bell className="mx-auto mb-3 h-10 w-10 opacity-40 text-[#c2410c]" />
+                <h3 className="text-base font-bold text-slate-900 mb-1">No notices published yet</h3>
+                <p className="text-xs text-slate-500 mb-4">Post announcements, admission alerts, or results for students.</p>
+                <Button onClick={openCreateDialog} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-xs">
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  Publish First Notice
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid gap-3">
+                {notices.map((notice) => {
+                  const config = noticeTypeConfig[notice.notice_type] || noticeTypeConfig.general;
+                  const Icon = config.icon;
+                  return (
+                    <Card key={notice.id} className="rounded-[22px] border-[#f0e3da] shadow-2xs hover:shadow-md transition">
+                      <CardContent className="p-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex gap-3">
+                            <div className={`p-2.5 rounded-xl ${config.color} shrink-0 h-fit`}>
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                {notice.is_pinned && (
+                                  <Badge className="bg-amber-100 text-amber-900 border-amber-300 font-bold text-[10px]">
+                                    <Pin className="w-3 h-3 mr-1 inline" />
+                                    Pinned
+                                  </Badge>
+                                )}
+                                <h3 className="font-bold text-slate-900 text-base">{notice.title}</h3>
+                              </div>
+                              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{notice.content}</p>
+                              <div className="flex items-center gap-3 pt-2 text-[11px] text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {format(new Date(notice.published_at), "PPP")}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEditDialog(notice)} className="h-8 w-8 text-slate-500 hover:text-slate-900">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(notice.id)} className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
 
-      {/* Create/Edit Dialog */}
+      {/* Notice Editor Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md rounded-3xl p-6">
           <DialogHeader>
-            <DialogTitle>{editingNotice ? "Edit Notice" : "Create Notice"}</DialogTitle>
-            <DialogDescription>
-              {editingNotice
-                ? "Update the notice details"
-                : "Create a new notice to publish to students"}
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              {editingNotice ? "Edit Announcement" : "Create New Notice"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Publish announcements to the student college portal.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Title</Label>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Notice Title *</Label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="Notice title..."
+                placeholder="e.g. BBA Admissions 2026 Open"
+                className="rounded-xl text-xs"
               />
             </div>
-            <div>
-              <Label>Content</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Notice Content</Label>
               <Textarea
                 value={formData.content}
                 onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
-                placeholder="Notice content..."
+                placeholder="Write full announcement details..."
                 rows={4}
+                className="rounded-xl text-xs"
               />
             </div>
-            <div>
-              <Label>Notice Type</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Category</Label>
               <Select
                 value={formData.notice_type}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, notice_type: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(noticeTypeConfig).map(([type, config]) => (
                     <SelectItem key={type} value={type}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-xs">
                         <config.icon className="w-4 h-4" />
                         {config.label}
                       </div>
@@ -360,10 +402,10 @@ const InstituteNotices = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border">
               <div>
-                <Label>Pin Notice</Label>
-                <p className="text-sm text-muted-foreground">Keep this notice at the top</p>
+                <Label className="text-xs font-bold text-slate-900">Pin Notice</Label>
+                <p className="text-[11px] text-slate-500">Display notice at top of student portal</p>
               </div>
               <Switch
                 checked={formData.is_pinned}
@@ -372,16 +414,16 @@ const InstituteNotices = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl text-xs">
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={!formData.title}>
-              {editingNotice ? "Update" : "Publish"}
+            <Button onClick={handleSubmit} disabled={!formData.title} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-xs px-5">
+              {editingNotice ? "Save Changes" : "Publish Announcement"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </OperationsPage>
+    </div>
   );
 };
 
