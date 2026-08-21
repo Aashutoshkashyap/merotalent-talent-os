@@ -122,9 +122,12 @@ export default function AdminApplications() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="submitted">Submitted</SelectItem>
                       <SelectItem value="reviewing">Reviewing</SelectItem>
+                      <SelectItem value="followed_up">Followed Up</SelectItem>
                       <SelectItem value="contacted">Contacted</SelectItem>
+                      <SelectItem value="admitted">Admitted</SelectItem>
                       <SelectItem value="accepted">Accepted</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>

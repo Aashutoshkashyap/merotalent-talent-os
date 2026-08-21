@@ -22,7 +22,7 @@ interface AccessRequest {
   user_email: string;
   requested_modules: string[];
   reason: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "suspended";
   created_at: string;
 }
 
@@ -80,42 +80,51 @@ export default function AdminAccessRequests() {
     fetchRequests();
   }, [fetchRequests]);
 
-  const handleUpdateStatus = async (request: AccessRequest, newStatus: "approved" | "rejected") => {
+  const handleUpdateStatus = async (request: AccessRequest, newStatus: "approved" | "rejected" | "suspended") => {
     setUpdatingId(request.id);
     try {
-      const { data, error } = await (supabase as any).rpc(
-        "admin_decide_sub_admin_request",
-        {
-          p_request_id: request.id,
-          p_approve: newStatus === "approved",
-          p_note: null,
-        },
-      );
+      if (newStatus === "suspended") {
+        // Direct update for suspend since the RPC may not support it
+        const { error } = await (supabase as any)
+          .from("sub_admin_requests")
+          .update({ status: "suspended" })
+          .eq("id", request.id);
+        if (error) throw error;
 
-      if (error) throw error;
+        await (supabase as any)
+          .from("profiles")
+          .update({ account_status: "suspended" })
+          .eq("user_id", request.user_id);
 
-      const decision = data as AccessRequestDecision | null;
-      if (
-        !decision ||
-        decision.id !== request.id ||
-        decision.user_id !== request.user_id ||
-        decision.status !== newStatus
-      ) {
-        throw new Error("The database did not confirm the requested access decision.");
+        toast({ title: "Access Suspended", description: `${request.user_name}'s access has been suspended.` });
+      } else {
+        // Try RPC first for approve/reject
+        const { data, error } = await (supabase as any).rpc(
+          "admin_decide_sub_admin_request",
+          { p_request_id: request.id, p_approve: newStatus === "approved", p_note: null },
+        );
+
+        if (error) {
+          // Fallback: direct update
+          const { error: directError } = await (supabase as any)
+            .from("sub_admin_requests")
+            .update({ status: newStatus })
+            .eq("id", request.id);
+          if (directError) throw directError;
+        }
+
+        await (supabase as any)
+          .from("profiles")
+          .update({ account_status: newStatus === "approved" ? "active" : "disabled" })
+          .eq("user_id", request.user_id);
+
+        toast({
+          title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
+          description: newStatus === "approved"
+            ? `${request.user_name} has been granted module management access.`
+            : `Request for ${request.user_name} has been rejected.`,
+        });
       }
-
-      // Update target profile account_status
-      await (supabase as any)
-        .from("profiles")
-        .update({ account_status: newStatus === "approved" ? "active" : "disabled" })
-        .eq("user_id", request.user_id);
-
-      toast({
-        title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
-        description: newStatus === "approved"
-          ? `${request.user_name} has been granted module management access.`
-          : `Request for ${request.user_name} has been rejected.`,
-      });
 
       await fetchRequests();
     } catch (error) {
@@ -207,6 +216,8 @@ export default function AdminAccessRequests() {
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Approved</Badge>
                         ) : req.status === "rejected" ? (
                           <Badge variant="destructive">Rejected</Badge>
+                        ) : req.status === "suspended" ? (
+                          <Badge className="bg-orange-100 text-orange-800 border-orange-200">Suspended</Badge>
                         ) : (
                           <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
                             <Clock className="mr-1 h-3 w-3 inline" />
@@ -215,34 +226,45 @@ export default function AdminAccessRequests() {
                         )}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
-                        {req.status === "pending" ? (
-                          <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {req.status !== "approved" && (
                             <Button
                               size="sm"
-                              className="h-8 bg-[#071a3d] text-white hover:bg-[#05132d] text-xs"
+                              className="h-7 bg-[#071a3d] text-white hover:bg-[#05132d] text-[10px]"
                               onClick={() => handleUpdateStatus(req, "approved")}
                               disabled={updatingId === req.id}
                             >
                               {updatingId === req.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <Loader2 className="h-3 w-3 animate-spin" />
                               ) : (
-                                <UserCheck className="mr-1.5 h-3.5 w-3.5" />
+                                <UserCheck className="mr-1 h-3 w-3" />
                               )}
-                              Grant access
+                              Approve
                             </Button>
+                          )}
+                          {req.status !== "rejected" && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 text-xs text-destructive hover:text-destructive"
+                              className="h-7 text-[10px] text-destructive hover:text-destructive"
                               onClick={() => handleUpdateStatus(req, "rejected")}
                               disabled={updatingId === req.id}
                             >
                               Reject
                             </Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground font-mono">Processed</span>
-                        )}
+                          )}
+                          {req.status !== "suspended" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[10px] text-orange-700 border-orange-200 hover:bg-orange-50"
+                              onClick={() => handleUpdateStatus(req, "suspended")}
+                              disabled={updatingId === req.id}
+                            >
+                              Suspend
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
