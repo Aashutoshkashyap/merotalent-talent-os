@@ -18,6 +18,7 @@ const migration = readSource(
 const CLIENT_SOURCES = [
   "src/screens/institute/InstituteDashboard.tsx",
   "src/screens/admin/AdminApplications.tsx",
+  "src/screens/admin/AdminReports.tsx",
   "src/screens/dashboard/Colleges.tsx",
   "src/hooks/useStudentActivity.ts",
 ] as const;
@@ -25,17 +26,26 @@ const CLIENT_SOURCES = [
 /** Statuses the UI used to write that the CHECK constraint rejects. */
 const RETIRED_STATUSES = ["followed_up", "admitted"] as const;
 
-/** Columns the UI used to reference that do not exist on the table. */
-const NONEXISTENT_COLUMNS = [
+/**
+ * Names the UI invented that appear nowhere in supabase/migrations, so they are
+ * banned anywhere in these files — not just inside a query chain, since the CSV
+ * export referenced one while mapping rows rather than while selecting them.
+ */
+const INVENTED_COLUMNS = [
   "target_program",
   "education_level",
   "previous_institution",
   "previous_gpa_stream",
   "temporary_address",
   "permanent_address",
-  "institute_name",
-  "user_id",
 ] as const;
+
+/**
+ * Columns that are real on some other table but absent from
+ * college_applications, so they are only banned inside a query chain against
+ * this table.
+ */
+const FOREIGN_COLUMNS = ["institute_name", "user_id"] as const;
 
 const collegeApplicationsTable = (() => {
   const start = migration.indexOf(
@@ -109,9 +119,16 @@ describe("client queries against college_applications", () => {
       expect(chains.length).toBeGreaterThan(0);
 
       for (const chain of chains) {
-        for (const column of NONEXISTENT_COLUMNS) {
+        for (const column of [...INVENTED_COLUMNS, ...FOREIGN_COLUMNS]) {
           expect(chain).not.toContain(column);
         }
+      }
+    });
+
+    it(`${file} references no invented column name anywhere`, () => {
+      const source = readSource(file);
+      for (const column of INVENTED_COLUMNS) {
+        expect(source).not.toContain(column);
       }
     });
 
