@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertCircle,
   Building2,
@@ -151,6 +152,13 @@ const InstituteDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
 
+  // Access gating state
+  const [accessStatus, setAccessStatus] = useState<"loading" | "approved" | "pending" | "rejected" | "suspended" | "none">("loading");
+  const [requestOrg, setRequestOrg] = useState("");
+  const [requestPhone, setRequestPhone] = useState("");
+  const [requestReason, setRequestReason] = useState("");
+  const [isSubmittingAccess, setIsSubmittingAccess] = useState(false);
+
   // Claim or List College Modal State
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [claimType, setClaimType] = useState<"claim" | "list_new">("claim");
@@ -250,6 +258,44 @@ const InstituteDashboard = () => {
     }
   };
 
+  const handleAccessRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmittingAccess(true);
+    try {
+      const fullReason = [
+        "[GRANT ACCESS REQUEST]",
+        `Organization/College: ${requestOrg.trim() || "N/A"}`,
+        `Contact Phone (Nepal): ${requestPhone.trim() || "N/A"}`,
+        `Justification: ${requestReason.trim()}`,
+      ].join("\n");
+
+      await (supabase as any).from("sub_admin_requests").insert({
+        user_id: user.id,
+        user_email: user.email,
+        full_name: requestOrg.trim() || user.email,
+        requested_modules: ["institutions"],
+        reason: fullReason,
+        status: "pending",
+      });
+
+      // Also fire a notification to super admin
+      await (supabase as any).from("notifications").insert({
+        user_id: user.id,
+        title: "College Module Access Requested",
+        message: `${user.email} has requested access to the College/Institute Module. Organization: ${requestOrg.trim() || "N/A"}. Reason: ${requestReason.trim()}`,
+        type: "admin_alert",
+      });
+
+      setAccessStatus("pending");
+      toast({ title: "Access Request Submitted!", description: "Super Admin has been notified. You'll get access once approved." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Submission Error", description: err?.message || "Failed to submit request." });
+    } finally {
+      setIsSubmittingAccess(false);
+    }
+  };
+
   const fetchInstituteData = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
@@ -257,6 +303,7 @@ const InstituteDashboard = () => {
     const db = supabase as any;
     const failures = new Set<string>();
 
+    // Step 1: Check if user has institute_admins record
     const adminResult = await db
       .from("institute_admins")
       .select("*, institutes(*)")
@@ -274,6 +321,7 @@ const InstituteDashboard = () => {
         }
       : null;
 
+    // Step 2: Check if user owns an institute
     if (!instituteRecord) {
       const ownerResult = await db
         .from("institutes")
@@ -295,6 +343,47 @@ const InstituteDashboard = () => {
       }
     }
 
+    // Step 3: If no institute_admins or owned institute, check sub_admin_requests approval
+    if (!instituteRecord && !adminResult.data) {
+      const { data: subAdminRows } = await db
+        .from("sub_admin_requests")
+        .select("id, status, requested_modules")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const rows = (subAdminRows || []) as any[];
+      const institutionRequest = rows.find(
+        (r: any) => Array.isArray(r.requested_modules) && r.requested_modules.includes("institutions")
+      );
+      // Also accept any request that mentions institutions in reason (for claim/list requests)
+      const anyRequest = institutionRequest || rows[0];
+
+      if (institutionRequest?.status === "approved" || anyRequest?.status === "approved") {
+        // Approved — show unclaimed workspace
+        setAccessStatus("approved");
+      } else if (institutionRequest?.status === "pending" || anyRequest?.status === "pending") {
+        setAccessStatus("pending");
+        setIsLoading(false);
+        return;
+      } else if (institutionRequest?.status === "rejected" || anyRequest?.status === "rejected") {
+        setAccessStatus("rejected");
+        setIsLoading(false);
+        return;
+      } else if (institutionRequest?.status === "suspended" || anyRequest?.status === "suspended") {
+        setAccessStatus("suspended");
+        setIsLoading(false);
+        return;
+      } else {
+        // No request at all — new user
+        setAccessStatus("none");
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      setAccessStatus("approved");
+    }
+
+    // Step 4: If approved but no institute linked, show unclaimed workspace
     if (!instituteRecord) {
       instituteRecord = {
         id: "unclaimed-workspace",
@@ -405,11 +494,131 @@ const InstituteDashboard = () => {
     );
   }
 
+  // Access gating — show request/pending/rejected screens for unapproved users
+  if (accessStatus !== "approved") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-amber-50 p-4">
+        <Card className="max-w-lg w-full rounded-[26px] border-[#f0e3da] shadow-[0_24px_60px_rgba(79,48,30,0.12)]">
+          <CardContent className="p-8">
+            <div className="text-center mb-6">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff1e8] mx-auto mb-4">
+                {accessStatus === "pending" ? (
+                  <Loader2 className="h-8 w-8 text-[#c2410c] animate-spin" />
+                ) : accessStatus === "rejected" || accessStatus === "suspended" ? (
+                  <Lock className="h-8 w-8 text-red-500" />
+                ) : (
+                  <ShieldCheck className="h-8 w-8 text-[#c2410c]" />
+                )}
+              </div>
+
+              {accessStatus === "pending" ? (
+                <>
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">Access Request Pending</h2>
+                  <p className="text-sm text-slate-600">
+                    Your request to access the College/Institute Module is under review by the Super Admin.
+                    You'll be notified once your access is approved.
+                  </p>
+                  <div className="mt-6">
+                    <Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white" onClick={() => navigate("/dashboard")}>
+                      Back to Student Dashboard
+                    </Button>
+                  </div>
+                </>
+              ) : accessStatus === "rejected" ? (
+                <>
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">Access Request Rejected</h2>
+                  <p className="text-sm text-slate-600">
+                    Your request for the College/Institute Module was rejected by the Super Admin.
+                    You can contact support or resubmit with additional details.
+                  </p>
+                  <div className="mt-6 flex gap-3 justify-center">
+                    <Button variant="outline" className="rounded-xl" onClick={() => navigate("/dashboard")}>
+                      Back to Dashboard
+                    </Button>
+                    <Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white" onClick={() => setAccessStatus("none")}>
+                      Resubmit Request
+                    </Button>
+                  </div>
+                </>
+              ) : accessStatus === "suspended" ? (
+                <>
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">Access Suspended</h2>
+                  <p className="text-sm text-slate-600">
+                    Your College/Institute Module access has been suspended by the Super Admin.
+                    Please contact support for more information.
+                  </p>
+                  <div className="mt-6">
+                    <Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white" onClick={() => navigate("/dashboard")}>
+                      Back to Student Dashboard
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">Request College Module Access</h2>
+                  <p className="text-sm text-slate-600">
+                    To manage college listings, claim pages, view applicant data, and edit institute profiles,
+                    you need Super Admin approval. Fill out the form below to request access.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {accessStatus === "none" && (
+              <form onSubmit={handleAccessRequest} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">Organization / College Name *</Label>
+                  <Input
+                    placeholder="e.g. IOE Pulchowk Campus, Islington College"
+                    value={requestOrg}
+                    onChange={(e) => setRequestOrg(e.target.value)}
+                    required
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">Contact Number (Nepal) *</Label>
+                  <Input
+                    placeholder="e.g. 9801010802"
+                    value={requestPhone}
+                    onChange={(e) => setRequestPhone(e.target.value)}
+                    required
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">Justification & Role *</Label>
+                  <Textarea
+                    placeholder="Explain your role, why you need institute admin access, and which college you want to manage..."
+                    rows={3}
+                    value={requestReason}
+                    onChange={(e) => setRequestReason(e.target.value)}
+                    required
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" className="rounded-xl flex-1" onClick={() => navigate("/dashboard")}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmittingAccess} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white flex-1 font-bold">
+                    {isSubmittingAccess ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                    Submit Request
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const activeInstitute = institute || {
     id: "unclaimed-workspace",
     name: user?.user_metadata?.full_name ? `${user.user_metadata.full_name}'s College Workspace` : "College Module Workspace",
     short_name: "Workspace",
-    description: "Unclaimed College Workspace. Click 'Claim / List College' to link your official college listing or submit a new listing request.",
+    description: "Unclaimed workspace",
     location: "Kathmandu, Nepal",
     website: "https://merotalent.com",
     contact_email: user?.email || "",
@@ -419,9 +628,9 @@ const InstituteDashboard = () => {
     type: "College",
     is_verified: false,
     owner_user_id: user?.id || null,
-    courses_offered: ["BSc CSIT", "BCA", "BIT", "BBA", "MBA"],
-    total_seats: 120,
-    available_seats: 45,
+    courses_offered: [],
+    total_seats: 0,
+    available_seats: 0,
     admission_status: "Open",
   };
 
