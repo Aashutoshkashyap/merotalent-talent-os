@@ -72,6 +72,7 @@ type SectionFormData = Omit<PageSection, "id" | "updated_at">;
 
 const PAGES = [
   { value: "home", label: "Homepage" },
+  { value: "faq", label: "FAQ Q&A Section" },
   { value: "about", label: "About Us" },
   { value: "contact", label: "Contact Page" },
   { value: "pricing", label: "Pricing Page" },

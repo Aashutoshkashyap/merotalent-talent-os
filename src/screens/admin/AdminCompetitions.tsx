@@ -71,6 +71,7 @@ const AdminCompetitions = () => {
     max_participants: "",
     prize_pool: "",
     is_team_based: false,
+    banner_url: "",
   });
 
   useEffect(() => {
@@ -194,6 +195,7 @@ const AdminCompetitions = () => {
       max_participants: comp.max_participants ? comp.max_participants.toString() : "",
       prize_pool: comp.prize_pool || "",
       is_team_based: (comp as any).is_team_based ?? false,
+      banner_url: (comp as any).banner_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -211,6 +213,7 @@ const AdminCompetitions = () => {
       max_participants: "",
       prize_pool: "",
       is_team_based: false,
+      banner_url: "",
     });
     setIsDialogOpen(false);
   };
@@ -298,6 +301,16 @@ const AdminCompetitions = () => {
                   onChange={(e) => setNewCompetition({ ...newCompetition, description: e.target.value })}
                   placeholder="Describe the competition..."
                   rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="banner_url">Media Banner / Image URL</Label>
+                <Input
+                  id="banner_url"
+                  value={newCompetition.banner_url}
+                  onChange={(e) => setNewCompetition({ ...newCompetition, banner_url: e.target.value })}
+                  placeholder="https://images.unsplash.com/... or upload URL"
                 />
               </div>
 

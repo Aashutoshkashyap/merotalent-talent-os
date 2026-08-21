@@ -42,21 +42,17 @@ interface AdminSidebarProps {
 const primaryItems = [
   { icon: LayoutDashboard, label: "Overview", href: "/admin" },
   { icon: Users, label: "People", href: "/admin/users" },
-  { icon: BookOpen, label: "Partner courses", href: "/admin/lms" },
+  { icon: BookOpen, label: "Partner courses", href: "https://learn.merotalent.com", external: true },
   { icon: BriefcaseBusiness, label: "Jobs", href: "/admin/jobs" },
   { icon: Trophy, label: "Competitions", href: "/admin/competitions" },
   { icon: GraduationCap, label: "Mentors", href: "/admin/mentors" },
   { icon: Building2, label: "Institutions", href: "/admin/institutions" },
-  { icon: Building, label: "Companies", href: "/admin/companies" },
-  { icon: CalendarDays, label: "Events", href: "/admin/events" },
   { icon: FileText, label: "Applications", href: "/admin/applications" },
   { icon: CalendarCheck, label: "Bookings", href: "/admin/bookings" },
 ];
 
 const systemItems = [
-  { icon: Contact, label: "Leads", href: "/admin/leads" },
   { icon: Package, label: "Packages", href: "/admin/packages" },
-  { icon: CreditCard, label: "Subscriptions", href: "/admin/subscriptions" },
   { icon: Receipt, label: "Payments", href: "/admin/payments" },
   { icon: Megaphone, label: "Ads", href: "/admin/advertisements" },
   { icon: Sparkles, label: "Featured", href: "/admin/featured" },
@@ -87,17 +83,39 @@ const AdminSidebar = ({
     icon: Icon,
     label,
     href,
+    external,
   }: {
     icon: typeof LayoutDashboard;
     label: string;
     href: string;
+    external?: boolean;
   }) => {
     const isActive =
-      href === "/admin"
+      !external &&
+      (href === "/admin"
         ? location.pathname === href
-        : location.pathname.startsWith(href);
+        : location.pathname.startsWith(href));
 
-    const navLink = (
+    const navLink = external ? (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onNavigate}
+        aria-label={label}
+        className={cn(
+          "group relative isolate flex min-h-12 items-center gap-3 overflow-hidden rounded-xl py-2 text-base font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93c5fd] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071a3d]",
+          compact ? "justify-center px-2" : "px-3",
+          "text-[#c5d8f3] hover:bg-white/10 hover:text-white"
+        )}
+      >
+        <Icon
+          className="relative z-10 h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110"
+          strokeWidth={1.9}
+        />
+        {!compact ? <span className="relative z-10 min-w-0 flex-1 truncate">{label} ↗</span> : null}
+      </a>
+    ) : (
       <Link
         to={`${href}${previewSuffix}`}
         onClick={onNavigate}

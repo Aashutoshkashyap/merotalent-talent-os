@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,44 +32,110 @@ export default function AdminReports() {
     setIsExporting(true);
 
     try {
-      const params = new URLSearchParams({
-        format: format,
-      });
-      if (fromDate) params.append("from", fromDate);
-      if (toDate) params.append("to", toDate);
+      let csvContent = "";
+      let filename = `merotalent-${selectedReport}-${new Date().toISOString().slice(0, 10)}.csv`;
 
-      if (!session?.access_token) {
-        throw new Error("Your administrator session has expired. Sign in again.");
+      if (selectedReport === "applications") {
+        const { data } = await (supabase as any)
+          .from("college_applications")
+          .select("*")
+          .order("submitted_at", { ascending: false });
+
+        const rows = data || [];
+        const headers = ["ID", "Applicant Name", "Email", "Phone", "Target Program", "Education Level", "Status", "Submitted At"];
+        const csvRows = [headers.join(",")];
+        rows.forEach((r: any) => {
+          csvRows.push([
+            `"${r.id}"`,
+            `"${(r.full_name || "").replace(/"/g, '""')}"`,
+            `"${(r.email || "").replace(/"/g, '""')}"`,
+            `"${(r.phone || "").replace(/"/g, '""')}"`,
+            `"${(r.target_program || r.program_interest || "").replace(/"/g, '""')}"`,
+            `"${(r.education_level || "").replace(/"/g, '""')}"`,
+            `"${r.status}"`,
+            `"${r.submitted_at}"`
+          ].join(","));
+        });
+        csvContent = csvRows.join("\n");
+      } else if (selectedReport === "sessions" || selectedReport === "bookings") {
+        const { data } = await (supabase as any)
+          .from("mentor_bookings")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        const rows = data || [];
+        const headers = ["ID", "Student ID", "Mentor ID", "Topic", "Scheduled Date", "Status", "Created At"];
+        const csvRows = [headers.join(",")];
+        rows.forEach((r: any) => {
+          csvRows.push([
+            `"${r.id}"`,
+            `"${r.user_id}"`,
+            `"${r.mentor_id}"`,
+            `"${(r.topic || "").replace(/"/g, '""')}"`,
+            `"${r.scheduled_at}"`,
+            `"${r.status}"`,
+            `"${r.created_at}"`
+          ].join(","));
+        });
+        csvContent = csvRows.join("\n");
+      } else if (selectedReport === "revenue") {
+        const { data } = await (supabase as any)
+          .from("payments")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        const rows = data || [];
+        const headers = ["ID", "User ID", "Payment Type", "Amount", "Currency", "Status", "Gateway", "Created At"];
+        const csvRows = [headers.join(",")];
+        rows.forEach((r: any) => {
+          csvRows.push([
+            `"${r.id}"`,
+            `"${r.user_id}"`,
+            `"${r.payment_type}"`,
+            `"${r.amount}"`,
+            `"${r.currency}"`,
+            `"${r.status}"`,
+            `"${r.gateway || "Direct"}"`,
+            `"${r.created_at}"`
+          ].join(","));
+        });
+        csvContent = csvRows.join("\n");
+      } else {
+        // Users / People export
+        const { data } = await (supabase as any)
+          .from("profiles")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        const rows = data || [];
+        const headers = ["ID", "User ID", "Full Name", "Email", "Account Status", "Created At"];
+        const csvRows = [headers.join(",")];
+        rows.forEach((r: any) => {
+          csvRows.push([
+            `"${r.id}"`,
+            `"${r.user_id}"`,
+            `"${(r.full_name || "").replace(/"/g, '""')}"`,
+            `"${(r.email || "").replace(/"/g, '""')}"`,
+            `"${r.account_status || "active"}"`,
+            `"${r.created_at}"`
+          ].join(","));
+        });
+        csvContent = csvRows.join("\n");
       }
 
-      const response = await fetch(`/api/v1/admin/reports/${selectedReport}?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Export failed with status ${response.status}`);
-      }
-
-      const blob = await response.blob();
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `merotalent-${selectedReport}-report-${new Date().toISOString().slice(0, 10)}.${format === "csv" ? "csv" : "xml"}`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
 
-      toast({ title: "Report exported successfully!" });
-    } catch (err: unknown) {
-      toast({
-        variant: "destructive",
-        title: "Export Failed",
-        description:
-          err instanceof Error
-            ? err.message
-            : "Failed to download report. Make sure you are logged in as admin.",
-      });
+      toast({ title: "CSV Report Downloaded!", description: `Exported ${filename} successfully.` });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Export Failed", description: err?.message || "Export error." });
     } finally {
       setIsExporting(false);
     }

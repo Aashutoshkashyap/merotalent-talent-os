@@ -77,6 +77,8 @@ export default function Payments() {
   const [selectedPackage, setSelectedPackage] = useState<ServicePackage | null>(null);
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [proofImage, setProofImage] = useState("");
+  const [proofPdf, setProofPdf] = useState("");
 
   const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([
     {
@@ -295,16 +297,38 @@ export default function Payments() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 space-y-3">
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2 font-medium">
-              <p className="font-bold text-slate-900">Payment Gateway Connection:</p>
+          <div className="py-3 space-y-3">
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1 font-medium">
+              <p className="font-bold text-slate-900">Supported Direct Payment Options:</p>
               <p className="text-slate-600">
-                Connected to eSewa / Khalti / ConnectIPS / Fonepay gateway module.
+                eSewa (9801000000) / Khalti / Fonepay QR / ConnectIPS Bank Transfer.
               </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Payment Screenshot / Image URL *</label>
+              <input
+                type="text"
+                placeholder="Paste eSewa/Khalti screenshot image URL or Supabase storage link..."
+                value={proofImage}
+                onChange={(e) => setProofImage(e.target.value)}
+                className="w-full h-9 text-xs rounded-xl border border-slate-200 px-3 bg-white"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Transaction Voucher PDF / Reference Code</label>
+              <input
+                type="text"
+                placeholder="e.g. TXN-99882211 or PDF URL..."
+                value={proofPdf}
+                onChange={(e) => setProofPdf(e.target.value)}
+                className="w-full h-9 text-xs rounded-xl border border-slate-200 px-3 bg-white"
+              />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" onClick={() => setIsPayModalOpen(false)} className="text-xs font-bold rounded-xl">
               Cancel
             </Button>
@@ -313,7 +337,7 @@ export default function Payments() {
               disabled={isProcessing}
               className="bg-[#0073e6] hover:bg-[#0062c4] text-white text-xs font-extrabold rounded-xl px-6"
             >
-              {isProcessing ? "Processing..." : "Confirm & Pay Now"}
+              {isProcessing ? "Submitting..." : "Submit Payment & Proof"}
             </Button>
           </div>
         </DialogContent>

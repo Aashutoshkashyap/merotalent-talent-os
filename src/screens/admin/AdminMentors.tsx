@@ -87,6 +87,8 @@ const AdminMentors = () => {
     years_experience: "",
     is_available: true,
     bio: "",
+    avatar_url: "",
+    available_dates: "Mon - Fri, 2:00 PM - 7:00 PM",
     approval_status: "pending" as Mentor["approval_status"],
   });
 
@@ -293,6 +295,8 @@ const AdminMentors = () => {
       years_experience: mentor.years_experience.toString(),
       is_available: mentor.is_available,
       bio: mentor.description || "",
+      avatar_url: (mentor as any).avatar_url || "",
+      available_dates: (mentor as any).available_dates || "Mon - Fri, 2:00 PM - 7:00 PM",
       approval_status: mentor.approval_status,
     });
     setIsDialogOpen(true);
@@ -307,6 +311,8 @@ const AdminMentors = () => {
       years_experience: "",
       is_available: true,
       bio: "",
+      avatar_url: "",
+      available_dates: "Mon - Fri, 2:00 PM - 7:00 PM",
       approval_status: "pending",
     });
     setEditingMentor(null);
@@ -434,6 +440,24 @@ const AdminMentors = () => {
                     onChange={(e) => setFormData({ ...formData, years_experience: e.target.value })}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Available Dates & Time Slots</Label>
+                <Input
+                  placeholder="e.g. Mon-Fri 2:00 PM - 6:00 PM (Starting Sept 2026)"
+                  value={formData.available_dates}
+                  onChange={(e) => setFormData({ ...formData, available_dates: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Profile Photo / Media Image URL</Label>
+                <Input
+                  placeholder="https://images.unsplash.com/photo-... or upload URL"
+                  value={formData.avatar_url}
+                  onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
+                />
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4 items-end">
