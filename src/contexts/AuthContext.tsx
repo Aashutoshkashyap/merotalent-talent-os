@@ -263,202 +263,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const TEST_ACCOUNTS: Record<string, { role: AppRole; fullName: string; accountType: string }> = {
-    "superadmin@merotalent.com": { role: "admin", fullName: "Super Admin", accountType: "talent" },
-    "college@merotalent.com": { role: "institution", fullName: "College Admin", accountType: "institution" },
-    "company@merotalent.com": { role: "company", fullName: "Company Admin", accountType: "company" },
-    "mentor@merotalent.com": { role: "mentor", fullName: "Mentor Admin", accountType: "mentor" },
-    "student@merotalent.com": { role: "talent", fullName: "Student User", accountType: "talent" },
-    "qa.admin@merotalent.com": { role: "admin", fullName: "Super Admin (QA)", accountType: "talent" },
-    "qa.college@merotalent.com": { role: "institution", fullName: "College Admin (QA)", accountType: "institution" },
-    "qa.company@merotalent.com": { role: "company", fullName: "Company Admin (QA)", accountType: "company" },
-    "qa.mentor@merotalent.com": { role: "mentor", fullName: "Mentor Admin (QA)", accountType: "mentor" },
-    "qa.student@merotalent.com": { role: "talent", fullName: "Student User (QA)", accountType: "talent" },
-  };
-
   const signIn = async (email: string, password: string) => {
-    let { data, error } = await supabase.auth.signInWithPassword({
-      email,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
       password,
     });
 
-    const normalizedEmail = email.trim().toLowerCase();
-    if (TEST_ACCOUNTS[normalizedEmail]) {
-      const testConfig = TEST_ACCOUNTS[normalizedEmail];
-      const isUnconfirmed = error?.message?.toLowerCase().includes("email not confirmed");
-
-      if (error || !data.user || isUnconfirmed) {
-        // Attempt to auto-confirm test user email in DB via RPC
-        try {
-          const rpcClient = supabase as unknown as {
-            rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
-          };
-          await rpcClient.rpc("confirm_test_user_email", { p_email: normalizedEmail });
-        } catch {
-          // Ignore if RPC is not deployed yet
-        }
-
-        // Retry login after attempting email confirmation
-        let retry = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        });
-
-        if (retry.error || !retry.data.user) {
-          // If user does not exist in auth yet, sign them up
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: normalizedEmail,
-            password,
-            options: {
-              emailRedirectTo: window.location.origin,
-              data: {
-                full_name: testConfig.fullName,
-                account_type: testConfig.accountType,
-              },
-            },
-          });
-
-          if (!signUpError && signUpData.user) {
-            // Ensure profile is active
-            await (supabase as any).from("profiles").upsert(
-              {
-                user_id: signUpData.user.id,
-                email: normalizedEmail,
-                full_name: testConfig.fullName,
-                account_status: "active",
-                email_verified_at: new Date().toISOString(),
-              },
-              { onConflict: "user_id" }
-            );
-
-            // Ensure user role is inserted
-            await (supabase as any).from("user_roles").upsert(
-              {
-                user_id: signUpData.user.id,
-                role: testConfig.role,
-              },
-              { onConflict: "user_id,role" }
-            );
-
-            // Try confirming email again via RPC
-            try {
-              const rpcClient = supabase as unknown as {
-                rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
-              };
-              await rpcClient.rpc("confirm_test_user_email", { p_email: normalizedEmail });
-            } catch {}
-
-            retry = await supabase.auth.signInWithPassword({
-              email: normalizedEmail,
-              password,
-            });
-          }
-        }
-
-        data = retry.data;
-        error = retry.error;
-      }
-
-      if (error || !data.user) {
-        // Fallback for local testing if Supabase Auth requires unconfirmed email verification
-        const mockUserId = `test-${testConfig.role}-id`;
-        const mockUser = {
-          id: mockUserId,
-          email: normalizedEmail,
-          user_metadata: { full_name: testConfig.fullName, account_type: testConfig.accountType },
-          app_metadata: {},
-          aud: "authenticated",
-          created_at: new Date().toISOString(),
-        } as unknown as User;
-
-        const mockSession = {
-          access_token: "mock-test-access-token",
-          refresh_token: "mock-test-refresh-token",
-          expires_in: 3600,
-          token_type: "bearer",
-          user: mockUser,
-        } as unknown as Session;
-
-        setUser(mockUser);
-        setSession(mockSession);
-        setProfile({
-          id: `profile-${mockUserId}`,
-          user_id: mockUserId,
-          email: normalizedEmail,
-          full_name: testConfig.fullName,
-          avatar_url: null,
-          phone: null,
-          bio: null,
-          location: null,
-          linkedin_url: null,
-          education: null,
-          experience_level: null,
-          skills: null,
-          resume_url: null,
-          onboarding_completed: true,
-        });
-        setRoles([testConfig.role]);
-
-        const redirectTo = testConfig.role === "admin"
-          ? "/admin"
-          : testConfig.role === "institution"
-            ? "/institute"
-            : testConfig.role === "company"
-              ? "/company"
-              : testConfig.role === "mentor"
-                ? "/mentor"
-                : "/dashboard";
-
-        return { error: null, redirectTo };
-      }
+    if (error) {
+      return { error };
+    }
+    if (!data.user) {
+      return { error: new Error("Sign in failed. Please check your email and password.") };
     }
 
-    if (data?.user && TEST_ACCOUNTS[normalizedEmail]) {
-      const testConfig = TEST_ACCOUNTS[normalizedEmail];
-      try {
-        await (supabase as any).from("profiles").upsert(
-          {
-            user_id: data.user.id,
-            email: normalizedEmail,
-            full_name: testConfig.fullName,
-            account_status: "active",
-            email_verified_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        );
-
-        await (supabase as any).from("user_roles").upsert(
-          {
-            user_id: data.user.id,
-            role: testConfig.role,
-          },
-          { onConflict: "user_id,role" }
-        );
-
-        if (testConfig.role === "institution") {
-          // Check if user owns an institute; if not, link or assign an institute so they manage a verified college
-          const { data: ownedInst } = await (supabase as any)
-            .from("institutes")
-            .select("id")
-            .eq("owner_user_id", data.user.id)
-            .maybeSingle();
-
-          if (!ownedInst) {
-            // Assign first unowned institute or create/update one
-            const { data: anyInst } = await (supabase as any)
-              .from("institutes")
-              .select("id")
-              .limit(1)
-              .maybeSingle();
-
-            if (anyInst) {
-              await (supabase as any).from("institutes").update({ owner_user_id: data.user.id }).eq("id", anyInst.id);
-            }
-          }
-        }
-      } catch {}
-    }
-
+    // Roles and account status come from get_my_access_context, which resolves
+    // them server-side. The client never decides its own role.
     const rpcClient = supabase as unknown as {
       rpc: (
         name: string,
