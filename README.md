@@ -124,6 +124,14 @@ shape. Administrative writes are protected by both server guards and RLS.
 On a new project, accept and verify the first administrator invitation before a
 trusted service-role client calls the one-time `bootstrap_first_admin` RPC.
 
+## Pending production migrations
+
+Production is three migrations behind, and one pending migration must never be
+applied. The full runbook — verified current state, ordered steps with
+verification queries, and the security finding behind the exclusion — is in
+[`docs/HANDOFF-production-migrations.md`](docs/HANDOFF-production-migrations.md).
+It is written to be handed to whoever holds the database credentials.
+
 ## Database schema & query guidelines
 
 Developers must watch out for local database schema drift. Always verify definitions against files in `supabase/migrations/` rather than relying on current local DB state (e.g. if the local DB has not been reset).
