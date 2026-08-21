@@ -34,6 +34,24 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Toolchain
+
+The project requires Node.js >= 20.19.0 and npm >= 10, declared under `engines`.
+`npm run dev` runs an offline check first and stops with update instructions if
+either is below the floor.
+
+To find out whether a newer Node LTS or npm release is available:
+
+```bash
+npm run check:toolchain
+```
+
+That variant queries nodejs.org and the npm registry, prints the update command
+for anything out of date, and never fails the build — so a registry outage or
+working offline will not block you. Prefer `npm` for installs; a `bun install`
+resolves a different dependency tree and leaves `.next/types` inconsistent with
+the pinned Next version, which surfaces as unrelated `tsc` errors.
+
 Copy `.env.example` and configure the public browser variables:
 
 ```bash
