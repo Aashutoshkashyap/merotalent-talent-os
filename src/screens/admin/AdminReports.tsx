@@ -33,7 +33,7 @@ export default function AdminReports() {
 
     try {
       let csvContent = "";
-      let filename = `merotalent-${selectedReport}-${new Date().toISOString().slice(0, 10)}.csv`;
+      const filename = `merotalent-${selectedReport}-${new Date().toISOString().slice(0, 10)}.csv`;
 
       if (selectedReport === "applications") {
         const { data } = await (supabase as any)
@@ -42,7 +42,7 @@ export default function AdminReports() {
           .order("submitted_at", { ascending: false });
 
         const rows = data || [];
-        const headers = ["ID", "Applicant Name", "Email", "Phone", "Target Program", "Education Level", "Status", "Submitted At"];
+        const headers = ["ID", "Applicant Name", "Email", "Phone", "Program Interest", "Intake", "Status", "Submitted At"];
         const csvRows = [headers.join(",")];
         rows.forEach((r: any) => {
           csvRows.push([
@@ -50,8 +50,8 @@ export default function AdminReports() {
             `"${(r.full_name || "").replace(/"/g, '""')}"`,
             `"${(r.email || "").replace(/"/g, '""')}"`,
             `"${(r.phone || "").replace(/"/g, '""')}"`,
-            `"${(r.target_program || r.program_interest || "").replace(/"/g, '""')}"`,
-            `"${(r.education_level || "").replace(/"/g, '""')}"`,
+            `"${(r.program_interest || "").replace(/"/g, '""')}"`,
+            `"${(r.intake || "").replace(/"/g, '""')}"`,
             `"${r.status}"`,
             `"${r.submitted_at}"`
           ].join(","));
