@@ -80,6 +80,8 @@ import InstituteNotices from "./screens/institute/InstituteNotices";
 import RoleWorkspace from "./screens/role/RoleWorkspace";
 import LegalPage from "./screens/LegalPage";
 
+import ComingSoonPage from "./screens/ComingSoonPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -102,12 +104,12 @@ const App = () => (
               {/* Public Landing Pages */}
               <Route path="/courses" element={<CoursesPage />} />
               <Route path="/courses/:id" element={<CourseDetailPage />} />
-              <Route path="/jobs" element={<JobsPage />} />
+              <Route path="/jobs" element={<ComingSoonPage moduleKey="jobs" />} />
               <Route path="/institutes" element={<InstitutesPage />} />
               <Route path="/institutes/:slug" element={<InstituteDetailPage />} />
-              <Route path="/competitions" element={<CompetitionsPage />} />
+              <Route path="/competitions" element={<ComingSoonPage moduleKey="competitions" />} />
               <Route path="/events" element={<EventsPage />} />
-              <Route path="/mentorship" element={<MentorshipPage />} />
+              <Route path="/mentorship" element={<ComingSoonPage moduleKey="mentorship" />} />
               <Route path="/request-access" element={<RequestSubAdminAccess />} />
               <Route path="/privacy" element={<LegalPage type="privacy" />} />
               <Route path="/terms" element={<LegalPage type="terms" />} />
