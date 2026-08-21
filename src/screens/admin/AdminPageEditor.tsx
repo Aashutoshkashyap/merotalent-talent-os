@@ -287,10 +287,7 @@ const STANDARD_HOME_SECTIONS = [
       return;
     }
 
-    setIsSubmitting(true);
-
-    const payload = {
-      parent_id: formData.parent_id || null,
+    const payload: Record<string, any> = {
       section_key: formData.section_key,
       title: formData.title,
       subtitle: formData.subtitle || null,
@@ -304,31 +301,31 @@ const STANDARD_HOME_SECTIONS = [
       page: formData.page,
     };
 
+    if (formData.parent_id) {
+      payload.parent_id = formData.parent_id;
+    }
+
     const db = supabase as any;
 
-    if (editingSection) {
-      const { error } = await db
-        .from("page_sections")
-        .update(payload)
-        .eq("id", editingSection.id);
-      if (error) {
-        toast({ variant: "destructive", title: "Update failed", description: error.message });
-      } else {
-        toast({ title: "Section updated successfully" });
-        setIsDialogOpen(false);
-        resetForm();
-        fetchSections();
-      }
+    let { error } = editingSection
+      ? await db.from("page_sections").update(payload).eq("id", editingSection.id)
+      : await db.from("page_sections").insert(payload);
+
+    if (error && (error.message?.includes("parent_id") || error.message?.includes("column"))) {
+      delete payload.parent_id;
+      const retryResult = editingSection
+        ? await db.from("page_sections").update(payload).eq("id", editingSection.id)
+        : await db.from("page_sections").insert(payload);
+      error = retryResult.error;
+    }
+
+    if (error) {
+      toast({ variant: "destructive", title: editingSection ? "Update failed" : "Create failed", description: error.message });
     } else {
-      const { error } = await db.from("page_sections").insert(payload);
-      if (error) {
-        toast({ variant: "destructive", title: "Create failed", description: error.message });
-      } else {
-        toast({ title: "New section created" });
-        setIsDialogOpen(false);
-        resetForm();
-        fetchSections();
-      }
+      toast({ title: editingSection ? "Section updated successfully" : "New section created" });
+      setIsDialogOpen(false);
+      resetForm();
+      fetchSections();
     }
 
     setIsSubmitting(false);
