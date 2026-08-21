@@ -21,6 +21,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  COLLEGE_APPLICATION_STATUSES,
+  collegeApplicationStatusBadgeClass,
+  collegeApplicationStatusLabel,
+  type CollegeApplicationStatus,
+} from "@/lib/institutes/college-application-status";
+import {
   AlertCircle,
   Building2,
   Bell,
@@ -79,13 +85,38 @@ interface ApplicationPreview {
   program_interest: string | null;
   status: string;
   submitted_at: string;
-  institute_name: string | null;
-  education_level: string | null;
+  intake: string | null;
   phone: string | null;
-  target_program: string | null;
 }
 
-type AppStatusTab = "all" | "pending" | "followed_up" | "admitted" | "rejected";
+type AppStatusTab = "all" | CollegeApplicationStatus;
+
+const APP_STATUS_TABS: readonly AppStatusTab[] = [
+  "all",
+  ...COLLEGE_APPLICATION_STATUSES,
+];
+
+/** Statuses an institute owner can move an application into. */
+const APP_ACTION_STATUSES = [
+  "reviewing",
+  "contacted",
+  "accepted",
+  "rejected",
+] as const satisfies readonly CollegeApplicationStatus[];
+
+const APP_ACTION_LABELS: Record<(typeof APP_ACTION_STATUSES)[number], string> = {
+  reviewing: "Mark Reviewing",
+  contacted: "Mark Followed Up",
+  accepted: "Mark Admitted",
+  rejected: "Reject",
+};
+
+const APP_ACTION_BUTTON_CLASSES: Record<(typeof APP_ACTION_STATUSES)[number], string> = {
+  reviewing: "border-sky-200 text-sky-700 hover:bg-sky-50",
+  contacted: "border-blue-200 text-blue-700 hover:bg-blue-50",
+  accepted: "border-emerald-200 text-emerald-700 hover:bg-emerald-50",
+  rejected: "border-red-200 text-red-700 hover:bg-red-50",
+};
 
 interface SubscriptionSummary {
   packageName: string;
@@ -431,7 +462,7 @@ const InstituteDashboard = () => {
         .limit(4),
       db
         .from("college_applications")
-        .select("id, full_name, program_interest, target_program, education_level, phone, status, submitted_at", { count: "exact" })
+        .select("id, full_name, program_interest, intake, phone, status, submitted_at", { count: "exact" })
         .eq("institute_id", instituteRecord.id)
         .is("deleted_at", null)
         .order("submitted_at", { ascending: false }),
@@ -487,14 +518,17 @@ const InstituteDashboard = () => {
     setIsLoading(false);
   }, [toast, user]);
 
-  const handleUpdateAppStatus = async (appId: string, newStatus: string) => {
+  const handleUpdateAppStatus = async (appId: string, newStatus: CollegeApplicationStatus) => {
     setUpdatingAppId(appId);
     try {
-      await (supabase as any)
+      // supabase-js resolves with an `error` field instead of throwing, so this
+      // must be inspected explicitly or failed writes report success.
+      const { error } = await (supabase as any)
         .from("college_applications")
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq("id", appId);
-      toast({ title: "Status Updated", description: `Application marked as "${newStatus.replace(/_/g, " ")}".` });
+      if (error) throw error;
+      toast({ title: "Status Updated", description: `Application marked as "${collegeApplicationStatusLabel(newStatus)}".` });
       void fetchInstituteData();
     } catch (err: any) {
       toast({ variant: "destructive", title: "Update Failed", description: err?.message || "Could not update status." });
@@ -1039,17 +1073,11 @@ const InstituteDashboard = () => {
                 {/* Status Filter Tabs */}
                 {canAccessApplications && (
                   <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl mt-3 flex-wrap">
-                    {(["all", "pending", "followed_up", "admitted", "rejected"] as AppStatusTab[]).map((tab) => {
+                    {APP_STATUS_TABS.map((tab) => {
                       const count = tab === "all"
                         ? recentApplications.length
                         : recentApplications.filter((a) => a.status === tab).length;
-                      const labels: Record<AppStatusTab, string> = {
-                        all: "All",
-                        pending: "Pending",
-                        followed_up: "Followed Up",
-                        admitted: "Admitted",
-                        rejected: "Rejected",
-                      };
+                      const label = tab === "all" ? "All" : collegeApplicationStatusLabel(tab);
                       return (
                         <button
                           key={tab}
@@ -1060,7 +1088,7 @@ const InstituteDashboard = () => {
                               : "text-slate-500 hover:text-slate-800"
                           }`}
                         >
-                          {labels[tab]} ({count})
+                          {label} ({count})
                         </button>
                       );
                     })}
@@ -1080,84 +1108,46 @@ const InstituteDashboard = () => {
                   return filtered.length === 0 ? (
                     <div className="py-8 text-center text-muted-foreground">
                       <Users className="mx-auto mb-3 h-10 w-10 opacity-50" />
-                      <p>No {appStatusFilter === "all" ? "" : appStatusFilter.replace(/_/g, " ")} applications {appStatusFilter === "all" ? "received yet" : "found"}</p>
+                      <p>No {appStatusFilter === "all" ? "" : collegeApplicationStatusLabel(appStatusFilter).toLowerCase()} applications {appStatusFilter === "all" ? "received yet" : "found"}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {filtered.map((application) => {
                         const isUpdating = updatingAppId === application.id;
-                        const statusColors: Record<string, string> = {
-                          pending: "bg-amber-100 text-amber-800 border-amber-200",
-                          followed_up: "bg-blue-100 text-blue-800 border-blue-200",
-                          admitted: "bg-emerald-100 text-emerald-800 border-emerald-200",
-                          rejected: "bg-red-100 text-red-800 border-red-200",
-                        };
-                        const badgeClass = statusColors[application.status] || "bg-slate-100 text-slate-700 border-slate-200";
+                        const badgeClass = collegeApplicationStatusBadgeClass(application.status);
                         return (
                           <div key={application.id} className="rounded-xl border border-[#f0e3da] bg-[#fffdfb] p-4">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-slate-900 truncate">{application.full_name || "Anonymous Applicant"}</p>
                                 <p className="mt-0.5 text-xs text-slate-600 truncate">
-                                  {application.target_program || application.program_interest || "Program not specified"}
-                                  {application.education_level ? ` · ${application.education_level}` : ""}
+                                  {application.program_interest || "Program not specified"}
+                                  {application.intake ? ` · ${application.intake}` : ""}
                                 </p>
                                 {application.phone && (
                                   <p className="mt-0.5 text-xs text-slate-500">📞 {application.phone}</p>
                                 )}
                               </div>
-                              <Badge className={`shrink-0 capitalize text-[10px] font-bold border ${badgeClass}`}>
-                                {prettify(application.status)}
+                              <Badge className={`shrink-0 text-[10px] font-bold border ${badgeClass}`}>
+                                {collegeApplicationStatusLabel(application.status)}
                               </Badge>
                             </div>
                             <p className="mt-2 text-[11px] text-muted-foreground">Submitted {formatDate(application.submitted_at)}</p>
 
                             {/* Status Update Actions */}
                             <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#f0e3da] pt-3">
-                              {application.status !== "pending" && (
+                              {APP_ACTION_STATUSES.filter((status) => status !== application.status).map((status) => (
                                 <Button
+                                  key={status}
                                   variant="outline"
                                   size="sm"
                                   disabled={isUpdating}
-                                  onClick={() => handleUpdateAppStatus(application.id, "pending")}
-                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-amber-200 text-amber-700 hover:bg-amber-50"
+                                  onClick={() => handleUpdateAppStatus(application.id, status)}
+                                  className={`h-7 text-[10px] font-bold rounded-lg px-2.5 border ${APP_ACTION_BUTTON_CLASSES[status]}`}
                                 >
-                                  Mark Pending
+                                  {APP_ACTION_LABELS[status]}
                                 </Button>
-                              )}
-                              {application.status !== "followed_up" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={isUpdating}
-                                  onClick={() => handleUpdateAppStatus(application.id, "followed_up")}
-                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-blue-200 text-blue-700 hover:bg-blue-50"
-                                >
-                                  Mark Followed Up
-                                </Button>
-                              )}
-                              {application.status !== "admitted" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={isUpdating}
-                                  onClick={() => handleUpdateAppStatus(application.id, "admitted")}
-                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                >
-                                  Mark Admitted
-                                </Button>
-                              )}
-                              {application.status !== "rejected" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={isUpdating}
-                                  onClick={() => handleUpdateAppStatus(application.id, "rejected")}
-                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-red-200 text-red-700 hover:bg-red-50"
-                                >
-                                  Reject
-                                </Button>
-                              )}
+                              ))}
                               {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-[#c2410c] ml-1" />}
                             </div>
                           </div>

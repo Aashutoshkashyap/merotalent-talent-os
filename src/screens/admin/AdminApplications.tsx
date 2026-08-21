@@ -9,6 +9,11 @@ import { Search, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { listAdminResource } from "@/lib/admin/admin-client";
+import {
+  COLLEGE_APPLICATION_STATUSES,
+  collegeApplicationStatusLabel,
+  type CollegeApplicationStatus,
+} from "@/lib/institutes/college-application-status";
 
 interface CollegeApp {
   id: string;
@@ -58,12 +63,14 @@ export default function AdminApplications() {
     }
   };
 
-  const updateStatus = async (id: string, newStatus: string) => {
+  const updateStatus = async (id: string, newStatus: CollegeApplicationStatus) => {
     const { error } = await (supabase as any).from("college_applications").update({ status: newStatus }).eq("id", id);
-    if (!error) {
-      toast({ title: `Application status updated to ${newStatus}` });
-      fetchApplications();
+    if (error) {
+      toast({ variant: "destructive", title: "Status update failed", description: error.message });
+      return;
     }
+    toast({ title: `Application status updated to ${collegeApplicationStatusLabel(newStatus)}` });
+    fetchApplications();
   };
 
   const filteredApps = applications.filter((a) =>
@@ -129,19 +136,19 @@ export default function AdminApplications() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Select value={app.status} onValueChange={(val) => updateStatus(app.id, val)}>
+                  <Select
+                    value={app.status}
+                    onValueChange={(val) => updateStatus(app.id, val as CollegeApplicationStatus)}
+                  >
                     <SelectTrigger className="w-[120px] h-8 text-xs ml-auto">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="submitted">Submitted</SelectItem>
-                      <SelectItem value="reviewing">Reviewing</SelectItem>
-                      <SelectItem value="followed_up">Followed Up</SelectItem>
-                      <SelectItem value="contacted">Contacted</SelectItem>
-                      <SelectItem value="admitted">Admitted</SelectItem>
-                      <SelectItem value="accepted">Accepted</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
+                      {COLLEGE_APPLICATION_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {collegeApplicationStatusLabel(status)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </TableCell>
