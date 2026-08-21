@@ -431,8 +431,8 @@ const InstituteDashboard = () => {
         .limit(4),
       db
         .from("college_applications")
-        .select("id, full_name, program_interest, target_program, education_level, phone, institute_name, status, submitted_at", { count: "exact" })
-        .or(`institute_id.eq.${instituteRecord.id},institute_name.eq.${instituteRecord.name}`)
+        .select("id, full_name, program_interest, target_program, education_level, phone, status, submitted_at", { count: "exact" })
+        .eq("institute_id", instituteRecord.id)
         .is("deleted_at", null)
         .order("submitted_at", { ascending: false }),
       db

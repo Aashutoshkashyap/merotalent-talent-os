@@ -77,10 +77,10 @@ export default function Colleges() {
       try {
         const { data } = await (supabase as any)
           .from("college_applications")
-          .select("institute_name, institute_id")
+          .select("institute_id")
           .or(`user_id.eq.${user.id},applicant_id.eq.${user.id}`);
         if (data && Array.isArray(data)) {
-          const names = data.map((d: any) => String(d.institute_name || d.institute_id || "")).filter(Boolean);
+          const names = data.map((d: any) => String(d.institute_id || "")).filter(Boolean);
           setAppliedCollegeNames(new Set(names));
         }
       } catch (err) {
