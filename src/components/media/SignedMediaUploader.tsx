@@ -220,75 +220,63 @@ export async function uploadSignedCollegeMedia(
   }
 
   const expectedBucket = signedBucketByModule[module] || "job-files";
-  const fileExt = processedFile.name.split(".").pop() || "pdf";
-  const fallbackPath = `${resourceId}/${Date.now()}.${fileExt}`;
 
-  // Try secure signed URL API first
-  try {
-    const response = await fetch("/api/v1/media/upload-url", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        module,
-        resourceId,
-        fileName: processedFile.name,
-        contentType: processedFile.type,
-        sizeBytes: processedFile.size,
-      }),
+  // The signing endpoint is the only authorization gate for uploads, so it is
+  // authoritative: every failure below must reject. Falling back to a direct
+  // unsigned upload would bypass that gate, and returning a fabricated path
+  // would record an attachment that was never stored.
+  const response = await fetch("/api/v1/media/upload-url", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      module,
+      resourceId,
+      fileName: processedFile.name,
+      contentType: processedFile.type,
+      sizeBytes: processedFile.size,
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as UploadSigningResponse;
+
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(payload));
+  }
+
+  const { bucket, path, token } = payload.data ?? {};
+
+  if (typeof path !== "string" || typeof token !== "string" || !path || !token) {
+    throw new Error("The upload service returned an incomplete authorization.");
+  }
+
+  // A destination outside the bucket this module is allowed to write to means
+  // the signature cannot be trusted; never silently retarget the upload.
+  if (bucket !== expectedBucket) {
+    throw new Error(
+      `The upload service returned an invalid destination for ${module}.`,
+    );
+  }
+
+  const { error: uploadError } = await supabase.storage
+    .from(expectedBucket)
+    .uploadToSignedUrl(path, token, processedFile, {
+      cacheControl: "3600",
+      contentType: processedFile.type,
+      upsert: false,
     });
 
-    if (response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as UploadSigningResponse;
-      const bucket = payload.data?.bucket;
-      const path = payload.data?.path;
-      const token = payload.data?.token;
-
-      if (
-        typeof bucket === "string" &&
-        bucket === expectedBucket &&
-        typeof path === "string" &&
-        typeof token === "string"
-      ) {
-        const { error: uploadError } = await supabase.storage
-          .from(expectedBucket)
-          .uploadToSignedUrl(path, token, processedFile, {
-            cacheControl: "3600",
-            contentType: processedFile.type,
-            upsert: false,
-          });
-
-        if (!uploadError) {
-          const publicUrl = module === "job_attachment"
-            ? ""
-            : supabase.storage.from(expectedBucket).getPublicUrl(path).data.publicUrl;
-          return { bucket: expectedBucket, path, publicUrl };
-        }
-      }
-    }
-  } catch {
-    // API endpoint unavailable, fallback to direct Supabase upload or DataURL below
+  if (uploadError) {
+    throw new Error(uploadError.message || "The file upload failed.");
   }
 
-  // Fallback 1: Direct Supabase Storage Upload
-  try {
-    const { data: uploadData, error: uploadErr } = await supabase.storage
-      .from(expectedBucket)
-      .upload(fallbackPath, processedFile, { upsert: true });
+  const publicUrl = module === "job_attachment"
+    ? ""
+    : supabase.storage.from(expectedBucket).getPublicUrl(path).data.publicUrl;
 
-    if (!uploadErr && uploadData?.path) {
-      const publicUrl = supabase.storage.from(expectedBucket).getPublicUrl(uploadData.path).data.publicUrl;
-      return { bucket: expectedBucket, path: uploadData.path, publicUrl };
-    }
-  } catch {
-    // Storage bucket permission fallback
-  }
-
-  // Fallback 2: Clean lightweight object path reference (Prevents payload size limits)
-  const cleanPath = `attachments/${resourceId}/${Date.now()}_${processedFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  return { bucket: expectedBucket, path: cleanPath, publicUrl: "" };
+  return { bucket: expectedBucket, path, publicUrl };
 }
 
 export function SignedMediaUploader({
