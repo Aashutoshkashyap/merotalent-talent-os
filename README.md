@@ -106,6 +106,13 @@ shape. Administrative writes are protected by both server guards and RLS.
 On a new project, accept and verify the first administrator invitation before a
 trusted service-role client calls the one-time `bootstrap_first_admin` RPC.
 
+## Database schema & query guidelines
+
+Developers must watch out for local database schema drift. Always verify definitions against files in `supabase/migrations/` rather than relying on current local DB state (e.g. if the local DB has not been reset).
+
+* **College Applications:** The student reference column is `applicant_id`, NOT `user_id`. Queries must target `applicant_id` directly.
+* **Direct Table Inserts vs API Submissions:** Direct insert policy is disabled for `college_applications`. Direct inserts will fail. Always submit applications using the versioned API wrapper `submitAuthenticatedModuleForm` (which maps details into the JSON `form_data` field and executes via database RPC).
+
 ## Scheduled maintenance
 
 `vercel.json` runs `/api/cron/maintenance` daily at midnight Nepal time (18:15 UTC). Vercel
