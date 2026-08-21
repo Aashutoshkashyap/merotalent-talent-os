@@ -79,7 +79,13 @@ interface ApplicationPreview {
   program_interest: string | null;
   status: string;
   submitted_at: string;
+  institute_name: string | null;
+  education_level: string | null;
+  phone: string | null;
+  target_program: string | null;
 }
+
+type AppStatusTab = "all" | "pending" | "followed_up" | "admitted" | "rejected";
 
 interface SubscriptionSummary {
   packageName: string;
@@ -158,6 +164,8 @@ const InstituteDashboard = () => {
   const [requestPhone, setRequestPhone] = useState("");
   const [requestReason, setRequestReason] = useState("");
   const [isSubmittingAccess, setIsSubmittingAccess] = useState(false);
+  const [appStatusFilter, setAppStatusFilter] = useState<AppStatusTab>("all");
+  const [updatingAppId, setUpdatingAppId] = useState<string | null>(null);
 
   // Claim or List College Modal State
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -423,11 +431,10 @@ const InstituteDashboard = () => {
         .limit(4),
       db
         .from("college_applications")
-        .select("id, full_name, program_interest, status, submitted_at", { count: "exact" })
-        .eq("institute_id", instituteRecord.id)
+        .select("id, full_name, program_interest, target_program, education_level, phone, institute_name, status, submitted_at", { count: "exact" })
+        .or(`institute_id.eq.${instituteRecord.id},institute_name.eq.${instituteRecord.name}`)
         .is("deleted_at", null)
-        .order("submitted_at", { ascending: false })
-        .limit(5),
+        .order("submitted_at", { ascending: false }),
       db
         .from("subscriptions")
         .select("id, package_id, entity_type, entity_id, start_date, expiry_date, status, payment_status")
@@ -479,6 +486,22 @@ const InstituteDashboard = () => {
     setFailedSources([...failures]);
     setIsLoading(false);
   }, [toast, user]);
+
+  const handleUpdateAppStatus = async (appId: string, newStatus: string) => {
+    setUpdatingAppId(appId);
+    try {
+      await (supabase as any)
+        .from("college_applications")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", appId);
+      toast({ title: "Status Updated", description: `Application marked as "${newStatus.replace(/_/g, " ")}".` });
+      void fetchInstituteData();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Update Failed", description: err?.message || "Could not update status." });
+    } finally {
+      setUpdatingAppId(null);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -984,13 +1007,45 @@ const InstituteDashboard = () => {
 
             <Card id="applications" className="scroll-mt-20 rounded-[24px] border-[#f0e3da] shadow-[0_14px_38px_rgba(79,48,30,0.06)] xl:col-span-2">
               <CardHeader>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <CardTitle>Recent Applications</CardTitle>
-                    <p className="mt-1 text-sm text-muted-foreground">Latest student applications for this institute</p>
+                    <CardTitle>Student Applications</CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Applications submitted to <span className="font-semibold text-[#c2410c]">{activeInstitute.name}</span> only
+                    </p>
                   </div>
                   <Badge variant="outline">{canAccessApplications ? `${stats.applications} total` : "Plan required"}</Badge>
                 </div>
+                {/* Status Filter Tabs */}
+                {canAccessApplications && (
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl mt-3 flex-wrap">
+                    {(["all", "pending", "followed_up", "admitted", "rejected"] as AppStatusTab[]).map((tab) => {
+                      const count = tab === "all"
+                        ? recentApplications.length
+                        : recentApplications.filter((a) => a.status === tab).length;
+                      const labels: Record<AppStatusTab, string> = {
+                        all: "All",
+                        pending: "Pending",
+                        followed_up: "Followed Up",
+                        admitted: "Admitted",
+                        rejected: "Rejected",
+                      };
+                      return (
+                        <button
+                          key={tab}
+                          onClick={() => setAppStatusFilter(tab)}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                            appStatusFilter === tab
+                              ? "bg-white text-slate-900 shadow-xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          {labels[tab]} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 {!canAccessApplications ? (
@@ -998,37 +1053,99 @@ const InstituteDashboard = () => {
                     <CreditCard className="mt-0.5 h-4 w-4 shrink-0" />
                     <p>An active package with lead access is required before applicant records can be viewed.</p>
                   </div>
-                ) : recentApplications.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    <Users className="mx-auto mb-3 h-10 w-10 opacity-50" />
-                    <p>No applications received yet</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {recentApplications.map((application) => (
-                      <div key={application.id} className="rounded-xl border border-[#f0e3da] bg-[#fffdfb] p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold">{application.full_name}</p>
-                            <p className="mt-1 truncate text-xs text-muted-foreground">
-                              {application.program_interest || "Program not specified"}
-                            </p>
+                ) : (() => {
+                  const filtered = appStatusFilter === "all"
+                    ? recentApplications
+                    : recentApplications.filter((a) => a.status === appStatusFilter);
+                  return filtered.length === 0 ? (
+                    <div className="py-8 text-center text-muted-foreground">
+                      <Users className="mx-auto mb-3 h-10 w-10 opacity-50" />
+                      <p>No {appStatusFilter === "all" ? "" : appStatusFilter.replace(/_/g, " ")} applications {appStatusFilter === "all" ? "received yet" : "found"}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {filtered.map((application) => {
+                        const isUpdating = updatingAppId === application.id;
+                        const statusColors: Record<string, string> = {
+                          pending: "bg-amber-100 text-amber-800 border-amber-200",
+                          followed_up: "bg-blue-100 text-blue-800 border-blue-200",
+                          admitted: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                          rejected: "bg-red-100 text-red-800 border-red-200",
+                        };
+                        const badgeClass = statusColors[application.status] || "bg-slate-100 text-slate-700 border-slate-200";
+                        return (
+                          <div key={application.id} className="rounded-xl border border-[#f0e3da] bg-[#fffdfb] p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-slate-900 truncate">{application.full_name || "Anonymous Applicant"}</p>
+                                <p className="mt-0.5 text-xs text-slate-600 truncate">
+                                  {application.target_program || application.program_interest || "Program not specified"}
+                                  {application.education_level ? ` · ${application.education_level}` : ""}
+                                </p>
+                                {application.phone && (
+                                  <p className="mt-0.5 text-xs text-slate-500">📞 {application.phone}</p>
+                                )}
+                              </div>
+                              <Badge className={`shrink-0 capitalize text-[10px] font-bold border ${badgeClass}`}>
+                                {prettify(application.status)}
+                              </Badge>
+                            </div>
+                            <p className="mt-2 text-[11px] text-muted-foreground">Submitted {formatDate(application.submitted_at)}</p>
+
+                            {/* Status Update Actions */}
+                            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#f0e3da] pt-3">
+                              {application.status !== "pending" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isUpdating}
+                                  onClick={() => handleUpdateAppStatus(application.id, "pending")}
+                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-amber-200 text-amber-700 hover:bg-amber-50"
+                                >
+                                  Mark Pending
+                                </Button>
+                              )}
+                              {application.status !== "followed_up" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isUpdating}
+                                  onClick={() => handleUpdateAppStatus(application.id, "followed_up")}
+                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-blue-200 text-blue-700 hover:bg-blue-50"
+                                >
+                                  Mark Followed Up
+                                </Button>
+                              )}
+                              {application.status !== "admitted" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isUpdating}
+                                  onClick={() => handleUpdateAppStatus(application.id, "admitted")}
+                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                >
+                                  Mark Admitted
+                                </Button>
+                              )}
+                              {application.status !== "rejected" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isUpdating}
+                                  onClick={() => handleUpdateAppStatus(application.id, "rejected")}
+                                  className="h-7 text-[10px] font-bold rounded-lg px-2.5 border-red-200 text-red-700 hover:bg-red-50"
+                                >
+                                  Reject
+                                </Button>
+                              )}
+                              {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-[#c2410c] ml-1" />}
+                            </div>
                           </div>
-                          <Badge variant="outline" className="shrink-0 capitalize text-[10px]">
-                            {prettify(application.status)}
-                          </Badge>
-                        </div>
-                        <p className="mt-2 text-xs text-muted-foreground">Submitted {formatDate(application.submitted_at)}</p>
-                        <OwnerStatusActions
-                          workflow="college_application"
-                          recordId={application.id}
-                          status={application.status}
-                          onSaved={() => void fetchInstituteData()}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
             </div>
