@@ -152,8 +152,8 @@ export const useStudentActivity = () => {
       const [collegeResult, jobResult, eventResult, bookingResult] = await Promise.all([
         (supabase as any)
           .from("college_applications")
-          .select("id,institute_id,program_interest,status,submitted_at,updated_at")
-          .eq("applicant_id", user.id)
+          .select("id,institute_id,institute_name,program_interest,status,submitted_at,updated_at")
+          .or(`user_id.eq.${user.id},applicant_id.eq.${user.id}`)
           .is("deleted_at", null)
           .order("submitted_at", { ascending: false }),
         (supabase as any)
@@ -223,7 +223,7 @@ export const useStudentActivity = () => {
           return {
             id: String(row.id),
             instituteId: String(row.institute_id),
-            instituteName: String(institute?.name || "College listing"),
+            instituteName: String(institute?.name || row.institute_name || "College listing"),
             programInterest: typeof row.program_interest === "string" ? row.program_interest : null,
             status: String(row.status || "submitted"),
             submittedAt: String(row.submitted_at),

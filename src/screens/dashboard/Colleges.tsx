@@ -33,6 +33,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logUserActivity } from "@/lib/activityLogger";
 import {
   fetchPublicInstitutes,
   resolveCollegeMediaUrl,
@@ -68,6 +69,26 @@ export default function Colleges() {
   const [phone, setPhone] = useState(profile?.phone || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [appliedCollegeNames, setAppliedCollegeNames] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUserApps = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from("college_applications")
+          .select("institute_name, institute_id")
+          .or(`user_id.eq.${user.id},applicant_id.eq.${user.id}`);
+        if (data && Array.isArray(data)) {
+          const names = data.map((d: any) => String(d.institute_name || d.institute_id || "")).filter(Boolean);
+          setAppliedCollegeNames(new Set(names));
+        }
+      } catch (err) {
+        console.error("Failed to load user college applications", err);
+      }
+    };
+    fetchUserApps();
+  }, [user]);
 
   useEffect(() => {
     let current = true;
@@ -127,8 +148,10 @@ export default function Colleges() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await (supabase as any).from("college_applications").insert({
-        user_id: user.id,
+      await (supabase as any).from("college_applications").insert({
+        user_id: user?.id,
+        applicant_id: user?.id,
+        institute_id: selectedCollege?.id,
         institute_name: selectedCollege?.name,
         target_program: targetProgram,
         education_level: level,
@@ -140,14 +163,40 @@ export default function Colleges() {
         status: "pending",
       });
 
-      if (error) {
-        // Direct fallback
-        console.warn("Direct application logged", error);
+      if (selectedCollege && user) {
+        logUserActivity(
+          {
+            id: `college-${selectedCollege.id}`,
+            kind: "college",
+            title: selectedCollege.name,
+            detail: targetProgram || level,
+            status: "applied",
+            occurredAt: new Date().toISOString(),
+            href: "/dashboard/colleges",
+          },
+          user.id
+        );
+        setAppliedCollegeNames((prev) => new Set(prev).add(selectedCollege.name));
       }
 
       setIsSuccess(true);
       toast({ title: "Application Submitted!", description: `Your inquiry for ${selectedCollege?.name} was sent.` });
     } catch {
+      if (selectedCollege && user) {
+        logUserActivity(
+          {
+            id: `college-${selectedCollege.id}`,
+            kind: "college",
+            title: selectedCollege.name,
+            detail: targetProgram || level,
+            status: "applied",
+            occurredAt: new Date().toISOString(),
+            href: "/dashboard/colleges",
+          },
+          user.id
+        );
+        setAppliedCollegeNames((prev) => new Set(prev).add(selectedCollege.name));
+      }
       setIsSuccess(true);
       toast({ title: "Application Submitted!", description: `Inquiry sent to ${selectedCollege?.name}.` });
     } finally {
@@ -238,6 +287,8 @@ export default function Colleges() {
               ? college.institution_category.toUpperCase()
               : "ACADEMIC";
 
+            const isApplied = appliedCollegeNames.has(college.name) || appliedCollegeNames.has(college.id);
+
             return (
               <div
                 key={college.id}
@@ -254,6 +305,12 @@ export default function Colleges() {
                           "https://images.unsplash.com/photo-1562774053-701939374585?w=600&auto=format&fit=crop&q=80";
                       }}
                     />
+                    {isApplied && (
+                      <div className="absolute top-3 left-3 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1 border border-emerald-400 shadow-xs">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Applied
+                      </div>
+                    )}
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-black text-[#0073e6] border border-white/40">
                       {categoryLabel}
                     </div>
@@ -285,9 +342,19 @@ export default function Colleges() {
                   </Button>
                   <Button
                     onClick={() => handleOpenApply(college)}
-                    className="bg-[#0073e6] hover:bg-[#0062c4] text-white font-extrabold text-xs rounded-xl px-4 py-1.5 h-8"
+                    disabled={isApplied}
+                    className={`font-extrabold text-xs rounded-xl px-4 py-1.5 h-8 ${
+                      isApplied ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : "bg-[#0073e6] hover:bg-[#0062c4] text-white"
+                    }`}
                   >
-                    Apply Now
+                    {isApplied ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                        Applied
+                      </>
+                    ) : (
+                      "Apply Now"
+                    )}
                   </Button>
                 </div>
               </div>
