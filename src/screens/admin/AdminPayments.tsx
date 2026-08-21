@@ -19,6 +19,7 @@ import { Search, DollarSign, UserCheck, Calendar, Image as ImageIcon, Loader2, S
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
+import { listAdminResource } from "@/lib/admin/admin-client";
 
 interface PaymentItem {
   id: string;
@@ -58,16 +59,22 @@ export default function AdminPayments() {
 
   const fetchPayments = async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("payments")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let data: any[] = [];
+    try {
+      data = await listAdminResource<PaymentItem>("payments");
+    } catch {
+      const { data: dbData, error } = await (supabase as any)
+        .from("payments")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      toast({ variant: "destructive", title: "Unable to load payments", description: error.message });
-      setPayments([]);
-      setIsLoading(false);
-      return;
+      if (error) {
+        toast({ variant: "destructive", title: "Unable to load payments", description: error.message });
+        setPayments([]);
+        setIsLoading(false);
+        return;
+      }
+      data = dbData || [];
     }
     try {
       const profiles = await loadAdminProfiles((data || []).map((payment: PaymentItem) => payment.user_id));

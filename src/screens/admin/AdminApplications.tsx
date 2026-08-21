@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { listAdminResource } from "@/lib/admin/admin-client";
 
 interface CollegeApp {
   id: string;
@@ -34,16 +35,27 @@ export default function AdminApplications() {
   }, []);
 
   const fetchApplications = async () => {
-    const { data, error } = await (supabase as any)
-      .from("college_applications")
-      .select("*, institutes(name)")
-      .order("submitted_at", { ascending: false });
+    try {
+      let apps: CollegeApp[] = [];
+      try {
+        apps = await listAdminResource<CollegeApp>("college-applications");
+      } catch {
+        const { data, error } = await (supabase as any)
+          .from("college_applications")
+          .select("*, institutes(name)")
+          .order("submitted_at", { ascending: false });
 
-    if (error) {
-      toast({ variant: "destructive", title: "Unable to load applications", description: error.message });
+        if (error) {
+          toast({ variant: "destructive", title: "Unable to load applications", description: error.message });
+        }
+        apps = (data || []) as CollegeApp[];
+      }
+      setApplications(apps);
+    } catch {
+      setApplications([]);
+    } finally {
+      setIsLoading(false);
     }
-    setApplications((data || []) as CollegeApp[]);
-    setIsLoading(false);
   };
 
   const updateStatus = async (id: string, newStatus: string) => {

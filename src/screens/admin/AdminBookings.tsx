@@ -9,6 +9,7 @@ import { Search, Calendar, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
+import { listAdminResource } from "@/lib/admin/admin-client";
 
 interface MentorBooking {
   id: string;
@@ -36,16 +37,23 @@ export default function AdminBookings() {
   }, []);
 
   const fetchBookings = async () => {
-    const { data, error } = await (supabase as any)
-      .from("mentor_bookings")
-      .select("*")
-      .order("scheduled_start", { ascending: false });
+    setIsLoading(true);
+    let data: any[] = [];
+    try {
+      data = await listAdminResource<MentorBooking>("mentor-bookings");
+    } catch {
+      const { data: dbData, error } = await (supabase as any)
+        .from("mentor_bookings")
+        .select("*")
+        .order("scheduled_start", { ascending: false });
 
-    if (error) {
-      toast({ variant: "destructive", title: "Unable to load bookings", description: error.message });
-      setBookings([]);
-      setIsLoading(false);
-      return;
+      if (error) {
+        toast({ variant: "destructive", title: "Unable to load bookings", description: error.message });
+        setBookings([]);
+        setIsLoading(false);
+        return;
+      }
+      data = dbData || [];
     }
     try {
       const mentorIds = [...new Set((data || []).map((booking: MentorBooking) => booking.mentor_id))];

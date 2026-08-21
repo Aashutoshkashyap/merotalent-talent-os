@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { listAdminResource } from "@/lib/admin/admin-client";
 
 interface UserRecord {
   id: string;
@@ -86,17 +87,29 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const { data: profiles } = await (supabase as any)
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let profiles: any[] = [];
+      try {
+        profiles = await listAdminResource<any>("users");
+      } catch {
+        const { data } = await (supabase as any)
+          .from("profiles")
+          .select("*")
+          .order("created_at", { ascending: false });
+        profiles = data || [];
+      }
 
       if (profiles && profiles.length > 0) {
-        const userIds = profiles.map((p: any) => p.user_id);
-        const { data: roles } = await (supabase as any)
-          .from("user_roles")
-          .select("user_id, role")
-          .in("user_id", userIds);
+        let roles: any[] = [];
+        try {
+          roles = await listAdminResource<any>("user-roles");
+        } catch {
+          const userIds = profiles.map((p: any) => p.user_id);
+          const { data: rolesData } = await (supabase as any)
+            .from("user_roles")
+            .select("user_id, role")
+            .in("user_id", userIds);
+          roles = rolesData || [];
+        }
 
         const usersWithRoles = profiles.map((profile: any) => ({
           ...profile,
