@@ -49,8 +49,24 @@ export default function ActivityTracker() {
 
   // Aggregate Applied items
   const appliedItems = useMemo(() => {
-    return [
-      ...jobApplications.map((j) => ({
+    const map = new Map<string, any>();
+
+    collegeApplications.forEach((c) => {
+      map.set(`college-${c.id}`, {
+        id: `college-${c.id}`,
+        title: c.instituteName,
+        subtitle: c.programInterest || "College Admission Application",
+        type: "College Application",
+        date: c.updatedAt,
+        status: c.status,
+        href: "/dashboard/colleges",
+        icon: GraduationCap,
+        color: "bg-blue-100 text-blue-700",
+      });
+    });
+
+    jobApplications.forEach((j) => {
+      map.set(`job-${j.id}`, {
         id: `job-${j.id}`,
         title: j.jobTitle,
         subtitle: j.companyName,
@@ -60,19 +76,11 @@ export default function ActivityTracker() {
         href: "/dashboard/jobs",
         icon: Briefcase,
         color: "bg-purple-100 text-purple-700",
-      })),
-      ...collegeApplications.map((c) => ({
-        id: `college-${c.id}`,
-        title: c.instituteName,
-        subtitle: c.programInterest || "College Application",
-        type: "College Application",
-        date: c.updatedAt,
-        status: c.status,
-        href: "/dashboard/colleges",
-        icon: GraduationCap,
-        color: "bg-blue-100 text-blue-700",
-      })),
-      ...eventRegistrations.map((e) => ({
+      });
+    });
+
+    eventRegistrations.forEach((e) => {
+      map.set(`event-${e.id}`, {
         id: `event-${e.id}`,
         title: e.eventTitle,
         subtitle: `${e.ticketQuantity} tickets`,
@@ -82,8 +90,11 @@ export default function ActivityTracker() {
         href: "/events",
         icon: Calendar,
         color: "bg-emerald-100 text-emerald-700",
-      })),
-      ...mentorBookings.map((m) => ({
+      });
+    });
+
+    mentorBookings.forEach((m) => {
+      map.set(`mentor-${m.id}`, {
         id: `mentor-${m.id}`,
         title: m.topic || m.serviceTitle || "Mentor Session",
         subtitle: `with ${m.mentorName}`,
@@ -93,21 +104,31 @@ export default function ActivityTracker() {
         href: "/dashboard/sessions",
         icon: Users,
         color: "bg-amber-100 text-amber-700",
-      })),
-      ...loggedLogs
-        .filter((l) => l.status === "applied" || l.status === "booked")
-        .map((l) => ({
-          id: l.id,
-          title: l.title,
-          subtitle: l.detail,
-          type: `${l.kind.toUpperCase()} Submission`,
-          date: l.occurredAt,
-          status: l.status,
-          href: l.href,
-          icon: CheckCircle2,
-          color: "bg-emerald-100 text-emerald-700",
-        })),
-    ];
+      });
+    });
+
+    loggedLogs
+      .filter((l) => l.status === "applied" || l.status === "booked")
+      .forEach((l) => {
+        if (!map.has(l.id)) {
+          const isCollege = l.kind === "college";
+          map.set(l.id, {
+            id: l.id,
+            title: l.title,
+            subtitle: l.detail || (isCollege ? "College Application" : "Application Submitted"),
+            type: isCollege ? "College Application" : `${l.kind.toUpperCase()} Submission`,
+            date: l.occurredAt,
+            status: l.status,
+            href: l.href || (isCollege ? "/dashboard/colleges" : "/dashboard"),
+            icon: isCollege ? GraduationCap : CheckCircle2,
+            color: isCollege ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700",
+          });
+        }
+      });
+
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }, [jobApplications, collegeApplications, eventRegistrations, mentorBookings, loggedLogs]);
 
   // Bookmarked Items
