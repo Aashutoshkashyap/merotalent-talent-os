@@ -21,7 +21,10 @@ import { getLoggedActivities } from "@/lib/activityLogger";
 
 type Tab = "applied" | "bookmarked" | "viewed";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function ActivityTracker() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("applied");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -29,11 +32,12 @@ export default function ActivityTracker() {
   const { jobApplications, collegeApplications, eventRegistrations, mentorBookings } =
     useStudentActivity();
 
-  const [loggedLogs, setLoggedLogs] = useState<ReturnType<typeof getLoggedActivities>>(() => getLoggedActivities());
+  const [loggedLogs, setLoggedLogs] = useState<ReturnType<typeof getLoggedActivities>>(() => getLoggedActivities(user?.id));
 
   useEffect(() => {
+    setLoggedLogs(getLoggedActivities(user?.id));
     const handleUpdate = () => {
-      setLoggedLogs(getLoggedActivities());
+      setLoggedLogs(getLoggedActivities(user?.id));
     };
     window.addEventListener("merotalent-activity-updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
@@ -41,7 +45,7 @@ export default function ActivityTracker() {
       window.removeEventListener("merotalent-activity-updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
     };
-  }, []);
+  }, [user?.id]);
 
   // Aggregate Applied items
   const appliedItems = useMemo(() => {

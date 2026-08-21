@@ -10,6 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 import InstituteProfileEditor from "@/components/owner/InstituteProfileEditor";
 import OwnerStatusActions from "@/components/owner/OwnerStatusActions";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
   AlertCircle,
   Building2,
   Bell,
@@ -21,6 +31,12 @@ import {
   ChevronLeft,
   CreditCard,
   Edit3,
+  Sparkles,
+  PlusCircle,
+  Lock,
+  Send,
+  Loader2,
+  ShieldCheck,
 } from "lucide-react";
 
 interface InstituteData {
@@ -134,6 +150,105 @@ const InstituteDashboard = () => {
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+
+  // Claim or List College Modal State
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [claimType, setClaimType] = useState<"claim" | "list_new">("claim");
+  const [claimCollegeName, setClaimCollegeName] = useState("");
+  const [claimPhone, setClaimPhone] = useState("");
+  const [claimEmail, setClaimEmail] = useState("");
+  const [claimNotes, setClaimNotes] = useState("");
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+
+  // Featured Listing Request State
+  const [isFeaturedModalOpen, setIsFeaturedModalOpen] = useState(false);
+  const [featuredPosition, setFeaturedPosition] = useState("home_featured");
+  const [featuredNotes, setFeaturedNotes] = useState("");
+  const [isSubmittingFeatured, setIsSubmittingFeatured] = useState(false);
+
+  // Request Other Modules State
+  const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
+  const [targetModule, setTargetModule] = useState("company");
+  const [moduleReason, setModuleReason] = useState("");
+  const [isSubmittingModule, setIsSubmittingModule] = useState(false);
+
+  const handleClaimSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmittingClaim(true);
+    try {
+      await (supabase as any).from("sub_admin_requests").insert({
+        user_id: user.id,
+        user_email: user.email,
+        full_name: claimCollegeName || user.email,
+        reason: `[${claimType.toUpperCase()}] College: ${claimCollegeName}. Phone: ${claimPhone}. Email: ${claimEmail}. Notes: ${claimNotes}`,
+        status: "pending",
+      });
+      toast({
+        title: "Request Submitted to Super Admin!",
+        description: `Your request to ${claimType === "claim" ? "claim" : "list"} ${claimCollegeName || "this college"} has been sent to Super Admin for approval.`,
+      });
+      setIsClaimModalOpen(false);
+      setClaimCollegeName("");
+      setClaimPhone("");
+      setClaimEmail("");
+      setClaimNotes("");
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Submission Error", description: err?.message || "Failed to submit request." });
+    } finally {
+      setIsSubmittingClaim(false);
+    }
+  };
+
+  const handleFeaturedSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmittingFeatured(true);
+    try {
+      await (supabase as any).from("sub_admin_requests").insert({
+        user_id: user.id,
+        user_email: user.email,
+        full_name: institute?.name || user.email,
+        reason: `[FEATURED REQUEST] Position: ${featuredPosition}. Notes: ${featuredNotes}`,
+        status: "pending",
+      });
+      toast({
+        title: "Featured Placement Requested!",
+        description: "Super Admin has been notified to place your listing in the homepage featured section.",
+      });
+      setIsFeaturedModalOpen(false);
+      setFeaturedNotes("");
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Submission Error", description: err?.message || "Failed to submit request." });
+    } finally {
+      setIsSubmittingFeatured(false);
+    }
+  };
+
+  const handleModuleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmittingModule(true);
+    try {
+      await (supabase as any).from("sub_admin_requests").insert({
+        user_id: user.id,
+        user_email: user.email,
+        full_name: user.email,
+        reason: `[MODULE ACCESS REQUEST] Target Module: ${targetModule}. Reason: ${moduleReason}`,
+        status: "pending",
+      });
+      toast({
+        title: "Module Request Sent!",
+        description: `Super Admin has received your request for ${targetModule.toUpperCase()} module access.`,
+      });
+      setIsModuleModalOpen(false);
+      setModuleReason("");
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Submission Error", description: err?.message || "Failed to submit request." });
+    } finally {
+      setIsSubmittingModule(false);
+    }
+  };
 
   const fetchInstituteData = useCallback(async () => {
     if (!user) return;
@@ -304,10 +419,12 @@ const InstituteDashboard = () => {
     end?: boolean;
     disabled?: boolean;
     anchor?: boolean;
+    action?: () => void;
   }> = [
     { path: "/institute", icon: LayoutDashboard, label: "Overview", end: true },
     { path: "/institute#applications", icon: Users, label: "Applications", anchor: true },
     { path: "/institute#subscription", icon: CreditCard, label: "Subscription", anchor: true },
+    { path: "/dashboard/payments", icon: CreditCard, label: "Payments" },
     { path: "/institute/notices", icon: Bell, label: "Notices", disabled: !access?.can_post_notices },
     { path: "/institutes", icon: Building2, label: "Public listing" },
     { path: "/courses", icon: BookOpen, label: "Course catalog" },
@@ -534,6 +651,30 @@ const InstituteDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-3">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3] text-[#c2410c] font-bold"
+                    onClick={() => setIsClaimModalOpen(true)}
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Claim / List College
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3] text-[#c2410c] font-bold"
+                    onClick={() => setIsFeaturedModalOpen(true)}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Request Featured Placement
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3] font-bold"
+                    onClick={() => setIsModuleModalOpen(true)}
+                  >
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Request Other Module Access
+                  </Button>
                   {access?.can_post_notices && (
                     <Button asChild className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412]">
                       <Link to="/institute/notices?new=1">
@@ -672,6 +813,205 @@ const InstituteDashboard = () => {
           </main>
         </div>
       </div>
+      {/* Claim or List College Modal */}
+      <Dialog open={isClaimModalOpen} onOpenChange={setIsClaimModalOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6">
+          <form onSubmit={handleClaimSubmit} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black text-slate-900">
+                Claim or List an Institution
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Fill out the claim or listing details. Super Admin will review and approve your request.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Action Type *</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={claimType === "claim" ? "hero" : "outline"}
+                    className="flex-1 text-xs font-bold rounded-xl"
+                    onClick={() => setClaimType("claim")}
+                  >
+                    Claim Existing
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={claimType === "list_new" ? "hero" : "outline"}
+                    className="flex-1 text-xs font-bold rounded-xl"
+                    onClick={() => setClaimType("list_new")}
+                  >
+                    List New College
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">College / Institution Name *</Label>
+                <Input
+                  placeholder="e.g. St. Xavier's College or IOE Pulchowk"
+                  value={claimCollegeName}
+                  onChange={(e) => setClaimCollegeName(e.target.value)}
+                  className="h-10 text-xs rounded-xl"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-slate-700">Contact Phone (Nepal) *</Label>
+                  <Input
+                    placeholder="e.g. 9801010802"
+                    value={claimPhone}
+                    onChange={(e) => setClaimPhone(e.target.value)}
+                    className="h-10 text-xs rounded-xl"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-slate-700">Official Email *</Label>
+                  <Input
+                    placeholder="e.g. info@college.edu.np"
+                    value={claimEmail}
+                    onChange={(e) => setClaimEmail(e.target.value)}
+                    className="h-10 text-xs rounded-xl"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Notes / Authorization Proof</Label>
+                <Input
+                  placeholder="Additional information or website link..."
+                  value={claimNotes}
+                  onChange={(e) => setClaimNotes(e.target.value)}
+                  className="h-10 text-xs rounded-xl"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsClaimModalOpen(false)} className="rounded-xl text-xs">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmittingClaim} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white text-xs font-extrabold px-5">
+                {isSubmittingClaim ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                Submit Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Featured Section Modal */}
+      <Dialog open={isFeaturedModalOpen} onOpenChange={setIsFeaturedModalOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6">
+          <form onSubmit={handleFeaturedSubmit} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#c2410c]" />
+                Request Featured Placement
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Request Super Admin to feature your college on the homepage or at top listing positions.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Placement Target *</Label>
+                <select
+                  value={featuredPosition}
+                  onChange={(e) => setFeaturedPosition(e.target.value)}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-medium"
+                >
+                  <option value="home_featured">Homepage Featured Banner</option>
+                  <option value="top_listing">Top Ranking Position in Colleges Directory</option>
+                  <option value="both">Both Homepage & Top Ranking</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Special Notes or Campaign Period</Label>
+                <Input
+                  placeholder="e.g. Admission season promotion (June - August)"
+                  value={featuredNotes}
+                  onChange={(e) => setFeaturedNotes(e.target.value)}
+                  className="h-10 text-xs rounded-xl"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsFeaturedModalOpen(false)} className="rounded-xl text-xs">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmittingFeatured} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white text-xs font-extrabold px-5">
+                {isSubmittingFeatured ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                Submit Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Other Module Access Modal */}
+      <Dialog open={isModuleModalOpen} onOpenChange={setIsModuleModalOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6">
+          <form onSubmit={handleModuleSubmit} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                Request Other Module Access
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Request Super Admin for additional workspace modules (Company, Mentor, Admin).
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Target Module *</Label>
+                <select
+                  value={targetModule}
+                  onChange={(e) => setTargetModule(e.target.value)}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-medium"
+                >
+                  <option value="company">Company / Employer Workspace</option>
+                  <option value="mentor">Mentor Workspace</option>
+                  <option value="admin">Sub-Admin Workspace</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Reason for Request *</Label>
+                <Input
+                  placeholder="Explain why you require this module..."
+                  value={moduleReason}
+                  onChange={(e) => setModuleReason(e.target.value)}
+                  className="h-10 text-xs rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsModuleModalOpen(false)} className="rounded-xl text-xs">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmittingModule} className="rounded-xl bg-[#0073e6] hover:bg-[#0062c4] text-white text-xs font-extrabold px-5">
+                {isSubmittingModule ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                Send Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {canEditOwnedProfile && user && (
         <InstituteProfileEditor
           open={profileEditorOpen}

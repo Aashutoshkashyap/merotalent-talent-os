@@ -13,6 +13,28 @@ export interface NotificationItem {
   link?: string;
 }
 
+const READ_NOTIFS_KEY = "merotalent.read_notifications";
+
+const getReadNotifIds = (): string[] => {
+  try {
+    const raw = localStorage.getItem(READ_NOTIFS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveReadNotifId = (id: string) => {
+  try {
+    const read = getReadNotifIds();
+    if (!read.includes(id)) {
+      localStorage.setItem(READ_NOTIFS_KEY, JSON.stringify([...read, id]));
+    }
+  } catch {
+    // Ignore storage error
+  }
+};
+
 export function useNotifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -25,6 +47,8 @@ export function useNotifications() {
       return;
     }
 
+    const readIds = getReadNotifIds();
+
     try {
       const { data } = await (supabase as any)
         .from("notifications")
@@ -32,12 +56,15 @@ export function useNotifications() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (data && Array.isArray(data)) {
-        setNotifications(data);
-        const unread = data.filter((n: NotificationItem) => !n.read).length;
-        setUnreadCount(unread);
+      if (data && Array.isArray(data) && data.length > 0) {
+        const formatted = data.map((n: NotificationItem) => ({
+          ...n,
+          read: n.read || readIds.includes(n.id),
+        }));
+        setNotifications(formatted);
+        setUnreadCount(formatted.filter((n: NotificationItem) => !n.read).length);
       } else {
-        // Fallback default notifications if table has 0 records yet
+        // Fallback default notifications
         const defaultNotifs: NotificationItem[] = [
           {
             id: "notif-1",
@@ -45,12 +72,12 @@ export function useNotifications() {
             title: "Welcome to MeroTalent!",
             message: "Your profile is active. Explore jobs, hackathons, and mentors.",
             type: "system",
-            read: false,
+            read: readIds.includes("notif-1"),
             created_at: new Date().toISOString(),
           },
         ];
         setNotifications(defaultNotifs);
-        setUnreadCount(1);
+        setUnreadCount(defaultNotifs.filter((n) => !n.read).length);
       }
     } catch {
       setUnreadCount(0);
@@ -59,7 +86,6 @@ export function useNotifications() {
 
   useEffect(() => {
     fetchNotifications();
-    // Simple 10-second polling (Free, 0 cost, no paid Realtime required)
     const interval = setInterval(() => {
       fetchNotifications();
     }, 10000);
@@ -68,7 +94,12 @@ export function useNotifications() {
   }, [fetchNotifications]);
 
   const markAllAsRead = async () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotifications((prev) =>
+      prev.map((n) => {
+        saveReadNotifId(n.id);
+        return { ...n, read: true };
+      })
+    );
     setUnreadCount(0);
 
     if (user) {
@@ -80,6 +111,7 @@ export function useNotifications() {
   };
 
   const markAsRead = async (id: string) => {
+    saveReadNotifId(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );

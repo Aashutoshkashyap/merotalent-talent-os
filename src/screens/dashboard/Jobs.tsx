@@ -94,7 +94,11 @@ const Jobs = () => {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [savedJobs, setSavedJobs] = useState<Set<string>>(() => new Set(getBookmarkedJobIds()));
+  const [savedJobs, setSavedJobs] = useState<Set<string>>(() => new Set(getBookmarkedJobIds(user?.id)));
+
+  useEffect(() => {
+    setSavedJobs(new Set(getBookmarkedJobIds(user?.id)));
+  }, [user?.id]);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [selectedDetailJob, setSelectedDetailJob] = useState<Job | null>(null);
@@ -145,7 +149,7 @@ const Jobs = () => {
   const companyCount = new Set(jobs.map((job) => job.company)).size;
 
   const toggleSaveJob = (job: Job) => {
-    const isNowSaved = toggleBookmarkJobId(job.id);
+    const isNowSaved = toggleBookmarkJobId(job.id, user?.id);
     setSavedJobs((current) => {
       const next = new Set(current);
       if (isNowSaved) next.add(job.id);
@@ -153,15 +157,18 @@ const Jobs = () => {
       return next;
     });
 
-    logUserActivity({
-      id: `job-${job.id}`,
-      kind: "job",
-      title: job.title,
-      detail: job.company,
-      status: isNowSaved ? "bookmarked" : "viewed",
-      occurredAt: new Date().toISOString(),
-      href: "/dashboard/jobs",
-    });
+    logUserActivity(
+      {
+        id: `job-${job.id}`,
+        kind: "job",
+        title: job.title,
+        detail: job.company,
+        status: isNowSaved ? "bookmarked" : "viewed",
+        occurredAt: new Date().toISOString(),
+        href: "/dashboard/jobs",
+      },
+      user?.id
+    );
 
     toast({
       title: isNowSaved ? "Job Bookmarked!" : "Bookmark Removed",

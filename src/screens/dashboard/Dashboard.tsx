@@ -86,7 +86,7 @@ const activityTone = {
 } as const;
 
 const Dashboard = () => {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const {
     collegeApplications,
     error,
@@ -105,9 +105,9 @@ const Dashboard = () => {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<number | null>(null);
 
   useEffect(() => {
-    setBookmarkedJobIds(getBookmarkedJobIds());
-    setClickLogs(getLoggedActivities());
-  }, []);
+    setBookmarkedJobIds(getBookmarkedJobIds(user?.id));
+    setClickLogs(getLoggedActivities(user?.id));
+  }, [user?.id]);
 
   const activities = useMemo<ActivityItem[]>(() => {
     const rows: ActivityItem[] = [
