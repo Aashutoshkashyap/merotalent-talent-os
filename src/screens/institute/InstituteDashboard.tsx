@@ -96,6 +96,24 @@ const APP_STATUS_TABS: readonly AppStatusTab[] = [
   ...COLLEGE_APPLICATION_STATUSES,
 ];
 
+/**
+ * Placeholder id used for an approved owner who is not yet linked to a real
+ * institutes row. It is deliberately not a uuid, so any query that filters a
+ * uuid column must be skipped while it is active — Postgres rejects a value
+ * like this with "22P02 invalid input syntax for type uuid" and fails the whole
+ * request, not just that filter.
+ */
+const UNCLAIMED_WORKSPACE_ID = "unclaimed-workspace";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isUuid = (value: unknown): value is string =>
+  typeof value === "string" && UUID_PATTERN.test(value);
+
+/** Stands in for a query that was skipped because there is no institute row. */
+const skippedQueryResult = { data: [], count: 0, error: null };
+
 /** Statuses an institute owner can move an application into. */
 const APP_ACTION_STATUSES = [
   "reviewing",
@@ -425,7 +443,7 @@ const InstituteDashboard = () => {
     // Step 4: If approved but no institute linked, show unclaimed workspace
     if (!instituteRecord) {
       instituteRecord = {
-        id: "unclaimed-workspace",
+        id: UNCLAIMED_WORKSPACE_ID,
         name: user?.user_metadata?.full_name ? `${user.user_metadata.full_name}'s College Workspace` : "College Module Workspace",
         short_name: "Workspace",
         description: "Unclaimed College Workspace. Click 'Claim / List College' to link your official college listing or submit a new listing request.",
@@ -453,19 +471,28 @@ const InstituteDashboard = () => {
     setInstitute(instituteRecord);
     setAccess(instituteAccess);
 
+    // An unclaimed workspace has no institutes row, so its id is not a uuid.
+    // Sending it to a uuid column fails the request with 22P02, which is why
+    // these two queries are skipped rather than filtered.
+    const hasPersistedInstitute = isUuid(instituteRecord.id);
+
     const [noticesResult, applicationsResult, subscriptionsResult] = await Promise.all([
-      db
-        .from("institute_notices")
-        .select("id, title, notice_type, published_at", { count: "exact" })
-        .eq("institute_id", instituteRecord.id)
-        .order("published_at", { ascending: false })
-        .limit(4),
-      db
-        .from("college_applications")
-        .select("id, full_name, program_interest, intake, phone, status, submitted_at", { count: "exact" })
-        .eq("institute_id", instituteRecord.id)
-        .is("deleted_at", null)
-        .order("submitted_at", { ascending: false }),
+      hasPersistedInstitute
+        ? db
+            .from("institute_notices")
+            .select("id, title, notice_type, published_at", { count: "exact" })
+            .eq("institute_id", instituteRecord.id)
+            .order("published_at", { ascending: false })
+            .limit(4)
+        : Promise.resolve(skippedQueryResult),
+      hasPersistedInstitute
+        ? db
+            .from("college_applications")
+            .select("id, full_name, program_interest, intake, phone, status, submitted_at", { count: "exact" })
+            .eq("institute_id", instituteRecord.id)
+            .is("deleted_at", null)
+            .order("submitted_at", { ascending: false })
+        : Promise.resolve(skippedQueryResult),
       db
         .from("subscriptions")
         .select("id, package_id, entity_type, entity_id, start_date, expiry_date, status, payment_status")
@@ -693,7 +720,7 @@ const InstituteDashboard = () => {
   }
 
   const activeInstitute = institute || {
-    id: "unclaimed-workspace",
+    id: UNCLAIMED_WORKSPACE_ID,
     name: user?.user_metadata?.full_name ? `${user.user_metadata.full_name}'s College Workspace` : "College Module Workspace",
     short_name: "Workspace",
     description: "Unclaimed workspace",
