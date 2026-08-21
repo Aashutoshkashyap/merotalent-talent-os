@@ -34,6 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logUserActivity } from "@/lib/activityLogger";
+import { submitAuthenticatedModuleForm } from "@/lib/forms/module-form-client";
 import {
   fetchPublicInstitutes,
   resolveCollegeMediaUrl,
@@ -48,7 +49,7 @@ type Level = "+2" | "Bachelors" | "Masters";
 const PAGE_SIZE = 6;
 
 export default function Colleges() {
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<InstituteCategory>("all");
@@ -75,10 +76,11 @@ export default function Colleges() {
     if (!user) return;
     const fetchUserApps = async () => {
       try {
-        const { data } = await (supabase as any)
+        const { data, error } = await (supabase as any)
           .from("college_applications")
           .select("institute_id")
-          .or(`user_id.eq.${user.id},applicant_id.eq.${user.id}`);
+          .eq("applicant_id", user.id);
+        if (error) throw error;
         if (data && Array.isArray(data)) {
           const names = data.map((d: any) => String(d.institute_id || "")).filter(Boolean);
           setAppliedCollegeNames(new Set(names));
@@ -136,7 +138,7 @@ export default function Colleges() {
 
   const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
+    if (!user || !session) {
       toast({ variant: "destructive", title: "Authentication required", description: "Please sign in to apply." });
       return;
     }
@@ -148,22 +150,22 @@ export default function Colleges() {
 
     setIsSubmitting(true);
     try {
-      await (supabase as any).from("college_applications").insert({
-        user_id: user?.id,
-        applicant_id: user?.id,
-        institute_id: selectedCollege?.id,
-        institute_name: selectedCollege?.name,
-        target_program: targetProgram,
-        education_level: level,
-        previous_institution: previousSchool,
-        previous_gpa_stream: previousGpa,
-        phone: phone,
-        temporary_address: tempAddress,
-        permanent_address: permAddress,
-        status: "pending",
+      await submitAuthenticatedModuleForm({
+        accessToken: session.access_token,
+        module: "college_application",
+        values: {
+          collegeId: selectedCollege?.id,
+          fullName: profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Student",
+          email: user?.email || "",
+          phone: phone,
+          intendedCourse: targetProgram,
+          preferredIntake: level,
+          currentQualification: `${previousSchool} (${previousGpa})`,
+          message: `Temporary Address: ${tempAddress}\nPermanent Address: ${permAddress}`,
+        },
       });
 
-      if (selectedCollege && user) {
+      if (selectedCollege) {
         logUserActivity(
           {
             id: `college-${selectedCollege.id}`,
@@ -176,29 +178,19 @@ export default function Colleges() {
           },
           user.id
         );
-        setAppliedCollegeNames((prev) => new Set(prev).add(selectedCollege.name));
+        // The initial fetch keys this set by institute_id; keep both so the
+        // "Applied" badge survives a reload as well as this optimistic update.
+        setAppliedCollegeNames((prev) => new Set(prev).add(selectedCollege.id).add(selectedCollege.name));
       }
 
       setIsSuccess(true);
       toast({ title: "Application Submitted!", description: `Your inquiry for ${selectedCollege?.name} was sent.` });
-    } catch {
-      if (selectedCollege && user) {
-        logUserActivity(
-          {
-            id: `college-${selectedCollege.id}`,
-            kind: "college",
-            title: selectedCollege.name,
-            detail: targetProgram || level,
-            status: "applied",
-            occurredAt: new Date().toISOString(),
-            href: "/dashboard/colleges",
-          },
-          user.id
-        );
-        setAppliedCollegeNames((prev) => new Set(prev).add(selectedCollege.name));
-      }
-      setIsSuccess(true);
-      toast({ title: "Application Submitted!", description: `Inquiry sent to ${selectedCollege?.name}.` });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Application Failed",
+        description: err?.message || "Could not submit your application. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }

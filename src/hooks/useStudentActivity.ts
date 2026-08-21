@@ -153,7 +153,7 @@ export const useStudentActivity = () => {
         (supabase as any)
           .from("college_applications")
           .select("id,institute_id,program_interest,status,submitted_at,updated_at")
-          .or(`user_id.eq.${user.id},applicant_id.eq.${user.id}`)
+          .eq("applicant_id", user.id)
           .is("deleted_at", null)
           .order("submitted_at", { ascending: false }),
         (supabase as any)
