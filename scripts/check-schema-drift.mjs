@@ -50,24 +50,40 @@ const RESERVED = new Set([
 const INTENTIONALLY_ABSENT = new Set(["confirm_test_user_email"]);
 
 const readEnv = () => {
+  // Prefer real environment variables so CI can pass repository secrets without
+  // materialising an env file on disk; fall back to the file for local use.
+  // Strip surrounding quotes: a value copied out of an env file often keeps
+  // them, and a quoted URL fails to parse.
+  const clean = (value) => value?.trim().replace(/^["']|["']$/g, "") || null;
+  const url = clean(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL);
+  const key = clean(
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY,
+  );
+  if (url && key) {
+    return { url: url.replace(/\/$/, ""), key, source: "environment" };
+  }
+
   let raw;
   try {
     raw = readFileSync(resolve(ROOT, ENV_FILE), "utf8");
   } catch {
-    console.error(`✖ Could not read ${ENV_FILE}.`);
+    console.error(
+      `✖ No Supabase credentials. Set NEXT_PUBLIC_SUPABASE_URL and ` +
+        `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, or provide ${ENV_FILE}.`,
+    );
     process.exit(1);
   }
   const pick = (key) => {
     const m = new RegExp(`^${key}=(.+)$`, "m").exec(raw);
     return m ? m[1].trim().replace(/^["']|["']$/g, "") : null;
   };
-  const url = pick("NEXT_PUBLIC_SUPABASE_URL") || pick("SUPABASE_URL");
-  const key = pick("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || pick("SUPABASE_PUBLISHABLE_KEY");
-  if (!url || !key) {
+  const fileUrl = pick("NEXT_PUBLIC_SUPABASE_URL") || pick("SUPABASE_URL");
+  const fileKey = pick("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || pick("SUPABASE_PUBLISHABLE_KEY");
+  if (!fileUrl || !fileKey) {
     console.error(`✖ ${ENV_FILE} is missing a Supabase URL or publishable key.`);
     process.exit(1);
   }
-  return { url: url.replace(/\/$/, ""), key };
+  return { url: fileUrl.replace(/\/$/, ""), key: fileKey, source: ENV_FILE };
 };
 
 /** table -> Set(columns), plus the migration that first declared each object. */
@@ -146,7 +162,7 @@ const argNames = (args) => {
 };
 
 const main = async () => {
-  const { url, key } = readEnv();
+  const { url, key, source } = readEnv();
   const { tables, functions, origin } = parseMigrations();
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
 
@@ -210,6 +226,7 @@ const main = async () => {
 
   const target = new URL(url).host;
   console.log(`\nSchema drift — ${target}`);
+  console.log(`  credentials from  : ${source}`);
   console.log(`  migrations parsed : ${tables.size} tables, ${functions.size} functions`);
   console.log(`  trigger functions : ${triggerCount} skipped (not reachable over REST)\n`);
 
