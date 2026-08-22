@@ -33,14 +33,18 @@ in task 2, need a human. Everything else is a command.
 # from the repo root, after `git pull`
 npm ci
 npm run check:drift          # shows what production is missing (expect 23)
-npm run db:bundle-pending    # writes pending-migrations.sql
-# --- human: paste that file into the Supabase SQL editor and run it ---
+# --- human: paste docs/pending-migrations.sql into the Supabase SQL editor ---
 npm run check:drift          # expect: "No drift"
 ```
 
-The generated bundle already contains the migrations in order, the task-3
-bookkeeping, and verification queries. **Do not skip §3** — the first migration
-mutates live rows.
+**The SQL to run is committed at
+[`docs/pending-migrations.sql`](pending-migrations.sql)** — pulling the repo is
+enough, there is nothing to generate. It already contains the six migrations in
+order, the task-3 bookkeeping, and verification queries. **Do not skip §3** —
+the first migration mutates live rows.
+
+If the pending set has changed since it was generated, refresh it with
+`npm run db:bundle-pending` and commit the result.
 
 **Do not apply `20260820163000_confirm_test_user_email.sql`.** It is excluded
 from the bundle by construction; [§5](#5-do-not-apply-20260820163000_confirm_test_user_emailsql)
@@ -136,18 +140,22 @@ no undo.
 
 ### The short path
 
-Generate one ordered file containing every pending migration, the
-`schema_migrations` bookkeeping, and the verification queries:
+Open [`docs/pending-migrations.sql`](pending-migrations.sql), copy all of it,
+paste it into the Supabase SQL editor, and run it top to bottom.
+
+That file is generated from the migration files themselves, so it cannot drift
+from them, and it deliberately excludes `20260820163000` (§5) by construction
+rather than relying on you to remember. It also appends the `schema_migrations`
+bookkeeping and the verification queries, so tasks 2 and 3 happen in one run.
+
+Each migration keeps its own `BEGIN`/`COMMIT`: if one fails it rolls itself back
+and execution stops there, leaving the ones above it applied.
+
+To regenerate after the pending set changes:
 
 ```bash
-npm run db:bundle-pending      # writes pending-migrations.sql (gitignored)
+npm run db:bundle-pending      # rewrites docs/pending-migrations.sql
 ```
-
-Paste that into the Supabase SQL editor and run it top to bottom. It is built
-from the migration files themselves, so it cannot drift from them, and it
-deliberately excludes `20260820163000` (§5). Each migration keeps its own
-`BEGIN`/`COMMIT`: if one fails it rolls itself back and execution stops there,
-leaving the ones above it applied.
 
 The per-migration detail below explains what each one does and how to verify it
 individually — useful if the bundle stops partway.

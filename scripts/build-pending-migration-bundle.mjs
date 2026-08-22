@@ -9,15 +9,19 @@
  * migration back without affecting the ones already committed before it, and
  * the run stops there.
  *
+ * The output is committed to docs/ so whoever applies it can simply pull the
+ * repository rather than run this first. Regenerate it whenever the pending set
+ * changes, and re-check `npm run check:drift` before trusting it.
+ *
  * Usage: node scripts/build-pending-migration-bundle.mjs [outFile]
- *        (default: pending-migrations.sql, which is gitignored)
+ *        (default: docs/pending-migrations.sql)
  */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = process.cwd();
-const OUT = resolve(ROOT, process.argv[2] || "pending-migrations.sql");
+const OUT = resolve(ROOT, process.argv[2] || "docs/pending-migrations.sql");
 
 /**
  * Ordered list of what production is missing, measured with

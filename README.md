@@ -150,8 +150,12 @@ applied. Everything that remains is operational rather than code:
 
 ```bash
 npm run check:drift          # what production is missing
-npm run db:bundle-pending    # one ordered file to paste into the SQL editor
 ```
+
+The SQL to apply is committed at
+[`docs/pending-migrations.sql`](docs/pending-migrations.sql) — six migrations in
+order, with bookkeeping and verification appended. Regenerate it with
+`npm run db:bundle-pending` if the pending set changes.
 
 The full task list — five ordered steps, the verified current state and how it
 was measured, per-migration verification queries, the security finding behind
