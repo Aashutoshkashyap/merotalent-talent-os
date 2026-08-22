@@ -375,10 +375,15 @@ const STANDARD_HOME_SECTIONS = [
   };
 
   const toggleVisibility = async (section: PageSection) => {
-    await (supabase as any)
+    const { error } = await (supabase as any)
       .from("page_sections")
       .update({ is_visible: !section.is_visible })
       .eq("id", section.id);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Visibility not changed", description: error.message });
+      return;
+    }
     fetchSections();
   };
 

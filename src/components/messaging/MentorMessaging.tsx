@@ -213,12 +213,14 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
   const markMessagesAsRead = async (conversationId: string) => {
     if (!user) return;
 
-    await supabase
+    const { error } = await supabase
       .from("messages")
       .update({ is_read: true })
       .eq("conversation_id", conversationId)
       .eq("receiver_id", user.id)
       .eq("is_read", false);
+
+    if (error) console.error("Failed to mark messages read", error);
   };
 
   const sendMessage = async () => {
@@ -456,12 +458,13 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                           ? selectedConversation.mentee_id
                           : selectedConversation.mentor.user_id;
 
-                        await supabase.from("messages").insert({
+                        const { error: sendError } = await supabase.from("messages").insert({
                           conversation_id: selectedConversation.id,
                           sender_id: user.id,
                           receiver_id: receiverId,
                           content: `[IMAGE]:${imageUrl}`,
                         });
+                        if (sendError) throw sendError;
 
                         // Refresh messages so image shows up immediately
                         await fetchMessages(selectedConversation.id);

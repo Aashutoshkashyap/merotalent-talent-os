@@ -95,10 +95,11 @@ export default function AdminAccessRequests() {
           .eq("id", request.id);
         if (error) throw error;
 
-        await (supabase as any)
+        const { error: suspendError } = await (supabase as any)
           .from("profiles")
           .update({ account_status: "suspended" })
           .eq("user_id", request.user_id);
+        if (suspendError) throw suspendError;
 
         toast({ title: "Access Suspended", description: `${request.user_name}'s access has been suspended.` });
       } else {
@@ -117,10 +118,14 @@ export default function AdminAccessRequests() {
           if (directError) throw directError;
         }
 
-        await (supabase as any)
+        // account_status permits only active | deactivated | pending |
+        // suspended. "disabled" failed the CHECK constraint with 23514, so a
+        // rejection never actually deactivated the account.
+        const { error: statusError } = await (supabase as any)
           .from("profiles")
-          .update({ account_status: newStatus === "approved" ? "active" : "disabled" })
+          .update({ account_status: newStatus === "approved" ? "active" : "deactivated" })
           .eq("user_id", request.user_id);
+        if (statusError) throw statusError;
 
         toast({
           title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",

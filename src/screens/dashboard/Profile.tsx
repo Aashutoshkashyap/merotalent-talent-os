@@ -115,16 +115,24 @@ const Profile = () => {
     if (!profile?.user_id) return;
 
     if (userSkills.includes(skillId)) {
-      await supabase
+      const { error } = await supabase
         .from("user_skills")
         .delete()
         .eq("user_id", profile.user_id)
         .eq("skill_id", skillId);
+      if (error) {
+        toast({ variant: "destructive", title: "Could not remove skill", description: error.message });
+        return;
+      }
       setUserSkills(userSkills.filter((id) => id !== skillId));
     } else {
-      await supabase
+      const { error } = await supabase
         .from("user_skills")
         .insert({ user_id: profile.user_id, skill_id: skillId });
+      if (error) {
+        toast({ variant: "destructive", title: "Could not add skill", description: error.message });
+        return;
+      }
       setUserSkills([...userSkills, skillId]);
     }
   };
@@ -159,15 +167,23 @@ const Profile = () => {
     } else {
       setResumeFile(file);
       // Update profile with resume URL
-      await supabase
+      const { error: linkError } = await supabase
         .from('profiles')
         .update({ resume_url: filePath })
         .eq('user_id', user.id);
-      
-      toast({
-        title: "Resume uploaded!",
-        description: "Your resume has been saved.",
-      });
+
+      if (linkError) {
+        toast({
+          variant: "destructive",
+          title: "Resume not linked",
+          description: `The file uploaded but was not attached to your profile: ${linkError.message}`,
+        });
+      } else {
+        toast({
+          title: "Resume uploaded!",
+          description: "Your resume has been saved.",
+        });
+      }
       await refreshProfile();
     }
     setIsUploading(false);

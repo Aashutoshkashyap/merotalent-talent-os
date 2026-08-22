@@ -150,18 +150,20 @@ const AdminUsers = () => {
       const newUserId = authData.user?.id;
       if (newUserId) {
         // 2. Insert profile record if needed
-        await (supabase as any).from("profiles").upsert({
+        const { error: profileError } = await (supabase as any).from("profiles").upsert({
           user_id: newUserId,
-          email: createEmail.trim(),
+          email: createEmail.trim().toLowerCase(),
           full_name: createName.trim(),
           account_status: "active",
         });
+        if (profileError) throw profileError;
 
         // 3. Assign role
-        await (supabase as any).from("user_roles").insert({
+        const { error: roleError } = await (supabase as any).from("user_roles").insert({
           user_id: newUserId,
           role: createRole,
         });
+        if (roleError) throw roleError;
       }
 
       toast({
@@ -203,10 +205,11 @@ const AdminUsers = () => {
   const handleToggleStatus = async (userId: string, currentStatus?: string | null) => {
     const nextStatus = currentStatus === "suspended" ? "active" : "suspended";
     try {
-      await (supabase as any)
+      const { error } = await (supabase as any)
         .from("profiles")
         .update({ account_status: nextStatus })
         .eq("user_id", userId);
+      if (error) throw error;
 
       toast({
         title: nextStatus === "suspended" ? "User Account Suspended" : "User Account Re-activated",
@@ -221,7 +224,11 @@ const AdminUsers = () => {
   const handleDeleteUser = async (userId: string, email: string) => {
     if (!confirm(`Are you sure you want to delete profile record for ${email}?`)) return;
     try {
-      await (supabase as any).from("profiles").delete().eq("user_id", userId);
+      // profiles has no DELETE policy, so this is denied under RLS. Surfacing
+      // the error is essential: a moderation action that silently no-ops is
+      // worse than one that visibly fails.
+      const { error } = await (supabase as any).from("profiles").delete().eq("user_id", userId);
+      if (error) throw error;
       toast({ title: "User Profile Removed", description: `Record for ${email} has been deleted.` });
       fetchUsers();
     } catch (err: any) {
