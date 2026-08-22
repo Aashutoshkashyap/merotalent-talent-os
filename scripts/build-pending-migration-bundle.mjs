@@ -25,7 +25,7 @@ const OUT = resolve(ROOT, process.argv[2] || "pending-migrations.sql");
  *
  * 20260820163000_confirm_test_user_email is deliberately excluded: it grants
  * EXECUTE on a SECURITY DEFINER auth writer to anon. See
- * docs/HANDOFF-production-migrations.md section 5.
+ * docs/HANDOFF-production-tasks.md section 5.
  */
 const PENDING = [
   {
@@ -72,7 +72,7 @@ const parts = [
 --
 -- Deliberately NOT included: 20260820163000_confirm_test_user_email.sql, which
 -- grants EXECUTE on a SECURITY DEFINER auth writer to anon.
--- See docs/HANDOFF-production-migrations.md section 5.
+-- See docs/HANDOFF-production-tasks.md section 5.
 --`,
 ];
 

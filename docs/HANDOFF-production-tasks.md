@@ -1,11 +1,50 @@
-# Handoff — apply pending migrations to production
+# Handoff — production catch-up tasks
 
-**For:** whoever holds Supabase production credentials (project `dtirpilgzlsfryucanlg`).
-**Status:** code side is done and merged to `main`. Only the database work below remains.
-**Written:** 2026-08-21.
+**For:** whoever holds Supabase production credentials for project
+`dtirpilgzlsfryucanlg`, plus GitHub admin on this repository.
+**Status:** all application code is done and merged to `main`. Only the tasks
+below remain, and none of them are code changes.
+**Written:** 2026-08-21. **Last measured:** 2026-08-22.
 
 You can hand this file to a coding agent as-is. Every step states its expected
 output so the agent can verify rather than assume.
+
+---
+
+## 0. Task list
+
+Five tasks, in order. Tasks 1–4 are one sitting; task 5 is independent.
+
+| # | Task | Who / what is needed | Section |
+| - | ---- | -------------------- | ------- |
+| 1 | Take a database backup | Supabase dashboard | [§3](#3-before-you-start) |
+| 2 | Apply 6 pending migrations | Supabase SQL editor | [§4](#4-apply-in-this-order) |
+| 3 | Record the versions applied | same SQL editor session | [§6](#6-record-the-versions-afterwards) |
+| 4 | Verify the outcome | terminal + the app | [§7](#7-confirm-the-outcome) |
+| 5 | Add two CI secrets | GitHub repo settings | [§8](#8-enable-the-drift-check-in-ci) |
+
+**An agent can do most of this.** What it cannot do is click through the
+Supabase dashboard or the GitHub settings UI — so tasks 1 and 5, and the paste
+in task 2, need a human. Everything else is a command.
+
+### Quick version for an agent
+
+```bash
+# from the repo root, after `git pull`
+npm ci
+npm run check:drift          # shows what production is missing (expect 23)
+npm run db:bundle-pending    # writes pending-migrations.sql
+# --- human: paste that file into the Supabase SQL editor and run it ---
+npm run check:drift          # expect: "No drift"
+```
+
+The generated bundle already contains the migrations in order, the task-3
+bookkeeping, and verification queries. **Do not skip §3** — the first migration
+mutates live rows.
+
+**Do not apply `20260820163000_confirm_test_user_email.sql`.** It is excluded
+from the bundle by construction; [§5](#5-do-not-apply-20260820163000_confirm_test_user_emailsql)
+explains why.
 
 ---
 
@@ -331,7 +370,43 @@ Then check the original symptom end to end:
 
 ---
 
-## 8. If something goes wrong
+## 8. Enable the drift check in CI
+
+Independent of the database work, and the thing that stops this handoff being
+needed again.
+
+`.github/workflows/ci.yml` already contains a job that runs
+`npm run check:drift` against production on every push to `main`, daily at
+02:00 UTC, and on demand. It is inert until two repository secrets exist.
+
+**GitHub → repository → Settings → Secrets and variables → Actions → New
+repository secret.** Add both:
+
+| Secret name | Value |
+| ----------- | ----- |
+| `NEXT_PUBLIC_SUPABASE_URL` | same value as in `.env` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | same value as in `.env` |
+
+Both are already public — they ship in the browser bundle. The secrets exist so
+CI does not need a committed env file, not because the values are sensitive.
+**Do not** put `SUPABASE_SECRET_KEY` or any database connection string here; the
+drift check only ever needs the anon key.
+
+Until they are set the job prints a warning and passes, so CI is never blocked
+by the missing configuration. Once set, verify with **Actions → CI → Run
+workflow**; the `Schema drift vs production` job should pass after the database
+tasks above are complete.
+
+While you are in there: the same workflow runs `npm run check:migrations` on
+every pull request, which fails if a branch edits an existing migration instead
+of adding a new one. That is the guard against the `page_sections` problem
+described in [§4.6](#46-20260822130000_reconcile_page_sections_columnssql)
+happening again. Consider making the `verify` job a required status check on
+`main` in **Settings → Branches** so it cannot be bypassed.
+
+---
+
+## 9. If something goes wrong
 
 - A migration that raises inside its `BEGIN … COMMIT` leaves **no partial
   state** — fix the cause and re-run the whole file.
@@ -351,7 +426,7 @@ Then check the original symptom end to end:
 
 ---
 
-## 9. Open items not covered here
+## 10. Open items not covered here
 
 - Production is only reachable by hand right now: no linked Supabase project
   (`supabase/.temp` absent), no Supabase CLI installed, and `.env` carries only

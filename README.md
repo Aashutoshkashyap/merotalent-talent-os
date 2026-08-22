@@ -143,13 +143,22 @@ shape. Administrative writes are protected by both server guards and RLS.
 On a new project, accept and verify the first administrator invitation before a
 trusted service-role client calls the one-time `bootstrap_first_admin` RPC.
 
-## Pending production migrations
+## Outstanding production tasks
 
-Production is three migrations behind, and one pending migration must never be
-applied. The full runbook — verified current state, ordered steps with
-verification queries, and the security finding behind the exclusion — is in
-[`docs/HANDOFF-production-migrations.md`](docs/HANDOFF-production-migrations.md).
-It is written to be handed to whoever holds the database credentials.
+Production is behind this repository, and one migration in it must never be
+applied. Everything that remains is operational rather than code:
+
+```bash
+npm run check:drift          # what production is missing
+npm run db:bundle-pending    # one ordered file to paste into the SQL editor
+```
+
+The full task list — five ordered steps, the verified current state and how it
+was measured, per-migration verification queries, the security finding behind
+the exclusion, and rollback notes — is in
+[`docs/HANDOFF-production-tasks.md`](docs/HANDOFF-production-tasks.md). It is
+written to be handed straight to whoever holds the database credentials, or to
+their coding agent.
 
 ## Never edit an applied migration
 

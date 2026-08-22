@@ -45,7 +45,7 @@ const RESERVED = new Set([
  * confirm_test_user_email is a local development fixture. 20260820163000 grants
  * EXECUTE on it to anon, which would let any unauthenticated caller confirm any
  * @merotalent.com address — a domain that holds admin accounts. It must not be
- * applied; see docs/HANDOFF-production-migrations.md §5.
+ * applied; see docs/HANDOFF-production-tasks.md §5.
  */
 const INTENTIONALLY_ABSENT = new Set(["confirm_test_user_email"]);
 
