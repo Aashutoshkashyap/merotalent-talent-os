@@ -28,6 +28,8 @@ Listed so you don't undo them while working in this area:
 | Invalid statuses | UI wrote `pending` / `followed_up` / `admitted`; the CHECK constraint allows only `submitted, reviewing, contacted, accepted, rejected, withdrawn`. Now typed via `CollegeApplicationStatus`. |
 | Client-side auth bypass | `AuthContext` fabricated a session and called `setRoles(["admin"])` for ten hardcoded `@merotalent.com` addresses when real sign-in failed — no correct password required. Removed (189 lines). Guarded by `src/contexts/auth-client-authority-contract.test.ts`. |
 | `invalid input syntax for type uuid` | Caused by the above mock user id `test-institution-id`, plus a synthetic institute id `unclaimed-workspace` reaching uuid columns. Both fixed. |
+| Silent writes across the app | An audit found the same pattern in nine more places — admin site settings, institute access requests, early-access signups, the notification bell, manual enrolment, subscription extension and two admin deletes. All fixed. Guarded by `src/lib/db/schema-contract.test.ts`, which checks every table for phantom columns, omitted `NOT NULL` columns, and discarded write results. |
+| AI provider key | No longer written to `site_settings`, which is publicly readable until `20260812130000` lands. It stays browser-local; it should move to a server-side env var. |
 
 Test users are now created only by the sanctioned path:
 
@@ -54,6 +56,7 @@ fake function name before being relied on.
 | `20260817230000_multi_role_support` | **pending** |
 | `20260820163000_confirm_test_user_email` | **do not apply — see §5** |
 | `20260821120000_harden_confirm_test_user_email` | **pending** (no-op here; see §5) |
+| `20260822120000_admin_delete_policies` | **pending** (see §4.5) |
 
 Confirm the starting point before doing anything:
 
@@ -168,6 +171,24 @@ Apply it. On production it is a deliberate **no-op** — it only acts if
 migration ledger honest and protects any environment that *did* apply the
 fixture. See §5 for why it exists.
 
+### 4.5 `20260822120000_admin_delete_policies.sql`
+
+Adds the missing `DELETE` policies on `profiles` and `packages`, restricted to
+an active platform admin. Neither table had one, so the admin UI's delete
+actions were denied under RLS while the UI reported success. The call sites now
+surface the error, so until this lands an admin will see an explicit failure
+rather than a silent one.
+
+```sql
+select tablename, policyname
+from   pg_policies
+where  schemaname = 'public'
+  and  tablename in ('profiles', 'packages')
+  and  cmd = 'DELETE';
+```
+
+**Expect 2 rows.**
+
 ---
 
 ## 5. Do not apply `20260820163000_confirm_test_user_email.sql`
@@ -213,7 +234,8 @@ insert into supabase_migrations.schema_migrations (version)
 values ('20260812130000'),
        ('20260817193000'),
        ('20260817230000'),
-       ('20260821120000')
+       ('20260821120000'),
+       ('20260822120000')
 on conflict (version) do nothing;
 ```
 
