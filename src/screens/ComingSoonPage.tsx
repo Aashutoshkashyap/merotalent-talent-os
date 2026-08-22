@@ -136,23 +136,29 @@ export default function ComingSoonPage({ moduleKey }: ComingSoonPageProps) {
 
     setIsSubmitting(true);
     try {
-      // Save notify request to notifications or sub_admin_requests
-      await (supabase as any).from("notifications").insert({
-        title: "Early Access Signup",
-        message: `User subscribed for early access on ${config.badge}: ${email}`,
-        type: "early_access",
+      // contact_queries is the only table an anonymous visitor may insert into
+      // ("Anyone can submit contact queries", WITH CHECK (true)). notifications
+      // requires a NOT NULL recipient_id and admits admins only, so every
+      // signup written there was silently rejected.
+      const { error } = await (supabase as any).from("contact_queries").insert({
+        name: email.trim().split("@")[0],
+        email: email.trim().toLowerCase(),
+        subject: `Early access request — ${config.badge}`,
+        message: `Requested early access to ${config.badge} from the coming-soon page.`,
       });
+
+      if (error) throw error;
 
       setIsSubscribed(true);
       toast({
         title: "🎉 You're on the VIP list!",
         description: `We'll notify ${email} as soon as ${config.badge} launches on merotalent.com.`,
       });
-    } catch {
-      setIsSubscribed(true);
+    } catch (subscribeError: any) {
       toast({
-        title: "🎉 Subscribed successfully!",
-        description: "You will be among the first to get early access.",
+        variant: "destructive",
+        title: "We could not add you to the list",
+        description: subscribeError?.message || "Please try again in a moment.",
       });
     } finally {
       setIsSubmitting(false);

@@ -17,6 +17,44 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * public.site_settings is a key/value table — key (PK), value, extra_json,
+ * updated_at. Every setting is one row, so these keys are the schema contract.
+ */
+const SITE_SETTING_KEYS = [
+  "site_title",
+  "support_email",
+  "support_phone",
+  "logo_url",
+  "favicon_url",
+  "banner_url",
+  "maintenance_mode",
+] as const;
+
+type SiteSettingKey = (typeof SITE_SETTING_KEYS)[number];
+
+interface SiteSettingForm {
+  siteTitle: string;
+  supportEmail: string;
+  supportPhone: string;
+  logoUrl: string;
+  faviconUrl: string;
+  bannerUrl: string;
+  maintenanceMode: boolean;
+}
+
+const settingValue = (key: SiteSettingKey, form: SiteSettingForm): string => {
+  switch (key) {
+    case "site_title": return form.siteTitle.trim();
+    case "support_email": return form.supportEmail.trim();
+    case "support_phone": return form.supportPhone.trim();
+    case "logo_url": return form.logoUrl.trim();
+    case "favicon_url": return form.faviconUrl.trim();
+    case "banner_url": return form.bannerUrl.trim();
+    case "maintenance_mode": return String(form.maintenanceMode);
+  }
+};
+
 const AdminSettings = () => {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -33,46 +71,82 @@ const AdminSettings = () => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
 
   useEffect(() => {
-    const savedKey = localStorage.getItem("merotalent_ai_api_key") || "";
-    const savedProvider = localStorage.getItem("merotalent_ai_provider") || "gemini";
-    const savedLogo = localStorage.getItem("merotalent_site_logo") || "/logo.png";
-    const savedTitle = localStorage.getItem("merotalent_site_title") || "MeroTalent";
+    // The AI key is browser-local by design (see handleSaveSettings).
+    setAiApiKey(localStorage.getItem("merotalent_ai_api_key") || "");
+    setAiProvider(localStorage.getItem("merotalent_ai_provider") || "gemini");
 
-    setAiApiKey(savedKey);
-    setAiProvider(savedProvider);
-    setLogoUrl(savedLogo);
-    setSiteTitle(savedTitle);
-  }, []);
+    const loadSettings = async () => {
+      const { data, error } = await (supabase as any)
+        .from("site_settings")
+        .select("key, value")
+        .in("key", SITE_SETTING_KEYS as unknown as string[]);
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Settings could not be loaded",
+          description: error.message,
+        });
+        return;
+      }
+
+      const stored = new Map<string, string>(
+        (data ?? []).map((row: { key: string; value: string | null }) => [row.key, row.value ?? ""]),
+      );
+      const pick = (key: SiteSettingKey, fallback: string) => stored.get(key) || fallback;
+
+      setSiteTitle(pick("site_title", "MeroTalent - National Talent & Education OS"));
+      setSupportEmail(pick("support_email", "support@merotalent.com"));
+      setSupportPhone(pick("support_phone", "+977 9801010802"));
+      setLogoUrl(pick("logo_url", "/logo.png"));
+      setFaviconUrl(pick("favicon_url", "/favicon.ico"));
+      setBannerUrl(pick("banner_url", ""));
+      setMaintenanceMode(stored.get("maintenance_mode") === "true");
+    };
+
+    void loadSettings();
+  }, [toast]);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
+      // The AI provider key is deliberately NOT written to site_settings. That
+      // table is readable by anon today, so a key stored there would be public.
+      // It belongs in a server-side environment variable; until then it stays
+      // in this browser only, which the toast below states plainly.
       localStorage.setItem("merotalent_ai_api_key", aiApiKey.trim());
       localStorage.setItem("merotalent_ai_provider", aiProvider);
-      localStorage.setItem("merotalent_site_logo", logoUrl.trim());
-      localStorage.setItem("merotalent_site_title", siteTitle.trim());
-      localStorage.setItem("merotalent_maintenance_mode", String(maintenanceMode));
 
-      await (supabase as any).from("site_settings").upsert({
-        id: "global",
-        site_title: siteTitle.trim(),
-        support_email: supportEmail.trim(),
-        support_phone: supportPhone.trim(),
-        logo_url: logoUrl.trim(),
-        favicon_url: faviconUrl.trim(),
-        ai_api_key: aiApiKey.trim(),
-        maintenance_mode: maintenanceMode,
-        updated_at: new Date().toISOString(),
-      });
+      const { error } = await (supabase as any).from("site_settings").upsert(
+        SITE_SETTING_KEYS.map((key) => ({
+          key,
+          value: settingValue(key, {
+            siteTitle,
+            supportEmail,
+            supportPhone,
+            logoUrl,
+            faviconUrl,
+            bannerUrl,
+            maintenanceMode,
+          }),
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: "key" },
+      );
+
+      if (error) throw error;
 
       toast({
-        title: "Settings Saved Successfully!",
-        description: "Media URLs, AI API key configuration, and branding options updated.",
+        title: "Settings saved",
+        description: aiApiKey.trim()
+          ? "Branding and support details saved for everyone. The AI key is stored in this browser only."
+          : "Branding and support details saved for everyone.",
       });
-    } catch {
+    } catch (saveError: any) {
       toast({
-        title: "Settings Saved Locally!",
-        description: "Config persisted locally in browser state.",
+        variant: "destructive",
+        title: "Settings could not be saved",
+        description: saveError?.message || "The site settings were not written. Please try again.",
       });
     } finally {
       setIsSaving(false);
