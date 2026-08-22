@@ -311,16 +311,33 @@ const STANDARD_HOME_SECTIONS = [
       ? await db.from("page_sections").update(payload).eq("id", editingSection.id)
       : await db.from("page_sections").insert(payload);
 
+    // page_sections.parent_id is declared inside a CREATE TABLE IF NOT EXISTS
+    // block that was edited after the migration had already been applied, so
+    // the column is absent from any database that predates the edit. This retry
+    // keeps the save working there — but it drops the nesting, so say so rather
+    // than reporting a clean success. Migration 20260822130000 adds the column.
+    let nestingDropped = false;
     if (error && (error.message?.includes("parent_id") || error.message?.includes("column"))) {
       delete payload.parent_id;
       const retryResult = editingSection
         ? await db.from("page_sections").update(payload).eq("id", editingSection.id)
         : await db.from("page_sections").insert(payload);
       error = retryResult.error;
+      nestingDropped = !error && Boolean(formData.parent_id);
     }
 
     if (error) {
       toast({ variant: "destructive", title: editingSection ? "Update failed" : "Create failed", description: error.message });
+    } else if (nestingDropped) {
+      toast({
+        variant: "destructive",
+        title: "Saved without nesting",
+        description:
+          "This database is missing page_sections.parent_id, so the parent was not saved. Apply migration 20260822130000.",
+      });
+      setIsDialogOpen(false);
+      resetForm();
+      fetchSections();
     } else {
       toast({ title: editingSection ? "Section updated successfully" : "New section created" });
       setIsDialogOpen(false);
