@@ -76,6 +76,25 @@ RBAC permissions, subscriptions, college applications, mentor bookings, jobs,
 events, leads, payments, notifications, advertisements, featured content,
 auditing, generated-form submissions, private media buckets, and maintenance.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and push to `main`:
+
+| Check | Command |
+| --- | --- |
+| Migrations are append-only | `npm run check:migrations` |
+| Types | `npm run typecheck` |
+| Lint | `npm run lint` |
+| Tests | `npm run test` |
+| Build | `npm run build` |
+
+A separate job checks live schema drift on pushes to `main`, on a daily
+schedule, and on demand. It needs two repository secrets —
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Until
+they are set the job emits a warning and passes, so CI is not blocked by a
+missing secret. Both values are already public in the browser bundle; the
+secrets exist so CI does not need a committed env file.
+
 ## Quality checks
 
 ```bash
@@ -161,6 +180,10 @@ node scripts/check-schema-drift.mjs --env .env.prod
 It reports tables, columns, and functions the database is missing, and exits
 non-zero when it finds any, so CI can gate on it. Only the public anon key is
 needed — PostgREST resolves column names before applying row-level security.
+
+CI enforces the rule mechanically. `npm run check:migrations` fails when a
+branch modifies, renames, or deletes a migration that already exists on the base
+branch; only new files pass. It runs on every pull request.
 
 ## Database schema & query guidelines
 

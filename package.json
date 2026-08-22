@@ -11,6 +11,8 @@
     "predev": "node scripts/check-toolchain.mjs",
     "check:toolchain": "node scripts/check-toolchain.mjs --latest",
     "check:drift": "node scripts/check-schema-drift.mjs",
+    "check:migrations": "node scripts/check-migration-immutability.mjs",
+    "db:bundle-pending": "node scripts/build-pending-migration-bundle.mjs",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",

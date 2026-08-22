@@ -95,6 +95,26 @@ no undo.
 
 ## 4. Apply, in this order
 
+### The short path
+
+Generate one ordered file containing every pending migration, the
+`schema_migrations` bookkeeping, and the verification queries:
+
+```bash
+npm run db:bundle-pending      # writes pending-migrations.sql (gitignored)
+```
+
+Paste that into the Supabase SQL editor and run it top to bottom. It is built
+from the migration files themselves, so it cannot drift from them, and it
+deliberately excludes `20260820163000` (§5). Each migration keeps its own
+`BEGIN`/`COMMIT`: if one fails it rolls itself back and execution stops there,
+leaving the ones above it applied.
+
+The per-migration detail below explains what each one does and how to verify it
+individually — useful if the bundle stops partway.
+
+### The detailed path
+
 Order is the migration timestamp order and it is load-bearing. Paste each file
 whole; never split one across runs or you lose its transaction.
 
