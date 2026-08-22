@@ -132,6 +132,36 @@ verification queries, and the security finding behind the exclusion — is in
 [`docs/HANDOFF-production-migrations.md`](docs/HANDOFF-production-migrations.md).
 It is written to be handed to whoever holds the database credentials.
 
+## Never edit an applied migration
+
+This is the single biggest cause of "it works locally but not on the deployed
+site" in this project.
+
+A migration that has already run is recorded in
+`supabase_migrations.schema_migrations` and never runs again. Editing the file
+therefore changes nothing in that database — but a local `supabase db reset`
+replays every migration from empty, so the edit appears to work perfectly on
+your machine. `CREATE TABLE IF NOT EXISTS` makes it worse: on a database that
+already has the table it is a no-op and reconciles no columns, so a column added
+to that block reaches only fresh databases.
+
+`page_sections.parent_id` and `page_sections.extra_data` were lost exactly this
+way and needed `20260822130000` to reconcile them.
+
+**To change an existing table, always add a new migration with an explicit
+`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.** Never reopen a merged migration.
+
+To check any environment against the repo:
+
+```bash
+npm run check:drift                       # uses .env
+node scripts/check-schema-drift.mjs --env .env.prod
+```
+
+It reports tables, columns, and functions the database is missing, and exits
+non-zero when it finds any, so CI can gate on it. Only the public anon key is
+needed — PostgREST resolves column names before applying row-level security.
+
 ## Database schema & query guidelines
 
 Developers must watch out for local database schema drift. Always verify definitions against files in `supabase/migrations/` rather than relying on current local DB state (e.g. if the local DB has not been reset).

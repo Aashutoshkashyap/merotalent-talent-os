@@ -57,6 +57,11 @@ fake function name before being relied on.
 | `20260820163000_confirm_test_user_email` | **do not apply — see §5** |
 | `20260821120000_harden_confirm_test_user_email` | **pending** (no-op here; see §5) |
 | `20260822120000_admin_delete_policies` | **pending** (see §4.5) |
+| `20260822130000_reconcile_page_sections_columns` | **pending** (see §4.6 — required; not fixed by any other migration) |
+
+Measured directly against production on 2026-08-22 with
+`npm run check:drift`: **23 differences** — 12 missing columns and 11 missing
+functions, no missing tables. Re-run that command any time to refresh this.
 
 Confirm the starting point before doing anything:
 
@@ -189,6 +194,31 @@ where  schemaname = 'public'
 
 **Expect 2 rows.**
 
+### 4.6 `20260822130000_reconcile_page_sections_columns.sql`
+
+**Apply this even if you skip everything else.** It is the only migration here
+that fixes a problem no other migration can.
+
+`page_sections.parent_id` and `extra_data` are declared inside the
+`CREATE TABLE IF NOT EXISTS` block of `20260812000000`, but were added by editing
+that file *after* it had already been applied. The migration is recorded as run
+so it never repeats, and `CREATE TABLE IF NOT EXISTS` reconciles nothing on an
+existing table — so those columns can never arrive on their own. Confirmed
+absent from production.
+
+This is why nested page sections work locally and silently do not nest on the
+deployed site: `AdminPageEditor` catches the missing-column error and retries
+without the parent. It now says so instead of reporting a clean success.
+
+```sql
+select column_name
+from   information_schema.columns
+where  table_schema = 'public' and table_name = 'page_sections'
+  and  column_name in ('parent_id', 'extra_data');
+```
+
+**Expect 2 rows.**
+
 ---
 
 ## 5. Do not apply `20260820163000_confirm_test_user_email.sql`
@@ -235,7 +265,8 @@ values ('20260812130000'),
        ('20260817193000'),
        ('20260817230000'),
        ('20260821120000'),
-       ('20260822120000')
+       ('20260822120000'),
+       ('20260822130000')
 on conflict (version) do nothing;
 ```
 
@@ -260,6 +291,12 @@ order  by proname;
 ```
 
 **Expect** the first three present and `confirm_test_user_email` absent.
+
+Or simply re-run the drift check, which should then report no drift:
+
+```bash
+npm run check:drift
+```
 
 Then check the original symptom end to end:
 
