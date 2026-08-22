@@ -10,6 +10,7 @@
   "scripts": {
     "predev": "node scripts/check-toolchain.mjs",
     "check:toolchain": "node scripts/check-toolchain.mjs --latest",
+    "check:drift": "node scripts/check-schema-drift.mjs",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
