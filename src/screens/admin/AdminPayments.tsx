@@ -105,35 +105,65 @@ export default function AdminPayments() {
 
     setIsEnrolling(true);
     try {
-      const { data: profileData } = await (supabase as any)
+      const { data: profileData, error: profileError } = await (supabase as any)
         .from("profiles")
         .select("user_id")
-        .eq("email", enrollEmail.trim())
+        .eq("email", enrollEmail.trim().toLowerCase())
         .maybeSingle();
 
-      const targetUserId = profileData?.user_id || "manual-grant-id";
+      if (profileError) throw profileError;
+
+      // The previous "manual-grant-id" fallback is not a uuid, so it failed the
+      // uuid cast on every column it reached. There is no valid grant without a
+      // real user.
+      const targetUserId = profileData?.user_id;
+      if (!targetUserId) {
+        throw new Error(`No account found for ${enrollEmail.trim()}. The user must sign up first.`);
+      }
+
+      // subscriptions.package_id is NOT NULL, so a package must be resolved
+      // before the grant. Omitting it failed the insert with 23502.
+      const { data: packageData, error: packageError } = await (supabase as any)
+        .from("packages")
+        .select("id")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (packageError) throw packageError;
+      if (!packageData?.id) {
+        throw new Error("No active package exists to grant. Create a package first.");
+      }
+
       const days = parseInt(enrollDays) || 30;
       const expiryDate = new Date(Date.now() + days * 86400000).toISOString();
 
-      await (supabase as any).from("payments").insert({
+      const { error: paymentError } = await (supabase as any).from("payments").insert({
         user_id: targetUserId,
         payment_type: enrollModule,
+        reference_id: packageData.id,
         amount: parseFloat(enrollAmount) || 0,
         currency: "NPR",
         status: "success",
         gateway: "Manual Admin Grant",
         gateway_transaction_id: `MANUAL-${Date.now()}`,
-        screenshot_url: enrollProofUrl.trim() || null,
+        // payments has no screenshot_url column; the proof lives in metadata.
+        metadata: enrollProofUrl.trim() ? { proof_url: enrollProofUrl.trim() } : {},
       });
 
-      await (supabase as any).from("subscriptions").insert({
+      if (paymentError) throw paymentError;
+
+      const { error: subscriptionError } = await (supabase as any).from("subscriptions").insert({
         user_id: targetUserId,
+        package_id: packageData.id,
         entity_type: enrollModule.includes("college") ? "college" : "user",
         status: "active",
         payment_status: "success",
         start_date: new Date().toISOString(),
         expiry_date: expiryDate,
       });
+
+      if (subscriptionError) throw subscriptionError;
 
       toast({
         title: "Manual Enrollment Successful!",
@@ -154,16 +184,42 @@ export default function AdminPayments() {
   const handleExtendSubscription = async (payment: PaymentItem) => {
     try {
       const extraDays = 30;
-      const expiryDate = new Date(Date.now() + extraDays * 86400000).toISOString();
 
-      await (supabase as any).from("subscriptions").upsert({
-        user_id: payment.user_id,
-        entity_type: payment.payment_type.includes("college") ? "college" : "user",
-        status: "active",
-        payment_status: "success",
-        start_date: new Date().toISOString(),
-        expiry_date: expiryDate,
-      });
+      // This was an upsert with no conflict target and no package_id, so it
+      // could only ever insert a duplicate row — and failed the NOT NULL on
+      // package_id anyway. Extending means updating the existing subscription.
+      const { data: existing, error: lookupError } = await (supabase as any)
+        .from("subscriptions")
+        .select("id, expiry_date")
+        .eq("user_id", payment.user_id)
+        .is("deleted_at", null)
+        .order("expiry_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+      if (!existing?.id) {
+        throw new Error("This user has no subscription to extend. Use Manual Enrollment instead.");
+      }
+
+      // Extend from the current expiry when it is still in the future, so an
+      // active subscription gains 30 days rather than losing time.
+      const currentExpiry = new Date(existing.expiry_date).getTime();
+      const base = Number.isFinite(currentExpiry) && currentExpiry > Date.now()
+        ? currentExpiry
+        : Date.now();
+      const nextExpiry = new Date(base + extraDays * 86400000).toISOString();
+
+      const { error: extendError } = await (supabase as any)
+        .from("subscriptions")
+        .update({
+          status: "active",
+          payment_status: "success",
+          expiry_date: nextExpiry,
+        })
+        .eq("id", existing.id);
+
+      if (extendError) throw extendError;
 
       toast({
         title: "Subscription Extended +30 Days!",
