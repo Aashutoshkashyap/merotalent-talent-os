@@ -49,39 +49,37 @@ export function useNotifications() {
 
     const readIds = getReadNotifIds();
 
-    try {
-      const { data } = await (supabase as any)
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+    // The table keys the recipient as recipient_id and the flag as is_read.
+    // This hook used user_id and read, so every query failed with 42703 and the
+    // list silently fell back to a fabricated notification.
+    const { data, error } = await (supabase as any)
+      .from("notifications")
+      .select("id, recipient_id, title, message, type, is_read, action_url, created_at")
+      .eq("recipient_id", user.id)
+      .order("created_at", { ascending: false });
 
-      if (data && Array.isArray(data) && data.length > 0) {
-        const formatted = data.map((n: NotificationItem) => ({
-          ...n,
-          read: n.read || readIds.includes(n.id),
-        }));
-        setNotifications(formatted);
-        setUnreadCount(formatted.filter((n: NotificationItem) => !n.read).length);
-      } else {
-        // Fallback default notifications
-        const defaultNotifs: NotificationItem[] = [
-          {
-            id: "notif-1",
-            user_id: user.id,
-            title: "Welcome to MeroTalent!",
-            message: "Your profile is active. Explore jobs, hackathons, and mentors.",
-            type: "system",
-            read: readIds.includes("notif-1"),
-            created_at: new Date().toISOString(),
-          },
-        ];
-        setNotifications(defaultNotifs);
-        setUnreadCount(defaultNotifs.filter((n) => !n.read).length);
-      }
-    } catch {
+    if (error) {
+      console.error("Failed to load notifications", error);
+      setNotifications([]);
       setUnreadCount(0);
+      return;
     }
+
+    const formatted: NotificationItem[] = (data ?? []).map((row: any) => ({
+      id: String(row.id),
+      user_id: String(row.recipient_id),
+      title: String(row.title ?? ""),
+      message: String(row.message ?? ""),
+      type: String(row.type ?? "info"),
+      // localStorage still supplements the flag so a failed write does not make
+      // an already-dismissed notification reappear.
+      read: row.is_read === true || readIds.includes(String(row.id)),
+      created_at: String(row.created_at),
+      link: typeof row.action_url === "string" ? row.action_url : undefined,
+    }));
+
+    setNotifications(formatted);
+    setUnreadCount(formatted.filter((n) => !n.read).length);
   }, [user]);
 
   useEffect(() => {
@@ -103,10 +101,11 @@ export function useNotifications() {
     setUnreadCount(0);
 
     if (user) {
-      await (supabase as any)
+      const { error } = await (supabase as any)
         .from("notifications")
-        .update({ read: true })
-        .eq("user_id", user.id);
+        .update({ is_read: true })
+        .eq("recipient_id", user.id);
+      if (error) console.error("Failed to mark all notifications read", error);
     }
   };
 
@@ -118,10 +117,11 @@ export function useNotifications() {
     setUnreadCount((prev) => Math.max(0, prev - 1));
 
     if (user) {
-      await (supabase as any)
+      const { error } = await (supabase as any)
         .from("notifications")
-        .update({ read: true })
+        .update({ is_read: true })
         .eq("id", id);
+      if (error) console.error("Failed to mark notification read", error);
     }
   };
 
