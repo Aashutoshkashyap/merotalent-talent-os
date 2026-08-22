@@ -107,6 +107,11 @@ export default function RequestSubAdminAccess() {
           .from("sub_admin_requests")
           .insert({
             user_id: user.id,
+            // user_name and user_email are NOT NULL with no default. Omitting
+            // them made this fallback fail with 23502 every time, so the
+            // fallback could never actually record a request.
+            user_name: profile?.full_name || user.email || "Unknown",
+            user_email: user.email,
             requested_modules: requestType === "discard" ? ["discard_all"] : selectedModules,
             reason: fullReason,
             status: "pending",

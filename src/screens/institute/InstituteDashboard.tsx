@@ -242,13 +242,14 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsSubmittingClaim(true);
     try {
-      await (supabase as any).from("sub_admin_requests").insert({
+      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
         user_id: user.id,
         user_email: user.email,
-        full_name: claimCollegeName || user.email,
+        user_name: claimCollegeName || user.email,
         reason: `[${claimType.toUpperCase()}] College: ${claimCollegeName}. Phone: ${claimPhone}. Email: ${claimEmail}. Notes: ${claimNotes}`,
         status: "pending",
       });
+      if (requestError) throw requestError;
       toast({
         title: "Request Submitted to Super Admin!",
         description: `Your request to ${claimType === "claim" ? "claim" : "list"} ${claimCollegeName || "this college"} has been sent to Super Admin for approval.`,
@@ -270,13 +271,14 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsSubmittingFeatured(true);
     try {
-      await (supabase as any).from("sub_admin_requests").insert({
+      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
         user_id: user.id,
         user_email: user.email,
-        full_name: institute?.name || user.email,
+        user_name: institute?.name || user.email,
         reason: `[FEATURED REQUEST] Position: ${featuredPosition}. Notes: ${featuredNotes}`,
         status: "pending",
       });
+      if (requestError) throw requestError;
       toast({
         title: "Featured Placement Requested!",
         description: "Super Admin has been notified to place your listing in the homepage featured section.",
@@ -295,13 +297,14 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsSubmittingModule(true);
     try {
-      await (supabase as any).from("sub_admin_requests").insert({
+      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
         user_id: user.id,
         user_email: user.email,
-        full_name: user.email,
+        user_name: user.email,
         reason: `[MODULE ACCESS REQUEST] Target Module: ${targetModule}. Reason: ${moduleReason}`,
         status: "pending",
       });
+      if (requestError) throw requestError;
       toast({
         title: "Module Request Sent!",
         description: `Super Admin has received your request for ${targetModule.toUpperCase()} module access.`,
@@ -327,25 +330,22 @@ const InstituteDashboard = () => {
         `Justification: ${requestReason.trim()}`,
       ].join("\n");
 
-      await (supabase as any).from("sub_admin_requests").insert({
+      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
         user_id: user.id,
         user_email: user.email,
-        full_name: requestOrg.trim() || user.email,
+        user_name: requestOrg.trim() || user.email,
         requested_modules: ["institutions"],
         reason: fullReason,
         status: "pending",
       });
+      if (requestError) throw requestError;
 
-      // Also fire a notification to super admin
-      await (supabase as any).from("notifications").insert({
-        user_id: user.id,
-        title: "College Module Access Requested",
-        message: `${user.email} has requested access to the College/Institute Module. Organization: ${requestOrg.trim() || "N/A"}. Reason: ${requestReason.trim()}`,
-        type: "admin_alert",
-      });
-
+      // No direct notification insert here: notifications requires a NOT NULL
+      // recipient_id and only admins may insert, so this write could never
+      // succeed from an institute owner. The sub_admin_requests row above is
+      // the signal — AdminAccessRequests reads exactly that table.
       setAccessStatus("pending");
-      toast({ title: "Access Request Submitted!", description: "Super Admin has been notified. You'll get access once approved." });
+      toast({ title: "Access Request Submitted!", description: "Your request is now with the Super Admin. You'll get access once approved." });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Submission Error", description: err?.message || "Failed to submit request." });
     } finally {
