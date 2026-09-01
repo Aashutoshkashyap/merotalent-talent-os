@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Search, Briefcase, Sparkles, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
 
 interface HeaderNavProps {
   onSearch?: (query: string) => void;
@@ -42,18 +43,10 @@ export const LoginButton: React.FC<{ label?: string; onClick?: () => void }> = (
   label = "Login",
   onClick,
 }) => {
-  const { user, roles } = useAuth();
+  const { user, roles, permissions } = useAuth();
   
   if (user) {
-    const targetDashboard = roles.includes("admin") || roles.includes("super_admin")
-      ? "/admin"
-      : roles.includes("institution")
-        ? "/institute"
-        : roles.includes("company")
-          ? "/company"
-          : roles.includes("mentor")
-            ? "/mentor"
-            : "/dashboard";
+    const targetDashboard = resolveWorkspacePath(roles, permissions);
 
     return (
       <Link

@@ -549,8 +549,8 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
   const workspaceHref = `/${role}#pipeline`;
 
   return (
-    <div className="min-h-screen w-full overflow-hidden bg-white text-[#17162e]">
-      <div className="min-h-screen w-full overflow-hidden bg-white">
+    <div className="min-h-screen w-full overflow-x-hidden bg-white text-[#17162e]">
+      <div className="min-h-screen w-full overflow-x-hidden bg-white">
         <header className="flex h-16 items-center gap-3 border-b border-[#f0e3da] bg-white/90 px-4 backdrop-blur sm:px-6">
           <Link to="/" className="flex items-center gap-2 font-display font-bold">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#c2410c] text-white shadow-[0_8px_20px_rgba(249,115,22,0.3)]">

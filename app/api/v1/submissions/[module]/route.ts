@@ -1,6 +1,7 @@
-import { ApiAuthError, authenticateRequest } from "@/lib/server/auth";
+import { ApiAuthError, authenticateRequest, getBearerToken } from "@/lib/server/auth";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { isModuleFormType } from "@/lib/forms/module-form-definitions";
+import { getAdminClient, ServerConfigurationError } from "@/lib/server/supabase";
 import {
   ModuleFormValidationError,
   submitModuleForm,
@@ -69,30 +70,45 @@ const normalizeRpcResult = (value: unknown): FormSubmissionResult => {
 
 export async function POST(request: Request, context: RouteContext) {
   const requestId = crypto.randomUUID();
-  let authenticated;
-  try {
-    authenticated = await authenticateRequest(request);
-  } catch (error) {
-    if (error instanceof ApiAuthError) {
-      return response(requestId, error.status, null, {
-        code: error.code,
-        message: error.message,
-      });
-    }
-    console.error("Module submission authentication failed", { requestId });
-    return response(requestId, 503, null, {
-      code: "AUTHORIZATION_UNAVAILABLE",
-      message: "Form submissions are temporarily unavailable.",
-    });
-  }
-
   const { module } = await context.params;
 
   if (!isModuleFormType(module)) {
+    // Preserve the API's auth-first contract for unknown module probes. The
+    // sole anonymous exception below applies only to the known college form.
+    try {
+      await authenticateRequest(request);
+    } catch (error) {
+      if (error instanceof ApiAuthError) {
+        return response(requestId, error.status, null, { code: error.code, message: error.message });
+      }
+      return response(requestId, 503, null, {
+        code: "AUTHORIZATION_UNAVAILABLE",
+        message: "Form submissions are temporarily unavailable.",
+      });
+    }
     return response(requestId, 404, null, {
       code: "FORM_MODULE_NOT_FOUND",
       message: "The requested form module does not exist.",
     });
+  }
+
+  // Only a college enquiry can start before account creation. A malformed
+  // bearer token is deliberately not downgraded into anonymous access.
+  const isGuestCollegeApplication = module === "college_application" && !getBearerToken(request);
+  let authenticated: Awaited<ReturnType<typeof authenticateRequest>> | null = null;
+  if (!isGuestCollegeApplication) {
+    try {
+      authenticated = await authenticateRequest(request);
+    } catch (error) {
+      if (error instanceof ApiAuthError) {
+        return response(requestId, error.status, null, { code: error.code, message: error.message });
+      }
+      console.error("Module submission authentication failed", { requestId });
+      return response(requestId, 503, null, {
+        code: "AUTHORIZATION_UNAVAILABLE",
+        message: "Form submissions are temporarily unavailable.",
+      });
+    }
   }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
@@ -138,31 +154,58 @@ export async function POST(request: Request, context: RouteContext) {
     });
   }
 
-  const supabase = authenticated.userClient;
-
   const gateway: FormSubmissionGateway = {
     async submit(command: FormSubmissionCommand) {
       // The database RPC owns authorization, subscription enforcement, pricing,
       // lead ownership, duplicate protection, and all server-controlled fields.
-      const rpcClient = supabase as unknown as {
-        rpc: (
-          name: string,
-          args: Record<string, unknown>,
-        ) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
-      };
       const payload = {
         ...command.values,
         _formVersion: command.formVersion,
         _idempotencyKey: command.idempotencyKey ?? null,
       };
-      const { data, error } = command.module === "college_application"
-        ? await rpcClient.rpc("submit_college_application", {
+      let data: unknown;
+      let error: { code?: string; message?: string } | null;
+      if (isGuestCollegeApplication) {
+        const guestToken = request.headers.get("x-guest-application-token") ?? "";
+        if (!/^[a-f0-9-]{36}$/i.test(guestToken)) {
+          const invalid = new Error("The guest application token is invalid.") as Error & { code?: string };
+          invalid.code = "22023";
+          throw invalid;
+        }
+        try {
+          const admin = getAdminClient() as unknown as {
+            rpc: (name: string, args: Record<string, unknown>) => Promise<{
+              data: unknown;
+              error: { code?: string; message?: string } | null;
+            }>;
+          };
+          ({ data, error } = await admin.rpc("submit_guest_college_application", {
             p_payload: payload,
-          })
-        : await rpcClient.rpc("submit_module_form", {
-            p_module: rpcModuleNames[command.module],
-            p_payload: payload,
-          });
+            p_guest_token: guestToken,
+            p_idempotency_key: command.idempotencyKey ?? null,
+          }));
+        } catch (serverError) {
+          if (serverError instanceof ServerConfigurationError) {
+            const unavailable = new Error("Guest applications are temporarily unavailable.") as Error & { code?: string };
+            unavailable.code = "PGRST202";
+            throw unavailable;
+          }
+          throw serverError;
+        }
+      } else {
+        const rpcClient = authenticated!.userClient as unknown as {
+          rpc: (name: string, args: Record<string, unknown>) => Promise<{
+            data: unknown;
+            error: { code?: string; message?: string } | null;
+          }>;
+        };
+        ({ data, error } = command.module === "college_application"
+          ? await rpcClient.rpc("submit_college_application", { p_payload: payload })
+          : await rpcClient.rpc("submit_module_form", {
+              p_module: rpcModuleNames[command.module],
+              p_payload: payload,
+            }));
+      }
 
       if (error) {
         const wrapped = new Error("The database rejected the submission.") as Error & {
@@ -180,7 +223,7 @@ export async function POST(request: Request, context: RouteContext) {
     const result = await submitModuleForm(
       module,
       values,
-      { id: authenticated.user.id, email: authenticated.user.email },
+      { id: authenticated?.user.id ?? "guest", email: authenticated?.user.email },
       gateway,
       request.headers.get("idempotency-key") ?? undefined,
     );
@@ -202,6 +245,12 @@ export async function POST(request: Request, context: RouteContext) {
       return response(requestId, 409, null, {
         code: "DUPLICATE_SUBMISSION",
         message: "This form has already been submitted.",
+      });
+    }
+    if (databaseCode === "22023") {
+      return response(requestId, 400, null, {
+        code: "INVALID_SUBMISSION_REQUEST",
+        message: "The application request is invalid. Please refresh and try again.",
       });
     }
     if (databaseCode === "42501" || databaseCode === "PGRST301") {

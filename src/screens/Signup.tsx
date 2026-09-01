@@ -118,9 +118,11 @@ const Signup = () => {
     } else {
       toast({
         title: "Account created!",
-        description: "Please check your email to verify your account.",
+        description: accountType === "talent"
+          ? "Please check your email to verify your account."
+          : "Please verify your email. Your module workspace request will be reviewed by Super Admin.",
       });
-      navigate("/onboarding");
+      navigate(accountType === "talent" ? "/onboarding" : "/pending-approval");
     }
   };
 
@@ -141,8 +143,8 @@ const Signup = () => {
       <div className="space-y-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-xs font-bold text-slate-700">Account Type</Label>
-            <span className="text-[11px] font-semibold text-slate-400">Default: Student</span>
+            <Label className="text-xs font-bold text-slate-700">Start as</Label>
+            <span className="text-[11px] font-semibold text-slate-400">Student access is immediate</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {accountTypes.map((type) => {
@@ -170,6 +172,11 @@ const Signup = () => {
               );
             })}
           </div>
+          {accountType !== "talent" && (
+            <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-800">
+              You will start with a student account. Super Admin must approve this workspace request before you can manage a module.
+            </p>
+          )}
         </div>
 
         {/* Google Sign Up Button */}

@@ -1,8 +1,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { getStoredGuestCollegeApplicationToken } from "@/lib/forms/guest-college-application";
+import { invalidateStudentActivityCache } from "@/lib/student/activity-cache";
+import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
 
 export type AppRole = "admin" | "super_admin" | "talent" | "institution" | "company" | "mentor";
+export type AppPermission = string;
+
+export { resolveWorkspacePath } from "@/lib/auth/workspace-path";
 
 interface Profile {
   id: string;
@@ -26,6 +32,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   roles: AppRole[];
+  permissions: AppPermission[];
   isLoading: boolean;
   isAdmin: boolean;
   signUp: (
@@ -47,88 +54,37 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const pendingOAuthRoleKey = "merotalent.pending-oauth-role";
-const oauthRoleClaimLifetimeMs = 30 * 60 * 1000;
+export const pendingModuleAccessKey = "merotalent.pending-module-access";
+const pendingModuleAccessLifetimeMs = 30 * 60 * 1000;
 
-const consumePendingOAuthRole = async () => {
-  const raw = window.sessionStorage.getItem(pendingOAuthRoleKey);
-  if (!raw) return;
-
-  window.sessionStorage.removeItem(pendingOAuthRoleKey);
+export const getPendingModuleAccessRole = (): Exclude<AppRole, "admin" | "talent" | "super_admin"> | null => {
   try {
+    const raw = window.sessionStorage.getItem(pendingModuleAccessKey);
+    if (!raw) return null;
     const parsed = JSON.parse(raw) as { role?: string; createdAt?: number };
     if (
       !["institution", "company", "mentor"].includes(parsed.role ?? "") ||
       typeof parsed.createdAt !== "number" ||
-      Date.now() - parsed.createdAt > oauthRoleClaimLifetimeMs
-    ) {
-      return;
-    }
-
-    const rpcClient = supabase as unknown as {
-      rpc: (
-        name: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ error: { code?: string; message?: string } | null }>;
-    };
-    const { error } = await rpcClient.rpc("claim_initial_oauth_role", {
-      p_role: parsed.role,
-    });
-    if (error) {
-      console.error("[auth] OAuth role onboarding was rejected", { code: error.code });
-    }
+      Date.now() - parsed.createdAt > pendingModuleAccessLifetimeMs
+    ) return null;
+    return parsed.role as Exclude<AppRole, "admin" | "talent" | "super_admin">;
   } catch {
-    // Invalid or stale browser state is discarded without changing access.
+    return null;
   }
 };
 
-const LOCAL_SESSION_KEY = "merotalent.persistent_auth";
-
-const savePersistentState = (
-  user: User | null,
-  session: Session | null,
-  profile: Profile | null,
-  roles: AppRole[],
-) => {
-  if (user && session) {
-    try {
-      localStorage.setItem(
-        LOCAL_SESSION_KEY,
-        JSON.stringify({ user, session, profile, roles }),
-      );
-    } catch {}
-  }
-};
-
-const clearPersistentState = () => {
+export const clearPendingModuleAccessRole = () => {
   try {
-    localStorage.removeItem(LOCAL_SESSION_KEY);
+    window.sessionStorage.removeItem(pendingModuleAccessKey);
   } catch {}
-};
-
-const getPersistentState = (): {
-  user: User;
-  session: Session;
-  profile: Profile | null;
-  roles: AppRole[];
-} | null => {
-  try {
-    const raw = localStorage.getItem(LOCAL_SESSION_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.user && parsed?.session) {
-        return parsed;
-      }
-    }
-  } catch {}
-  return null;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(() => getPersistentState()?.user ?? null);
-  const [session, setSession] = useState<Session | null>(() => getPersistentState()?.session ?? null);
-  const [profile, setProfile] = useState<Profile | null>(() => getPersistentState()?.profile ?? null);
-  const [roles, setRoles] = useState<AppRole[]>(() => getPersistentState()?.roles ?? []);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [permissions, setPermissions] = useState<AppPermission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -154,9 +110,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const fetchAccessContext = async (userId: string) => {
+    const rpcClient = supabase as unknown as {
+      rpc: (name: string) => Promise<{ data: unknown; error: { message?: string } | null }>;
+    };
+    const { data, error } = await rpcClient.rpc("get_my_access_context");
+    if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+      await fetchRoles(userId);
+      return;
+    }
+    const access = data as { roles?: unknown; permissions?: unknown };
+    if (Array.isArray(access.roles)) {
+      setRoles(access.roles.filter((role): role is AppRole =>
+        typeof role === "string" && ["admin", "super_admin", "talent", "institution", "company", "mentor"].includes(role),
+      ));
+    }
+    if (Array.isArray(access.permissions)) {
+      setPermissions(access.permissions.filter((permission): permission is string => typeof permission === "string"));
+    }
+  };
+
+  const claimGuestCollegeApplications = async (userId: string) => {
+    const guestToken = getStoredGuestCollegeApplicationToken();
+    if (!guestToken) return;
+    const rpcClient = supabase as unknown as {
+      rpc: (name: string, args: Record<string, unknown>) => Promise<{
+        data: { claimed_count?: unknown } | null;
+        error: { code?: string } | null;
+      }>;
+    };
+    const { data, error } = await rpcClient.rpc("claim_guest_college_applications", {
+      p_guest_token: guestToken,
+    });
+    if (!error && Number(data?.claimed_count || 0) > 0) {
+      invalidateStudentActivityCache(userId);
+    }
+  };
+
   const refreshProfile = async () => {
     if (user) {
-      await Promise.all([fetchProfile(user.id), fetchRoles(user.id)]);
+      await Promise.all([fetchProfile(user.id), fetchAccessContext(user.id)]);
     }
   };
 
@@ -168,26 +161,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(currentSession);
           setUser(currentSession.user);
           setTimeout(async () => {
-            await consumePendingOAuthRole();
             await Promise.all([
               fetchProfile(currentSession.user.id),
-              fetchRoles(currentSession.user.id)
+              fetchAccessContext(currentSession.user.id),
+              claimGuestCollegeApplications(currentSession.user.id),
             ]);
             setIsLoading(false);
           }, 0);
         } else {
-          const restored = getPersistentState();
-          if (restored) {
-            setUser(restored.user);
-            setSession(restored.session);
-            setProfile(restored.profile);
-            setRoles(restored.roles);
-          } else {
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            setRoles([]);
-          }
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setRoles([]);
+          setPermissions([]);
           setIsLoading(false);
         }
       }
@@ -198,32 +184,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (initialSession?.user) {
         setSession(initialSession);
         setUser(initialSession.user);
-        consumePendingOAuthRole()
-          .then(() => Promise.all([
-            fetchProfile(initialSession.user.id),
-            fetchRoles(initialSession.user.id)
-          ]))
+        Promise.all([
+          fetchProfile(initialSession.user.id),
+          fetchAccessContext(initialSession.user.id),
+          claimGuestCollegeApplications(initialSession.user.id),
+        ])
           .then(() => setIsLoading(false));
       } else {
-        const restored = getPersistentState();
-        if (restored) {
-          setUser(restored.user);
-          setSession(restored.session);
-          setProfile(restored.profile);
-          setRoles(restored.roles);
-        }
         setIsLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
+    // The Supabase listener must be registered once; its helpers do not depend
+    // on mutable inputs and only update provider state from the active session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (user && session) {
-      savePersistentState(user, session, profile, roles);
-    }
-  }, [user, session, profile, roles]);
 
   const signUp = async (
     email: string,
@@ -293,7 +269,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     const accessRecord =
       accessData && typeof accessData === "object" && !Array.isArray(accessData)
-        ? accessData as { account_status?: unknown; roles?: unknown }
+        ? accessData as { account_status?: unknown; roles?: unknown; permissions?: unknown }
         : null;
     if (accessRecord?.account_status !== "active" || !Array.isArray(accessRecord.roles)) {
       await supabase.auth.signOut();
@@ -302,17 +278,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const accountRoles = accessRecord.roles.filter(
       (role): role is AppRole =>
         typeof role === "string" &&
-        ["admin", "talent", "institution", "company", "mentor"].includes(role),
+        ["admin", "super_admin", "talent", "institution", "company", "mentor"].includes(role),
     );
-    const redirectTo = accountRoles.includes("admin")
-      ? "/admin"
-      : accountRoles.includes("institution")
-        ? "/institute"
-        : accountRoles.includes("company")
-          ? "/company"
-          : accountRoles.includes("mentor")
-            ? "/mentor"
-            : "/dashboard";
+    const accountPermissions = Array.isArray(accessRecord.permissions)
+      ? accessRecord.permissions.filter((permission): permission is string => typeof permission === "string")
+      : [];
+    const redirectTo = resolveWorkspacePath(accountRoles, accountPermissions);
 
     return { error: null, redirectTo };
   };
@@ -322,44 +293,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     accountType: Exclude<AppRole, "admin"> = "talent",
   ) => {
     if (accountType === "talent") {
-      window.sessionStorage.removeItem(pendingOAuthRoleKey);
+      clearPendingModuleAccessRole();
     } else {
       window.sessionStorage.setItem(
-        pendingOAuthRoleKey,
+        pendingModuleAccessKey,
         JSON.stringify({ role: accountType, createdAt: Date.now() }),
       );
     }
 
-    const redirectPath =
-      accountType === "institution"
-        ? "/institute"
-        : accountType === "company"
-          ? "/company"
-          : accountType === "mentor"
-            ? "/mentor"
-            : "/dashboard";
-
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}${redirectPath}`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
     if (error) {
-      window.sessionStorage.removeItem(pendingOAuthRoleKey);
+      clearPendingModuleAccessRole();
     }
 
     return { error };
   };
 
   const signOut = async () => {
-    clearPersistentState();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);
     setRoles([]);
+    setPermissions([]);
   };
 
   const isSuperAdmin = roles.includes("super_admin");
@@ -372,6 +334,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         session,
         profile,
         roles,
+        permissions,
         isLoading,
         isAdmin,
         signUp,

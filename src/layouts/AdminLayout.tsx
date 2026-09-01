@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -8,11 +8,10 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const mainRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
 
   const scrollWorkspaceToTop = useCallback(() => {
-    mainRef.current?.scrollTo({
+    window.scrollTo({
       top: 0,
       behavior: reduceMotion ? "auto" : "smooth",
     });
@@ -24,8 +23,8 @@ const AdminLayout = () => {
   }, [location.pathname, location.search, scrollWorkspaceToTop]);
 
   return (
-    <div className="h-dvh w-full overflow-hidden bg-white">
-      <div className="h-full w-full overflow-hidden bg-white">
+    <div className="min-h-[100dvh] w-full overflow-x-hidden bg-white">
+      <div className="min-h-[100dvh] w-full bg-white">
         <div className="fixed inset-y-0 left-0 z-40 hidden w-[84px] border-r border-[#173769] bg-[#071a3d] lg:block xl:hidden">
           <AdminSidebar
             compact
@@ -56,11 +55,10 @@ const AdminLayout = () => {
           </SheetContent>
         </Sheet>
 
-        <div className="flex h-full min-w-0 flex-col lg:pl-[84px] xl:pl-[288px]">
+        <div className="flex min-h-[100dvh] min-w-0 flex-col lg:pl-[84px] xl:pl-[288px]">
           <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
           <main
-            ref={mainRef}
-            className="min-h-0 flex-1 scroll-smooth overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-7"
+            className="min-w-0 flex-1 scroll-smooth overflow-x-hidden p-4 sm:p-6 lg:p-7"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div

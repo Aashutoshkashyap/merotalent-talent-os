@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { getStudentActivityCacheKey } from "@/lib/student/activity-cache";
 
 export interface StudentCollegeApplication {
   id: string;
@@ -94,12 +95,11 @@ const queryByIds = async (
   return (data || []) as Record<string, unknown>[];
 };
 
-const CACHE_KEY = "merotalent.student_activity_cache";
 const CACHE_TTL = 120000; // 2 minutes
 
 const getCachedActivityData = (userId: string): StudentActivityData | null => {
   try {
-    const raw = localStorage.getItem(`${CACHE_KEY}_${userId}`);
+    const raw = localStorage.getItem(getStudentActivityCacheKey(userId));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (Date.now() - parsed.timestamp < CACHE_TTL) {
@@ -112,7 +112,7 @@ const getCachedActivityData = (userId: string): StudentActivityData | null => {
 const setCachedActivityData = (userId: string, data: StudentActivityData) => {
   try {
     localStorage.setItem(
-      `${CACHE_KEY}_${userId}`,
+      getStudentActivityCacheKey(userId),
       JSON.stringify({ timestamp: Date.now(), data })
     );
   } catch {}
@@ -298,6 +298,15 @@ export const useStudentActivity = () => {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const onActivityUpdated = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail as { userId?: string } : null;
+      if (detail?.userId === user?.id) void refresh();
+    };
+    window.addEventListener("merotalent:student-activity-updated", onActivityUpdated);
+    return () => window.removeEventListener("merotalent:student-activity-updated", onActivityUpdated);
+  }, [refresh, user?.id]);
 
   return { ...data, error, isLoading, refresh };
 };

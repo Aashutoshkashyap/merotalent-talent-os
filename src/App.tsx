@@ -17,6 +17,7 @@ import Signup from "./screens/Signup";
 import Onboarding from "./screens/Onboarding";
 import ResetPassword from "./screens/ResetPassword";
 import PendingApproval from "./screens/auth/PendingApproval";
+import OAuthCallback from "./screens/auth/OAuthCallback";
 
 // Public Pages
 import CoursesPage from "./screens/courses/CoursesPage";
@@ -99,6 +100,7 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/pending-approval" element={<PendingApproval />} />
+              <Route path="/auth/callback" element={<OAuthCallback />} />
               <Route path="/onboarding" element={<Onboarding />} />
               
               {/* Public Landing Pages */}

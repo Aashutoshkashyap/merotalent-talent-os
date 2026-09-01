@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Search, 
   Building2, 
@@ -75,6 +76,7 @@ interface InstituteFormData {
   level: string;
   description: string;
   location: string;
+  map_location: string;
   website: string;
   youtube_url: string;
   contact_email: string;
@@ -101,6 +103,7 @@ const emptyFormData = (): InstituteFormData => ({
   level: "",
   description: "",
   location: "",
+  map_location: "",
   website: "",
   youtube_url: "",
   contact_email: "",
@@ -163,6 +166,10 @@ const MediaPreview = ({
 );
 
 const AdminInstitutions = () => {
+  const { roles } = useAuth();
+  // The database's platform-admin guard recognizes the legacy `admin` role;
+  // newer accounts may also carry `super_admin`.
+  const canManageMap = roles.includes("admin") || roles.includes("super_admin");
   const { toast } = useToast();
   const [institutes, setInstitutes] = useState<Institute[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -277,6 +284,7 @@ const AdminInstitutions = () => {
       level: formData.level || null,
       description: formData.description || null,
       location: formData.location || null,
+      ...(canManageMap ? { map_location: formData.map_location || null } : {}),
       website: formData.website || null,
       youtube_url: formData.youtube_url || null,
       contact_email: formData.contact_email || null,
@@ -356,6 +364,7 @@ const AdminInstitutions = () => {
       level: institute.level || "",
       description: institute.description || "",
       location: institute.location || "",
+      map_location: institute.map_location || "",
       website: institute.website || "",
       youtube_url: institute.youtube_url || "",
       contact_email: institute.contact_email || "",
@@ -496,6 +505,19 @@ const AdminInstitutions = () => {
                   />
                 </div>
               </div>
+
+              {canManageMap && (
+                <div className="space-y-2">
+                  <Label>Campus map pin</Label>
+                  <Input
+                    maxLength={500}
+                    placeholder="Exact address or coordinates, e.g. 27.6774, 85.3188"
+                    value={formData.map_location}
+                    onChange={(e) => setFormData({ ...formData, map_location: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">Controls the full-width Google map on the public college page. Only Super Admin and the assigned college owner can change it.</p>
+                </div>
+              )}
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">

@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, profile, roles, isLoading, isAdmin } = useAuth();
+  const { user, profile, roles, permissions, isLoading, isAdmin } = useAuth();
   const location = useLocation();
   const isLocalUiPreview =
     process.env.NODE_ENV === "development" &&
@@ -38,7 +38,20 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   }
 
   // For other required roles, check if user has the role
-  if (requiredRole && requiredRole !== "admin" && !roles.includes(requiredRole) && !isLocalUiPreview) {
+  const delegatedPermission = requiredRole === "institution"
+    ? "college.manage"
+    : requiredRole === "company"
+      ? "job.post"
+      : requiredRole === "mentor"
+        ? "mentor.manage"
+        : null;
+  if (
+    requiredRole &&
+    requiredRole !== "admin" &&
+    !roles.includes(requiredRole) &&
+    !(delegatedPermission && permissions.includes(delegatedPermission)) &&
+    !isLocalUiPreview
+  ) {
     return <Navigate to="/dashboard" replace />;
   }
 

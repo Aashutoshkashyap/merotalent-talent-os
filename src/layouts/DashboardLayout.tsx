@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
@@ -7,13 +7,12 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const mainScrollRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const outlet = useOutlet();
   const shouldReduceMotion = useReducedMotion();
 
   const scrollMainToTop = useCallback(() => {
-    mainScrollRef.current?.scrollTo({
+    window.scrollTo({
       top: 0,
       behavior: shouldReduceMotion ? "auto" : "smooth",
     });
@@ -31,7 +30,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className="h-[100dvh] min-h-0 w-full overflow-hidden bg-white text-[#19172b]"
+      className="min-h-[100dvh] w-full overflow-x-hidden bg-white text-[#19172b]"
       style={
         {
           "--background": "0 0% 100%",
@@ -48,7 +47,7 @@ const DashboardLayout = () => {
         } as CSSProperties
       }
     >
-      <div className="flex h-full min-h-0 w-full overflow-hidden">
+      <div className="flex min-h-[100dvh] w-full">
         <div className="hidden h-[100dvh] w-[84px] shrink-0 md:block xl:hidden">
           <DashboardSidebar
             compact
@@ -78,11 +77,10 @@ const DashboardLayout = () => {
           </SheetContent>
         </Sheet>
 
-        <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
+        <section className="flex min-h-[100dvh] min-w-0 flex-1 flex-col bg-white">
           <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
           <main
-            ref={mainScrollRef}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain scroll-smooth px-4 pb-8 pt-2 sm:px-5 md:px-6 md:pb-6 lg:px-8"
+            className="min-w-0 flex-1 scroll-smooth px-4 pb-8 pt-2 sm:px-5 md:px-6 md:pb-6 lg:px-8"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div

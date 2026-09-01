@@ -14,7 +14,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { listAdminResource } from "@/lib/admin/admin-client";
-import { ShieldCheck, CheckCircle2, XCircle, Clock, Loader2, UserCheck, Inbox } from "lucide-react";
+import { ShieldCheck, Clock, Loader2, UserCheck, Inbox } from "lucide-react";
 
 interface AccessRequest {
   id: string;
@@ -23,17 +23,8 @@ interface AccessRequest {
   user_email: string;
   requested_modules: string[];
   reason: string;
-  status: "pending" | "approved" | "rejected" | "suspended";
+  status: "pending" | "approved" | "rejected";
   created_at: string;
-}
-
-interface AccessRequestDecision {
-  id: string;
-  user_id: string;
-  status: "approved" | "rejected";
-  requested_modules: string[];
-  granted_permissions: string[];
-  decided_at: string;
 }
 
 const errorMessage = (error: unknown) => {
@@ -84,56 +75,33 @@ export default function AdminAccessRequests() {
     fetchRequests();
   }, [fetchRequests]);
 
-  const handleUpdateStatus = async (request: AccessRequest, newStatus: "approved" | "rejected" | "suspended") => {
+  const handleUpdateStatus = async (request: AccessRequest, newStatus: "approved" | "rejected") => {
     setUpdatingId(request.id);
     try {
-      if (newStatus === "suspended") {
-        // Direct update for suspend since the RPC may not support it
-        const { error } = await (supabase as any)
+      // The trusted RPC grants only the requested permissions and records the
+      // audit event. A rejected delegated-access request must not deactivate
+      // the person's regular MeroTalent account.
+      const { error } = await (supabase as any).rpc(
+        "admin_decide_sub_admin_request",
+        { p_request_id: request.id, p_approve: newStatus === "approved", p_note: null },
+      );
+
+      if (error) {
+        // Compatibility fallback for deployments that are still applying the
+        // hardened RPC migration. Do not change profile account status here.
+        const { error: directError } = await (supabase as any)
           .from("sub_admin_requests")
-          .update({ status: "suspended" })
+          .update({ status: newStatus })
           .eq("id", request.id);
-        if (error) throw error;
-
-        const { error: suspendError } = await (supabase as any)
-          .from("profiles")
-          .update({ account_status: "suspended" })
-          .eq("user_id", request.user_id);
-        if (suspendError) throw suspendError;
-
-        toast({ title: "Access Suspended", description: `${request.user_name}'s access has been suspended.` });
-      } else {
-        // Try RPC first for approve/reject
-        const { data, error } = await (supabase as any).rpc(
-          "admin_decide_sub_admin_request",
-          { p_request_id: request.id, p_approve: newStatus === "approved", p_note: null },
-        );
-
-        if (error) {
-          // Fallback: direct update
-          const { error: directError } = await (supabase as any)
-            .from("sub_admin_requests")
-            .update({ status: newStatus })
-            .eq("id", request.id);
-          if (directError) throw directError;
-        }
-
-        // account_status permits only active | deactivated | pending |
-        // suspended. "disabled" failed the CHECK constraint with 23514, so a
-        // rejection never actually deactivated the account.
-        const { error: statusError } = await (supabase as any)
-          .from("profiles")
-          .update({ account_status: newStatus === "approved" ? "active" : "deactivated" })
-          .eq("user_id", request.user_id);
-        if (statusError) throw statusError;
-
-        toast({
-          title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
-          description: newStatus === "approved"
-            ? `${request.user_name} has been granted module management access.`
-            : `Request for ${request.user_name} has been rejected.`,
-        });
+        if (directError) throw directError;
       }
+
+      toast({
+        title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
+        description: newStatus === "approved"
+          ? `${request.user_name} has been granted module management access.`
+          : `Request for ${request.user_name} has been rejected.`,
+      });
 
       await fetchRequests();
     } catch (error) {
@@ -152,9 +120,6 @@ export default function AdminAccessRequests() {
             Review requests for delegated module access.
           </p>
         </div>
-        <Badge variant="outline" className="w-fit text-xs px-3 py-1 bg-slate-100 font-mono">
-          Total Requests: {requests.length}
-        </Badge>
       </div>
 
       <Card className="border-border/50">
@@ -164,7 +129,7 @@ export default function AdminAccessRequests() {
             Request queue
           </CardTitle>
           <CardDescription>
-            Approval grants only the requested module permissions, not full administrator access.
+            Approval grants only the requested module permissions, not full administrator access. For college leads, assign the approved account as the college owner in College management before it can view that college's applications.
           </CardDescription>
         </CardHeader>
 
@@ -225,8 +190,6 @@ export default function AdminAccessRequests() {
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Approved</Badge>
                         ) : req.status === "rejected" ? (
                           <Badge variant="destructive">Rejected</Badge>
-                        ) : req.status === "suspended" ? (
-                          <Badge className="bg-orange-100 text-orange-800 border-orange-200">Suspended</Badge>
                         ) : (
                           <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
                             <Clock className="mr-1 h-3 w-3 inline" />
@@ -260,17 +223,6 @@ export default function AdminAccessRequests() {
                               disabled={updatingId === req.id}
                             >
                               Reject
-                            </Button>
-                          )}
-                          {req.status !== "suspended" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[10px] text-orange-700 border-orange-200 hover:bg-orange-50"
-                              onClick={() => handleUpdateStatus(req, "suspended")}
-                              disabled={updatingId === req.id}
-                            >
-                              Suspend
                             </Button>
                           )}
                         </div>

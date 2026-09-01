@@ -486,6 +486,9 @@ const AdminDashboard = () => {
             <Button variant="outline" className="rounded-xl border-[#cbd5e1] bg-white text-[#071a3d] hover:bg-[#f1f5f9]" asChild>
               <Link to="/admin/users">View People</Link>
             </Button>
+            <Button variant="outline" className="rounded-xl border-[#cbd5e1] bg-white text-[#071a3d] hover:bg-[#f1f5f9]" asChild>
+              <Link to="/admin/access-requests">Access requests</Link>
+            </Button>
           </div>
         </motion.div>
 

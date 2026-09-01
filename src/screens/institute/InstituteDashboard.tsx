@@ -52,6 +52,7 @@ interface InstituteData {
   short_name: string | null;
   description: string | null;
   location: string | null;
+  map_location: string | null;
   website: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -448,6 +449,7 @@ const InstituteDashboard = () => {
         short_name: "Workspace",
         description: "Unclaimed College Workspace. Click 'Claim / List College' to link your official college listing or submit a new listing request.",
         location: "Kathmandu, Nepal",
+        map_location: null,
         website: "https://merotalent.com",
         contact_email: user?.email || "",
         contact_phone: null,
@@ -725,6 +727,7 @@ const InstituteDashboard = () => {
     short_name: "Workspace",
     description: "Unclaimed workspace",
     location: "Kathmandu, Nepal",
+    map_location: null,
     website: "https://merotalent.com",
     contact_email: user?.email || "",
     contact_phone: null,
@@ -759,8 +762,8 @@ const InstituteDashboard = () => {
   const canEditOwnedProfile = access?.can_edit_profile === true;
 
   return (
-    <div className="min-h-screen w-full overflow-hidden bg-white text-[#17162e]">
-      <div className="min-h-screen w-full overflow-hidden bg-white">
+    <div className="min-h-screen w-full overflow-x-hidden bg-white text-[#17162e]">
+      <div className="min-h-screen w-full overflow-x-hidden bg-white">
       {/* Header */}
       <header className="border-b border-[#f0e3da] bg-white/90 backdrop-blur">
         <div className="mx-auto px-4 py-4 sm:px-6">

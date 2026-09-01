@@ -31,6 +31,8 @@ import {
   fetchPublicInstitute,
   formatInstituteCategory,
   getContactValue,
+  getGoogleMapsEmbedUrl,
+  getGoogleMapsSearchUrl,
   getInstitutePrograms,
   getYoutubeEmbedUrl,
   safeExternalUrl,
@@ -43,6 +45,7 @@ const sectionLinks = [
   { id: "features", label: "Features" },
   { id: "gallery", label: "Gallery" },
   { id: "video", label: "Video" },
+  { id: "location", label: "Location" },
 ];
 
 const displayDate = (value: string | null) => {
@@ -58,11 +61,11 @@ const titleCase = (value: string | null | undefined) =>
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 lg:px-10">
-      <Skeleton className="aspect-[16/7] max-h-[430px] w-full rounded-[28px] bg-slate-100" />
-      <div className="relative -mt-12 px-4 sm:px-8">
+    <div className="mx-auto w-full max-w-[1280px] px-5 py-8 sm:px-8 lg:px-10">
+      <Skeleton className="aspect-[2.2/1] max-h-[480px] w-full rounded-[28px] bg-slate-100 sm:aspect-[2.63/1]" />
+      <div className="relative -mt-14 px-4 sm:-mt-20 sm:px-8">
         <div className="flex items-end gap-5">
-          <Skeleton className="h-28 w-28 rounded-[24px] border-4 border-white bg-slate-100" />
+          <Skeleton className="h-28 w-28 rounded-[24px] border-4 border-white bg-slate-100 sm:h-40 sm:w-40" />
           <div className="mb-2 flex-1 space-y-3">
             <Skeleton className="h-8 w-3/5 bg-slate-100" />
             <Skeleton className="h-4 w-2/5 bg-slate-100" />
@@ -121,6 +124,8 @@ export default function InstituteDetailPage() {
   const sourceUrl = safeExternalUrl(institute?.source_url);
   const deadline = displayDate(institute?.admission_deadline ?? null);
   const address = getContactValue(institute?.contact_info, ["address", "street_address"]);
+  const mapEmbedUrl = getGoogleMapsEmbedUrl(institute?.map_location);
+  const mapSearchUrl = getGoogleMapsSearchUrl(institute?.map_location);
 
   const openApplication = () => {
     if (!user) {
@@ -171,14 +176,14 @@ export default function InstituteDetailPage() {
 
   return (
     <PublicPageLayout activeNavId="colleges">
-      <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-8 lg:px-10 lg:py-9">
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-8 lg:px-10 lg:py-9">
         <Link to="/institutes" className="mb-4 inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-500 transition hover:text-[#0073e6]">
           <span aria-hidden="true">←</span>
           Back to education directory
         </Link>
 
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <div className="relative aspect-[16/9] max-h-[460px] w-full overflow-hidden bg-slate-100 sm:aspect-[16/7]">
+          <div className="relative aspect-[2.2/1] max-h-[480px] w-full overflow-hidden bg-slate-100 sm:aspect-[2.63/1]">
             <InstituteImage
               source={institute.cover_image_url}
               alt={`${institute.name} cover`}
@@ -190,8 +195,8 @@ export default function InstituteDetailPage() {
           </div>
 
           <div className="relative px-5 pb-6 sm:px-8 sm:pb-8">
-            <div className="-mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end">
-              <div className="relative z-10 h-24 w-24 shrink-0 overflow-hidden rounded-[22px] border-4 border-white bg-white shadow-xl sm:h-28 sm:w-28">
+            <div className="-mt-14 flex flex-col gap-4 sm:-mt-20 sm:flex-row sm:items-end">
+              <div className="relative z-10 h-28 w-28 shrink-0 overflow-hidden rounded-[24px] border-4 border-white bg-white shadow-xl sm:h-40 sm:w-40">
                 <InstituteImage source={institute.logo_url} alt={`${institute.name} logo`} className="h-full w-full object-contain p-3" />
               </div>
 
@@ -472,6 +477,45 @@ export default function InstituteDetailPage() {
             </section>
           </aside>
         </div>
+
+        <section id="location" className="mt-7 overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-[#0073e6]">
+                <MapPin className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#0073e6]">Visit campus</p>
+                <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">College location</h2>
+              </div>
+            </div>
+            {mapSearchUrl && (
+              <Button asChild variant="outline" className="w-fit rounded-xl border-slate-200 font-extrabold text-slate-700 hover:bg-blue-50 hover:text-[#0073e6]">
+                <a href={mapSearchUrl} target="_blank" rel="noopener noreferrer">
+                  Open in Google Maps <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            )}
+          </div>
+
+          {mapEmbedUrl ? (
+            <iframe
+              src={mapEmbedUrl}
+              title={`${institute.name} location map`}
+              className="h-[320px] w-full border-0 sm:h-[440px]"
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          ) : (
+            <div className="grid min-h-[220px] place-items-center bg-slate-50 px-6 text-center">
+              <div>
+                <MapPin className="mx-auto h-10 w-10 text-slate-300" />
+                <p className="mt-3 text-sm font-bold text-slate-600">Campus map pin coming soon</p>
+                <p className="mt-1 text-xs font-medium text-slate-400">The college administrator can add the exact location from the college module.</p>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       <CollegeApplicationDialog

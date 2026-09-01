@@ -19,6 +19,7 @@ export interface EditableInstituteProfile {
   short_name: string | null;
   type: string | null;
   location: string | null;
+  map_location: string | null;
   website: string | null;
   description: string | null;
   contact_email: string | null;
@@ -50,6 +51,7 @@ const InstituteProfileEditor = ({
   const [shortName, setShortName] = useState("");
   const [type, setType] = useState("");
   const [location, setLocation] = useState("");
+  const [mapLocation, setMapLocation] = useState("");
   const [website, setWebsite] = useState("");
   const [description, setDescription] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -63,6 +65,7 @@ const InstituteProfileEditor = ({
     setShortName(institute.short_name ?? "");
     setType(institute.type ?? "college");
     setLocation(institute.location ?? "");
+    setMapLocation(institute.map_location ?? "");
     setWebsite(institute.website ?? "");
     setDescription(institute.description ?? "");
     setContactEmail(institute.contact_email ?? "");
@@ -81,6 +84,7 @@ const InstituteProfileEditor = ({
         short_name: shortName.trim() || null,
         type: type.trim() || null,
         location: location.trim() || null,
+        map_location: mapLocation.trim() || null,
         website: website.trim() || null,
         description: description.trim() || null,
         contact_email: contactEmail.trim() || null,
@@ -127,6 +131,7 @@ const InstituteProfileEditor = ({
         <div className="space-y-2"><Label htmlFor="institute-profile-location">Location</Label><Input id="institute-profile-location" value={location} onChange={(event) => setLocation(event.target.value)} className={fieldClassName} /></div>
         <div className="space-y-2"><Label htmlFor="institute-profile-website">Website</Label><Input id="institute-profile-website" type="url" value={website} onChange={(event) => setWebsite(event.target.value)} className={fieldClassName} /></div>
       </div>
+      <div className="space-y-2"><Label htmlFor="institute-profile-map-location">Campus map pin</Label><Input id="institute-profile-map-location" maxLength={500} placeholder="Paste an exact address or coordinates, e.g. 27.6774, 85.3188" value={mapLocation} onChange={(event) => setMapLocation(event.target.value)} className={fieldClassName} /><p className="text-xs text-muted-foreground">This controls the full-width Google map on the public college page.</p></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2"><Label htmlFor="institute-profile-email">Contact email</Label><Input id="institute-profile-email" type="email" value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} className={fieldClassName} /></div>
         <div className="space-y-2"><Label htmlFor="institute-profile-phone">Contact phone</Label><Input id="institute-profile-phone" value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} className={fieldClassName} /></div>

@@ -111,3 +111,37 @@ export const submitAuthenticatedModuleForm = async ({
 
   return payload.data;
 };
+
+export const submitGuestCollegeApplication = async ({
+  guestToken,
+  idempotencyKey = crypto.randomUUID(),
+  values,
+}: {
+  guestToken: string;
+  idempotencyKey?: string;
+  values: ModuleFormValues;
+}): Promise<ModuleSubmissionResult> => {
+  if (!/^[a-f0-9-]{36}$/i.test(guestToken)) {
+    throw new ModuleFormClientError("Your browser could not prepare this application. Please refresh and try again.", 400, "INVALID_GUEST_TOKEN");
+  }
+
+  const response = await fetch("/api/v1/submissions/college_application", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+      "X-Guest-Application-Token": guestToken,
+    },
+    body: JSON.stringify(values),
+  });
+  const payload = await readEnvelope<ModuleSubmissionResult>(response);
+  if (!response.ok || !payload.data) {
+    throw new ModuleFormClientError(
+      payload.error?.message || "The application could not be submitted. Please try again.",
+      response.status,
+      payload.error?.code,
+      payload.error?.fields,
+    );
+  }
+  return payload.data;
+};

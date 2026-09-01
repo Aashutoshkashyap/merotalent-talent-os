@@ -41,7 +41,6 @@ export default function RequestSubAdminAccess() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [requestType, setRequestType] = useState<"grant" | "discard">("grant");
   const [phone, setPhone] = useState("");
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [reason, setReason] = useState("");
@@ -72,7 +71,7 @@ export default function RequestSubAdminAccess() {
       });
     }
 
-    if (requestType === "grant" && selectedModules.length === 0) {
+    if (selectedModules.length === 0) {
       toast({ variant: "destructive", title: "Select modules", description: "Please select at least one module to manage." });
       return;
     }
@@ -86,18 +85,18 @@ export default function RequestSubAdminAccess() {
 
     try {
       const fullReason = [
-        requestType === "discard" ? "[DISCARD ACCESS REQUEST]" : "[GRANT ACCESS REQUEST]",
-        `Organization/College: ${organization.trim() || "N/A"}`,
         `Contact Phone (Nepal): ${phone.trim() || "N/A"}`,
         `Justification: ${reason.trim()}`,
       ].join("\n");
 
-      // Try RPC first
+      // The secure RPC is the production path. The direct insert only keeps
+      // older database deployments working while their migration is applied.
       const { error: rpcError } = await (supabase as any).rpc(
         "request_sub_admin_access",
         {
-          p_requested_modules: requestType === "discard" ? ["discard_all"] : selectedModules,
+          p_requested_modules: selectedModules,
           p_reason: fullReason,
+          p_organization: organization.trim() || null,
         },
       );
 
@@ -112,13 +111,15 @@ export default function RequestSubAdminAccess() {
             // fallback could never actually record a request.
             user_name: profile?.full_name || user.email || "Unknown",
             user_email: user.email,
-            requested_modules: requestType === "discard" ? ["discard_all"] : selectedModules,
+            requested_modules: selectedModules,
             reason: fullReason,
             status: "pending",
           });
 
         if (directError) {
-          console.warn("Direct table insert failed, recording to student activity log:", directError);
+          throw new Error(
+            `Your request could not be recorded. ${directError.message || "Please try again shortly."}`,
+          );
         }
       }
 
@@ -127,7 +128,7 @@ export default function RequestSubAdminAccess() {
       logUserActivity({
         id: `subadmin-req-${Date.now()}`,
         kind: "college",
-        title: requestType === "discard" ? "Relinquish Sub-Admin Access" : "Sub-Admin Access Request",
+        title: "Sub-Admin Access Request",
         detail: `${selectedModules.length} modules requested · ${organization.trim() || "Independent"}`,
         status: "applied",
         occurredAt: new Date().toISOString(),
@@ -201,35 +202,6 @@ export default function RequestSubAdminAccess() {
 
             <CardContent className="p-6 sm:p-8 space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Request Type Selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-700">Action Type</Label>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setRequestType("grant")}
-                      className={`py-2 px-4 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
-                        requestType === "grant"
-                          ? "bg-white text-[#071a3d] shadow-xs"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      Request Sub-Admin Access
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRequestType("discard")}
-                      className={`py-2 px-4 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
-                        requestType === "discard"
-                          ? "bg-red-600 text-white shadow-xs"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      Discard / Relinquish Access
-                    </button>
-                  </div>
-                </div>
-
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Your Name</Label>
@@ -260,35 +232,33 @@ export default function RequestSubAdminAccess() {
                   />
                 </div>
 
-                {requestType === "grant" && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-slate-900">
-                      Select Modules You Want to Manage *
-                    </Label>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {MODULE_OPTIONS.map((mod) => {
-                        const isChecked = selectedModules.includes(mod.id);
-                        return (
-                          <div
-                            key={mod.id}
-                            onClick={() => toggleModule(mod.id)}
-                            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                              isChecked
-                                ? "border-[#071a3d] bg-slate-50 ring-1 ring-[#071a3d]"
-                                : "border-slate-200 hover:border-slate-300 bg-white"
-                            }`}
-                          >
-                            <Checkbox checked={isChecked} className="mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-bold text-slate-900">{mod.label}</p>
-                              <p className="text-[11px] text-slate-500 line-clamp-1">{mod.desc}</p>
-                            </div>
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-slate-900">
+                    Select Modules You Want to Manage *
+                  </Label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {MODULE_OPTIONS.map((mod) => {
+                      const isChecked = selectedModules.includes(mod.id);
+                      return (
+                        <div
+                          key={mod.id}
+                          onClick={() => toggleModule(mod.id)}
+                          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
+                            isChecked
+                              ? "border-[#071a3d] bg-slate-50 ring-1 ring-[#071a3d]"
+                              : "border-slate-200 hover:border-slate-300 bg-white"
+                          }`}
+                        >
+                          <Checkbox checked={isChecked} className="mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-900">{mod.label}</p>
+                            <p className="text-[11px] text-slate-500 line-clamp-1">{mod.desc}</p>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
 
                 <div className="space-y-2">
                   <Label>Justification & Qualifications *</Label>

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Send } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { getGuestCollegeApplicationToken } from "@/lib/forms/guest-college-application";
+import { invalidateStudentActivityCache } from "@/lib/student/activity-cache";
+import { submitAuthenticatedModuleForm, submitGuestCollegeApplication } from "@/lib/forms/module-form-client";
 import type { ModuleFormDefinition, ModuleFormField } from "@/lib/forms/module-form-types";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,8 +49,6 @@ export default function CollegeApplicationDialog({
   onOpenChange,
 }: CollegeApplicationDialogProps) {
   const { session, user, profile } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [definition, setDefinition] = useState<ModuleFormDefinition | null>(null);
   const [values, setValues] = useState<FormValues>({ collegeId: instituteId });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -57,17 +57,8 @@ export default function CollegeApplicationDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const returnPath = useMemo(
-    () => {
-      const params = new URLSearchParams(location.search);
-      params.set("apply", "1");
-      return `${location.pathname}?${params.toString()}`;
-    },
-    [location.pathname, location.search],
-  );
-
   useEffect(() => {
-    if (!open || !user) return;
+    if (!open) return;
 
     const controller = new AbortController();
     setIsLoading(true);
@@ -85,7 +76,7 @@ export default function CollegeApplicationDialog({
         for (const field of formDefinition.fields) {
           if (field.key === formDefinition.targetField) defaults[field.key] = instituteId;
           else if (field.key === "fullName") defaults[field.key] = profile?.full_name || "";
-          else if (field.key === "email") defaults[field.key] = profile?.email || user.email || "";
+          else if (field.key === "email") defaults[field.key] = profile?.email || user?.email || "";
           else defaults[field.key] = field.type === "checkbox" ? false : "";
         }
         setValues(defaults);
@@ -109,10 +100,6 @@ export default function CollegeApplicationDialog({
   }, [open]);
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen && !session) {
-      navigate("/login", { state: { from: { pathname: returnPath } } });
-      return;
-    }
     onOpenChange(nextOpen);
   };
 
@@ -131,8 +118,7 @@ export default function CollegeApplicationDialog({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!definition || !session) {
-      handleOpenChange(true);
+    if (!definition) {
       return;
     }
 
@@ -141,20 +127,18 @@ export default function CollegeApplicationDialog({
     setFieldErrors({});
 
     try {
-      const response = await fetch("/api/v1/submissions/college_application", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-          "Idempotency-Key": crypto.randomUUID(),
-        },
-        body: JSON.stringify(values),
-      });
-      const payload = (await response.json()) as ApiEnvelope<{ id: string; status: string }>;
-
-      if (!response.ok || payload.error) {
-        setFieldErrors(payload.error?.fields ?? {});
-        throw new Error(payload.error?.message || "Your application could not be submitted.");
+      if (session) {
+        await submitAuthenticatedModuleForm({
+          accessToken: session.access_token,
+          module: "college_application",
+          values,
+        });
+        if (user) invalidateStudentActivityCache(user.id);
+      } else {
+        await submitGuestCollegeApplication({
+          guestToken: getGuestCollegeApplicationToken(),
+          values,
+        });
       }
 
       setSubmitted(true);
@@ -175,7 +159,10 @@ export default function CollegeApplicationDialog({
             </div>
             <DialogTitle className="mt-5 text-2xl">Application submitted</DialogTitle>
             <DialogDescription className="mt-2 max-w-sm leading-relaxed">
-              Your application to {instituteName} is safely stored in MeroTalent. You can track its status from your dashboard.
+              Your application to {instituteName} is safely stored in MeroTalent.
+              {user
+                ? " You can track its status from your dashboard."
+                : " Create an account with this email on this browser to track it from your student dashboard."}
             </DialogDescription>
             <Button onClick={() => onOpenChange(false)} className="mt-6 rounded-xl bg-[#0073e6] px-6 hover:bg-[#0062c4]">
               Done
@@ -186,7 +173,7 @@ export default function CollegeApplicationDialog({
             <DialogHeader>
               <DialogTitle>{definition?.title || "Apply to this college"}</DialogTitle>
               <DialogDescription>
-                {definition?.description || `Send your details to ${instituteName}.`}
+                {definition?.description || `Send your details directly to ${instituteName}.`}
               </DialogDescription>
             </DialogHeader>
 

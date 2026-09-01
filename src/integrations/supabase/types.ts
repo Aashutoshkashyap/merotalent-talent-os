@@ -714,6 +714,7 @@ export type Database = {
           is_verified: boolean | null
           level: string | null
           location: string | null
+          map_location: string | null
           logo_url: string | null
           name: string
           owner_user_id: string | null
@@ -754,6 +755,7 @@ export type Database = {
           is_verified?: boolean | null
           level?: string | null
           location?: string | null
+          map_location?: string | null
           logo_url?: string | null
           name: string
           owner_user_id?: string | null
@@ -794,6 +796,7 @@ export type Database = {
           is_verified?: boolean | null
           level?: string | null
           location?: string | null
+          map_location?: string | null
           logo_url?: string | null
           name?: string
           owner_user_id?: string | null

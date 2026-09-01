@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import SidebarNav from "@/components/landing/SidebarNav";
 import HeaderNav from "@/components/landing/HeaderNav";
 import Footer from "@/components/landing/Footer";
+import { cn } from "@/lib/utils";
 
 interface PublicPageLayoutProps {
   children: React.ReactNode;
@@ -18,18 +19,23 @@ export default function PublicPageLayout({ children, activeNavId = "home" }: Pub
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 flex overflow-x-hidden">
-      {/* Sidebar */}
-      <SidebarNav
-        activeRole="talent"
-        activeNavId={activeNavId}
-        onHoverChange={setIsSidebarExpanded}
-      />
+    <div className="flex min-h-screen overflow-x-hidden bg-white font-sans text-slate-900">
+      {/* The role rail is a desktop navigation aid. On phones it used to consume
+          72px of the viewport, which left the public pages unnecessarily narrow. */}
+      <div className="hidden lg:block">
+        <SidebarNav
+          activeRole="talent"
+          activeNavId={activeNavId}
+          onHoverChange={setIsSidebarExpanded}
+        />
+      </div>
 
       {/* Main Content Area */}
       <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out"
-        style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}
+        className={cn(
+          "flex min-h-screen min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-in-out lg:ml-[72px]",
+          isSidebarExpanded && "lg:ml-[292px]",
+        )}
       >
         <HeaderNav />
 

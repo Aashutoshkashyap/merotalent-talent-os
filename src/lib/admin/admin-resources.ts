@@ -191,7 +191,7 @@ const resources = {
   colleges: {
     resource: "colleges",
     table: "institutes",
-    select: "id,owner_user_id,name,short_name,slug,type,description,logo_url,cover_image_url,gallery_urls,youtube_url,website,location,contact_email,contact_phone,contact_info,courses_offered,total_seats,available_seats,admission_status,admission_deadline,is_verified,is_featured,featured_until,ranking,status,created_at,updated_at,deleted_at",
+    select: "id,owner_user_id,name,short_name,slug,type,description,logo_url,cover_image_url,gallery_urls,youtube_url,website,location,map_location,contact_email,contact_phone,contact_info,courses_offered,total_seats,available_seats,admission_status,admission_deadline,is_verified,is_featured,featured_until,ranking,status,created_at,updated_at,deleted_at",
     searchColumn: "name",
     sortColumns: ["name", "ranking", "created_at", "updated_at"],
     defaultSort: "created_at",
@@ -215,6 +215,7 @@ const resources = {
       youtube_url: { kind: "url", create: true, update: true, nullable: true },
       website: { kind: "url", create: true, update: true, nullable: true },
       location: text({ create: true, update: true, nullable: true, maxLength: 240 }),
+      map_location: text({ create: true, update: true, nullable: true, maxLength: 500 }),
       contact_email: { kind: "email", create: true, update: true, nullable: true },
       contact_phone: text({ create: true, update: true, nullable: true, maxLength: 30 }),
       contact_info: { kind: "json", create: true, update: true },

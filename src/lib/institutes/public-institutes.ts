@@ -4,6 +4,10 @@ import {
   cleanInstituteFilterText,
   tokenizeInstituteSearch,
 } from "./directory-search";
+export {
+  getGoogleMapsEmbedUrl,
+  getGoogleMapsSearchUrl,
+} from "./map-location";
 
 export type InstituteCategory = "all" | "college" | "school" | "plus-two";
 export type InstituteSort = "recommended" | "name" | "newest";
@@ -25,6 +29,7 @@ export interface InstituteRecord {
   website: string | null;
   source_url: string | null;
   location: string | null;
+  map_location: string | null;
   contact_email: string | null;
   contact_phone: string | null;
   contact_info: Json | null;
