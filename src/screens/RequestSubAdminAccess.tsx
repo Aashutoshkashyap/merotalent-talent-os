@@ -89,8 +89,10 @@ export default function RequestSubAdminAccess() {
         `Justification: ${reason.trim()}`,
       ].join("\n");
 
-      // The secure RPC is the production path. The direct insert only keeps
-      // older database deployments working while their migration is applied.
+      // This SECURITY DEFINER RPC validates the requester, records an audit
+      // event, and creates the Super Admin notification. Do not fall back to a
+      // browser-side insert: the table intentionally has no direct write RLS
+      // policy, and a fallback could falsely imply that a request was queued.
       const { error: rpcError } = await (supabase as any).rpc(
         "request_sub_admin_access",
         {
@@ -100,28 +102,7 @@ export default function RequestSubAdminAccess() {
         },
       );
 
-      if (rpcError) {
-        // Fallback: direct table insert using standard columns
-        const { error: directError } = await (supabase as any)
-          .from("sub_admin_requests")
-          .insert({
-            user_id: user.id,
-            // user_name and user_email are NOT NULL with no default. Omitting
-            // them made this fallback fail with 23502 every time, so the
-            // fallback could never actually record a request.
-            user_name: profile?.full_name || user.email || "Unknown",
-            user_email: user.email,
-            requested_modules: selectedModules,
-            reason: fullReason,
-            status: "pending",
-          });
-
-        if (directError) {
-          throw new Error(
-            `Your request could not be recorded. ${directError.message || "Please try again shortly."}`,
-          );
-        }
-      }
+      if (rpcError) throw rpcError;
 
       // Log activity
       const { logUserActivity } = await import("@/lib/activityLogger");

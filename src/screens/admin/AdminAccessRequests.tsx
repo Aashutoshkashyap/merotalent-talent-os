@@ -49,16 +49,7 @@ export default function AdminAccessRequests() {
   const fetchRequests = useCallback(async () => {
     setIsLoading(true);
     try {
-      let data: AccessRequest[] = [];
-      try {
-        data = await listAdminResource<AccessRequest>("access-requests");
-      } catch {
-        const { data: dbData } = await (supabase as any)
-          .from("sub_admin_requests")
-          .select("*")
-          .order("created_at", { ascending: false });
-        data = dbData || [];
-      }
+      const data = await listAdminResource<AccessRequest>("access-requests");
       setRequests(data);
     } catch (error) {
       setRequests([]);
@@ -86,15 +77,7 @@ export default function AdminAccessRequests() {
         { p_request_id: request.id, p_approve: newStatus === "approved", p_note: null },
       );
 
-      if (error) {
-        // Compatibility fallback for deployments that are still applying the
-        // hardened RPC migration. Do not change profile account status here.
-        const { error: directError } = await (supabase as any)
-          .from("sub_admin_requests")
-          .update({ status: newStatus })
-          .eq("id", request.id);
-        if (directError) throw directError;
-      }
+      if (error) throw error;
 
       toast({
         title: newStatus === "approved" ? "Request Approved!" : "Request Rejected",
