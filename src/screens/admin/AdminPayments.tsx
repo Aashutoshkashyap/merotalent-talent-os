@@ -1,21 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Search, DollarSign, UserCheck, Calendar, Image as ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { Search, DollarSign, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
@@ -43,15 +33,6 @@ export default function AdminPayments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-
-  // Manual Enrollment Modal State
-  const [isEnrollOpen, setIsEnrollOpen] = useState(false);
-  const [enrollEmail, setEnrollEmail] = useState("");
-  const [enrollModule, setEnrollModule] = useState("college_subscription");
-  const [enrollAmount, setEnrollAmount] = useState("1499");
-  const [enrollDays, setEnrollDays] = useState("30");
-  const [enrollProofUrl, setEnrollProofUrl] = useState("");
-  const [isEnrolling, setIsEnrolling] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -86,150 +67,6 @@ export default function AdminPayments() {
     setIsLoading(false);
   };
 
-  const updatePaymentStatus = async (id: string, newStatus: string) => {
-    const { error } = await (supabase as any).from("payments").update({ status: newStatus }).eq("id", id);
-    if (!error) {
-      toast({ title: `Payment status updated to ${newStatus}` });
-      fetchPayments();
-    } else {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    }
-  };
-
-  const handleManualEnroll = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!enrollEmail.trim()) {
-      toast({ variant: "destructive", title: "Email required", description: "Enter target user email." });
-      return;
-    }
-
-    setIsEnrolling(true);
-    try {
-      const { data: profileData, error: profileError } = await (supabase as any)
-        .from("profiles")
-        .select("user_id")
-        .eq("email", enrollEmail.trim().toLowerCase())
-        .maybeSingle();
-
-      if (profileError) throw profileError;
-
-      // The previous "manual-grant-id" fallback is not a uuid, so it failed the
-      // uuid cast on every column it reached. There is no valid grant without a
-      // real user.
-      const targetUserId = profileData?.user_id;
-      if (!targetUserId) {
-        throw new Error(`No account found for ${enrollEmail.trim()}. The user must sign up first.`);
-      }
-
-      // subscriptions.package_id is NOT NULL, so a package must be resolved
-      // before the grant. Omitting it failed the insert with 23502.
-      const { data: packageData, error: packageError } = await (supabase as any)
-        .from("packages")
-        .select("id")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
-
-      if (packageError) throw packageError;
-      if (!packageData?.id) {
-        throw new Error("No active package exists to grant. Create a package first.");
-      }
-
-      const days = parseInt(enrollDays) || 30;
-      const expiryDate = new Date(Date.now() + days * 86400000).toISOString();
-
-      const { error: paymentError } = await (supabase as any).from("payments").insert({
-        user_id: targetUserId,
-        payment_type: enrollModule,
-        reference_id: packageData.id,
-        amount: parseFloat(enrollAmount) || 0,
-        currency: "NPR",
-        status: "success",
-        gateway: "Manual Admin Grant",
-        gateway_transaction_id: `MANUAL-${Date.now()}`,
-        // payments has no screenshot_url column; the proof lives in metadata.
-        metadata: enrollProofUrl.trim() ? { proof_url: enrollProofUrl.trim() } : {},
-      });
-
-      if (paymentError) throw paymentError;
-
-      const { error: subscriptionError } = await (supabase as any).from("subscriptions").insert({
-        user_id: targetUserId,
-        package_id: packageData.id,
-        entity_type: enrollModule.includes("college") ? "college" : "user",
-        status: "active",
-        payment_status: "success",
-        start_date: new Date().toISOString(),
-        expiry_date: expiryDate,
-      });
-
-      if (subscriptionError) throw subscriptionError;
-
-      toast({
-        title: "Manual Enrollment Successful!",
-        description: `Granted ${enrollModule.replace(/_/g, " ")} to ${enrollEmail} for ${days} days.`,
-      });
-
-      setIsEnrollOpen(false);
-      setEnrollEmail("");
-      setEnrollProofUrl("");
-      fetchPayments();
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Enrollment Error", description: err?.message || "Failed to grant manual enrollment." });
-    } finally {
-      setIsEnrolling(false);
-    }
-  };
-
-  const handleExtendSubscription = async (payment: PaymentItem) => {
-    try {
-      const extraDays = 30;
-
-      // This was an upsert with no conflict target and no package_id, so it
-      // could only ever insert a duplicate row — and failed the NOT NULL on
-      // package_id anyway. Extending means updating the existing subscription.
-      const { data: existing, error: lookupError } = await (supabase as any)
-        .from("subscriptions")
-        .select("id, expiry_date")
-        .eq("user_id", payment.user_id)
-        .is("deleted_at", null)
-        .order("expiry_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (lookupError) throw lookupError;
-      if (!existing?.id) {
-        throw new Error("This user has no subscription to extend. Use Manual Enrollment instead.");
-      }
-
-      // Extend from the current expiry when it is still in the future, so an
-      // active subscription gains 30 days rather than losing time.
-      const currentExpiry = new Date(existing.expiry_date).getTime();
-      const base = Number.isFinite(currentExpiry) && currentExpiry > Date.now()
-        ? currentExpiry
-        : Date.now();
-      const nextExpiry = new Date(base + extraDays * 86400000).toISOString();
-
-      const { error: extendError } = await (supabase as any)
-        .from("subscriptions")
-        .update({
-          status: "active",
-          payment_status: "success",
-          expiry_date: nextExpiry,
-        })
-        .eq("id", existing.id);
-
-      if (extendError) throw extendError;
-
-      toast({
-        title: "Subscription Extended +30 Days!",
-        description: `Extended subscription for ${payment.profiles?.email || payment.user_id}.`,
-      });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Extension Error", description: err?.message });
-    }
-  };
-
   const filteredPayments = payments.filter((p) => {
     const matchesSearch =
       (p.profiles?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -248,18 +85,13 @@ export default function AdminPayments() {
     <OperationsPage>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-[#0f172a]">Payments Audit & Manual Enrollment</h1>
+          <h1 className="text-2xl font-display font-bold text-[#0f172a]">Payments audit</h1>
           <p className="text-muted-foreground text-sm">
-            Track revenue transactions, view payment screenshots, grant manual enrollments, and extend subscription dates.
+            Review payment records and provider outcomes. Reconciliation stays pending until a trusted backend/provider confirmation is recorded.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button onClick={() => setIsEnrollOpen(true)} className="bg-[#071a3d] hover:bg-[#05132d] text-white font-bold rounded-xl text-xs">
-            <UserCheck className="mr-2 h-4 w-4" />
-            Manual Enrollment / Grant
-          </Button>
-
           <div className="flex items-center gap-2 bg-[#f8fafc] px-4 py-2 rounded-xl border border-slate-200 shadow-2xs">
             <DollarSign className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
@@ -304,7 +136,6 @@ export default function AdminPayments() {
               <TableHead>Proof Docs</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -360,35 +191,11 @@ export default function AdminPayments() {
                     {payment.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right whitespace-nowrap">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <Select value={payment.status} onValueChange={(val) => updatePaymentStatus(payment.id, val)}>
-                      <SelectTrigger className="w-[110px] h-7 text-[10px] font-bold rounded-lg bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="success">Success</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="failed">Failed</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleExtendSubscription(payment)}
-                      className="h-7 text-[10px] font-bold rounded-lg text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                    >
-                      <Calendar className="w-3 h-3 mr-1" />
-                      +30 Days
-                    </Button>
-                  </div>
-                </TableCell>
               </TableRow>
             ))}
             {filteredPayments.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-xs font-semibold">
+                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs font-semibold">
                   {isLoading ? "Loading payment records..." : "No payment records found."}
                 </TableCell>
               </TableRow>
@@ -396,89 +203,6 @@ export default function AdminPayments() {
           </TableBody>
         </Table>
       </Card>
-
-      <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
-        <DialogContent className="max-w-md rounded-3xl p-6">
-          <form onSubmit={handleManualEnroll} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-black text-slate-900">Manual Enrollment & Grant</DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Grant package access to a user manually upon receiving direct bank/eSewa transfer.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Target User Email *</Label>
-                <Input
-                  type="email"
-                  placeholder="e.g. user@example.com"
-                  value={enrollEmail}
-                  onChange={(e) => setEnrollEmail(e.target.value)}
-                  required
-                  className="h-10 text-xs rounded-xl"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Module / Package Type *</Label>
-                <Select value={enrollModule} onValueChange={setEnrollModule}>
-                  <SelectTrigger className="h-10 text-xs rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="college_subscription">College Module Pass</SelectItem>
-                    <SelectItem value="mentor_pass">1-on-1 Mentorship Pass</SelectItem>
-                    <SelectItem value="job_fasttrack">Premium Job Fast-Track</SelectItem>
-                    <SelectItem value="hackathon_pass">Hackathon & Event Pass</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700">Amount Paid (NPR)</Label>
-                  <Input
-                    type="number"
-                    value={enrollAmount}
-                    onChange={(e) => setEnrollAmount(e.target.value)}
-                    className="h-10 text-xs rounded-xl"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700">Access Duration (Days)</Label>
-                  <Input
-                    type="number"
-                    value={enrollDays}
-                    onChange={(e) => setEnrollDays(e.target.value)}
-                    className="h-10 text-xs rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Payment Proof Screenshot URL</Label>
-                <Input
-                  placeholder="https://... image link or reference receipt"
-                  value={enrollProofUrl}
-                  onChange={(e) => setEnrollProofUrl(e.target.value)}
-                  className="h-10 text-xs rounded-xl"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsEnrollOpen(false)} className="rounded-xl text-xs">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isEnrolling} className="rounded-xl bg-[#071a3d] hover:bg-[#05132d] text-white text-xs font-extrabold px-5">
-                {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                Grant Subscription Access
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </OperationsPage>
   );
 }

@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, profile, roles, permissions, isLoading, isAdmin } = useAuth();
+  const { user, profile, roles, permissions, capabilities, isLoading, isAdmin } = useAuth();
   const location = useLocation();
   const isLocalUiPreview =
     process.env.NODE_ENV === "development" &&
@@ -45,11 +45,19 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       : requiredRole === "mentor"
         ? "mentor.manage"
         : null;
+  const delegatedCapability = requiredRole === "institution"
+    ? "college"
+    : requiredRole === "company"
+      ? "jobs"
+      : requiredRole === "mentor"
+        ? "mentor"
+        : null;
   if (
     requiredRole &&
     requiredRole !== "admin" &&
     !roles.includes(requiredRole) &&
     !(delegatedPermission && permissions.includes(delegatedPermission)) &&
+    !(delegatedCapability && capabilities.includes(delegatedCapability)) &&
     !isLocalUiPreview
   ) {
     return <Navigate to="/dashboard" replace />;

@@ -548,7 +548,7 @@ const resources = {
   "access-requests": {
     resource: "access-requests",
     table: "sub_admin_requests",
-    select: "id,user_id,user_name,user_email,requested_modules,reason,status,created_at,updated_at",
+    select: "id,user_id,user_name,user_email,requested_modules,requested_entity_scopes,assigned_capabilities,reason,organization,status,decision_note,decided_by,decided_at,created_at,updated_at",
     sortColumns: ["status", "created_at"],
     defaultSort: "created_at",
     filters: {

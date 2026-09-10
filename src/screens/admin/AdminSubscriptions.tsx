@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Calendar, Loader2, Gift, Ban } from "lucide-react";
+import { Search, Calendar, Loader2, Gift, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
@@ -59,24 +59,13 @@ export default function AdminSubscriptions() {
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFreeTierDialogOpen, setIsFreeTierDialogOpen] = useState(false);
   const [freeTierAction, setFreeTierAction] = useState<FreeTierAction>("grant");
   const [isFreeTierSubmitting, setIsFreeTierSubmitting] = useState(false);
   const [freeTierForm, setFreeTierForm] = useState(createEmptyFreeTierForm);
 
-  const [packages, setPackages] = useState<{ id: string; name: string; package_kind: string }[]>([]);
-  const [formData, setFormData] = useState({
-    user_id: "",
-    package_id: "",
-    entity_type: "college",
-    duration_months: "12",
-  });
-
   useEffect(() => {
     fetchSubscriptions();
-    fetchPackages();
   }, []);
 
   const fetchSubscriptions = async () => {
@@ -99,58 +88,6 @@ export default function AdminSubscriptions() {
       setSubscriptions((data || []) as SubscriptionItem[]);
     }
     setIsLoading(false);
-  };
-
-  const fetchPackages = async () => {
-    const { data } = await (supabase as any)
-      .from("packages")
-      .select("id, name, package_kind")
-      .eq("is_active", true)
-      .neq("package_kind", "free")
-      .order("sort_order", { ascending: true });
-    if (data) setPackages(data as { id: string; name: string; package_kind: string }[]);
-  };
-
-  const handleGrantSubscription = async () => {
-    if (!formData.user_id.trim() || !formData.package_id) {
-      toast({ variant: "destructive", title: "User ID and Package are required" });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const startDate = new Date();
-    const expiryDate = new Date();
-    expiryDate.setMonth(expiryDate.getMonth() + parseInt(formData.duration_months, 10));
-
-    const payload = {
-      user_id: formData.user_id.trim(),
-      package_id: formData.package_id,
-      entity_type: formData.entity_type,
-      start_date: startDate.toISOString(),
-      expiry_date: expiryDate.toISOString(),
-      status: "active",
-      payment_status: "success",
-    };
-
-    const { error } = await (supabase as any).from("subscriptions").insert(payload);
-
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
-      toast({ title: "Subscription granted successfully" });
-      setIsDialogOpen(false);
-      fetchSubscriptions();
-    }
-    setIsSubmitting(false);
-  };
-
-  const updateStatus = async (id: string, newStatus: string) => {
-    const { error } = await (supabase as any).from("subscriptions").update({ status: newStatus }).eq("id", id);
-    if (!error) {
-      toast({ title: `Subscription status set to ${newStatus}` });
-      fetchSubscriptions();
-    }
   };
 
   const openFreeTierDialog = (action: FreeTierAction, subscription?: SubscriptionItem) => {
@@ -334,79 +271,6 @@ export default function AdminSubscriptions() {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero">
-              <Plus className="w-4 h-4 mr-2" />
-              Grant paid plan
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Grant paid subscription</DialogTitle>
-              <DialogDescription>Manually assign an active paid or complimentary package.</DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label>User UUID *</Label>
-                <Input
-                  placeholder="e.g. 00000000-0000-0000-0000-000000000000"
-                  value={formData.user_id}
-                  onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Select Package *</Label>
-                <Select value={formData.package_id} onValueChange={(v) => setFormData({ ...formData, package_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Choose Package" /></SelectTrigger>
-                  <SelectContent>
-                    {packages.map((pkg) => (
-                      <SelectItem key={pkg.id} value={pkg.id}>
-                        {pkg.name} ({pkg.package_kind})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Entity Type</Label>
-                  <Select value={formData.entity_type} onValueChange={(v) => setFormData({ ...formData, entity_type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="college">College / Institution</SelectItem>
-                      <SelectItem value="mentor">Mentor</SelectItem>
-                      <SelectItem value="company">Company</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Duration (Months)</Label>
-                  <Select value={formData.duration_months} onValueChange={(v) => setFormData({ ...formData, duration_months: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 Month</SelectItem>
-                      <SelectItem value="3">3 Months</SelectItem>
-                      <SelectItem value="6">6 Months</SelectItem>
-                      <SelectItem value="12">12 Months</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button variant="hero" onClick={handleGrantSubscription} disabled={isSubmitting}>
-                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Granting...</> : "Grant Access"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-          </Dialog>
         </div>
       </div>
 
@@ -429,7 +293,7 @@ export default function AdminSubscriptions() {
               <TableHead>Entity</TableHead>
               <TableHead>Expiry Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">Reconciliation</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -473,17 +337,7 @@ export default function AdminSubscriptions() {
                       Revoke free
                     </Button>
                   ) : (
-                    <Select value={sub.status} onValueChange={(val) => updateStatus(sub.id, val)}>
-                      <SelectTrigger className="w-[110px] h-8 text-xs ml-auto">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="past_due">Past Due</SelectItem>
-                        <SelectItem value="expired">Expired</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <span className="text-xs text-muted-foreground">Provider/admin reconciliation required</span>
                   )}
                 </TableCell>
               </TableRow>

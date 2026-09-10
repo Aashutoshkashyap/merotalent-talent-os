@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Briefcase, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import JobApplicationWizard from "@/components/jobs/JobApplicationWizard";
 
 interface JobItem {
   id: string;
@@ -16,6 +18,9 @@ interface JobItem {
   location: string;
   avatarText: string;
   logoBg: string;
+  requirements: string[];
+  skills: string[];
+  isRemote: boolean;
 }
 
 /* ── colour rotation for company logos ── */
@@ -66,14 +71,23 @@ function toDisplayItem(row: Record<string, unknown>, idx: number): JobItem {
     location: String(row.location ?? "Nepal"),
     avatarText,
     logoBg: LOGO_COLORS[idx % LOGO_COLORS.length],
+    requirements: Array.isArray(row.requirements) ? row.requirements.map(String) : [],
+    skills: Array.isArray(row.skills) ? row.skills.map(String) : [],
+    isRemote: row.is_remote === true,
   };
 }
 
 export default function JobsPage() {
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All Jobs");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [workMode, setWorkMode] = useState("all");
+  const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -116,12 +130,22 @@ export default function JobsPage() {
     })),
   ];
 
-  const filtered =
-    selectedCategory === "All Jobs"
+  const filtered = (selectedCategory === "All Jobs"
       ? jobs
       : jobs.filter((j) =>
           j.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase())
-        );
+        ))
+    .filter((job) => [job.title, job.company, job.location, job.description, ...job.skills].join(" ").toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((job) => workMode === "all" || (workMode === "remote" ? job.isRemote : !job.isRemote))
+    .sort((a, b) => sortBy === "salary" ? b.salary.localeCompare(a.salary, undefined, { numeric: true }) : 0);
+
+  const openApplication = (job: JobItem) => {
+    if (!session) {
+      navigate("/login", { state: { from: { pathname: "/jobs" } } });
+      return;
+    }
+    setSelectedJob(job);
+  };
 
   return (
     <PublicPageLayout activeNavId="jobs">
@@ -162,11 +186,13 @@ export default function JobsPage() {
           <span className="text-base font-black text-slate-800">
             {isLoading ? "Loading…" : `Open Positions (${filtered.length})`}
           </span>
-          <select className="text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none">
-            <option>Newest</option>
-            <option>Salary Range</option>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none">
+            <option value="newest">Newest</option>
+            <option value="salary">Salary range</option>
           </select>
         </div>
+        <label className="sr-only" htmlFor="job-search">Search jobs</label>
+        <div className="flex flex-col gap-3 sm:flex-row"><input id="job-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search roles, employers, skills, or location" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0073e6] focus:ring-2 focus:ring-blue-100" /><select aria-label="Filter jobs by work mode" value={workMode} onChange={(event) => setWorkMode(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 outline-none"><option value="all">All work modes</option><option value="remote">Remote</option><option value="onsite">On-site</option></select></div>
 
         {/* Cards grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -191,9 +217,7 @@ export default function JobsPage() {
                   <MapPin className="w-3 h-3 flex-shrink-0" />
                   <span className="truncate">{item.location}</span>
                 </div>
-                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-[#0073e6] transition-colors leading-snug truncate">
-                  {item.title}
-                </h3>
+                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-[#0073e6] transition-colors leading-snug truncate"><Link to={`/jobs/${item.id}`}>{item.title}</Link></h3>
                 <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
                   {item.description}
                 </p>
@@ -210,9 +234,14 @@ export default function JobsPage() {
                     <span className="text-[10px] text-slate-400 font-semibold truncate">{item.salary}</span>
                   </div>
                 </div>
-                <Link to="/login" className="w-7 h-7 rounded-full bg-slate-50 hover:bg-blue-50 flex items-center justify-center text-slate-400 hover:text-[#0073e6] border border-slate-100 transition-colors flex-shrink-0">
+                <button
+                  type="button"
+                  aria-label={`Apply for ${item.title}`}
+                  onClick={() => openApplication(item)}
+                  className="w-7 h-7 rounded-full bg-slate-50 hover:bg-blue-50 flex items-center justify-center text-slate-400 hover:text-[#0073e6] border border-slate-100 transition-colors flex-shrink-0"
+                >
                   <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                </button>
               </div>
             </div>
           ))}
@@ -226,6 +255,13 @@ export default function JobsPage() {
               {loadError || "Approved jobs created in Admin will appear here automatically."}
             </p>
           </div>
+        )}
+        {selectedJob && (
+          <JobApplicationWizard
+            isOpen
+            onClose={() => setSelectedJob(null)}
+            job={selectedJob}
+          />
         )}
       </div>
     </PublicPageLayout>

@@ -40,6 +40,7 @@ import {
 
 const sectionLinks = [
   { id: "about", label: "About" },
+  { id: "leadership", label: "Leadership" },
   { id: "admissions", label: "Admissions" },
   { id: "programs", label: "Programs" },
   { id: "features", label: "Features" },
@@ -272,6 +273,37 @@ export default function InstituteDetailPage() {
               </p>
             </section>
 
+            {(institute.chairperson_name || institute.chairperson_message || institute.principal_name || institute.principal_message) && (
+              <section id="leadership" className="scroll-mt-28 rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-[#0073e6]"><Users className="h-5 w-5" /></div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#0073e6]">Leadership</p>
+                    <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">A message from the institution</h2>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { key: "chairperson", title: institute.chairperson_name, designation: institute.chairperson_designation, message: institute.chairperson_message, image: institute.chairperson_image_url, fallback: "Chairperson" },
+                    { key: "principal", title: institute.principal_name, designation: institute.principal_designation, message: institute.principal_message, image: institute.principal_image_url, fallback: "Principal" },
+                  ].filter((person) => person.title || person.message).map((person) => (
+                    <article key={person.key} className="rounded-2xl bg-slate-50 p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+                          <InstituteImage source={person.image} alt="" className="h-full w-full object-cover" />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-slate-900">{person.title || person.fallback}</h3>
+                          {person.designation && <p className="text-xs font-bold text-[#0073e6]">{person.designation}</p>}
+                        </div>
+                      </div>
+                      {person.message && <p className="mt-4 whitespace-pre-line text-sm font-medium leading-7 text-slate-600">{person.message}</p>}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section id="admissions" className="scroll-mt-28 rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                 <div>
@@ -422,7 +454,7 @@ export default function InstituteDetailPage() {
                     <div className="absolute inset-0 grid place-items-center bg-white/35 text-center backdrop-blur-[1px]">
                       <div>
                         <PlayCircle className="mx-auto h-11 w-11 text-[#0073e6]" />
-                        <p className="mt-2 text-sm font-extrabold text-slate-700">College video coming soon</p>
+                        <p className="mt-2 text-sm font-extrabold text-slate-700">No college video has been added yet</p>
                       </div>
                     </div>
                   </div>
@@ -510,7 +542,7 @@ export default function InstituteDetailPage() {
             <div className="grid min-h-[220px] place-items-center bg-slate-50 px-6 text-center">
               <div>
                 <MapPin className="mx-auto h-10 w-10 text-slate-300" />
-                <p className="mt-3 text-sm font-bold text-slate-600">Campus map pin coming soon</p>
+                <p className="mt-3 text-sm font-bold text-slate-600">The college has not provided a map location yet</p>
                 <p className="mt-1 text-xs font-medium text-slate-400">The college administrator can add the exact location from the college module.</p>
               </div>
             </div>

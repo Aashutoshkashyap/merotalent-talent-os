@@ -87,7 +87,7 @@ export default function InstituteCard({ institute }: InstituteCardProps) {
               ))}
             </ul>
           ) : (
-            <p className="text-xs font-medium text-slate-400">Program details coming soon.</p>
+            <p className="text-xs font-medium text-slate-400">Program details are not available.</p>
           )}
         </div>
 

@@ -28,6 +28,14 @@ export interface InstituteRecord {
   youtube_url: string | null;
   website: string | null;
   source_url: string | null;
+  chairperson_name: string | null;
+  chairperson_designation: string | null;
+  chairperson_message: string | null;
+  chairperson_image_url: string | null;
+  principal_name: string | null;
+  principal_designation: string | null;
+  principal_message: string | null;
+  principal_image_url: string | null;
   location: string | null;
   map_location: string | null;
   contact_email: string | null;

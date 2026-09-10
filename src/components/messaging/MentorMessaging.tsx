@@ -17,6 +17,7 @@ import {
   Search,
   MoreVertical,
   Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -49,12 +50,39 @@ interface Message {
   content: string;
   is_read: boolean;
   created_at: string;
+  attachment_path?: string | null;
+  attachment_mime_type?: string | null;
 }
 
 interface MentorMessagingProps {
   mentorId?: string;
   asMentor?: boolean;
 }
+
+const AttachmentPreview = ({ path, mimeType }: { path: string; mimeType?: string | null }) => {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data, error } = await supabase.storage
+        .from("chat-attachments")
+        .createSignedUrl(path, 300);
+      if (active) setUrl(!error ? data?.signedUrl || null : null);
+    })();
+    return () => { active = false; };
+  }, [path]);
+
+  if (!url) return <p className="text-xs opacity-80">Attachment unavailable or expired.</p>;
+  if (mimeType?.startsWith("image/")) {
+    return <img src={url} alt="Message attachment" className="max-w-xs rounded-xl border my-1 object-cover" />;
+  }
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm underline">
+      <FileText className="h-4 w-4" /> Open attachment
+    </a>
+  );
+};
 
 const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) => {
   const { user } = useAuth();
@@ -390,7 +418,9 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                               : "bg-muted rounded-bl-sm"
                           }`}
                         >
-                          {message.content.startsWith("[IMAGE]:") ? (
+                          {message.attachment_path ? (
+                            <AttachmentPreview path={message.attachment_path} mimeType={message.attachment_mime_type} />
+                          ) : message.content.startsWith("[IMAGE]:") ? (
                             <img
                               src={message.content.replace("[IMAGE]:", "")}
                               alt="Attachment"
@@ -425,50 +455,53 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                 <label className="cursor-pointer p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900">
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
                     className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file || !user || !selectedConversation) return;
 
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast({ variant: "destructive", title: "Attachment is too large", description: "Choose a file up to 5 MB." });
+                        e.target.value = "";
+                        return;
+                      }
+                      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+                      if (!allowedTypes.includes(file.type)) {
+                        toast({ variant: "destructive", title: "Unsupported attachment", description: "Use JPG, PNG, WebP, or PDF." });
+                        e.target.value = "";
+                        return;
+                      }
                       setIsSending(true);
                       try {
-                        const fileExt = file.name.split(".").pop();
-                        const filePath = `${selectedConversation.id}/${Date.now()}.${fileExt}`;
+                        const fileExt = file.name.split(".").pop()?.toLowerCase();
+                        if (!fileExt) throw new Error("The attachment needs a file extension.");
+                        const filePath = `${user.id}/chat_attachment/${selectedConversation.id}/${crypto.randomUUID()}.${fileExt}`;
                         const { error: uploadErr } = await supabase.storage
                           .from("chat-attachments")
-                          .upload(filePath, file);
-
-                        let imageUrl = "";
-                        if (!uploadErr) {
-                          const { data: publicUrlData } = supabase.storage
-                            .from("chat-attachments")
-                            .getPublicUrl(filePath);
-                          imageUrl = publicUrlData.publicUrl;
-                        } else {
-                          // Fallback data URL
-                          imageUrl = await new Promise((resolve) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(reader.result as string);
-                            reader.readAsDataURL(file);
-                          });
-                        }
+                          .upload(filePath, file, { contentType: file.type, upsert: false });
+                        if (uploadErr) throw uploadErr;
 
                         const receiverId = asMentor
                           ? selectedConversation.mentee_id
                           : selectedConversation.mentor.user_id;
 
-                        const { error: sendError } = await supabase.from("messages").insert({
+                        const { error: sendError } = await (supabase as any).from("messages").insert({
                           conversation_id: selectedConversation.id,
                           sender_id: user.id,
                           receiver_id: receiverId,
-                          content: `[IMAGE]:${imageUrl}`,
+                          content: `[ATTACHMENT] ${file.name}`,
+                          attachment_path: filePath,
+                          attachment_mime_type: file.type,
                         });
-                        if (sendError) throw sendError;
+                        if (sendError) {
+                          await supabase.storage.from("chat-attachments").remove([filePath]);
+                          throw sendError;
+                        }
 
                         // Refresh messages so image shows up immediately
                         await fetchMessages(selectedConversation.id);
-                        toast({ title: "Image sent!" });
+                        toast({ title: "Attachment sent!" });
                       } catch {
                         toast({ variant: "destructive", title: "Image upload failed" });
                       } finally {

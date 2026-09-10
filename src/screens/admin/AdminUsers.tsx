@@ -75,7 +75,6 @@ const AdminUsers = () => {
   // Create User Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createEmail, setCreateEmail] = useState("");
-  const [createPassword, setCreatePassword] = useState("");
   const [createName, setCreateName] = useState("");
   const [createRole, setCreateRole] = useState("talent");
   const [isCreating, setIsCreating] = useState(false);
@@ -129,51 +128,37 @@ const AdminUsers = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createEmail.trim() || !createPassword.trim()) {
-      toast({ variant: "destructive", title: "Missing fields", description: "Email and password are required." });
+    if (!createEmail.trim()) {
+      toast({ variant: "destructive", title: "Email is required", description: "Enter an email address for the invitation." });
       return;
     }
 
     setIsCreating(true);
     try {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: createEmail.trim(),
-        password: createPassword.trim(),
-        options: {
-          data: { full_name: createName.trim() },
+      const { data: auth } = await supabase.auth.getSession();
+      if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
+      const response = await fetch("/api/v1/admin/auth-users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.session.access_token}`,
         },
-      });
-
-      if (authError) throw authError;
-
-      const newUserId = authData.user?.id;
-      if (newUserId) {
-        // 2. Insert profile record if needed
-        const { error: profileError } = await (supabase as any).from("profiles").upsert({
-          user_id: newUserId,
-          email: createEmail.trim().toLowerCase(),
-          full_name: createName.trim(),
-          account_status: "active",
-        });
-        if (profileError) throw profileError;
-
-        // 3. Assign role
-        const { error: roleError } = await (supabase as any).from("user_roles").insert({
-          user_id: newUserId,
+        body: JSON.stringify({
+          email: createEmail.trim(),
           role: createRole,
-        });
-        if (roleError) throw roleError;
-      }
+          metadata: createName.trim() ? { full_name: createName.trim() } : {},
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || payload?.error) throw new Error(payload?.error?.message || "The invitation could not be created.");
 
       toast({
-        title: "User Created Successfully!",
-        description: `Account created for ${createEmail} with role "${createRole}".`,
+        title: "Invitation created",
+        description: `An onboarding invitation was created for ${createEmail}. Access remains server-side and role-scoped.`,
       });
 
       setIsCreateOpen(false);
       setCreateEmail("");
-      setCreatePassword("");
       setCreateName("");
       setCreateRole("talent");
       fetchUsers();
@@ -195,21 +180,22 @@ const AdminUsers = () => {
         description: `Password reset instructions delivered to ${email}.`,
       });
     } catch (err: any) {
-      toast({
-        title: "Password Reset Triggered",
-        description: `Password reset email sent to ${email} (via Supabase service fallback).`,
-      });
+      toast({ variant: "destructive", title: "Password reset could not be sent", description: err?.message || "Check the email provider configuration and try again." });
     }
   };
 
   const handleToggleStatus = async (userId: string, currentStatus?: string | null) => {
     const nextStatus = currentStatus === "suspended" ? "active" : "suspended";
     try {
-      const { error } = await (supabase as any)
-        .from("profiles")
-        .update({ account_status: nextStatus })
-        .eq("user_id", userId);
-      if (error) throw error;
+      const { data: auth } = await supabase.auth.getSession();
+      if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
+      const response = await fetch(`/api/v1/admin/auth-users/${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.session.access_token}` },
+        body: JSON.stringify({ action: "set_access", account_status: nextStatus, banned: nextStatus === "suspended" }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || payload?.error) throw new Error(payload?.error?.message || "The account status could not be updated.");
 
       toast({
         title: nextStatus === "suspended" ? "User Account Suspended" : "User Account Re-activated",
@@ -224,11 +210,14 @@ const AdminUsers = () => {
   const handleDeleteUser = async (userId: string, email: string) => {
     if (!confirm(`Are you sure you want to delete profile record for ${email}?`)) return;
     try {
-      // profiles has no DELETE policy, so this is denied under RLS. Surfacing
-      // the error is essential: a moderation action that silently no-ops is
-      // worse than one that visibly fails.
-      const { error } = await (supabase as any).from("profiles").delete().eq("user_id", userId);
-      if (error) throw error;
+      const { data: auth } = await supabase.auth.getSession();
+      if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
+      const response = await fetch(`/api/v1/admin/auth-users/${encodeURIComponent(userId)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${auth.session.access_token}` },
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || payload?.error) throw new Error(payload?.error?.message || "The user could not be deactivated.");
       toast({ title: "User Profile Removed", description: `Record for ${email} has been deleted.` });
       fetchUsers();
     } catch (err: any) {
@@ -436,9 +425,9 @@ const AdminUsers = () => {
         <DialogContent className="max-w-md rounded-3xl p-6">
           <form onSubmit={handleCreateUser} className="space-y-4">
             <DialogHeader>
-              <DialogTitle className="text-xl font-black text-slate-900">Create New User Account</DialogTitle>
+              <DialogTitle className="text-xl font-black text-slate-900">Invite User</DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Create an account on behalf of a student, college admin, mentor, or recruiter.
+                Send a secure onboarding invitation. This action never exposes or sets a user password in the admin browser.
               </DialogDescription>
             </DialogHeader>
 
@@ -466,18 +455,6 @@ const AdminUsers = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Temporary Password *</Label>
-                <Input
-                  type="password"
-                  placeholder="At least 6 characters"
-                  value={createPassword}
-                  onChange={(e) => setCreatePassword(e.target.value)}
-                  required
-                  className="h-10 text-xs rounded-xl"
-                />
-              </div>
-
-              <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700">Account Primary Role *</Label>
                 <Select value={createRole} onValueChange={setCreateRole}>
                   <SelectTrigger className="h-10 text-xs rounded-xl">
@@ -488,7 +465,6 @@ const AdminUsers = () => {
                     <SelectItem value="institution">Institution / College Admin</SelectItem>
                     <SelectItem value="mentor">Mentor</SelectItem>
                     <SelectItem value="company">Company / Recruiter</SelectItem>
-                    <SelectItem value="admin">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -501,7 +477,7 @@ const AdminUsers = () => {
 
               <Button type="submit" disabled={isCreating} className="rounded-xl bg-[#071a3d] hover:bg-[#05132d] text-white text-xs font-extrabold px-5">
                 {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-                Create User
+                Send Invitation
               </Button>
             </DialogFooter>
           </form>
@@ -512,4 +488,3 @@ const AdminUsers = () => {
 };
 
 export default AdminUsers;
-

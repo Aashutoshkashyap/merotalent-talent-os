@@ -48,6 +48,7 @@ interface UserWithRoles {
   email: string;
   full_name: string | null;
   roles: string[];
+  capabilities: string[];
 }
 
 interface MentorWithSettings {
@@ -128,10 +129,19 @@ const AdminRoleManagement = () => {
         .from("user_roles")
         .select("user_id, role")
         .in("user_id", userIds);
+      const { data: capabilities } = await (supabase as any)
+        .from("user_module_capabilities")
+        .select("user_id,module_capabilities(module_key)")
+        .in("user_id", userIds)
+        .eq("status", "active");
 
       const usersWithRoles = profiles.map((profile) => ({
         ...profile,
         roles: roles?.filter((r) => r.user_id === profile.user_id).map((r) => r.role) || [],
+        capabilities: (capabilities || [])
+          .filter((capability: any) => capability.user_id === profile.user_id)
+          .map((capability: any) => capability.module_capabilities?.module_key)
+          .filter(Boolean),
       }));
 
       setUsers(usersWithRoles);
@@ -218,7 +228,7 @@ const AdminRoleManagement = () => {
     if (!error) {
       toast({
         title: "Role removed",
-        description: `${role} role was removed. The talent role is preserved.`,
+        description: `${role} authority was removed. The default student account remains available.`,
       });
       fetchUsers();
       fetchMentors();
@@ -267,9 +277,9 @@ const AdminRoleManagement = () => {
   return (
     <OperationsPage>
       <div>
-        <h1 className="text-2xl font-display font-bold">Primary roles</h1>
+        <h1 className="text-2xl font-display font-bold">Platform roles & module capabilities</h1>
         <p className="text-muted-foreground">
-          Assign one primary workspace role per account.
+          Student is the default account role. Grant an operational module capability here, then assign its entity from Access requests. Super Admin access is bootstrap-only.
         </p>
       </div>
 
@@ -297,7 +307,7 @@ const AdminRoleManagement = () => {
         <CardHeader>
           <CardTitle>Account roles</CardTitle>
           <CardDescription>
-            Delegated module access is reviewed separately under Access requests.
+            Platform roles and delegated module capabilities are distinct. Entity assignment is completed from Access requests.
           </CardDescription>
           <div className="relative max-w-md mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -314,7 +324,7 @@ const AdminRoleManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Roles</TableHead>
+                <TableHead>Roles & capabilities</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -352,6 +362,16 @@ const AdminRoleManagement = () => {
                           </Badge>
                         );
                       })}
+                      {user.capabilities.map((capability) => (
+                        <Badge
+                          key={`capability-${capability}`}
+                          variant="secondary"
+                          className="text-xs cursor-pointer bg-blue-50 text-blue-800"
+                          onClick={() => removeRole(user.user_id, capability === "college" ? "institution" : capability === "jobs" ? "company" : capability)}
+                        >
+                          {capability} admin ×
+                        </Badge>
+                      ))}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -359,14 +379,14 @@ const AdminRoleManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        title="Add another role to this user"
+                        title="Grant a module capability"
                         onClick={() => {
                           setSelectedUser(user);
                           setIsRoleDialogOpen(true);
                         }}
                       >
                         <Shield className="w-4 h-4 mr-2" />
-                        Add role
+                        Add module
                       </Button>
                       <Button
                         variant="ghost"
@@ -479,21 +499,22 @@ const AdminRoleManagement = () => {
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Role</DialogTitle>
+            <DialogTitle>Grant module capability</DialogTitle>
             <DialogDescription>
-              Grant an additional role to {selectedUser?.full_name || selectedUser?.email}. One user can hold multiple roles simultaneously.
+              Grant an operational module capability to {selectedUser?.full_name || selectedUser?.email}. It still needs an entity assignment before it exposes private records.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Select Role</Label>
+              <Label>Select module</Label>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a role..." />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(roleConfig)
-                    .filter(([role]) => !selectedUser?.roles.includes(role))
+                    .filter(([role]) => role !== "admin")
+                    .filter(([role]) => !selectedUser?.roles.includes(role) && !(role === "institution" && selectedUser?.capabilities.includes("college")) && !(role === "company" && selectedUser?.capabilities.includes("jobs")) && !(role === "mentor" && selectedUser?.capabilities.includes("mentor")))
                     .map(([role, config]) => (
                       <SelectItem key={role} value={role}>
                         <div className="flex items-center gap-2">
@@ -514,7 +535,7 @@ const AdminRoleManagement = () => {
               Cancel
             </Button>
             <Button onClick={assignRole} disabled={!selectedRole}>
-              Add Role
+              Grant module
             </Button>
           </DialogFooter>
         </DialogContent>

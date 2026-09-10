@@ -4,6 +4,7 @@ import { GET as getAdminResource } from "../../app/api/v1/admin/[resource]/route
 import { GET as getAdminResourceItem } from "../../app/api/v1/admin/[resource]/[id]/route";
 import { POST as mutatePermissionCatalog } from "../../app/api/v1/admin/permissions/route";
 import { GET as getAdminReport } from "../../app/api/v1/admin/reports/[report]/route";
+import { GET as getProviderStatus } from "../../app/api/v1/admin/provider-status/route";
 import { POST as submitModuleForm } from "../../app/api/v1/submissions/[module]/route";
 
 const expectAuthRequired = async (response: Response) => {
@@ -53,6 +54,14 @@ describe("API authentication order", () => {
       await getAdminReport(
         new Request("https://merotalent.test/api/v1/admin/reports/not-a-report"),
         { params: Promise.resolve({ report: "not-a-report" }) },
+      ),
+    );
+  });
+
+  it("authenticates before exposing provider state", async () => {
+    await expectAuthRequired(
+      await getProviderStatus(
+        new Request("https://merotalent.test/api/v1/admin/provider-status"),
       ),
     );
   });

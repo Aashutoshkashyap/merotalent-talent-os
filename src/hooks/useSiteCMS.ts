@@ -37,8 +37,15 @@ export interface SiteSettings {
   [key: string]: string | undefined;
 }
 
+interface PublicSectionVisibility {
+  section_key: string;
+  display_order: number;
+  is_visible: boolean;
+}
+
 export function useSiteCMS(page = "home") {
   const [sections, setSections] = useState<PageSection[]>([]);
+  const [sectionVisibility, setSectionVisibility] = useState<Record<string, PublicSectionVisibility>>({});
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -47,14 +54,31 @@ export function useSiteCMS(page = "home") {
       setIsLoading(true);
       try {
         const db = supabase as any;
-        const [sectionsRes, settingsRes] = await Promise.all([
-          db.from("page_sections").select("*").eq("is_visible", true).order("display_order", { ascending: true }),
+        const [sectionsRes, visibilityRes, settingsRes] = await Promise.all([
+          db.from("page_sections").select("*").eq("page", page).eq("is_visible", true).order("display_order", { ascending: true }),
+          db.rpc("get_public_page_section_visibility", { requested_page: page }),
           db.from("site_settings").select("*"),
         ]);
 
         if (sectionsRes.data && sectionsRes.data.length > 0) {
           setSections(sectionsRes.data);
         } else setSections([]);
+
+        if (visibilityRes.error) {
+          // Retain the legacy page defaults only until a newly deployed
+          // database migration is available. Once the registry loads, an
+          // explicit hidden setting always wins over a component default.
+          console.error("Failed to load public section visibility:", visibilityRes.error);
+          setSectionVisibility({});
+        } else {
+          const visibilityRows = (visibilityRes.data || []) as PublicSectionVisibility[];
+          setSectionVisibility(
+            visibilityRows.reduce((result: Record<string, PublicSectionVisibility>, section) => {
+              result[section.section_key] = section;
+              return result;
+            }, {}),
+          );
+        }
 
         if (settingsRes.data && settingsRes.data.length > 0) {
           const settingsObj: SiteSettings = {};
@@ -100,6 +124,12 @@ export function useSiteCMS(page = "home") {
       .filter((section) => section.parent_id === parent.id)
       .sort((a, b) => a.display_order - b.display_order);
   };
+  const isSectionVisible = (sectionKey: string): boolean => {
+    return sectionVisibility[sectionKey]?.is_visible ?? true;
+  };
+  const hasSectionConfiguration = (sectionKey: string): boolean => {
+    return Boolean(sectionVisibility[sectionKey]);
+  };
 
   return {
     sections: pageSections,
@@ -107,6 +137,8 @@ export function useSiteCMS(page = "home") {
     settings,
     getSection,
     getChildSections,
+    isSectionVisible,
+    hasSectionConfiguration,
     isLoading,
   };
 }

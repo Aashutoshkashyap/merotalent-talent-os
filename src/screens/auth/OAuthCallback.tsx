@@ -14,6 +14,7 @@ type AccessContext = {
   account_status?: unknown;
   roles?: unknown;
   permissions?: unknown;
+  capabilities?: unknown;
 };
 
 const stringList = (value: unknown) =>
@@ -79,7 +80,7 @@ export default function OAuthCallback() {
         navigate("/pending-approval", { replace: true });
         return;
       }
-      navigate(resolveWorkspacePath(stringList(access.roles), stringList(access.permissions)), { replace: true });
+      navigate(resolveWorkspacePath(stringList(access.roles), stringList(access.permissions), stringList(access.capabilities)), { replace: true });
     };
 
     void complete();

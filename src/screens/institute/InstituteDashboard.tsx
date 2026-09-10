@@ -21,6 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   COLLEGE_APPLICATION_STATUSES,
   collegeApplicationStatusBadgeClass,
   collegeApplicationStatusLabel,
@@ -58,6 +65,7 @@ interface InstituteData {
   contact_phone: string | null;
   youtube_url: string | null;
   logo_url: string | null;
+  cover_image_url?: string | null;
   type: string | null;
   is_verified: boolean | null;
   owner_user_id: string | null;
@@ -65,6 +73,12 @@ interface InstituteData {
   total_seats: number | null;
   available_seats: number | null;
   admission_status: string | null;
+  chairperson_name?: string | null;
+  chairperson_designation?: string | null;
+  chairperson_message?: string | null;
+  principal_name?: string | null;
+  principal_designation?: string | null;
+  principal_message?: string | null;
 }
 
 interface InstituteAdminAccess {
@@ -195,6 +209,8 @@ const InstituteDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [institute, setInstitute] = useState<InstituteData | null>(null);
+  const [managedInstitutes, setManagedInstitutes] = useState<InstituteData[]>([]);
+  const [selectedInstituteId, setSelectedInstituteId] = useState<string | null>(null);
   const [access, setAccess] = useState<InstituteAdminAccess | null>(null);
   const [stats, setStats] = useState({
     notices: 0,
@@ -243,13 +259,40 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsSubmittingClaim(true);
     try {
-      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: claimCollegeName || user.email,
-        reason: `[${claimType.toUpperCase()}] College: ${claimCollegeName}. Phone: ${claimPhone}. Email: ${claimEmail}. Notes: ${claimNotes}`,
-        status: "pending",
-      });
+      let requestError: any = null;
+      if (claimType === "claim") {
+        const { data: college, error: lookupError } = await (supabase as any)
+          .from("institutes")
+          .select("id")
+          .ilike("name", claimCollegeName.trim())
+          .is("deleted_at", null)
+          .maybeSingle();
+        if (lookupError || !college?.id) {
+          throw new Error("Choose the exact college name from the directory before submitting a claim.");
+        }
+        ({ error: requestError } = await (supabase as any).rpc("request_entity_scope", {
+          p_module_key: "college",
+          p_entity_type: "college",
+          p_entity_id: college.id,
+          p_request_kind: "claim",
+          p_request_data: {},
+          p_reason: `Claim request. Phone: ${claimPhone}. Email: ${claimEmail}. Notes: ${claimNotes}`,
+        }));
+      } else {
+        ({ error: requestError } = await (supabase as any).rpc("request_entity_scope", {
+          p_module_key: "college",
+          p_entity_type: "college",
+          p_entity_id: null,
+          p_request_kind: "create",
+          p_request_data: {
+            name: claimCollegeName,
+            phone: claimPhone,
+            email: claimEmail,
+            description: claimNotes,
+          },
+          p_reason: `Request to add a college to the directory. ${claimNotes}`,
+        }));
+      }
       if (requestError) throw requestError;
       toast({
         title: "Request Submitted to Super Admin!",
@@ -272,12 +315,10 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsSubmittingFeatured(true);
     try {
-      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: institute?.name || user.email,
-        reason: `[FEATURED REQUEST] Position: ${featuredPosition}. Notes: ${featuredNotes}`,
-        status: "pending",
+      const { error: requestError } = await (supabase as any).rpc("request_sub_admin_access", {
+        p_requested_modules: ["college"],
+        p_reason: `[FEATURED REQUEST] Position: ${featuredPosition}. Notes: ${featuredNotes || "Please review featured placement."}`,
+        p_organization: institute?.name || null,
       });
       if (requestError) throw requestError;
       toast({
@@ -298,12 +339,10 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsSubmittingModule(true);
     try {
-      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: user.email,
-        reason: `[MODULE ACCESS REQUEST] Target Module: ${targetModule}. Reason: ${moduleReason}`,
-        status: "pending",
+      const { error: requestError } = await (supabase as any).rpc("request_sub_admin_access", {
+        p_requested_modules: [targetModule],
+        p_reason: `[MODULE ACCESS REQUEST] ${moduleReason}`,
+        p_organization: institute?.name || null,
       });
       if (requestError) throw requestError;
       toast({
@@ -331,13 +370,10 @@ const InstituteDashboard = () => {
         `Justification: ${requestReason.trim()}`,
       ].join("\n");
 
-      const { error: requestError } = await (supabase as any).from("sub_admin_requests").insert({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: requestOrg.trim() || user.email,
-        requested_modules: ["institutions"],
-        reason: fullReason,
-        status: "pending",
+      const { error: requestError } = await (supabase as any).rpc("request_sub_admin_access", {
+        p_requested_modules: ["college"],
+        p_reason: fullReason,
+        p_organization: requestOrg.trim() || null,
       });
       if (requestError) throw requestError;
 
@@ -361,87 +397,43 @@ const InstituteDashboard = () => {
     const db = supabase as any;
     const failures = new Set<string>();
 
-    // Step 1: Check if user has institute_admins record
-    const adminResult = await db
-      .from("institute_admins")
-      .select("*, institutes(*)")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Phase 2 uses the Phase 1 capability/entity model. This avoids the old
+    // one-row institute_admins lookup and supports a user assigned to several
+    // colleges without exposing any unassigned institution.
+    const [workspaceResult, capabilityResult, requestResult] = await Promise.all([
+      db.rpc("get_my_college_workspaces"),
+      db.rpc("has_active_module_capability", { p_user_id: user.id, p_module_key: "college" }),
+      db.rpc("get_my_module_access_requests"),
+    ]);
+    if (workspaceResult.error) failures.add("college workspace");
+    const workspaceRows = (workspaceResult.data || []) as any[];
+    const workspaceInstitutes = workspaceRows.map((row) => ({
+      ...row,
+      is_verified: row.effectively_verified === true,
+    })) as InstituteData[];
+    setManagedInstitutes(workspaceInstitutes);
 
-    if (adminResult.error) failures.add("institute access");
-
-    let instituteRecord = adminResult.data?.institutes as InstituteData | null;
-    let instituteAccess: InstituteAdminAccess | null = adminResult.data
+    const selected = workspaceInstitutes.find((item) => item.id === selectedInstituteId) || workspaceInstitutes[0];
+    let instituteRecord = selected || null;
+    let instituteAccess: InstituteAdminAccess | null = selected
       ? {
-          can_edit_profile: adminResult.data.can_edit_profile === true,
-          can_manage_courses: adminResult.data.can_manage_courses === true,
-          can_post_notices: adminResult.data.can_post_notices === true,
+          can_edit_profile: workspaceRows.find((row) => row.id === selected.id)?.can_edit_profile === true,
+          can_manage_courses: workspaceRows.find((row) => row.id === selected.id)?.subscription_active === true,
+          can_post_notices: workspaceRows.find((row) => row.id === selected.id)?.subscription_active === true,
         }
       : null;
 
-    // Step 2: Check if user owns an institute
-    if (!instituteRecord) {
-      const ownerResult = await db
-        .from("institutes")
-        .select("*")
-        .eq("owner_user_id", user.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (ownerResult.error) failures.add("owned institute profile");
-      instituteRecord = ownerResult.data as InstituteData | null;
-      if (instituteRecord) {
-        instituteAccess = {
-          can_edit_profile: true,
-          can_manage_courses: true,
-          can_post_notices: true,
-        };
-      }
+    if (!instituteRecord && capabilityResult.data !== true) {
+      const requests = (requestResult.data || []) as Array<{ status: string; requested_modules: string[] }>;
+      const latest = requests.find((request) => request.requested_modules?.includes("college"));
+      setAccessStatus(latest?.status === "pending" ? "pending" : latest?.status === "rejected" ? "rejected" : "none");
+      setIsLoading(false);
+      return;
     }
+    setAccessStatus("approved");
 
-    // Step 3: If no institute_admins or owned institute, check sub_admin_requests approval
-    if (!instituteRecord && !adminResult.data) {
-      const { data: subAdminRows } = await db
-        .from("sub_admin_requests")
-        .select("id, status, requested_modules")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      const rows = (subAdminRows || []) as any[];
-      const institutionRequest = rows.find(
-        (r: any) => Array.isArray(r.requested_modules) && r.requested_modules.includes("institutions")
-      );
-      // Also accept any request that mentions institutions in reason (for claim/list requests)
-      const anyRequest = institutionRequest || rows[0];
-
-      if (institutionRequest?.status === "approved" || anyRequest?.status === "approved") {
-        // Approved — show unclaimed workspace
-        setAccessStatus("approved");
-      } else if (institutionRequest?.status === "pending" || anyRequest?.status === "pending") {
-        setAccessStatus("pending");
-        setIsLoading(false);
-        return;
-      } else if (institutionRequest?.status === "rejected" || anyRequest?.status === "rejected") {
-        setAccessStatus("rejected");
-        setIsLoading(false);
-        return;
-      } else if (institutionRequest?.status === "suspended" || anyRequest?.status === "suspended") {
-        setAccessStatus("suspended");
-        setIsLoading(false);
-        return;
-      } else {
-        // No request at all — new user
-        setAccessStatus("none");
-        setIsLoading(false);
-        return;
-      }
-    } else {
-      setAccessStatus("approved");
-    }
-
-    // Step 4: If approved but no institute linked, show unclaimed workspace
+    // Approved capability with no entity assignment yet: show a non-persistent
+    // claim/add workspace. It can never be used as a UUID database filter.
     if (!instituteRecord) {
       instituteRecord = {
         id: UNCLAIMED_WORKSPACE_ID,
@@ -464,9 +456,9 @@ const InstituteDashboard = () => {
         admission_status: "Open",
       };
       instituteAccess = {
-        can_edit_profile: true,
-        can_manage_courses: true,
-        can_post_notices: true,
+        can_edit_profile: false,
+        can_manage_courses: false,
+        can_post_notices: false,
       };
     }
 
@@ -495,12 +487,10 @@ const InstituteDashboard = () => {
             .is("deleted_at", null)
             .order("submitted_at", { ascending: false })
         : Promise.resolve(skippedQueryResult),
-      db
-        .from("subscriptions")
-        .select("id, package_id, entity_type, entity_id, start_date, expiry_date, status, payment_status")
-        .eq("user_id", user.id)
-        .is("deleted_at", null)
-        .order("expiry_date", { ascending: false }),
+      // Subscription state is returned with the scoped workspace record. A
+      // browser query filtered to user_id would be wrong for an administrator
+      // assigned to a college owned by another user.
+      Promise.resolve({ data: [], error: null }),
     ]);
 
     if (noticesResult.error) failures.add("notices");
@@ -517,7 +507,17 @@ const InstituteDashboard = () => {
       subscriptionCandidates.find(isSubscriptionActive) ?? subscriptionCandidates[0];
     let subscriptionSummary = emptySubscription;
 
-    if (subscriptionRecord) {
+    const scopedWorkspace = workspaceRows.find((row) => row.id === instituteRecord.id);
+    if (scopedWorkspace) {
+      subscriptionSummary = {
+        packageName: scopedWorkspace.package_name ?? "No package",
+        status: scopedWorkspace.subscription_status ?? "expired",
+        paymentStatus: scopedWorkspace.payment_status ?? "pending",
+        leadAccessMode: scopedWorkspace.lead_access_mode ?? "none",
+        expiryDate: scopedWorkspace.expiry_date ?? null,
+        active: scopedWorkspace.subscription_active === true,
+      };
+    } else if (subscriptionRecord) {
       const packageResult = await db
         .from("packages")
         .select("name, lead_access_mode")
@@ -545,7 +545,7 @@ const InstituteDashboard = () => {
     });
     setFailedSources([...failures]);
     setIsLoading(false);
-  }, [toast, user]);
+  }, [selectedInstituteId, toast, user]);
 
   const handleUpdateAppStatus = async (appId: string, newStatus: CollegeApplicationStatus) => {
     setUpdatingAppId(appId);
@@ -758,7 +758,7 @@ const InstituteDashboard = () => {
     { path: "/institute/notices", icon: Bell, label: "Notices", disabled: !access?.can_post_notices },
     { path: "/institutes", icon: Building2, label: "Public listing" },
   ];
-  const canAccessApplications = true; // Enabled for college admins
+  const canAccessApplications = subscription.active && ["read_only", "full"].includes(subscription.leadAccessMode);
   const canEditOwnedProfile = access?.can_edit_profile === true;
 
   return (
@@ -802,6 +802,14 @@ const InstituteDashboard = () => {
                     <span className="text-sm text-muted-foreground">{activeInstitute.type}</span>
                   </div>
                 </div>
+                {managedInstitutes.length > 1 && (
+                  <Select value={activeInstitute.id} onValueChange={setSelectedInstituteId}>
+                    <SelectTrigger className="ml-1 h-9 w-[220px] rounded-lg border-[#eadfd7] text-xs font-semibold"><SelectValue placeholder="Select college" /></SelectTrigger>
+                    <SelectContent>
+                      {managedInstitutes.map((managed) => <SelectItem key={managed.id} value={managed.id}>{managed.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
             {canEditOwnedProfile && (
@@ -918,6 +926,12 @@ const InstituteDashboard = () => {
                 </div>
               </div>
             </section>
+            {!subscription.active && isUuid(activeInstitute.id) && (
+              <section role="alert" className="mb-4 flex flex-col gap-3 rounded-[22px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between">
+                <div><p className="font-extrabold">Your subscription/trial has expired. Renew to restore College Module access.</p><p className="mt-1 text-xs text-amber-800">Editing and applicant records stay locked until an approved renewal is active.</p></div>
+                <Button asChild className="shrink-0 rounded-xl bg-[#c2410c] text-white hover:bg-[#9a3412]"><Link to="/dashboard/payments">View renewal options</Link></Button>
+              </section>
+            )}
             {/* Overview Stats */}
             <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
               <Card className="rounded-[22px] border-[#f0e3da] shadow-[0_12px_32px_rgba(79,48,30,0.06)]">
@@ -1396,7 +1410,6 @@ const InstituteDashboard = () => {
           open={profileEditorOpen}
           onOpenChange={setProfileEditorOpen}
           institute={activeInstitute}
-          ownerUserId={user.id}
           onSaved={() => void fetchInstituteData()}
         />
       )}

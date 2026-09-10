@@ -108,39 +108,23 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
     setFieldErrors({});
 
     try {
-      try {
-        await submitAuthenticatedModuleForm({
-          accessToken: session.access_token,
-          module: "job_application",
-          values: {
-            jobId: job.id,
-            fullName,
-            email,
-            phone,
-            resumeUrl: resumeUrl || `resumes/${job.id}/uploaded_cv.pdf`,
-            coverLetter,
-            portfolioUrl,
-            skills: selectedSkills,
-          },
-        });
-      } catch (submitErr) {
-        // Fallback: Direct Supabase database insertion or local logging
-        const { error: dbErr } = await (supabase as any).from("job_applications").insert({
-          job_id: job.id,
-          user_id: user.id,
-          full_name: fullName,
+      // The API/RPC is the only authoritative submission path. A browser-side
+      // fallback can bypass validation and, worse, make a failed application
+      // look successful in the student dashboard.
+      await submitAuthenticatedModuleForm({
+        accessToken: session.access_token,
+        module: "job_application",
+        values: {
+          jobId: job.id,
+          fullName,
           email,
           phone,
-          resume_url: resumeUrl || `resumes/${job.id}/uploaded_cv.pdf`,
-          cover_letter: coverLetter,
-          portfolio_url: portfolioUrl,
-          status: "submitted",
-        });
-
-        if (dbErr) {
-          console.warn("Direct DB insert failed, recording to student activity log:", dbErr);
-        }
-      }
+          resumeUrl,
+          coverLetter,
+          portfolioUrl,
+          skills: selectedSkills,
+        },
+      });
 
       // Log to local activity tracker so it immediately reflects in My Activity & Dashboard counters
       const { logUserActivity } = await import("@/lib/activityLogger");

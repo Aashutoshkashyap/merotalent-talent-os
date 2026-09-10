@@ -63,6 +63,8 @@ export default function MentorshipPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All Areas");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("rating");
   const [selectedMentor, setSelectedMentor] = useState<MentorItem | null>(null);
 
   useEffect(() => {
@@ -122,12 +124,13 @@ export default function MentorshipPage() {
     })),
   ];
 
-  const filtered =
-    selectedCategory === "All Areas"
+  const filtered = (selectedCategory === "All Areas"
       ? mentors
       : mentors.filter((m) =>
           m.category.toLowerCase().includes(selectedCategory.substring(0, 4).toLowerCase())
-        );
+        ))
+    .filter((mentor) => [mentor.name, mentor.category, mentor.bio, ...mentor.expertise].join(" ").toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => sortBy === "experience" ? Number(b.experience.match(/\d+/)?.[0] || 0) - Number(a.experience.match(/\d+/)?.[0] || 0) : Number(b.rating || 0) - Number(a.rating || 0));
 
   return (
     <PublicPageLayout activeNavId="mentors">
@@ -168,11 +171,13 @@ export default function MentorshipPage() {
           <span className="text-base font-black text-slate-800">
             {isLoading ? "Loading…" : `Verified Mentors (${filtered.length})`}
           </span>
-          <select className="text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none">
-            <option>Highest Rated</option>
-            <option>Experience</option>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none">
+            <option value="rating">Highest rated</option>
+            <option value="experience">Experience</option>
           </select>
         </div>
+        <label className="sr-only" htmlFor="mentor-search">Search mentors</label>
+        <input id="mentor-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search mentor name or expertise" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0073e6] focus:ring-2 focus:ring-blue-100" />
 
         {/* Cards grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -200,9 +205,7 @@ export default function MentorshipPage() {
                   <Clock className="w-3 h-3 flex-shrink-0" />
                   <span className="truncate">{item.experience}</span>
                 </div>
-                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-[#0073e6] transition-colors leading-snug truncate">
-                  {item.name}
-                </h3>
+                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-[#0073e6] transition-colors leading-snug truncate"><Link to={`/mentorship/${item.id}`}>{item.name}</Link></h3>
                 <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
                   {item.bio}
                 </p>

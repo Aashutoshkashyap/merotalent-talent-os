@@ -6,10 +6,11 @@
 export const resolveWorkspacePath = (
   roles: readonly string[],
   permissions: readonly string[] = [],
+  capabilities: readonly string[] = [],
 ) => {
   if (roles.includes("admin") || roles.includes("super_admin")) return "/admin";
-  if (roles.includes("institution") || permissions.includes("college.manage")) return "/institute";
-  if (roles.includes("company") || permissions.includes("job.post")) return "/company";
-  if (roles.includes("mentor") || permissions.includes("mentor.manage")) return "/mentor";
+  if (roles.includes("institution") || permissions.includes("college.manage") || capabilities.includes("college")) return "/institute";
+  if (roles.includes("company") || permissions.includes("job.post") || capabilities.includes("jobs")) return "/company";
+  if (roles.includes("mentor") || permissions.includes("mentor.manage") || capabilities.includes("mentor")) return "/mentor";
   return "/dashboard";
 };

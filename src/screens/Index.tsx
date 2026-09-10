@@ -46,7 +46,8 @@ export default function Index() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [competitions, setCompetitions] = useState<OpportunityCardData[]>([]);
   const [jobs, setJobs] = useState<OpportunityCardData[]>([]);
-  const { getSection, getChildSections } = useSiteCMS("home");
+  const [internships, setInternships] = useState<OpportunityCardData[]>([]);
+  const { getSection, getChildSections, hasSectionConfiguration, isSectionVisible } = useSiteCMS("home");
 
   const heroSection = getSection("hero_banner");
   const featuredSection = getSection("featured_content") || getSection("latest_news");
@@ -143,21 +144,54 @@ export default function Index() {
             jobType: String(row.job_type || "").toLowerCase(),
           };
         });
-        setJobs(mapped.map(({ jobType: _jobType, ...row }: any) => row));
+        const asOpportunity = ({ jobType: _jobType, ...row }: any) => row as OpportunityCardData;
+        setInternships(mapped.filter((row: any) => row.jobType === "internship").map(asOpportunity));
+        setJobs(mapped.filter((row: any) => row.jobType !== "internship").map(asOpportunity));
       }
     };
     void loadOpportunities();
   }, []);
 
   const competitionsSection = getSection("competitions_section");
+  const internshipsSection = getSection("internships_section");
   const jobsSection = getSection("jobs_section");
+
+  const isConfiguredSectionVisible = (primaryKey: string, fallbackKey?: string) => {
+    if (hasSectionConfiguration(primaryKey)) return isSectionVisible(primaryKey);
+    if (fallbackKey && hasSectionConfiguration(fallbackKey)) return isSectionVisible(fallbackKey);
+    return true;
+  };
 
   // Define section render items with display_order and visibility checks
   const sectionConfigs = [
     {
+      key: "hero_banner",
+      order: heroSection?.display_order ?? 1,
+      isVisible: isConfiguredSectionVisible("hero_banner"),
+      render: () => (
+        <HeroCategorySection
+          key="hero_banner"
+          heading={heroSection?.title || undefined}
+          metricText={heroSection?.subtitle || undefined}
+        />
+      ),
+    },
+    {
+      key: "featured_content",
+      order: featuredSection?.display_order ?? 2,
+      isVisible: isConfiguredSectionVisible("featured_content", "latest_news"),
+      render: () => <FeaturedSection key="featured_content" title={featuredSection?.title || undefined} />,
+    },
+    {
+      key: "advertisements",
+      order: getSection("advertisements")?.display_order ?? 3,
+      isVisible: isConfiguredSectionVisible("advertisements"),
+      render: () => <ActiveAdvertisements key="advertisements" />,
+    },
+    {
       key: "trust_strip",
       order: trustSection?.display_order ?? 4,
-      isVisible: trustSection ? trustSection.is_visible : true,
+      isVisible: isConfiguredSectionVisible("trust_strip"),
       render: () => (
         <TrustStrip
           key="trust_strip"
@@ -170,7 +204,7 @@ export default function Index() {
     {
       key: "competitions_section",
       order: competitionsSection?.display_order ?? 5,
-      isVisible: competitionsSection ? competitionsSection.is_visible : true,
+      isVisible: isConfiguredSectionVisible("competitions_section"),
       render: () => (
         <OpportunitiesSection
           key="competitions_section"
@@ -181,11 +215,25 @@ export default function Index() {
         />
       ),
     },
+    {
+      key: "internships_section",
+      order: internshipsSection?.display_order ?? 6,
+      isVisible: isConfiguredSectionVisible("internships_section"),
+      render: () => (
+        <OpportunitiesSection
+          key="internships_section"
+          title={internshipsSection?.title || "Internships"}
+          subtitle={internshipsSection?.subtitle || "Start your career with approved internships from active employers."}
+          viewAllPath="/jobs"
+          opportunities={internships}
+        />
+      ),
+    },
 
     {
       key: "jobs_section",
       order: jobsSection?.display_order ?? 6,
-      isVisible: jobsSection ? jobsSection.is_visible : true,
+      isVisible: isConfiguredSectionVisible("jobs_section"),
       render: () => (
         <OpportunitiesSection
           key="jobs_section"
@@ -199,7 +247,7 @@ export default function Index() {
     {
       key: "about_us",
       order: aboutSection?.display_order ?? 8,
-      isVisible: aboutSection ? aboutSection.is_visible : true,
+      isVisible: isConfiguredSectionVisible("about_us", "features_grid"),
       render: () => (
         <AboutUs
           key="about_us"
@@ -212,7 +260,7 @@ export default function Index() {
     {
       key: "testimonials",
       order: testimonialsSection?.display_order ?? 9,
-      isVisible: testimonialsSection ? testimonialsSection.is_visible : true,
+      isVisible: isConfiguredSectionVisible("testimonials"),
       render: () => (
         <Testimonials
           key="testimonials"
@@ -225,7 +273,7 @@ export default function Index() {
     {
       key: "faq",
       order: faqSection?.display_order ?? 10,
-      isVisible: faqSection ? faqSection.is_visible : true,
+      isVisible: isConfiguredSectionVisible("faq"),
       render: () => (
         <FAQ
           key="faq"
@@ -237,6 +285,18 @@ export default function Index() {
           items={faqs}
         />
       ),
+    },
+    {
+      key: "contact_form",
+      order: getSection("contact_form")?.display_order ?? 11,
+      isVisible: isConfiguredSectionVisible("contact_form"),
+      render: () => <ContactForm key="contact_form" />,
+    },
+    {
+      key: "cta",
+      order: getSection("cta")?.display_order ?? 12,
+      isVisible: isConfiguredSectionVisible("cta"),
+      render: () => <CTA key="cta" />,
     },
   ];
 
@@ -251,18 +311,8 @@ export default function Index() {
       <div className="flex min-h-screen flex-1 flex-col transition-all duration-300 ease-in-out" style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}>
         <HeaderNav />
         <main className="flex-1 bg-gradient-to-b from-slate-50/50 via-white to-slate-50/30 pb-16">
-          <HeroCategorySection
-            heading={heroSection?.title || undefined}
-            metricText={heroSection?.subtitle || undefined}
-          />
-          <FeaturedSection title={featuredSection?.title || undefined} />
-          <ActiveAdvertisements />
-          
           {/* Dynamically Ordered & Controlled Homepage Sections */}
           {activeSections.map((s) => s.render())}
-
-          <ContactForm />
-          <CTA />
         </main>
         <Footer />
       </div>

@@ -161,6 +161,20 @@ const normalizeRole = (value: unknown, field = "role"): AppRole => {
   return role;
 };
 
+// Platform-admin authority is bootstrap-only and must never be granted by an
+// invitation or an ordinary account-access mutation. Module capability and
+// entity scope are the supported way to grant operational administration.
+const normalizeAssignableRole = (value: unknown, field = "role"): AppRole => {
+  const role = normalizeRole(value, field);
+  if (role === "admin") {
+    return invalid(
+      field,
+      "Super Admin access cannot be granted from this workflow. Grant a module capability and entity assignment instead.",
+    );
+  }
+  return role;
+};
+
 const normalizeAccountStatus = (value: unknown): AccountStatus => {
   if (
     typeof value !== "string" ||
@@ -282,7 +296,7 @@ export function parseInviteAuthUserInput(input: unknown): InviteAuthUserInput {
 
   return {
     email: normalizeEmail(input.email),
-    role: normalizeRole(input.role),
+    role: normalizeAssignableRole(input.role),
     metadata: normalizeMetadata(input.metadata, false) ?? {},
   };
 }
@@ -308,7 +322,7 @@ export function parsePatchAuthUserInput(input: unknown): PatchAuthUserInput {
 
   if (input.action === "set_access") {
     assertOnlyKeys(input, ["action", "role", "account_status", "banned"]);
-    const role = "role" in input ? normalizeRole(input.role) : undefined;
+    const role = "role" in input ? normalizeAssignableRole(input.role) : undefined;
     const accountStatus =
       "account_status" in input
         ? normalizeAccountStatus(input.account_status)

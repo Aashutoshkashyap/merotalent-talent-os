@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { supabase } from "@/integrations/supabase/client";
 import {
   PARTNER_COURSE_SELECT,
+  getPartnerCourseRedirect,
   isLivePartnerCourse,
   type PartnerCourse,
 } from "@/lib/courses/partnered-courses";
@@ -105,8 +106,11 @@ const CourseCatalogue = () => {
           </div>
         ) : (
           <div className="mb-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCourses.map((course) => (
-              <Link key={course.id} to={`/courses/${course.id}`} className="h-full">
+            {filteredCourses.map((course) => {
+              const destination = getPartnerCourseRedirect(course.redirect_url);
+              if (!destination) return null;
+              return (
+              <a key={course.id} href={destination} target="_blank" rel="noopener noreferrer" className="h-full">
                 <Card className="group h-full overflow-hidden border-border/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
                   <div className="relative aspect-video overflow-hidden">
                     <PartnerCourseThumbnail
@@ -137,12 +141,12 @@ const CourseCatalogue = () => {
 
                   <CardFooter className="border-t border-border/50 pt-3">
                     <span className="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-                      View listing <ExternalLink className="h-4 w-4" />
+                      Continue to course <ExternalLink className="h-4 w-4" />
                     </span>
                   </CardFooter>
                 </Card>
-              </Link>
-            ))}
+              </a>
+            )})}
           </div>
         )}
 

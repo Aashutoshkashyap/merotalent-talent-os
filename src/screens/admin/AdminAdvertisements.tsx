@@ -1,68 +1,30 @@
-import { OperationsPage } from "./OperationsUI";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Megaphone, Rocket, Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { createAdminResource, deleteAdminResource, listAdminResource, updateAdminResource } from "@/lib/admin/admin-client";
+import { OperationsPage } from "./OperationsUI";
+
+type Advertisement = { id: string; title: string; placement: string; image_url: string; destination_url: string | null; sponsor_name: string | null; start_date: string; end_date: string; priority: number; status: "draft" | "scheduled" | "active" | "paused" | "expired"; is_active: boolean; };
+type AdForm = { title: string; placement: string; image_url: string; destination_url: string; sponsor_name: string; start_date: string; end_date: string; priority: string; status: Advertisement["status"]; };
+const localInput = (value?: string, daysAhead = 0) => { const date = value ? new Date(value) : new Date(); if (!value && daysAhead) date.setDate(date.getDate() + daysAhead); return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16); };
+const blankForm = (): AdForm => ({ title: "", placement: "homepage", image_url: "", destination_url: "", sponsor_name: "", priority: "0", status: "draft", start_date: localInput(), end_date: localInput(undefined, 30) });
 
 export default function AdminAdvertisements() {
-  return (
-    <OperationsPage>
-      <div className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-3xl mx-auto space-y-6">
-        <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center shadow-lg border border-amber-200 animate-bounce">
-          <Megaphone className="w-10 h-10 text-amber-600" />
-        </div>
-
-        <div className="space-y-3">
-          <Badge className="bg-amber-100 text-amber-900 border-amber-300 font-extrabold text-xs px-3.5 py-1">
-            <Rocket className="w-3.5 h-3.5 mr-1.5 inline" />
-            Module Marked Coming Soon
-          </Badge>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Ad Campaign & Sponsor Banners Manager
-          </h1>
-          <p className="text-slate-600 text-sm leading-relaxed max-w-xl mx-auto font-medium">
-            The automated self-serve advertisement network, sponsor bidding portal, and homepage hero banner rotator is scheduled for release in Q3 2026.
-          </p>
-        </div>
-
-        <Card className="w-full border-slate-200/80 shadow-md rounded-3xl p-6 bg-white text-left space-y-4">
-          <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            Planned Ad Manager Features:
-          </h3>
-          <ul className="grid sm:grid-cols-2 gap-3 text-xs text-slate-700 font-semibold">
-            <li className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Homepage hero & sidebar banner slots</span>
-            </li>
-            <li className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Real-time impression & click analytics</span>
-            </li>
-            <li className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Self-serve partner campaign submission</span>
-            </li>
-            <li className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Automated expiry & schedule toggles</span>
-            </li>
-          </ul>
-        </Card>
-
-        <div className="flex gap-3 pt-2">
-          <Button variant="outline" asChild className="rounded-xl font-bold text-xs">
-            <Link to="/admin">Return to Admin Overview</Link>
-          </Button>
-          <Button asChild className="bg-[#071a3d] hover:bg-[#05132d] text-white rounded-xl font-bold text-xs">
-            <Link to="/admin/featured">
-              Manage Featured Items
-              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </OperationsPage>
-  );
+  const { toast } = useToast(); const [ads, setAds] = useState<Advertisement[]>([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [query, setQuery] = useState(""); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Advertisement | null>(null); const [form, setForm] = useState<AdForm>(blankForm());
+  const load = async () => { setLoading(true); try { setAds(await listAdminResource<Advertisement>("advertisements", { page_size: 100, sort_by: "priority", sort_direction: "desc" })); } catch (error) { toast({ variant: "destructive", title: "Unable to load advertisements", description: error instanceof Error ? error.message : "Try again shortly." }); setAds([]); } finally { setLoading(false); } };
+  useEffect(() => { void load(); }, []);
+  const rows = useMemo(() => ads.filter((ad) => [ad.title, ad.sponsor_name, ad.placement].some((value) => value?.toLowerCase().includes(query.toLowerCase()))), [ads, query]);
+  const set = <K extends keyof AdForm>(key: K, value: AdForm[K]) => setForm((current) => ({ ...current, [key]: value }));
+  const create = () => { setEditing(null); setForm(blankForm()); setOpen(true); };
+  const edit = (ad: Advertisement) => { setEditing(ad); setForm({ title: ad.title, placement: ad.placement, image_url: ad.image_url, destination_url: ad.destination_url || "", sponsor_name: ad.sponsor_name || "", start_date: localInput(ad.start_date), end_date: localInput(ad.end_date), priority: String(ad.priority), status: ad.status }); setOpen(true); };
+  const save = async () => { if (!form.title.trim() || !form.image_url.trim()) return toast({ variant: "destructive", title: "Title and image URL are required." }); if (new Date(form.end_date) <= new Date(form.start_date)) return toast({ variant: "destructive", title: "End date must be after the start date." }); setSaving(true); const payload = { title: form.title.trim(), placement: form.placement.trim(), image_url: form.image_url.trim(), destination_url: form.destination_url.trim() || null, sponsor_name: form.sponsor_name.trim() || null, start_date: new Date(form.start_date).toISOString(), end_date: new Date(form.end_date).toISOString(), priority: Number(form.priority || 0), status: form.status }; try { if (editing) await updateAdminResource("advertisements", editing.id, payload); else await createAdminResource("advertisements", payload); toast({ title: editing ? "Advertisement updated" : "Advertisement created", description: "Visibility is controlled by status and schedule." }); setOpen(false); await load(); } catch (error) { toast({ variant: "destructive", title: "Unable to save advertisement", description: error instanceof Error ? error.message : "Try again shortly." }); } finally { setSaving(false); } };
+  const remove = async (ad: Advertisement) => { if (!window.confirm(`Remove “${ad.title}”? This hides it from public placements.`)) return; try { await deleteAdminResource("advertisements", ad.id); toast({ title: "Advertisement removed" }); await load(); } catch (error) { toast({ variant: "destructive", title: "Unable to remove advertisement", description: error instanceof Error ? error.message : "Try again shortly." }); } };
+  return <OperationsPage><div className="space-y-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Growth operations</p><h1 className="text-2xl font-display font-bold text-slate-950">Advertisements</h1><p className="mt-1 max-w-2xl text-sm text-muted-foreground">Create, schedule, pause, and prioritise sponsored placements. Public placements only render active campaigns inside their configured dates.</p></div><Button onClick={create} variant="hero"><Plus className="mr-2 h-4 w-4" />New campaign</Button></div><Card className="border-slate-200 p-4"><div className="relative max-w-md"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Search campaign, sponsor, placement…" /></div></Card><Card className="overflow-hidden border-slate-200"><Table><TableHeader><TableRow><TableHead>Campaign</TableHead><TableHead>Placement</TableHead><TableHead>Schedule</TableHead><TableHead>Status</TableHead><TableHead>Priority</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{loading ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Loading campaigns…</TableCell></TableRow> : rows.length === 0 ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">No campaigns match this view.</TableCell></TableRow> : rows.map((ad) => <TableRow key={ad.id}><TableCell><div className="flex items-center gap-3"><div className="h-10 w-16 overflow-hidden rounded bg-slate-100">{ad.image_url ? <img src={ad.image_url} alt="" className="h-full w-full object-cover" /> : null}</div><div><p className="font-semibold text-slate-900">{ad.title}</p><p className="text-xs text-muted-foreground">{ad.sponsor_name || "No sponsor"}</p></div></div></TableCell><TableCell className="capitalize">{ad.placement}</TableCell><TableCell className="text-xs text-muted-foreground">{new Date(ad.start_date).toLocaleDateString()} – {new Date(ad.end_date).toLocaleDateString()}</TableCell><TableCell><span className={`rounded-full px-2 py-1 text-xs font-semibold ${ad.is_active ? "bg-emerald-100 text-emerald-700" : ad.status === "paused" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}`}>{ad.is_active ? "Live" : ad.status}</span></TableCell><TableCell>{ad.priority}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" aria-label={`Edit ${ad.title}`} onClick={() => edit(ad)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label={`Remove ${ad.title}`} onClick={() => void remove(ad)}><Trash2 className="h-4 w-4 text-rose-600" /></Button></TableCell></TableRow>)}</TableBody></Table></Card><Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{editing ? "Edit campaign" : "New campaign"}</DialogTitle><DialogDescription>Use a secure public image URL. Active/scheduled campaigns are visible only during their date range.</DialogDescription></DialogHeader><div className="grid gap-4 py-2 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="ad-title">Campaign title</Label><Input id="ad-title" value={form.title} onChange={(event) => set("title", event.target.value)} /></div><div className="space-y-2"><Label htmlFor="ad-placement">Placement</Label><Input id="ad-placement" value={form.placement} onChange={(event) => set("placement", event.target.value)} placeholder="homepage" /></div><div className="space-y-2"><Label htmlFor="ad-priority">Priority</Label><Input id="ad-priority" type="number" min="0" value={form.priority} onChange={(event) => set("priority", event.target.value)} /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="ad-image">Image URL</Label><Input id="ad-image" type="url" value={form.image_url} onChange={(event) => set("image_url", event.target.value)} placeholder="https://…" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="ad-destination">Destination URL (optional)</Label><Input id="ad-destination" type="url" value={form.destination_url} onChange={(event) => set("destination_url", event.target.value)} placeholder="https://…" /></div><div className="space-y-2"><Label htmlFor="ad-sponsor">Sponsor</Label><Input id="ad-sponsor" value={form.sponsor_name} onChange={(event) => set("sponsor_name", event.target.value)} /></div><div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={(value) => set("status", value as Advertisement["status"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["draft", "scheduled", "active", "paused"].map((status) => <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="ad-start">Starts</Label><Input id="ad-start" type="datetime-local" value={form.start_date} onChange={(event) => set("start_date", event.target.value)} /></div><div className="space-y-2"><Label htmlFor="ad-end">Ends</Label><Input id="ad-end" type="datetime-local" value={form.end_date} onChange={(event) => set("end_date", event.target.value)} /></div></div><DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : <><CalendarClock className="mr-2 h-4 w-4" />Save campaign</>}</Button></DialogFooter></DialogContent></Dialog></div></OperationsPage>;
 }

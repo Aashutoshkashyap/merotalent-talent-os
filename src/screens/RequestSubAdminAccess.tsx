@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,19 +9,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Sparkles, CheckCircle2, ArrowLeft, Loader2, Send } from "lucide-react";
+import { ShieldAlert, Sparkles, CheckCircle2, ArrowLeft, Loader2, Send, Clock3, X } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 
-const MODULE_OPTIONS = [
-  { id: "jobs", label: "Job & Internship Postings", desc: "Publish and manage hiring pipelines" },
-  { id: "institutions", label: "Academic Institutions", desc: "Manage college profile, campus courses, & admissions" },
-  { id: "mentors", label: "Mentorship Directory", desc: "Manage mentor profiles, schedules, & session rates" },
-  { id: "events", label: "Events & Webinars", desc: "Host campus events, workshops, & live sessions" },
-  { id: "competitions", label: "Competitions & Hackathons", desc: "Organize student hackathons & skill contests" },
-  { id: "lms", label: "Partner Course Directory", desc: "Publish approved course listings and partner redirect links" },
-  { id: "companies", label: "Company Partners", desc: "Manage company brand profile and recruiter accounts" },
-];
+interface ModuleOption {
+  id: string;
+  label: string;
+  desc: string;
+}
+
+interface AccessRequestStatus {
+  id: string;
+  requested_modules: string[];
+  assigned_capabilities: string[];
+  organization: string | null;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  decision_note: string | null;
+  decided_at: string | null;
+  created_at: string;
+}
 
 const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -42,11 +49,56 @@ export default function RequestSubAdminAccess() {
   const navigate = useNavigate();
 
   const [phone, setPhone] = useState("");
+  const [moduleOptions, setModuleOptions] = useState<ModuleOption[]>([]);
+  const [isLoadingModules, setIsLoadingModules] = useState(true);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [organization, setOrganization] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [accessRequests, setAccessRequests] = useState<AccessRequestStatus[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(Boolean(user));
+  const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null);
+
+  const loadMyRequests = async () => {
+    if (!user) {
+      setAccessRequests([]);
+      setIsLoadingRequests(false);
+      return;
+    }
+    setIsLoadingRequests(true);
+    const { data, error } = await (supabase as any).rpc("get_my_module_access_requests");
+    if (!error) setAccessRequests((data || []) as AccessRequestStatus[]);
+    setIsLoadingRequests(false);
+  };
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data, error } = await (supabase as any)
+        .from("module_capabilities")
+        .select("module_key,label,description")
+        .eq("is_active", true)
+        .eq("is_requestable", true)
+        .order("label");
+      if (active && !error) {
+        setModuleOptions((data || []).map((row: Record<string, unknown>) => ({
+          id: String(row.module_key),
+          label: String(row.label),
+          desc: String(row.description || "Request permission to manage this module."),
+        })));
+      }
+      if (active) setIsLoadingModules(false);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    void loadMyRequests();
+  // `user?.id` deliberately keeps this in sync with sign-in/sign-out without
+  // re-fetching on profile-only updates.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const toggleModule = (id: string) => {
     setSelectedModules((prev) =>
@@ -117,6 +169,7 @@ export default function RequestSubAdminAccess() {
       });
 
       setIsSubmitted(true);
+      await loadMyRequests();
       toast({ title: "Sub-Admin request submitted successfully!" });
     } catch (error) {
       toast({
@@ -127,6 +180,27 @@ export default function RequestSubAdminAccess() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const cancelRequest = async (requestId: string) => {
+    setCancellingRequestId(requestId);
+    const { error } = await (supabase as any).rpc("cancel_module_access_request", {
+      p_request_id: requestId,
+    });
+    if (error) {
+      toast({ variant: "destructive", title: "Could not cancel request", description: errorMessage(error) });
+    } else {
+      await loadMyRequests();
+      toast({ title: "Request cancelled" });
+    }
+    setCancellingRequestId(null);
+  };
+
+  const requestStatusClasses: Record<AccessRequestStatus["status"], string> = {
+    pending: "bg-amber-50 text-amber-800 border-amber-200",
+    approved: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    rejected: "bg-rose-50 text-rose-800 border-rose-200",
+    cancelled: "bg-slate-100 text-slate-600 border-slate-200",
   };
 
   return (
@@ -182,6 +256,42 @@ export default function RequestSubAdminAccess() {
             </CardHeader>
 
             <CardContent className="p-6 sm:p-8 space-y-6">
+              {user && (
+                <section aria-label="Your access requests" className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                  <div className="flex items-start gap-3">
+                    <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-900">Your request status</p>
+                      {isLoadingRequests ? (
+                        <p className="mt-1 text-xs text-slate-500">Checking your requests…</p>
+                      ) : accessRequests.length === 0 ? (
+                        <p className="mt-1 text-xs text-slate-500">No module-management requests yet.</p>
+                      ) : (
+                        <div className="mt-3 space-y-2">
+                          {accessRequests.slice(0, 3).map((request) => (
+                            <div key={request.id} className="rounded-lg border border-slate-200 bg-white p-3 text-xs">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="font-semibold text-slate-800">{request.requested_modules.join(", ")}</p>
+                                <span className={`rounded-full border px-2 py-0.5 font-bold capitalize ${requestStatusClasses[request.status]}`}>{request.status}</span>
+                              </div>
+                              {request.organization && <p className="mt-1 text-slate-500">{request.organization}</p>}
+                              {request.decision_note && <p className="mt-1 text-slate-600">{request.decision_note}</p>}
+                              {request.status === "approved" && request.assigned_capabilities?.length > 0 && (
+                                <p className="mt-1 text-emerald-700">Granted: {request.assigned_capabilities.join(", ")}. Request or receive an entity assignment to manage records.</p>
+                              )}
+                              {request.status === "pending" && (
+                                <Button type="button" variant="ghost" size="sm" className="mt-1 h-7 px-2 text-xs text-slate-600 hover:text-rose-700" disabled={cancellingRequestId === request.id} onClick={() => void cancelRequest(request.id)}>
+                                  {cancellingRequestId === request.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <X className="mr-1 h-3 w-3" />} Cancel request
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
@@ -218,7 +328,9 @@ export default function RequestSubAdminAccess() {
                     Select Modules You Want to Manage *
                   </Label>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {MODULE_OPTIONS.map((mod) => {
+                    {isLoadingModules ? (
+                      <p className="col-span-full text-sm text-muted-foreground">Loading available modules…</p>
+                    ) : moduleOptions.map((mod) => {
                       const isChecked = selectedModules.includes(mod.id);
                       return (
                         <div

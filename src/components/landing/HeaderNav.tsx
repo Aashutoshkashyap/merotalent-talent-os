@@ -43,10 +43,10 @@ export const LoginButton: React.FC<{ label?: string; onClick?: () => void }> = (
   label = "Login",
   onClick,
 }) => {
-  const { user, roles, permissions } = useAuth();
+  const { user, roles, permissions, capabilities } = useAuth();
   
   if (user) {
-    const targetDashboard = resolveWorkspacePath(roles, permissions);
+    const targetDashboard = resolveWorkspacePath(roles, permissions, capabilities);
 
     return (
       <Link

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Calendar, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ export default function EventsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedFormat, setSelectedFormat] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
 
@@ -60,8 +61,8 @@ export default function EventsPage() {
   };
 
   const filteredEvents = events.filter((e) => {
-    if (selectedFormat === "all") return true;
-    return e.format === selectedFormat || e.event_type === selectedFormat;
+    const matchesFilter = selectedFormat === "all" || e.format === selectedFormat || e.event_type === selectedFormat;
+    return matchesFilter && [e.title, e.description || "", e.location || "", e.organizer_type].join(" ").toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const openRegistration = (event: EventItem) => {
@@ -111,6 +112,8 @@ export default function EventsPage() {
             </button>
           ))}
         </div>
+        <label className="sr-only" htmlFor="event-search">Search events</label>
+        <input id="event-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search events, organisers, or locations" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0073e6] focus:ring-2 focus:ring-blue-100" />
 
         {/* List */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -137,9 +140,7 @@ export default function EventsPage() {
                     </span>
                   </div>
                   <div className="z-10">
-                    <h3 className="text-base font-extrabold leading-snug line-clamp-2 group-hover:text-blue-200 transition-colors">
-                      {event.title}
-                    </h3>
+                    <h3 className="text-base font-extrabold leading-snug line-clamp-2 group-hover:text-blue-200 transition-colors"><Link to={`/events/${event.id}`}>{event.title}</Link></h3>
                   </div>
                 </div>
 

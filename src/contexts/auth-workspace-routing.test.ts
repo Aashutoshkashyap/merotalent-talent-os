@@ -12,4 +12,10 @@ describe("resolveWorkspacePath", () => {
     expect(resolveWorkspacePath(["talent"], ["job.post"])).toBe("/company");
     expect(resolveWorkspacePath(["talent"], ["mentor.manage"])).toBe("/mentor");
   });
+
+  it("routes an approved module capability without a legacy primary role", () => {
+    expect(resolveWorkspacePath(["talent"], [], ["college"])).toBe("/institute");
+    expect(resolveWorkspacePath(["talent"], [], ["jobs"])).toBe("/company");
+    expect(resolveWorkspacePath(["talent"], [], ["mentor"])).toBe("/mentor");
+  });
 });

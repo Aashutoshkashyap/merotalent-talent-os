@@ -8,14 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Settings, 
   Shield, 
-  Sparkles,
   Image as ImageIcon,
-  Key,
   Save
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { supabase } from "@/integrations/supabase/client";
+import { ProviderConfigurationPanel } from "./ProviderConfigurationPanel";
 
 /**
  * public.site_settings is a key/value table — key (PK), value, extra_json,
@@ -43,6 +42,12 @@ interface SiteSettingForm {
   maintenanceMode: boolean;
 }
 
+interface ProviderStatus {
+  payment: { status: "configured" | "not_configured"; deliveryAvailable: boolean };
+  email: { status: "configured" | "not_configured"; deliveryAvailable: boolean };
+  ai: { status: "configured" | "not_configured"; deliveryAvailable: boolean };
+}
+
 const settingValue = (key: SiteSettingKey, form: SiteSettingForm): string => {
   switch (key) {
     case "site_title": return form.siteTitle.trim();
@@ -66,15 +71,10 @@ const AdminSettings = () => {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [faviconUrl, setFaviconUrl] = useState("/favicon.ico");
   const [bannerUrl, setBannerUrl] = useState("");
-  const [aiApiKey, setAiApiKey] = useState("");
-  const [aiProvider, setAiProvider] = useState("gemini");
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
 
   useEffect(() => {
-    // The AI key is browser-local by design (see handleSaveSettings).
-    setAiApiKey(localStorage.getItem("merotalent_ai_api_key") || "");
-    setAiProvider(localStorage.getItem("merotalent_ai_provider") || "gemini");
-
     const loadSettings = async () => {
       const { data, error } = await (supabase as any)
         .from("site_settings")
@@ -107,16 +107,23 @@ const AdminSettings = () => {
     void loadSettings();
   }, [toast]);
 
+  useEffect(() => {
+    const loadProviderStatus = async () => {
+      const { data: auth } = await supabase.auth.getSession();
+      if (!auth.session?.access_token) return;
+      const response = await fetch("/api/v1/admin/provider-status", {
+        headers: { Authorization: `Bearer ${auth.session.access_token}` },
+      });
+      if (!response.ok) return;
+      const payload = await response.json() as { data?: ProviderStatus };
+      if (payload.data) setProviderStatus(payload.data);
+    };
+    void loadProviderStatus();
+  }, []);
+
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
-      // The AI provider key is deliberately NOT written to site_settings. That
-      // table is readable by anon today, so a key stored there would be public.
-      // It belongs in a server-side environment variable; until then it stays
-      // in this browser only, which the toast below states plainly.
-      localStorage.setItem("merotalent_ai_api_key", aiApiKey.trim());
-      localStorage.setItem("merotalent_ai_provider", aiProvider);
-
       const { error } = await (supabase as any).from("site_settings").upsert(
         SITE_SETTING_KEYS.map((key) => ({
           key,
@@ -138,9 +145,7 @@ const AdminSettings = () => {
 
       toast({
         title: "Settings saved",
-        description: aiApiKey.trim()
-          ? "Branding and support details saved for everyone. The AI key is stored in this browser only."
-          : "Branding and support details saved for everyone.",
+        description: "Branding and support details saved for everyone.",
       });
     } catch (saveError: any) {
       toast({
@@ -179,13 +184,13 @@ const AdminSettings = () => {
             <ImageIcon className="w-4 h-4" />
             Media Uploads
           </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2 text-xs font-bold rounded-xl">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            AI API Keys
-          </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2 text-xs font-bold rounded-xl">
             <Shield className="w-4 h-4" />
             Security & Controls
+          </TabsTrigger>
+          <TabsTrigger value="providers" className="flex items-center gap-2 text-xs font-bold rounded-xl">
+            <Shield className="w-4 h-4" />
+            Provider Center
           </TabsTrigger>
         </TabsList>
 
@@ -229,6 +234,12 @@ const AdminSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="providers" className="space-y-4">
+          <ProviderConfigurationPanel kind="payment" title="Payment provider" description="Configure the implemented server-side checkout and verified webhook contract. Payment success is never set from this screen." providers={["hmac-json"]} />
+          <ProviderConfigurationPanel kind="ai" title="AI provider" description="Enable platform AI drafts for entitled module administrators. Raw keys are encrypted and never returned." providers={["openai-compatible"]} />
+          <ProviderConfigurationPanel kind="email" title="Transactional email provider" description="Retains the provider-neutral email boundary; delivery remains truthful until a concrete adapter is installed." providers={["resend", "smtp"]} />
         </TabsContent>
 
         {/* Media Uploads */}
@@ -277,51 +288,21 @@ const AdminSettings = () => {
           </Card>
         </TabsContent>
 
-        {/* AI API Keys */}
-        <TabsContent value="ai" className="space-y-6">
-          <Card className="border-border/50 rounded-2xl shadow-2xs">
-            <CardHeader>
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                AI API Key Integration
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Provide your Gemini / OpenAI API key to enable instant AI description creation across all modules.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-700">AI Model Provider</Label>
-                <select
-                  value={aiProvider}
-                  onChange={(e) => setAiProvider(e.target.value)}
-                  className="w-full h-10 text-xs rounded-xl border border-slate-200 px-3 bg-white font-semibold"
-                >
-                  <option value="gemini">Google Gemini 1.5 / 2.0 Flash</option>
-                  <option value="openai">OpenAI GPT-4o Mini</option>
-                  <option value="anthropic">Anthropic Claude Sonnet</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-700">API Key Secret *</Label>
-                <div className="relative">
-                  <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input
-                    type="password"
-                    placeholder="AIzaSy... or sk-proj-..."
-                    value={aiApiKey}
-                    onChange={(e) => setAiApiKey(e.target.value)}
-                    className="pl-10 h-10 text-xs rounded-xl font-mono"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* Security & Maintenance */}
         <TabsContent value="security" className="space-y-6">
+          <Card className="border-border/50 rounded-2xl shadow-2xs">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Provider readiness</CardTitle>
+              <CardDescription className="text-xs">A secret-free server snapshot. Credentials and API keys are never displayed in the dashboard.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["Payments", providerStatus?.payment.status, providerStatus?.payment.deliveryAvailable],
+                ["Platform AI", providerStatus?.ai.status, providerStatus?.ai.deliveryAvailable],
+                ["Transactional email", providerStatus?.email.status, providerStatus?.email.deliveryAvailable],
+              ].map(([name, status, available]) => <div key={String(name)} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-bold text-slate-900">{name}</p><p className={`mt-1 text-xs font-semibold ${available ? "text-emerald-700" : "text-amber-700"}`}>{status ? String(status).replace("_", " ") : "Checking server configuration…"}</p><p className="mt-2 text-xs text-slate-500">{available ? "Provider adapter is available." : "No delivery or payment success is claimed until a server-side provider adapter is configured."}</p></div>)}
+            </CardContent>
+          </Card>
           <Card className="border-border/50 rounded-2xl shadow-2xs">
             <CardHeader>
               <CardTitle className="text-base font-bold flex items-center gap-2">

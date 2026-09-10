@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { BookOpen, ExternalLink, Loader2, Search } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -11,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
   PARTNER_COURSE_SELECT,
+  getPartnerCourseRedirect,
   isLivePartnerCourse,
   type PartnerCourse,
 } from "@/lib/courses/partnered-courses";
@@ -155,8 +155,11 @@ const CoursesPage = () => {
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12">
-              {filteredCourses.map((course, index) => (
-                <Link key={course.id} to={`/courses/${course.id}`} className={index === 0 ? "md:col-span-2 lg:col-span-8" : "lg:col-span-4"}>
+              {filteredCourses.map((course, index) => {
+                const destination = getPartnerCourseRedirect(course.redirect_url);
+                if (!destination) return null;
+                return (
+                <a key={course.id} href={destination} target="_blank" rel="noopener noreferrer" className={index === 0 ? "md:col-span-2 lg:col-span-8" : "lg:col-span-4"}>
                   <Card className="group h-full overflow-hidden rounded-[22px] border-[#f0e8e3] bg-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:border-[#fdba74] hover:shadow-[0_16px_32px_rgba(85,52,32,0.08)]">
                     <div className="relative aspect-video overflow-hidden">
                       <PartnerCourseThumbnail
@@ -189,12 +192,12 @@ const CoursesPage = () => {
 
                     <CardFooter className="border-t border-[#f0e8e3] px-5 py-3">
                       <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-black text-[#c2410c]">
-                        View listing <ExternalLink className="h-3.5 w-3.5" />
+                        Continue to course <ExternalLink className="h-3.5 w-3.5" />
                       </span>
                     </CardFooter>
                   </Card>
-                </Link>
-              ))}
+                </a>
+              )})}
             </div>
           )}
         </section>

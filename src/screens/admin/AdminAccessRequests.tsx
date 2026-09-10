@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,10 +24,44 @@ interface AccessRequest {
   user_name: string;
   user_email: string;
   requested_modules: string[];
+  assigned_capabilities?: string[];
+  organization?: string | null;
+  decision_note?: string | null;
   reason: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "cancelled";
   created_at: string;
 }
+
+interface EntityScopeRequest {
+  id: string;
+  user_id: string;
+  module_key: string;
+  entity_type: string;
+  entity_id: string | null;
+  request_kind: "claim" | "create";
+  request_data: { name?: string; location?: string };
+  reason: string;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  decision_note: string | null;
+  created_at: string;
+}
+
+const canonicalModuleKey = (moduleKey: string) => ({
+  institution: "college", institutions: "college", colleges: "college",
+  mentors: "mentor", company: "jobs", companies: "jobs", job: "jobs",
+  event: "events", competitions: "events", competition: "events", course: "courses", lms: "courses",
+}[moduleKey] || moduleKey);
+
+const scopeSource = (moduleKey: string) => {
+  switch (canonicalModuleKey(moduleKey)) {
+    case "college": return { table: "institutes", entityType: "college", labelColumn: "name" };
+    case "mentor": return { table: "mentors", entityType: "mentor", labelColumn: "headline" };
+    case "jobs": return { table: "companies", entityType: "company", labelColumn: "name" };
+    case "events": return { table: "events", entityType: "event", labelColumn: "title" };
+    case "courses": return { table: "courses", entityType: "course", labelColumn: "title" };
+    default: return null;
+  }
+};
 
 const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -43,16 +79,30 @@ const errorMessage = (error: unknown) => {
 export default function AdminAccessRequests() {
   const { toast } = useToast();
   const [requests, setRequests] = useState<AccessRequest[]>([]);
+  const [entityScopeRequests, setEntityScopeRequests] = useState<EntityScopeRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [scopeRequest, setScopeRequest] = useState<AccessRequest | null>(null);
+  const [scopeModule, setScopeModule] = useState("");
+  const [scopeEntityId, setScopeEntityId] = useState("");
+  const [scopeEntities, setScopeEntities] = useState<Array<{ id: string; label: string }>>([]);
+  const [isLoadingScopes, setIsLoadingScopes] = useState(false);
+  const [isAssigningScope, setIsAssigningScope] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await listAdminResource<AccessRequest>("access-requests");
       setRequests(data);
+      const { data: scopeRequests, error: scopeError } = await (supabase as any)
+        .from("entity_scope_requests")
+        .select("id,user_id,module_key,entity_type,entity_id,request_kind,request_data,reason,status,decision_note,created_at")
+        .order("created_at", { ascending: false });
+      if (scopeError) throw scopeError;
+      setEntityScopeRequests(scopeRequests || []);
     } catch (error) {
       setRequests([]);
+      setEntityScopeRequests([]);
       toast({
         variant: "destructive",
         title: "Requests could not be loaded",
@@ -65,6 +115,31 @@ export default function AdminAccessRequests() {
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
+
+  useEffect(() => {
+    const source = scopeSource(scopeModule);
+    if (!scopeRequest || !source) return;
+    let active = true;
+    setScopeEntityId("");
+    setScopeEntities([]);
+    setIsLoadingScopes(true);
+    void (async () => {
+      const { data, error } = await (supabase as any)
+        .from(source.table)
+        .select(`id,${source.labelColumn}`)
+        .is("deleted_at", null)
+        .order(source.labelColumn)
+        .limit(300);
+      if (active && !error) {
+        setScopeEntities((data || []).map((item: Record<string, unknown>) => ({
+          id: String(item.id),
+          label: String(item[source.labelColumn] || "Untitled entity"),
+        })));
+      }
+      if (active) setIsLoadingScopes(false);
+    })();
+    return () => { active = false; };
+  }, [scopeModule, scopeRequest]);
 
   const handleUpdateStatus = async (request: AccessRequest, newStatus: "approved" | "rejected") => {
     setUpdatingId(request.id);
@@ -94,6 +169,54 @@ export default function AdminAccessRequests() {
     }
   };
 
+  const decideEntityScopeRequest = async (request: EntityScopeRequest, approve: boolean) => {
+    setUpdatingId(request.id);
+    try {
+      const { error } = await (supabase as any).rpc("admin_decide_entity_scope_request", {
+        p_request_id: request.id,
+        p_approve: approve,
+        p_note: null,
+      });
+      if (error) throw error;
+      toast({ title: approve ? "College scope approved" : "College scope rejected" });
+      await fetchRequests();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Entity scope decision failed", description: errorMessage(error) });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const openScopeAssignment = (request: AccessRequest) => {
+    const firstModule = canonicalModuleKey(request.assigned_capabilities?.[0] || request.requested_modules[0] || "");
+    setScopeRequest(request);
+    setScopeModule(firstModule);
+  };
+
+  const assignScope = async () => {
+    const source = scopeSource(scopeModule);
+    if (!scopeRequest || !scopeEntityId || !source) return;
+    setIsAssigningScope(true);
+    try {
+      const { error } = await (supabase as any).rpc("admin_assign_entity_scope", {
+        p_user_id: scopeRequest.user_id,
+        p_module_key: scopeModule,
+        p_entity_type: source.entityType,
+        p_entity_id: scopeEntityId,
+        p_source_request_id: scopeRequest.id,
+        p_scopes: {},
+      });
+      if (error) throw error;
+      toast({ title: "Entity scope assigned", description: `${scopeRequest.user_name} can now manage the selected entity when its subscription permits access.` });
+      setScopeRequest(null);
+      await fetchRequests();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Scope assignment failed", description: errorMessage(error) });
+    } finally {
+      setIsAssigningScope(false);
+    }
+  };
+
   return (
     <OperationsPage>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -112,7 +235,7 @@ export default function AdminAccessRequests() {
             Request queue
           </CardTitle>
           <CardDescription>
-            Approval grants only the requested module permissions, not full administrator access. For college leads, assign the approved account as the college owner in College management before it can view that college's applications.
+            Approval grants actual module capabilities. Use entity assignments to scope an approved person to each college, mentor, company, event, job, or course they may manage.
           </CardDescription>
         </CardHeader>
 
@@ -159,11 +282,18 @@ export default function AdminAccessRequests() {
                             </Badge>
                           ))}
                         </div>
+                        {req.assigned_capabilities && req.assigned_capabilities.length > 0 && (
+                          <p className="mt-1 text-[10px] font-semibold text-emerald-700">
+                            Granted: {req.assigned_capabilities.join(", ")}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="max-w-xs">
                         <p className="text-xs text-slate-700 line-clamp-2" title={req.reason}>
                           {req.reason}
                         </p>
+                        {req.organization && <p className="mt-1 text-[10px] text-muted-foreground">{req.organization}</p>}
+                        {req.decision_note && <p className="mt-1 text-[10px] text-muted-foreground">Decision: {req.decision_note}</p>}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(req.created_at).toLocaleDateString()}
@@ -173,6 +303,8 @@ export default function AdminAccessRequests() {
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Approved</Badge>
                         ) : req.status === "rejected" ? (
                           <Badge variant="destructive">Rejected</Badge>
+                        ) : req.status === "cancelled" ? (
+                          <Badge variant="outline" className="text-slate-500">Cancelled</Badge>
                         ) : (
                           <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
                             <Clock className="mr-1 h-3 w-3 inline" />
@@ -182,7 +314,7 @@ export default function AdminAccessRequests() {
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                          {req.status !== "approved" && (
+                          {req.status === "pending" && (
                             <Button
                               size="sm"
                               className="h-7 bg-[#071a3d] text-white hover:bg-[#05132d] text-[10px]"
@@ -197,7 +329,17 @@ export default function AdminAccessRequests() {
                               Approve
                             </Button>
                           )}
-                          {req.status !== "rejected" && (
+                          {req.status === "approved" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[10px]"
+                              onClick={() => openScopeAssignment(req)}
+                            >
+                              Assign entity
+                            </Button>
+                          )}
+                          {req.status === "pending" && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -218,6 +360,84 @@ export default function AdminAccessRequests() {
           )}
         </CardContent>
       </Card>
+
+      <Card className="border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">College claim & addition requests</CardTitle>
+          <CardDescription>
+            Approving a claim assigns the requester to that college. Approving an addition creates a pending, non-public college profile and assigns the requester; publication remains a separate Super Admin decision.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {entityScopeRequests.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No college claim or addition requests.</p>
+          ) : (
+            <div className="table-responsive">
+              <Table>
+                <TableHeader><TableRow><TableHead>Request</TableHead><TableHead>Applicant</TableHead><TableHead>Reason</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {entityScopeRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell>
+                        <p className="font-semibold capitalize">{request.request_kind} {request.entity_type}</p>
+                        <p className="text-xs text-muted-foreground">{request.request_data?.name || request.entity_id || "Existing directory college"}</p>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{request.user_id}</TableCell>
+                      <TableCell className="max-w-xs text-xs">{request.reason}</TableCell>
+                      <TableCell><Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "outline"} className="capitalize">{request.status}</Badge></TableCell>
+                      <TableCell className="text-right">
+                        {request.status === "pending" && <div className="flex justify-end gap-2">
+                          <Button size="sm" className="h-7 text-[10px] bg-[#071a3d]" disabled={updatingId === request.id} onClick={() => decideEntityScopeRequest(request, true)}>Approve</Button>
+                          <Button size="sm" variant="outline" className="h-7 text-[10px] text-destructive" disabled={updatingId === request.id} onClick={() => decideEntityScopeRequest(request, false)}>Reject</Button>
+                        </div>}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={Boolean(scopeRequest)} onOpenChange={(open) => !open && setScopeRequest(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign entity scope</DialogTitle>
+            <DialogDescription>
+              Capability approval alone does not expose private records. Assign one entity at a time; repeat this for every college or organization the administrator manages.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Capability</label>
+              <Select value={scopeModule} onValueChange={setScopeModule}>
+                <SelectTrigger><SelectValue placeholder="Select capability" /></SelectTrigger>
+                <SelectContent>
+                  {[...new Set((scopeRequest?.assigned_capabilities || scopeRequest?.requested_modules || []).map(canonicalModuleKey))].map((moduleKey) => (
+                    <SelectItem key={moduleKey} value={moduleKey}>{moduleKey}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Entity</label>
+              <Select value={scopeEntityId} onValueChange={setScopeEntityId} disabled={isLoadingScopes || !scopeSource(scopeModule)}>
+                <SelectTrigger><SelectValue placeholder={isLoadingScopes ? "Loading entities…" : "Select an entity"} /></SelectTrigger>
+                <SelectContent>
+                  {scopeEntities.map((entity) => <SelectItem key={entity.id} value={entity.id}>{entity.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScopeRequest(null)}>Cancel</Button>
+            <Button className="bg-[#071a3d] text-white hover:bg-[#05132d]" disabled={!scopeEntityId || isAssigningScope} onClick={assignScope}>
+              {isAssigningScope && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Assign scope
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </OperationsPage>
   );
 }

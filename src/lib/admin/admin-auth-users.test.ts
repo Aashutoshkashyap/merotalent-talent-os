@@ -45,6 +45,23 @@ describe("admin Auth user payload validation", () => {
     ).toThrowError(/invalid/i);
   });
 
+  it("does not allow invitations or access updates to create a Super Admin", () => {
+    for (const parse of [
+      () => parseInviteAuthUserInput({ email: "person@example.com", role: "admin" }),
+      () => parsePatchAuthUserInput({ action: "set_access", role: "admin" }),
+    ]) {
+      try {
+        parse();
+        throw new Error("Expected Super Admin role validation to fail.");
+      } catch (error) {
+        expect(error).toBeInstanceOf(AdminResourceValidationError);
+        expect((error as AdminResourceValidationError).fields.role[0]).toMatch(
+          /Super Admin access/i,
+        );
+      }
+    }
+  });
+
   it("rejects direct admin email replacement because it bypasses verification", () => {
     try {
       parsePatchAuthUserInput({

@@ -33,6 +33,7 @@ interface AuthContextType {
   profile: Profile | null;
   roles: AppRole[];
   permissions: AppPermission[];
+  capabilities: string[];
   isLoading: boolean;
   isAdmin: boolean;
   signUp: (
@@ -85,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [permissions, setPermissions] = useState<AppPermission[]>([]);
+  const [capabilities, setCapabilities] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -119,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await fetchRoles(userId);
       return;
     }
-    const access = data as { roles?: unknown; permissions?: unknown };
+    const access = data as { roles?: unknown; permissions?: unknown; capabilities?: unknown };
     if (Array.isArray(access.roles)) {
       setRoles(access.roles.filter((role): role is AppRole =>
         typeof role === "string" && ["admin", "super_admin", "talent", "institution", "company", "mentor"].includes(role),
@@ -127,6 +129,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     if (Array.isArray(access.permissions)) {
       setPermissions(access.permissions.filter((permission): permission is string => typeof permission === "string"));
+    }
+    if (Array.isArray(access.capabilities)) {
+      setCapabilities(access.capabilities.filter((capability): capability is string => typeof capability === "string"));
     }
   };
 
@@ -174,6 +179,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfile(null);
           setRoles([]);
           setPermissions([]);
+          setCapabilities([]);
           setIsLoading(false);
         }
       }
@@ -269,7 +275,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     const accessRecord =
       accessData && typeof accessData === "object" && !Array.isArray(accessData)
-        ? accessData as { account_status?: unknown; roles?: unknown; permissions?: unknown }
+        ? accessData as { account_status?: unknown; roles?: unknown; permissions?: unknown; capabilities?: unknown }
         : null;
     if (accessRecord?.account_status !== "active" || !Array.isArray(accessRecord.roles)) {
       await supabase.auth.signOut();
@@ -283,7 +289,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const accountPermissions = Array.isArray(accessRecord.permissions)
       ? accessRecord.permissions.filter((permission): permission is string => typeof permission === "string")
       : [];
-    const redirectTo = resolveWorkspacePath(accountRoles, accountPermissions);
+    const accountCapabilities = Array.isArray(accessRecord.capabilities)
+      ? accessRecord.capabilities.filter((capability): capability is string => typeof capability === "string")
+      : [];
+    const redirectTo = resolveWorkspacePath(accountRoles, accountPermissions, accountCapabilities);
 
     return { error: null, redirectTo };
   };
@@ -322,6 +331,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(null);
     setRoles([]);
     setPermissions([]);
+    setCapabilities([]);
   };
 
   const isSuperAdmin = roles.includes("super_admin");
@@ -335,6 +345,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         profile,
         roles,
         permissions,
+        capabilities,
         isLoading,
         isAdmin,
         signUp,

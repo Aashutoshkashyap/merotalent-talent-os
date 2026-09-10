@@ -21,13 +21,15 @@ import OAuthCallback from "./screens/auth/OAuthCallback";
 
 // Public Pages
 import CoursesPage from "./screens/courses/CoursesPage";
-import CourseDetailPage from "./screens/courses/CourseDetailPage";
 import JobsPage from "./screens/jobs/JobsPage";
+import JobDetailPage from "./screens/jobs/JobDetailPage";
 import InstitutesPage from "./screens/institutes/InstitutesPage";
 import InstituteDetailPage from "./screens/institutes/InstituteDetailPage";
 import CompetitionsPage from "./screens/competitions/CompetitionsPage";
 import MentorshipPage from "./screens/mentorship/MentorshipPage";
+import MentorDetailPage from "./screens/mentorship/MentorDetailPage";
 import EventsPage from "./screens/events/EventsPage";
+import EventDetailPage from "./screens/events/EventDetailPage";
 
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -105,13 +107,15 @@ const App = () => (
               
               {/* Public Landing Pages */}
               <Route path="/courses" element={<CoursesPage />} />
-              <Route path="/courses/:id" element={<CourseDetailPage />} />
-              <Route path="/jobs" element={<ComingSoonPage moduleKey="jobs" />} />
+              <Route path="/jobs" element={<JobsPage />} />
+              <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/institutes" element={<InstitutesPage />} />
               <Route path="/institutes/:slug" element={<InstituteDetailPage />} />
               <Route path="/competitions" element={<ComingSoonPage moduleKey="competitions" />} />
               <Route path="/events" element={<EventsPage />} />
-              <Route path="/mentorship" element={<ComingSoonPage moduleKey="mentorship" />} />
+              <Route path="/events/:id" element={<EventDetailPage />} />
+              <Route path="/mentorship" element={<MentorshipPage />} />
+              <Route path="/mentorship/:id" element={<MentorDetailPage />} />
               <Route path="/request-access" element={<RequestSubAdminAccess />} />
               <Route path="/privacy" element={<LegalPage type="privacy" />} />
               <Route path="/terms" element={<LegalPage type="terms" />} />

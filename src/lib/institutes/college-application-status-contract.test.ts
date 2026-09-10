@@ -18,7 +18,6 @@ const migration = readSource(
 const CLIENT_SOURCES = [
   "src/screens/institute/InstituteDashboard.tsx",
   "src/screens/admin/AdminApplications.tsx",
-  "src/screens/admin/AdminReports.tsx",
   "src/screens/dashboard/Colleges.tsx",
   "src/hooks/useStudentActivity.ts",
 ] as const;
