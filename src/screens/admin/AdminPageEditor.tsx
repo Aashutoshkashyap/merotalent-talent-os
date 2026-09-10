@@ -29,7 +29,7 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  Image,
+  Image as ImageIcon,
   LayoutTemplate,
   Eye,
   EyeOff,
@@ -731,7 +731,7 @@ const STANDARD_HOME_SECTIONS = [
                     </div>
                   ) : (
                     <div className="flex h-24 items-center justify-center bg-[#fff5ed]">
-                      <Image className="h-8 w-8 text-[#c2410c]/30" />
+                      <ImageIcon aria-hidden="true" className="h-8 w-8 text-[#c2410c]/30" />
                       <span className="absolute left-2 top-2 rounded-lg bg-[#c2410c]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#c2410c] tracking-wider">
                         {section.page}
                       </span>

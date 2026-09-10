@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { AdminRequestError, adminApiErrorResponse, readAdminJsonBody } from "@/lib/admin/admin-route-utils";
 import { authenticateRequest } from "@/lib/server/auth";
 import { loadProviderSecret } from "@/lib/server/provider-config-service";
+import { getPaymentProvider } from "@/lib/server/payment-provider";
 import { getAdminClient } from "@/lib/server/supabase";
 import { jsonApiResponse } from "@/lib/server/api-response";
 
@@ -28,9 +29,9 @@ export async function POST(request: Request) {
     const value = body as Record<string, unknown>;
     if (!uuid(value.packageId) || typeof value.entityType !== "string" || (value.entityType !== "user" && !uuid(value.entityId))) throw new AdminRequestError(422, "INVALID_CHECKOUT", "Choose a valid plan and entitled entity.");
     const configured = await loadProviderSecret("payment");
-    if (!configured) throw new AdminRequestError(503, "PAYMENT_UNAVAILABLE", "Payment provider is not configured.");
+    if (!configured || configured.providerName !== "esewa") throw new AdminRequestError(503, "PAYMENT_UNAVAILABLE", "eSewa payment is not configured.");
     const db = getAdminClient() as any;
-    const { data: pkg, error: packageError } = await db.from("packages").select("id,price,currency,is_active,deleted_at,is_publicly_selectable,package_kind,module_scope").eq("id", value.packageId).maybeSingle();
+    const { data: pkg, error: packageError } = await db.from("packages").select("id,name,price,currency,is_active,deleted_at,is_publicly_selectable,package_kind,module_scope").eq("id", value.packageId).maybeSingle();
     if (packageError || !pkg || !pkg.is_active || pkg.deleted_at || !pkg.is_publicly_selectable || pkg.package_kind !== "paid") throw new AdminRequestError(404, "PLAN_UNAVAILABLE", "This subscription plan is unavailable.");
 
     // A checkout changes an entity's entitlement. The browser cannot select an
@@ -51,10 +52,25 @@ export async function POST(request: Request) {
       }
     }
     // The amount and provider reference are derived only from the selected plan.
-    const reference = `mt_${randomUUID()}`;
+    // eSewa permits alphanumeric characters and hyphens in transaction_uuid.
+    const reference = `mt-${randomUUID().replace(/-/g, "")}`;
     const { data: session, error } = await db.from("payment_checkout_sessions").insert({ user_id: authenticated.user.id, package_id: pkg.id, entity_type: value.entityType, entity_id: value.entityType === "user" ? null : value.entityId, provider_name: configured.providerName, provider_reference: reference, amount: pkg.price, currency: pkg.currency, status: "initiated", expires_at: new Date(Date.now() + 30 * 60_000).toISOString() }).select("id,provider_reference,amount,currency,status,expires_at").single();
     if (error) throw error;
+    const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
+    const provider = getPaymentProvider({ providerName: configured.providerName, secret: configured.secret, publicConfig: configured.publicConfig });
+    const checkout = await provider.createCheckout({
+      paymentId: reference,
+      amount: Number(pkg.price),
+      currency: pkg.currency,
+      description: pkg.name || "MeroTalent subscription",
+      returnUrl: `${origin}/api/v1/payments/esewa/callback`,
+      failureUrl: `${origin}/api/v1/payments/esewa/callback?state=failed`,
+    });
+    if (!checkout.checkoutUrl || !checkout.checkoutFields) {
+      await db.from("payment_checkout_sessions").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", session.id);
+      throw new AdminRequestError(503, "PAYMENT_UNAVAILABLE", checkout.message || "eSewa checkout could not be created.");
+    }
     await db.from("audit_logs").insert({ actor_user_id: authenticated.user.id, action: "initiate_subscription_checkout", entity_type: value.entityType, entity_id: value.entityType === "user" ? authenticated.user.id : value.entityId, metadata: { package_id: pkg.id, provider: configured.providerName, checkout_session_id: session.id } });
-    return jsonApiResponse({ data: { ...session, checkoutUrl: null, message: "Payment is pending provider checkout configuration." }, error: null, meta: { requestId } }, 201);
+    return jsonApiResponse({ data: { ...session, checkoutUrl: checkout.checkoutUrl, checkoutFields: checkout.checkoutFields, message: "Continue to eSewa to complete this payment." }, error: null, meta: { requestId } }, 201);
   } catch (error) { return adminApiErrorResponse(error, requestId, "initiate subscription checkout"); }
 }

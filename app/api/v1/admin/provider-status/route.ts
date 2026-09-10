@@ -1,8 +1,8 @@
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { authenticateAdminRequest } from "@/lib/server/auth";
 import { getPaymentProvider } from "@/lib/server/payment-provider";
-import { getTransactionalEmailProvider } from "@/lib/server/email-provider";
-import { getProviderStatus } from "@/lib/server/provider-config-service";
+import { getConfiguredTransactionalEmailProvider } from "@/lib/server/email-provider";
+import { getProviderStatus, loadProviderSecret } from "@/lib/server/provider-config-service";
 import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
 
 export const dynamic = "force-dynamic";
@@ -21,11 +21,13 @@ export async function GET(request: Request) {
     return adminApiErrorResponse(error, requestId, "authenticate provider status");
   }
 
-  const payment = getPaymentProvider();
-  const email = getTransactionalEmailProvider();
+  const paymentConfig = await loadProviderSecret("payment");
+  const emailConfig = await loadProviderSecret("email");
+  const payment = paymentConfig ? getPaymentProvider(paymentConfig) : null;
+  const email = emailConfig ? getConfiguredTransactionalEmailProvider(emailConfig) : null;
   const ai = await getProviderStatus("ai");
-  const paymentConfigured = payment.name !== "unconfigured";
-  const emailConfigured = email.name !== "unconfigured";
+  const paymentConfigured = payment?.name === "esewa";
+  const emailConfigured = email?.name === "resend";
 
   return jsonApiResponse({
     data: {

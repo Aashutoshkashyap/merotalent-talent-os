@@ -75,6 +75,7 @@ import AdminApplications from "./screens/admin/AdminApplications";
 import AdminBookings from "./screens/admin/AdminBookings";
 import AdminPageEditor from "./screens/admin/AdminPageEditor";
 import AdminAccessRequests from "./screens/admin/AdminAccessRequests";
+import AdminAccessMatrix from "./screens/admin/AdminAccessMatrix";
 import RequestSubAdminAccess from "./screens/RequestSubAdminAccess";
 
 // Institute Pages
@@ -174,6 +175,7 @@ const App = () => (
                 <Route path="admins" element={<AdminManagement />} />
                 <Route path="roles" element={<AdminRoleManagement />} />
                 <Route path="access-requests" element={<AdminAccessRequests />} />
+                <Route path="access-matrix" element={<AdminAccessMatrix />} />
                 <Route path="pages" element={<AdminPageEditor />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

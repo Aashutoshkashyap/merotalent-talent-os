@@ -61,6 +61,7 @@ const systemItems = [
   { icon: MessageSquareText, label: "Support", href: "/admin/queries" },
   { icon: ShieldCheck, label: "Roles", href: "/admin/roles" },
   { icon: UserCheck, label: "Access requests", href: "/admin/access-requests" },
+  { icon: ShieldCheck, label: "Access matrix", href: "/admin/access-matrix" },
   { icon: PanelTop, label: "Page editor", href: "/admin/pages" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];

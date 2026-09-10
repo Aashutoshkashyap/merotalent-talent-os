@@ -80,16 +80,7 @@ export default function Payments() {
   const [proofImage, setProofImage] = useState("");
   const [proofPdf, setProofPdf] = useState("");
 
-  const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([
-    {
-      id: "sub-101",
-      packageId: "mentor-pass",
-      name: "1-on-1 Mentorship Pass",
-      status: "expired",
-      expiresAt: "2026-07-15",
-      price: "NRs. 1,499",
-    },
-  ]);
+  const [subscriptions] = useState<UserSubscription[]>([]);
 
   const handleOpenPay = (pkg: ServicePackage) => {
     setSelectedPackage(pkg);
@@ -97,64 +88,14 @@ export default function Payments() {
   };
 
   const handleRenewSubscription = (sub: UserSubscription) => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      setSubscriptions((prev) =>
-        prev.map((s) =>
-          s.id === sub.id
-            ? {
-                ...s,
-                status: "active",
-                expiresAt: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-              }
-            : s
-        )
-      );
-      setIsProcessing(false);
-      toast({
-        title: "Subscription Renewed!",
-        description: `Your ${sub.name} subscription has been extended for another month.`,
-      });
-    }, 1000);
+    void sub;
+    toast({ variant: "destructive", title: "Select the module to renew", description: "A trusted checkout requires the package's authorized module entity. A browser action cannot renew access by itself." });
   };
 
   const handleConfirmPayment = () => {
     if (!selectedPackage) return;
-    setIsProcessing(true);
-    setTimeout(() => {
-      const existing = subscriptions.find((s) => s.packageId === selectedPackage.id);
-      if (existing) {
-        setSubscriptions((prev) =>
-          prev.map((s) =>
-            s.id === existing.id
-              ? {
-                  ...s,
-                  status: "active",
-                  expiresAt: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-                }
-              : s
-          )
-        );
-      } else {
-        setSubscriptions((prev) => [
-          ...prev,
-          {
-            id: `sub-${Date.now()}`,
-            packageId: selectedPackage.id,
-            name: selectedPackage.name,
-            status: "active",
-            expiresAt: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-            price: selectedPackage.price,
-          },
-        ]);
-      }
-      setIsProcessing(false);
-      setIsPayModalOpen(false);
-      toast({
-        title: "Payment Confirmed!",
-        description: `Your subscription to ${selectedPackage.name} is now active.`,
-      });
-    }, 1200);
+    setIsPayModalOpen(false);
+    toast({ variant: "destructive", title: "Checkout needs an authorized module entity", description: "No subscription was activated. Start checkout from the relevant assigned module workspace." });
   };
 
   return (

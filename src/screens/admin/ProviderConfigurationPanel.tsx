@@ -19,6 +19,7 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
   const [secret, setSecret] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [modelOrIdentifier, setModelOrIdentifier] = useState("");
+  const [environment, setEnvironment] = useState<"production" | "uat">("production");
   const [saving, setSaving] = useState(false);
 
   const token = async () => (await supabase.auth.getSession()).data.session?.access_token;
@@ -31,7 +32,8 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
       if (!payload.data) return;
       setStatus(payload.data); setProviderName(payload.data.providerName || defaultProvider); setEnabled(payload.data.enabled);
       const config = payload.data.publicConfig || {};
-      setModelOrIdentifier(String(config.model || config.merchant_id || config.sender_id || ""));
+      setModelOrIdentifier(String(config.model || config.merchant_code || config.from_address || ""));
+      if (config.environment === "uat") setEnvironment("uat");
     };
     void load();
   }, [kind, defaultProvider]);
@@ -40,7 +42,7 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
     const accessToken = await token(); if (!accessToken) return;
     setSaving(true);
     try {
-      const publicConfig = kind === "ai" ? { model: modelOrIdentifier } : kind === "payment" ? { merchant_id: modelOrIdentifier } : { sender_id: modelOrIdentifier };
+      const publicConfig = kind === "ai" ? { model: modelOrIdentifier } : kind === "payment" ? { merchant_code: modelOrIdentifier || "NP-ES-TEES", environment } : { from_address: modelOrIdentifier };
       const response = await fetch(`/api/v1/admin/providers/${kind}`, {
         method: "PUT", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({ providerName, enabled, publicConfig, ...(secret ? { secret } : {}) }),
@@ -56,7 +58,8 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
   return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
     <div><h3 className="font-bold text-slate-900">{title}</h3><p className="mt-1 text-xs text-slate-500">{description}</p></div>
     <div className="flex items-center justify-between rounded-xl bg-white p-3"><span className="text-xs font-semibold text-slate-700">Enable integration</span><Switch checked={enabled} onCheckedChange={setEnabled} disabled={!status?.secretStorageReady && !status?.configured} /></div>
-    <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1"><Label className="text-xs">Provider</Label><select className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" value={providerName} onChange={(event) => setProviderName(event.target.value)}>{providers.map((provider) => <option key={provider}>{provider}</option>)}</select></div><div className="space-y-1"><Label className="text-xs">{kind === "ai" ? "Model" : kind === "payment" ? "Merchant ID" : "Sender ID"}</Label><Input value={modelOrIdentifier} onChange={(event) => setModelOrIdentifier(event.target.value)} className="bg-white" /></div></div>
+    <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1"><Label className="text-xs">Provider</Label><select className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" value={providerName} onChange={(event) => setProviderName(event.target.value)}>{providers.map((provider) => <option key={provider}>{provider}</option>)}</select></div><div className="space-y-1"><Label className="text-xs">{kind === "ai" ? "Model" : kind === "payment" ? "Merchant code" : "From address"}</Label><Input value={modelOrIdentifier} onChange={(event) => setModelOrIdentifier(event.target.value)} placeholder={kind === "payment" ? "NP-ES-TEES" : undefined} className="bg-white" /></div></div>
+    {kind === "payment" && <div className="space-y-1"><Label className="text-xs">eSewa environment</Label><select className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" value={environment} onChange={(event) => setEnvironment(event.target.value === "uat" ? "uat" : "production")}><option value="production">Production</option><option value="uat">UAT</option></select><p className="text-xs text-slate-500">Use UAT only with eSewa-issued test credentials; the return path always verifies status server-side.</p></div>}
     <div className="space-y-1"><Label className="text-xs">{status?.configured ? "Replace secret (optional)" : "Provider secret"}</Label><Input type="password" autoComplete="new-password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder={status?.secretStorageReady ? "Stored securely; never displayed" : "Deployment secret storage is not configured"} disabled={!status?.secretStorageReady} /><p className="flex items-center gap-1 text-xs text-slate-500"><EyeOff className="h-3 w-3" />{status?.configured ? "A secret is configured and masked." : "No secret is configured."}</p></div>
     <Button onClick={save} disabled={saving || (!status?.secretStorageReady && !status?.configured)} size="sm" className="bg-[#071a3d] hover:bg-[#05132d]">{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save {title}</Button>
   </div>;

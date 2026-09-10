@@ -237,7 +237,7 @@ const AdminSettings = () => {
         </TabsContent>
 
         <TabsContent value="providers" className="space-y-4">
-          <ProviderConfigurationPanel kind="payment" title="Payment provider" description="Configure the implemented server-side checkout and verified webhook contract. Payment success is never set from this screen." providers={["hmac-json"]} />
+          <ProviderConfigurationPanel kind="payment" title="eSewa payment" description="Configure the eSewa merchant secret and non-secret merchant settings. Redirects and return URLs never activate a subscription by themselves." providers={["esewa"]} />
           <ProviderConfigurationPanel kind="ai" title="AI provider" description="Enable platform AI drafts for entitled module administrators. Raw keys are encrypted and never returned." providers={["openai-compatible"]} />
           <ProviderConfigurationPanel kind="email" title="Transactional email provider" description="Retains the provider-neutral email boundary; delivery remains truthful until a concrete adapter is installed." providers={["resend", "smtp"]} />
         </TabsContent>
