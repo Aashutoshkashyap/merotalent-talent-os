@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const authenticated = await authenticateRequest(request); const body = await readAdminJsonBody(request);
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new AdminRequestError(400, "INVALID_CHECKOUT", "Checkout must be an object.");
     const value = body as Record<string, unknown>;
-    if (!uuid(value.packageId) || typeof value.entityType !== "string" || (value.entityType !== "user" && !uuid(value.entityId))) throw new AdminRequestError(422, "INVALID_CHECKOUT", "Choose a valid plan and entitled entity.");
+    if (!uuid(value.packageId) || typeof value.entityType !== "string" || !uuid(value.entityId)) throw new AdminRequestError(422, "INVALID_CHECKOUT", "Choose a valid plan and entitled entity.");
     const configured = await loadProviderSecret("payment");
     if (!configured || configured.providerName !== "esewa") throw new AdminRequestError(503, "PAYMENT_UNAVAILABLE", "eSewa payment is not configured.");
     const db = getAdminClient() as any;
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     // A checkout changes an entity's entitlement. The browser cannot select an
     // arbitrary entity ID: a non-platform administrator must hold both the
     // relevant module capability and an active assignment to that exact entity.
-    if (value.entityType !== "user" && !isPlatformAdmin(authenticated.actor.roles)) {
+    if (!isPlatformAdmin(authenticated.actor.roles)) {
       const expectedScope = moduleScopeByEntityType[value.entityType];
       const planScopes = Array.isArray(pkg.module_scope) ? pkg.module_scope : [];
       if (!expectedScope || !planScopes.includes(expectedScope.module) || !expectedScope.entityTypes.includes(value.entityType)) {
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     // The amount and provider reference are derived only from the selected plan.
     // eSewa permits alphanumeric characters and hyphens in transaction_uuid.
     const reference = `mt-${randomUUID().replace(/-/g, "")}`;
-    const { data: session, error } = await db.from("payment_checkout_sessions").insert({ user_id: authenticated.user.id, package_id: pkg.id, entity_type: value.entityType, entity_id: value.entityType === "user" ? null : value.entityId, provider_name: configured.providerName, provider_reference: reference, amount: pkg.price, currency: pkg.currency, status: "initiated", expires_at: new Date(Date.now() + 30 * 60_000).toISOString() }).select("id,provider_reference,amount,currency,status,expires_at").single();
+    const { data: session, error } = await db.from("payment_checkout_sessions").insert({ user_id: authenticated.user.id, package_id: pkg.id, entity_type: value.entityType, entity_id: value.entityId, provider_name: configured.providerName, provider_reference: reference, amount: pkg.price, currency: pkg.currency, status: "initiated", expires_at: new Date(Date.now() + 30 * 60_000).toISOString() }).select("id,provider_reference,amount,currency,status,expires_at").single();
     if (error) throw error;
     const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
     const provider = getPaymentProvider({ providerName: configured.providerName, secret: configured.secret, publicConfig: configured.publicConfig });
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       await db.from("payment_checkout_sessions").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", session.id);
       throw new AdminRequestError(503, "PAYMENT_UNAVAILABLE", checkout.message || "eSewa checkout could not be created.");
     }
-    await db.from("audit_logs").insert({ actor_user_id: authenticated.user.id, action: "initiate_subscription_checkout", entity_type: value.entityType, entity_id: value.entityType === "user" ? authenticated.user.id : value.entityId, metadata: { package_id: pkg.id, provider: configured.providerName, checkout_session_id: session.id } });
+    await db.from("audit_logs").insert({ actor_user_id: authenticated.user.id, action: "initiate_subscription_checkout", entity_type: value.entityType, entity_id: value.entityId, metadata: { package_id: pkg.id, provider: configured.providerName, checkout_session_id: session.id } });
     return jsonApiResponse({ data: { ...session, checkoutUrl: checkout.checkoutUrl, checkoutFields: checkout.checkoutFields, message: "Continue to eSewa to complete this payment." }, error: null, meta: { requestId } }, 201);
   } catch (error) { return adminApiErrorResponse(error, requestId, "initiate subscription checkout"); }
 }

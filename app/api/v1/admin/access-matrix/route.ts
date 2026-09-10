@@ -10,16 +10,17 @@ export async function GET(request: Request) {
   try {
     await authenticateAdminRequest(request);
     const db = getAdminClient() as any;
-    const [profiles, capabilities, assignments, entitlements, grants, settings] = await Promise.all([
+    const [profiles, capabilities, assignments, entitlements, grants, settings, packages] = await Promise.all([
       db.from("profiles").select("user_id,email,full_name,account_status,created_at").order("created_at", { ascending: false }).limit(500),
       db.from("user_module_capabilities").select("id,user_id,status,expires_at,module_capabilities(module_key,label)").limit(1500),
       db.from("entity_admin_assignments").select("id,user_id,user_capability_id,entity_type,entity_id,status,scopes,created_at").limit(2000),
       db.from("module_entitlements").select("id,user_id,module_key,entity_type,entity_id,package_id,source,status,start_at,expires_at,features,reason,created_at").order("created_at", { ascending: false }).limit(2000),
       db.from("entity_feature_grants").select("id,user_id,module_key,entity_type,entity_id,feature_key,status,granted_at,revoked_at,note").limit(2000),
       db.from("platform_module_trial_settings").select("module_key,is_enabled,duration_days,allow_indefinite_manual"),
+      db.from("packages").select("id,name,module_scope,features,duration_days,package_kind,is_active").eq("is_active", true).is("deleted_at", null).order("sort_order", { ascending: true }),
     ]);
-    for (const result of [profiles, capabilities, assignments, entitlements, grants, settings]) if (result.error) throw result.error;
-    return jsonApiResponse({ data: { users: profiles.data, capabilities: capabilities.data, assignments: assignments.data, entitlements: entitlements.data, featureGrants: grants.data, trialSettings: settings.data }, error: null, meta: { requestId } });
+    for (const result of [profiles, capabilities, assignments, entitlements, grants, settings, packages]) if (result.error) throw result.error;
+    return jsonApiResponse({ data: { users: profiles.data, capabilities: capabilities.data, assignments: assignments.data, entitlements: entitlements.data, featureGrants: grants.data, trialSettings: settings.data, packages: packages.data }, error: null, meta: { requestId } });
   } catch (error) { return adminApiErrorResponse(error, requestId, "load access matrix"); }
 }
 

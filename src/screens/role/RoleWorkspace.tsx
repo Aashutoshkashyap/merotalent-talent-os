@@ -151,16 +151,36 @@ const loadSubscription = async (
   entityId: string | null,
   addFailure: (label: string) => void,
 ): Promise<SubscriptionSummary> => {
-  const subscriptionResult = await db
-    .from("subscriptions")
-    .select("id, package_id, entity_type, entity_id, start_date, expiry_date, status, payment_status")
-    .eq("user_id", userId)
-    .is("deleted_at", null)
-    .order("expiry_date", { ascending: false });
+  const [subscriptionResult, entitlementResult] = await Promise.all([
+    db.from("subscriptions")
+      .select("id, package_id, entity_type, entity_id, start_date, expiry_date, status, payment_status")
+      .eq("user_id", userId)
+      .is("deleted_at", null)
+      .order("expiry_date", { ascending: false }),
+    db.rpc("get_my_module_entitlements"),
+  ]);
 
   if (subscriptionResult.error) {
     addFailure("subscription");
     return emptySubscription;
+  }
+
+  if (entitlementResult.error) addFailure("module entitlement");
+  const moduleKey = entityType === "company" ? "jobs" : "mentor";
+  const entitlement = (entitlementResult.data ?? []).find((item: any) =>
+    item.module_key === moduleKey && item.entity_type === entityType && (!entityId || item.entity_id === entityId)
+      && item.status === "active" && new Date(item.start_at).getTime() <= Date.now()
+      && (!item.expires_at || new Date(item.expires_at).getTime() > Date.now()),
+  );
+  if (entitlement) {
+    return {
+      packageName: entitlement.package_name ?? "Assigned module access",
+      status: "active",
+      paymentStatus: entitlement.source === "ESEWA_PURCHASE" ? "success" : "not_required",
+      accessMode: entitlement.features?.lead_viewing ? "read_only" : "none",
+      expiryDate: entitlement.expires_at ?? null,
+      active: true,
+    };
   }
 
   const rows = subscriptionResult.data ?? [];
