@@ -1,19 +1,25 @@
 import { getAdminClient } from "./supabase";
 
-type SettlementStatus = "successful" | "failed" | "cancelled" | "pending";
+type SettlementStatus = "successful" | "failed" | "cancelled" | "pending" | "expired";
 
 const durationDays = (pkg: any) => Number(pkg.duration_days) || ({ month: 30, quarter: 90, year: 365, one_time: 30 }[pkg.billing_interval] ?? 30);
 const moduleForEntity = (entityType: string) => ({ college: "college", mentor: "mentor", company: "jobs", job: "jobs", organizer: "events", event: "events" } as Record<string, string | undefined>)[entityType];
 
 /** Called only after a provider signature and provider-side status check succeed. */
-export async function settleVerifiedCheckout(input: { provider: "esewa"; reference: string; status: SettlementStatus; transactionId: string }) {
+export async function settleVerifiedCheckout(input: { provider: "esewa"; reference: string; amount: number; status: SettlementStatus; transactionId: string }) {
   const db = getAdminClient() as any;
   const { data: checkout, error: checkoutError } = await db.from("payment_checkout_sessions").select("*").eq("provider_reference", input.reference).eq("provider_name", input.provider).maybeSingle();
   if (checkoutError || !checkout) throw new Error("Payment session was not found.");
   if (checkout.status !== "initiated" && checkout.status !== "pending") return { checkoutId: checkout.id, duplicate: true, status: checkout.status };
+  if (Number(checkout.amount) !== input.amount) throw new Error("eSewa payment amount did not match the checkout session.");
+  const now = new Date();
+  if (checkout.expires_at && new Date(checkout.expires_at).getTime() <= now.getTime()) {
+    const { error } = await db.from("payment_checkout_sessions").update({ status: "expired", completed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", checkout.id);
+    if (error) throw error;
+    return { checkoutId: checkout.id, duplicate: false, status: "expired", subscriptionId: null };
+  }
   const { data: pkg, error: packageError } = await db.from("packages").select("id,price,currency,billing_interval,duration_days,module_scope,features").eq("id", checkout.package_id).maybeSingle();
   if (packageError || !pkg || Number(pkg.price) !== Number(checkout.amount)) throw new Error("Subscription package does not match this payment session.");
-  const now = new Date();
   const terminal = input.status === "successful" ? "success" : "failed";
   const paymentPayload = {
     user_id: checkout.user_id, payment_type: "subscription", reference_id: checkout.package_id,

@@ -82,6 +82,7 @@ import RequestSubAdminAccess from "./screens/RequestSubAdminAccess";
 import InstituteDashboard from "./screens/institute/InstituteDashboard";
 import InstituteNotices from "./screens/institute/InstituteNotices";
 import RoleWorkspace from "./screens/role/RoleWorkspace";
+import ModuleAIWorkspace from "./screens/role/ModuleAIWorkspace";
 import LegalPage from "./screens/LegalPage";
 
 import ComingSoonPage from "./screens/ComingSoonPage";
@@ -137,7 +138,8 @@ const App = () => (
                 <Route path="mentors" element={<Mentors />} />
                 <Route path="jobs" element={<Jobs />} />
                 <Route path="activity" element={<ActivityTracker />} />
-                <Route path="payments" element={<Payments />} />
+                  <Route path="payments" element={<Payments />} />
+                  <Route path="ai-workspace" element={<ModuleAIWorkspace />} />
                 <Route path="sessions" element={<Sessions />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="settings" element={<Settings />} />

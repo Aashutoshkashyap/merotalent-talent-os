@@ -33,8 +33,17 @@ export async function PUT(request: Request, context: RouteContext) {
     const value = body as Record<string, unknown>;
     if (typeof value.providerName !== "string" || typeof value.enabled !== "boolean") throw new AdminRequestError(422, "INVALID_PROVIDER_CONFIGURATION", "Provider name and enabled state are required.");
     if (value.secret !== undefined && value.secret !== null && typeof value.secret !== "string") throw new AdminRequestError(422, "INVALID_PROVIDER_CONFIGURATION", "Provider secret must be text.");
+    const kind = await resolveKind(context);
+    if (kind === "payment") {
+      const config = value.publicConfig;
+      const merchantCode = config && typeof config === "object" && !Array.isArray(config) ? (config as Record<string, unknown>).merchant_code : null;
+      const environment = config && typeof config === "object" && !Array.isArray(config) ? (config as Record<string, unknown>).environment : null;
+      if (value.providerName !== "esewa" || typeof merchantCode !== "string" || !/^[A-Za-z0-9-]{2,128}$/.test(merchantCode) || !["uat", "production"].includes(String(environment))) {
+        throw new AdminRequestError(422, "INVALID_ESEWA_CONFIGURATION", "Provide an eSewa merchant code and choose UAT or production.");
+      }
+    }
     const data = await saveProviderConfiguration({
-      kind: await resolveKind(context), providerName: value.providerName, enabled: value.enabled,
+      kind, providerName: value.providerName, enabled: value.enabled,
       publicConfig: value.publicConfig, secret: value.secret as string | null | undefined, actorUserId: authenticated.user.id,
     });
     return jsonApiResponse({ data, error: null, meta: { requestId } });

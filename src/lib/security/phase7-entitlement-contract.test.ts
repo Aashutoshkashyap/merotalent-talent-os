@@ -31,4 +31,14 @@ describe("Phase 7 entitlement and eSewa security boundaries", () => {
     expect(callback).toContain("lookupStatus");
     expect(callback).toContain("settleVerifiedCheckout");
   });
+
+  it("keeps eSewa sessions short-lived and rejects late activation", () => {
+    const checkout = read("app/api/v1/payments/checkout/route.ts");
+    const settlement = read("src/lib/server/esewa-settlement.ts");
+    const maintenance = read("supabase/migrations/20260911110000_expire_esewa_checkout_sessions.sql");
+    expect(checkout).toContain("5 * 60_000");
+    expect(settlement).toContain("eSewa payment amount did not match the checkout session");
+    expect(settlement).toContain('status: "expired"');
+    expect(maintenance).toContain("expired_checkouts");
+  });
 });

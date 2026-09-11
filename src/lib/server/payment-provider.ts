@@ -29,6 +29,16 @@ export type EsewaConfiguration = { merchantCode: string; environment: "productio
 
 const base64Hmac = (message: string, secret: string) => createHmac("sha256", secret).update(message).digest("base64");
 const formatAmount = (amount: number) => amount.toFixed(2);
+const ESEWA_ENDPOINTS = {
+  uat: {
+    form: "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
+    status: "https://rc.esewa.com.np/api/epay/transaction/status/",
+  },
+  production: {
+    form: "https://epay.esewa.com.np/api/epay/main/v2/form",
+    status: "https://esewa.com.np/api/epay/transaction/status/",
+  },
+} as const;
 const safeEquals = (actual: string, expected: string) => {
   const left = Buffer.from(actual); const right = Buffer.from(expected);
   return left.byteLength === right.byteLength && timingSafeEqual(left, right);
@@ -47,9 +57,8 @@ export class EsewaV2PaymentProvider implements PaymentProvider {
     const total = formatAmount(input.amount);
     const signedFieldNames = "total_amount,transaction_uuid,product_code";
     const signature = base64Hmac(`total_amount=${total},transaction_uuid=${input.paymentId},product_code=${this.configuration.merchantCode}`, this.secret);
-    const base = this.configuration.environment === "uat" ? "https://rc-epay.esewa.com.np" : "https://epay.esewa.com.np";
     return {
-      status: "pending", provider: this.name, checkoutUrl: `${base}/api/epay/main/v2/form`,
+      status: "pending", provider: this.name, checkoutUrl: ESEWA_ENDPOINTS[this.configuration.environment].form,
       checkoutFields: {
         amount: total, tax_amount: "0", total_amount: total, transaction_uuid: input.paymentId,
         product_code: this.configuration.merchantCode, product_service_charge: "0", product_delivery_charge: "0",
@@ -73,8 +82,7 @@ export class EsewaV2PaymentProvider implements PaymentProvider {
   }
 
   async lookupStatus(input: { reference: string; amount: number; fetcher?: typeof fetch }) {
-    const base = this.configuration.environment === "uat" ? "https://uat.esewa.com.np" : "https://epay.esewa.com.np";
-    const url = new URL(`${base}/api/epay/transaction/status/`);
+    const url = new URL(ESEWA_ENDPOINTS[this.configuration.environment].status);
     url.searchParams.set("product_code", this.configuration.merchantCode);
     url.searchParams.set("total_amount", formatAmount(input.amount));
     url.searchParams.set("transaction_uuid", input.reference);
@@ -113,6 +121,7 @@ class UnconfiguredPaymentProvider implements PaymentProvider {
  */
 export const getPaymentProvider = (input: { providerName?: string; secret?: string; publicConfig?: Record<string, unknown> } = {}): PaymentProvider => {
   if (input.providerName !== "esewa" || !input.secret) return new UnconfiguredPaymentProvider();
-  const merchantCode = typeof input.publicConfig?.merchant_code === "string" && input.publicConfig.merchant_code.trim() ? input.publicConfig.merchant_code.trim() : "NP-ES-TEES";
+  const merchantCode = typeof input.publicConfig?.merchant_code === "string" ? input.publicConfig.merchant_code.trim() : "";
+  if (!/^[A-Za-z0-9-]{2,128}$/.test(merchantCode)) return new UnconfiguredPaymentProvider();
   return new EsewaV2PaymentProvider(input.secret, { merchantCode, environment: input.publicConfig?.environment === "uat" ? "uat" : "production" });
 };

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import OwnerResourceDialog from "@/components/owner/OwnerResourceDialog";
 import OwnerStatusActions from "@/components/owner/OwnerStatusActions";
+import EntityAIControls from "@/components/owner/EntityAIControls";
 
 export interface OwnerCompanyRecord {
   id: string;
@@ -288,6 +289,7 @@ const EventEditor = ({
         <Label htmlFor="owner-event-description">Description</Label>
         <Textarea id="owner-event-description" value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClassName} rows={4} />
       </div>
+      {event ? <EntityAIControls module="events" entityType="event" entityId={event.id} title={title} context={`Event format: ${format}\nLocation: ${location}\nCurrent description: ${description}`} onDraft={setDescription} /> : <p className="text-xs text-muted-foreground">Save this event once to enable its entity-scoped AI controls.</p>}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <Label>Access</Label>
@@ -495,6 +497,7 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
       <OwnerResourceDialog open={jobOpen} onOpenChange={setJobOpen} title={selectedJob ? "Edit job" : "Create job"} description="Owner changes are saved as a draft or returned to Super Admin review. Approval fields cannot be changed here." submitLabel={selectedJob ? "Save job" : "Create job"} isSubmitting={isSubmitting} onSubmit={handleJobSubmit}>
         <div className="space-y-2"><Label htmlFor="owner-job-title">Job title</Label><Input id="owner-job-title" required maxLength={160} value={title} onChange={(e) => setTitle(e.target.value)} className={fieldClassName} /></div>
         <div className="space-y-2"><Label htmlFor="owner-job-description">Description</Label><Textarea id="owner-job-description" value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClassName} rows={5} /></div>
+        {selectedJob ? <EntityAIControls module="jobs" entityType="company" entityId={snapshot.company.id} title={title} context={`Job type: ${jobType}\nLocation: ${location}\nExperience: ${experienceLevel}\nCurrent description: ${description}`} onDraft={setDescription} /> : <p className="text-xs text-muted-foreground">Save this job once to use the AI controls scoped to this company workspace.</p>}
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2"><Label>Type</Label><Select value={jobType} onValueChange={setJobType}><SelectTrigger className={fieldClassName}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="full-time">Full-time</SelectItem><SelectItem value="part-time">Part-time</SelectItem><SelectItem value="contract">Contract</SelectItem><SelectItem value="internship">Internship</SelectItem><SelectItem value="freelance">Freelance</SelectItem></SelectContent></Select></div>
           <div className="space-y-2"><Label>Experience</Label><Select value={experienceLevel} onValueChange={setExperienceLevel}><SelectTrigger className={fieldClassName}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="entry">Entry</SelectItem><SelectItem value="mid">Mid</SelectItem><SelectItem value="senior">Senior</SelectItem><SelectItem value="lead">Lead</SelectItem></SelectContent></Select></div>
@@ -697,6 +700,7 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
       <OwnerResourceDialog open={profileOpen} onOpenChange={setProfileOpen} title="Edit mentor profile" description="Approval, commission, rating, and featuring remain protected Super Admin fields." submitLabel="Save profile" isSubmitting={isSubmitting} onSubmit={handleProfileSubmit}>
         <div className="space-y-2"><Label htmlFor="mentor-headline">Headline</Label><Input id="mentor-headline" maxLength={160} value={headline} onChange={(e) => setHeadline(e.target.value)} className={fieldClassName} /></div>
         <div className="space-y-2"><Label htmlFor="mentor-description">About</Label><Textarea id="mentor-description" value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClassName} rows={5} /></div>
+        <EntityAIControls module="mentor" entityType="mentor" entityId={snapshot.mentor.id} title={headline || "Mentor profile"} context={`Expertise: ${expertise}\nYears of experience: ${yearsExperience}\nCurrent bio: ${description}`} onDraft={setDescription} />
         <div className="space-y-2"><Label htmlFor="mentor-expertise">Expertise</Label><Input id="mentor-expertise" placeholder="Product strategy, UX research" value={expertise} onChange={(e) => setExpertise(e.target.value)} className={fieldClassName} /><p className="text-xs text-[#8d8179]">Separate skills with commas.</p></div>
         <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="mentor-rate">Hourly rate (NPR)</Label><Input id="mentor-rate" type="number" min={0} step="0.01" required value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className={fieldClassName} /></div><div className="space-y-2"><Label htmlFor="mentor-experience">Years of experience</Label><Input id="mentor-experience" type="number" min={0} max={80} value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} className={fieldClassName} /></div></div>
         <div className="flex items-center justify-between rounded-2xl border border-[#f0e3da] p-4"><div><Label htmlFor="mentor-available">Available for booking</Label><p className="mt-1 text-xs text-[#8d8179]">Turning this off hides the mentor from public availability.</p></div><Switch id="mentor-available" checked={isAvailable} onCheckedChange={setIsAvailable} /></div>

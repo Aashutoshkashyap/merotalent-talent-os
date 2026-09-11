@@ -54,7 +54,9 @@ export async function POST(request: Request) {
     // The amount and provider reference are derived only from the selected plan.
     // eSewa permits alphanumeric characters and hyphens in transaction_uuid.
     const reference = `mt-${randomUUID().replace(/-/g, "")}`;
-    const { data: session, error } = await db.from("payment_checkout_sessions").insert({ user_id: authenticated.user.id, package_id: pkg.id, entity_type: value.entityType, entity_id: value.entityId, provider_name: configured.providerName, provider_reference: reference, amount: pkg.price, currency: pkg.currency, status: "initiated", expires_at: new Date(Date.now() + 30 * 60_000).toISOString() }).select("id,provider_reference,amount,currency,status,expires_at").single();
+    // eSewa's documented ePay session has a five-minute completion window.
+    // Persist that deadline so a late signed response cannot activate access.
+    const { data: session, error } = await db.from("payment_checkout_sessions").insert({ user_id: authenticated.user.id, package_id: pkg.id, entity_type: value.entityType, entity_id: value.entityId, provider_name: configured.providerName, provider_reference: reference, amount: pkg.price, currency: pkg.currency, status: "initiated", expires_at: new Date(Date.now() + 5 * 60_000).toISOString() }).select("id,provider_reference,amount,currency,status,expires_at").single();
     if (error) throw error;
     const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
     const provider = getPaymentProvider({ providerName: configured.providerName, secret: configured.secret, publicConfig: configured.publicConfig });

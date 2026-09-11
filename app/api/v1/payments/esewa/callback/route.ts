@@ -34,8 +34,9 @@ async function handle(request: Request) {
     const amount = Number(payload.total_amount);
     if (!reference || !Number.isFinite(amount)) return redirect(request, "unverified");
     const verified = await provider.lookupStatus({ reference, amount });
-    if (verified.status !== "pending") await settleVerifiedCheckout({ provider: "esewa", reference, status: verified.status, transactionId: verified.transactionId });
-    return redirect(request, verified.status);
+    if (verified.status === "pending") return redirect(request, "pending");
+    const settled = await settleVerifiedCheckout({ provider: "esewa", reference, amount, status: verified.status, transactionId: verified.transactionId });
+    return redirect(request, settled.status);
   } catch {
     return redirect(request, "pending");
   }

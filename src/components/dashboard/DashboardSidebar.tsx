@@ -39,7 +39,7 @@ const DashboardSidebar = ({
   motionScope = compact ? "compact" : "expanded",
   onNavigate,
 }: DashboardSidebarProps) => {
-  const { roles, signOut, profile } = useAuth();
+  const { roles, signOut, profile, capabilities } = useAuth();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const isAdmin = roles.includes("admin");
@@ -77,6 +77,7 @@ const DashboardSidebar = ({
     ...(isMentor ? [{ icon: UserCog, label: "Mentor Workspace", href: "/mentor" }] : []),
     ...(isCompany ? [{ icon: Briefcase, label: "Company Workspace", href: "/company" }] : []),
     ...(isInstitution ? [{ icon: Building2, label: "Institute Dashboard", href: "/institute" }] : []),
+    ...(capabilities.some((capability) => ["jobs", "mentor", "events"].includes(capability)) ? [{ icon: Sparkles, label: "Module AI Workspace", href: "/dashboard/ai-workspace" }] : []),
   ];
 
   const NavItem = ({

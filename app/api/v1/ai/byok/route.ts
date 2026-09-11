@@ -30,7 +30,7 @@ export async function PUT(request: Request) {
     const authenticated = await authenticateRequest(request); const body = await readAdminJsonBody(request);
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new AdminRequestError(400, "INVALID_AI_REQUEST", "AI key configuration must be an object.");
     const value = body as Record<string, unknown>;
-    if (!isAIModule(value.module) || typeof value.entityType !== "string" || typeof value.entityId !== "string" || typeof value.providerName !== "string" || typeof value.secret !== "string") throw new AdminRequestError(422, "INVALID_AI_REQUEST", "Module, entity, provider, and key are required.");
+    if (!isAIModule(value.module) || typeof value.entityType !== "string" || typeof value.entityId !== "string" || value.providerName !== "openai-compatible" || typeof value.secret !== "string") throw new AdminRequestError(422, "INVALID_AI_REQUEST", "Choose the supported provider and a valid module entity key.");
     await requireAIAccess({ context: authenticated, module: value.module, entityType: value.entityType, entityId: value.entityId });
     const encrypted = encryptProviderSecret(value.secret.trim());
     const { error } = await (getAdminClient() as any).from("module_ai_credentials").upsert({
