@@ -10,17 +10,18 @@ export async function GET(request: Request) {
   try {
     await authenticateAdminRequest(request);
     const db = getAdminClient() as any;
-    const [profiles, capabilities, assignments, entitlements, grants, settings, packages] = await Promise.all([
+    const [profiles, capabilities, assignments, entitlements, grants, settings, packages, aiUsage] = await Promise.all([
       db.from("profiles").select("user_id,email,full_name,account_status,created_at").order("created_at", { ascending: false }).limit(500),
       db.from("user_module_capabilities").select("id,user_id,status,expires_at,module_capabilities(module_key,label)").limit(1500),
       db.from("entity_admin_assignments").select("id,user_id,user_capability_id,entity_type,entity_id,status,scopes,created_at").limit(2000),
       db.from("module_entitlements").select("id,user_id,module_key,entity_type,entity_id,package_id,source,status,start_at,expires_at,features,reason,created_at").order("created_at", { ascending: false }).limit(2000),
       db.from("entity_feature_grants").select("id,user_id,module_key,entity_type,entity_id,feature_key,status,granted_at,revoked_at,note").limit(2000),
-      db.from("platform_module_trial_settings").select("module_key,is_enabled,duration_days,allow_indefinite_manual"),
+      db.from("platform_module_trial_settings").select("module_key,is_enabled,duration_days,allow_indefinite_manual,default_features"),
       db.from("packages").select("id,name,module_scope,features,duration_days,package_kind,is_active").eq("is_active", true).is("deleted_at", null).order("sort_order", { ascending: true }),
+      db.from("ai_usage_logs").select("id,user_id,module_key,entity_type,entity_id,feature_key,provider_name,status,input_characters,output_characters,created_at").order("created_at", { ascending: false }).limit(2000),
     ]);
-    for (const result of [profiles, capabilities, assignments, entitlements, grants, settings, packages]) if (result.error) throw result.error;
-    return jsonApiResponse({ data: { users: profiles.data, capabilities: capabilities.data, assignments: assignments.data, entitlements: entitlements.data, featureGrants: grants.data, trialSettings: settings.data, packages: packages.data }, error: null, meta: { requestId } });
+    for (const result of [profiles, capabilities, assignments, entitlements, grants, settings, packages, aiUsage]) if (result.error) throw result.error;
+    return jsonApiResponse({ data: { users: profiles.data, capabilities: capabilities.data, assignments: assignments.data, entitlements: entitlements.data, featureGrants: grants.data, trialSettings: settings.data, packages: packages.data, aiUsage: aiUsage.data }, error: null, meta: { requestId } });
   } catch (error) { return adminApiErrorResponse(error, requestId, "load access matrix"); }
 }
 
@@ -45,14 +46,21 @@ export async function POST(request: Request) {
       if (typeof value.feature !== "string" || typeof value.active !== "boolean") throw new AdminRequestError(422, "INVALID_FEATURE", "Choose a feature state.");
       const { error } = await rpc.rpc("admin_set_entity_feature_grant", { p_user_id: value.userId, p_module_key: value.module, p_entity_type: value.entityType, p_entity_id: value.entityId, p_feature_key: value.feature, p_active: value.active, p_note: typeof value.note === "string" ? value.note.slice(0, 1000) : null });
       if (error) throw error;
+    } else if (value.action === "revoke_entitlement") {
+      if (!isUuid(value.entitlementId)) throw new AdminRequestError(422, "INVALID_ENTITLEMENT", "Choose an active entitlement to revoke.");
+      const { error } = await rpc.rpc("admin_revoke_module_entitlement", { p_entitlement_id: value.entitlementId, p_reason: typeof value.note === "string" ? value.note.slice(0, 1000) : null });
+      if (error) throw error;
     } else if (value.action === "trial") {
       const { error } = await rpc.rpc("admin_start_module_trial", { p_target_user_id: value.userId, p_module_key: value.module, p_entity_type: value.entityType, p_entity_id: value.entityId, p_reason: typeof value.note === "string" ? value.note.slice(0, 1000) : null });
       if (error) throw error;
     } else if (value.action === "enroll") {
       const expiresAt = typeof value.expiresAt === "string" && !Number.isNaN(Date.parse(value.expiresAt)) ? value.expiresAt : null;
       const features = value.features && typeof value.features === "object" && !Array.isArray(value.features) ? value.features : {};
-      const source = ["ADMIN_MANUAL", "SUPER_ADMIN_PACKAGE", "ADMIN_PACKAGE", "PROMOTIONAL"].includes(String(value.source)) ? value.source : "ADMIN_MANUAL";
-      const { error } = await rpc.rpc("admin_manage_module_entitlement", { p_target_user_id: value.userId, p_module_key: value.module, p_entity_type: value.entityType, p_entity_id: value.entityId, p_source: source, p_start_at: new Date().toISOString(), p_expires_at: expiresAt, p_package_id: isUuid(value.packageId) ? value.packageId : null, p_features: features, p_reason: typeof value.note === "string" ? value.note.slice(0, 1000) : null });
+      const source = ["FREE", "ADMIN_MANUAL", "SUPER_ADMIN_PACKAGE", "ADMIN_PACKAGE", "PROMOTIONAL"].includes(String(value.source)) ? value.source : "ADMIN_MANUAL";
+      if (source === "FREE" && !isUuid(value.packageId)) throw new AdminRequestError(422, "INVALID_FREE_ENTITLEMENT", "Choose an active Free package for a Free entitlement.");
+      const { error } = source === "FREE"
+        ? await rpc.rpc("admin_provision_module_free_entitlement", { p_target_user_id: value.userId, p_module_key: value.module, p_entity_type: value.entityType, p_entity_id: value.entityId, p_package_id: value.packageId, p_reason: typeof value.note === "string" ? value.note.slice(0, 1000) : null })
+        : await rpc.rpc("admin_manage_module_entitlement", { p_target_user_id: value.userId, p_module_key: value.module, p_entity_type: value.entityType, p_entity_id: value.entityId, p_source: source, p_start_at: new Date().toISOString(), p_expires_at: expiresAt, p_package_id: isUuid(value.packageId) ? value.packageId : null, p_features: features, p_reason: typeof value.note === "string" ? value.note.slice(0, 1000) : null });
       if (error) throw error;
     } else throw new AdminRequestError(422, "INVALID_ACCESS_ACTION", "Unsupported access action.");
     return jsonApiResponse({ data: { updated: true }, error: null, meta: { requestId } });
