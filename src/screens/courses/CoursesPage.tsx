@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { BookOpen, ExternalLink, Loader2, Search } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -159,7 +160,7 @@ const CoursesPage = () => {
                 const destination = getPartnerCourseRedirect(course.redirect_url);
                 if (!destination) return null;
                 return (
-                <a key={course.id} href={destination} target="_blank" rel="noopener noreferrer" className={index === 0 ? "md:col-span-2 lg:col-span-8" : "lg:col-span-4"}>
+                <Link key={course.id} to={`/courses/${encodeURIComponent(course.id)}`} className={index === 0 ? "md:col-span-2 lg:col-span-8" : "lg:col-span-4"}>
                   <Card className="group h-full overflow-hidden rounded-[22px] border-[#f0e8e3] bg-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:border-[#fdba74] hover:shadow-[0_16px_32px_rgba(85,52,32,0.08)]">
                     <div className="relative aspect-video overflow-hidden">
                       <PartnerCourseThumbnail
@@ -196,7 +197,7 @@ const CoursesPage = () => {
                       </span>
                     </CardFooter>
                   </Card>
-                </a>
+                </Link>
               )})}
             </div>
           )}
