@@ -10,8 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 type ProviderKind = "payment" | "ai" | "email";
 type Status = { providerName: string | null; enabled: boolean; configured: boolean; secretStorageReady: boolean; publicConfig: Record<string, unknown> };
+type ProviderConfigurationPanelProps = {
+  kind: ProviderKind;
+  title: string;
+  description: string;
+  providers: string[];
+  onSaved?: () => void | Promise<void>;
+};
 
-export function ProviderConfigurationPanel({ kind, title, description, providers }: { kind: ProviderKind; title: string; description: string; providers: string[] }) {
+export function ProviderConfigurationPanel({ kind, title, description, providers, onSaved }: ProviderConfigurationPanelProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState<Status | null>(null);
   const defaultProvider = providers[0];
@@ -50,6 +57,7 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
       const payload = await response.json() as { data?: Status; error?: { message?: string } };
       if (!response.ok || !payload.data) throw new Error(payload.error?.message || "Provider configuration was not saved.");
       setStatus(payload.data); setSecret("");
+      await onSaved?.();
       toast({ title: `${title} saved`, description: "The secret was encrypted server-side and will not be shown again." });
     } catch (error) { toast({ variant: "destructive", title: `${title} not saved`, description: error instanceof Error ? error.message : "Please try again." }); }
     finally { setSaving(false); }

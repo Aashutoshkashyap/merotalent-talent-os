@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({ getSession: vi.fn() }));
@@ -51,5 +51,19 @@ describe("ProviderConfigurationPanel", () => {
     expect(screen.getByLabelText("Provider secret")).toBeDisabled();
     expect(screen.getByRole("alert")).toHaveTextContent("PROVIDER_CONFIG_ENCRYPTION_KEY");
     expect(screen.getByRole("alert")).toHaveTextContent("not your eSewa, AI, or email provider secret");
+  });
+
+  it("notifies its parent after a successful save so the health snapshot can refresh", async () => {
+    const onSaved = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: status(true) }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: status(true) }), { status: 200 })));
+    render(<ProviderConfigurationPanel kind="payment" title="eSewa payment" description="Payment provider" providers={["esewa"]} onSaved={onSaved} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save eSewa payment" })).toBeEnabled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Save eSewa payment" }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,11 +42,31 @@ interface SiteSettingForm {
   maintenanceMode: boolean;
 }
 
-interface ProviderStatus {
-  payment: { status: "configured" | "not_configured"; deliveryAvailable: boolean };
-  email: { status: "configured" | "not_configured"; deliveryAvailable: boolean };
-  ai: { status: "configured" | "not_configured"; deliveryAvailable: boolean };
+type ProviderHealthState = "not_configured" | "configured_disabled" | "configured_active" | "storage_unavailable";
+interface ProviderHealth {
+  status: ProviderHealthState;
+  credentialConfigured: boolean;
+  integrationEnabled: boolean;
+  secretStorageReady: boolean;
+  deliveryAvailable: boolean;
 }
+interface ProviderStatus { payment: ProviderHealth; email: ProviderHealth; ai: ProviderHealth; }
+
+const providerHealthLabel: Record<ProviderHealthState, string> = {
+  not_configured: "Not configured",
+  configured_disabled: "Configured — disabled",
+  configured_active: "Configured — active",
+  storage_unavailable: "Secure storage unavailable",
+};
+
+const providerHealthDescription = (provider: ProviderHealth | undefined) => {
+  if (!provider) return "Checking server configuration…";
+  if (provider.status === "storage_unavailable") return "The server cannot safely use provider credentials until secure storage is configured.";
+  if (provider.status === "configured_disabled") return "A provider credential is stored, but the integration is intentionally disabled.";
+  if (provider.status === "configured_active" && provider.deliveryAvailable) return "Provider adapter is available.";
+  if (provider.status === "configured_active") return "A credential is stored and enabled, but no matching provider adapter is available.";
+  return "No encrypted provider credential is stored.";
+};
 
 const settingValue = (key: SiteSettingKey, form: SiteSettingForm): string => {
   switch (key) {
@@ -107,19 +127,20 @@ const AdminSettings = () => {
     void loadSettings();
   }, [toast]);
 
-  useEffect(() => {
-    const loadProviderStatus = async () => {
-      const { data: auth } = await supabase.auth.getSession();
-      if (!auth.session?.access_token) return;
-      const response = await fetch("/api/v1/admin/provider-status", {
-        headers: { Authorization: `Bearer ${auth.session.access_token}` },
-      });
-      if (!response.ok) return;
-      const payload = await response.json() as { data?: ProviderStatus };
-      if (payload.data) setProviderStatus(payload.data);
-    };
-    void loadProviderStatus();
+  const loadProviderStatus = useCallback(async () => {
+    const { data: auth } = await supabase.auth.getSession();
+    if (!auth.session?.access_token) return;
+    const response = await fetch("/api/v1/admin/provider-status", {
+      headers: { Authorization: `Bearer ${auth.session.access_token}` },
+    });
+    if (!response.ok) return;
+    const payload = await response.json() as { data?: ProviderStatus };
+    if (payload.data) setProviderStatus(payload.data);
   }, []);
+
+  useEffect(() => {
+    void loadProviderStatus();
+  }, [loadProviderStatus]);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -237,9 +258,9 @@ const AdminSettings = () => {
         </TabsContent>
 
         <TabsContent value="providers" className="space-y-4">
-          <ProviderConfigurationPanel kind="payment" title="eSewa payment" description="Configure the eSewa merchant secret and non-secret merchant settings. Redirects and return URLs never activate a subscription by themselves." providers={["esewa"]} />
-          <ProviderConfigurationPanel kind="ai" title="AI provider" description="Enable platform AI drafts for entitled module administrators. Raw keys are encrypted and never returned." providers={["openai-compatible"]} />
-          <ProviderConfigurationPanel kind="email" title="Transactional email provider" description="Resend is the supported transactional email adapter. Delivery remains unavailable until its credentials and sender address are configured." providers={["resend"]} />
+          <ProviderConfigurationPanel kind="payment" title="eSewa payment" description="Configure the eSewa merchant secret and non-secret merchant settings. Redirects and return URLs never activate a subscription by themselves." providers={["esewa"]} onSaved={loadProviderStatus} />
+          <ProviderConfigurationPanel kind="ai" title="AI provider" description="Enable platform AI drafts for entitled module administrators. Raw keys are encrypted and never returned." providers={["openai-compatible"]} onSaved={loadProviderStatus} />
+          <ProviderConfigurationPanel kind="email" title="Transactional email provider" description="Resend is the supported transactional email adapter. Delivery remains unavailable until its credentials and sender address are configured." providers={["resend"]} onSaved={loadProviderStatus} />
         </TabsContent>
 
         {/* Media Uploads */}
@@ -296,11 +317,13 @@ const AdminSettings = () => {
               <CardDescription className="text-xs">A secret-free server snapshot. Credentials and API keys are never displayed in the dashboard.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["Payments", providerStatus?.payment.status, providerStatus?.payment.deliveryAvailable],
-                ["Platform AI", providerStatus?.ai.status, providerStatus?.ai.deliveryAvailable],
-                ["Transactional email", providerStatus?.email.status, providerStatus?.email.deliveryAvailable],
-              ].map(([name, status, available]) => <div key={String(name)} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-bold text-slate-900">{name}</p><p className={`mt-1 text-xs font-semibold ${available ? "text-emerald-700" : "text-amber-700"}`}>{status ? String(status).replace("_", " ") : "Checking server configuration…"}</p><p className="mt-2 text-xs text-slate-500">{available ? "Provider adapter is available." : "No delivery or payment success is claimed until a server-side provider adapter is configured."}</p></div>)}
+              {([
+                { name: "Payments", health: providerStatus?.payment },
+                { name: "Platform AI", health: providerStatus?.ai },
+                { name: "Transactional email", health: providerStatus?.email },
+              ] satisfies Array<{ name: string; health?: ProviderHealth }>).map(({ name, health }) => {
+                return <div key={String(name)} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-bold text-slate-900">{name}</p><p className={`mt-1 text-xs font-semibold ${health?.deliveryAvailable ? "text-emerald-700" : "text-amber-700"}`}>{health ? providerHealthLabel[health.status] : "Checking server configuration…"}</p><p className="mt-2 text-xs text-slate-500">{providerHealthDescription(health)}</p></div>;
+              })}
             </CardContent>
           </Card>
           <Card className="border-border/50 rounded-2xl shadow-2xs">

@@ -6,6 +6,64 @@ import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+type ProviderHealthStatus =
+  | "not_configured"
+  | "configured_disabled"
+  | "configured_active"
+  | "storage_unavailable";
+
+const providerHealth = (
+  provider: Awaited<ReturnType<typeof getProviderStatus>>,
+  expectedProviderName: string,
+): {
+  status: ProviderHealthStatus;
+  credentialConfigured: boolean;
+  integrationEnabled: boolean;
+  secretStorageReady: boolean;
+  deliveryAvailable: boolean;
+} => {
+  const credentialConfigured = provider.configured;
+  const integrationEnabled = provider.enabled;
+  const secretStorageReady = provider.secretStorageReady;
+  const adapterSelected = provider.providerName === expectedProviderName;
+
+  if (!secretStorageReady) {
+    return {
+      status: "storage_unavailable",
+      credentialConfigured,
+      integrationEnabled,
+      secretStorageReady,
+      deliveryAvailable: false,
+    };
+  }
+  if (!credentialConfigured) {
+    return {
+      status: "not_configured",
+      credentialConfigured: false,
+      integrationEnabled,
+      secretStorageReady,
+      deliveryAvailable: false,
+    };
+  }
+  if (!integrationEnabled) {
+    return {
+      status: "configured_disabled",
+      credentialConfigured: true,
+      integrationEnabled: false,
+      secretStorageReady,
+      deliveryAvailable: false,
+    };
+  }
+  return {
+    status: "configured_active",
+    credentialConfigured: true,
+    integrationEnabled: true,
+    secretStorageReady,
+    // A selected adapter is required in addition to an enabled configuration.
+    deliveryAvailable: adapterSelected,
+  };
+};
+
 /**
  * Provider health is deliberately an admin-only, secret-free snapshot. It
  * reports whether a concrete server-side adapter exists; it never serializes
@@ -27,24 +85,11 @@ export async function GET(request: Request) {
   // Provider Center needs to remain readable when the server encryption key is
   // absent. Report stored ciphertext separately from runtime delivery readiness;
   // do not decrypt or serialize a provider credential in this endpoint.
-  const paymentConfigured = payment.providerName === "esewa" && payment.enabled && payment.configured;
-  const emailConfigured = email.providerName === "resend" && email.enabled && email.configured;
-  const aiConfigured = ai.enabled && ai.configured;
-
   return jsonApiResponse({
     data: {
-      payment: {
-        status: paymentConfigured ? "configured" : "not_configured",
-        deliveryAvailable: paymentConfigured && payment.secretStorageReady,
-      },
-      email: {
-        status: emailConfigured ? "configured" : "not_configured",
-        deliveryAvailable: emailConfigured && email.secretStorageReady,
-      },
-      ai: {
-        status: aiConfigured ? "configured" : "not_configured",
-        deliveryAvailable: aiConfigured && ai.secretStorageReady,
-      },
+      payment: providerHealth(payment, "esewa"),
+      email: providerHealth(email, "resend"),
+      ai: providerHealth(ai, "openai-compatible"),
     },
     error: null,
     meta: { requestId },
