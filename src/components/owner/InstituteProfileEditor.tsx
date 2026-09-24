@@ -208,7 +208,7 @@ const InstituteProfileEditor = ({
       <div className="space-y-2"><Label htmlFor="institute-profile-youtube">YouTube video URL</Label><Input id="institute-profile-youtube" type="url" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} className={fieldClassName} /></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <SignedMediaUploader label="College logo" module="college_logo" resourceId={institute.id} onUploaded={async ([asset]) => { if (asset) await saveMedia("logo", asset.path); }} />
-        <SignedMediaUploader label="College cover image" module="college_cover" resourceId={institute.id} onUploaded={async ([asset]) => { if (asset) await saveMedia("cover", asset.path); }} />
+        <SignedMediaUploader label="College cover image (wide 2.63:1)" module="college_cover" resourceId={institute.id} onUploaded={async ([asset]) => { if (asset) await saveMedia("cover", asset.path); }} />
         {(logoPath || coverPath) && <p className="sm:col-span-2 text-xs text-muted-foreground">Images are stored as controlled College Media assets and become public only through this approved profile.</p>}
       </div>
       <div className="rounded-xl border border-[#eadfd7] p-4 space-y-4">

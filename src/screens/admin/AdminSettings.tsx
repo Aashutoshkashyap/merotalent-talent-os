@@ -239,7 +239,7 @@ const AdminSettings = () => {
         <TabsContent value="providers" className="space-y-4">
           <ProviderConfigurationPanel kind="payment" title="eSewa payment" description="Configure the eSewa merchant secret and non-secret merchant settings. Redirects and return URLs never activate a subscription by themselves." providers={["esewa"]} />
           <ProviderConfigurationPanel kind="ai" title="AI provider" description="Enable platform AI drafts for entitled module administrators. Raw keys are encrypted and never returned." providers={["openai-compatible"]} />
-          <ProviderConfigurationPanel kind="email" title="Transactional email provider" description="Retains the provider-neutral email boundary; delivery remains truthful until a concrete adapter is installed." providers={["resend", "smtp"]} />
+          <ProviderConfigurationPanel kind="email" title="Transactional email provider" description="Resend is the supported transactional email adapter. Delivery remains unavailable until its credentials and sender address are configured." providers={["resend"]} />
         </TabsContent>
 
         {/* Media Uploads */}

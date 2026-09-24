@@ -39,6 +39,7 @@ import {
   toggleBookmarkJobId,
   logUserActivity,
 } from "@/lib/activityLogger";
+import { loadSavedJobIds, setSavedJob } from "@/lib/jobs/saved-jobs";
 
 interface Job {
   id: string;
@@ -97,7 +98,12 @@ const Jobs = () => {
   const [savedJobs, setSavedJobs] = useState<Set<string>>(() => new Set(getBookmarkedJobIds(user?.id)));
 
   useEffect(() => {
-    setSavedJobs(new Set(getBookmarkedJobIds(user?.id)));
+    let active = true;
+    if (!user) { setSavedJobs(new Set(getBookmarkedJobIds())); return; }
+    void loadSavedJobIds(user.id)
+      .then((ids) => { if (active) setSavedJobs(new Set(ids)); })
+      .catch(() => { if (active) setSavedJobs(new Set(getBookmarkedJobIds(user.id))); });
+    return () => { active = false; };
   }, [user?.id]);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -148,8 +154,17 @@ const Jobs = () => {
   const appliedJobsList = jobs.filter((job) => appliedJobIds.has(job.id));
   const companyCount = new Set(jobs.map((job) => job.company)).size;
 
-  const toggleSaveJob = (job: Job) => {
-    const isNowSaved = toggleBookmarkJobId(job.id, user?.id);
+  const toggleSaveJob = async (job: Job) => {
+    const isNowSaved = !savedJobs.has(job.id);
+    if (user) {
+      try {
+        await setSavedJob(user.id, job.id, isNowSaved);
+      } catch (error) {
+        toast({ variant: "destructive", title: "Could not update saved jobs", description: error instanceof Error ? error.message : "Please try again." });
+        return;
+      }
+    }
+    toggleBookmarkJobId(job.id, user?.id);
     setSavedJobs((current) => {
       const next = new Set(current);
       if (isNowSaved) next.add(job.id);
@@ -193,7 +208,7 @@ const Jobs = () => {
                   <Building2 className="h-3 w-3" /> {job.company}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => toggleSaveJob(job)} aria-label="Save job">
+              <Button variant="ghost" size="icon" onClick={() => void toggleSaveJob(job)} aria-label="Save job">
                 {savedJobs.has(job.id) ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
               </Button>
             </div>
@@ -285,7 +300,7 @@ const Jobs = () => {
               <DialogHeader>
                 <div className="flex items-center justify-between">
                   <Badge className="capitalize text-xs font-bold">{selectedDetailJob.type}</Badge>
-                  <Button variant="ghost" size="icon" onClick={() => toggleSaveJob(selectedDetailJob)}>
+                  <Button variant="ghost" size="icon" onClick={() => void toggleSaveJob(selectedDetailJob)}>
                     {savedJobs.has(selectedDetailJob.id) ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
                   </Button>
                 </div>

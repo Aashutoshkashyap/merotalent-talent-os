@@ -756,6 +756,7 @@ const InstituteDashboard = () => {
     { path: "/institute#subscription", icon: CreditCard, label: "Subscription", anchor: true },
     { path: "/dashboard/payments", icon: CreditCard, label: "Payments" },
     { path: "/institute/notices", icon: Bell, label: "Notices", disabled: !access?.can_post_notices },
+    { path: `/institute/blogs?college=${activeInstitute.id}`, icon: FileText, label: "College blog", disabled: !access?.can_edit_profile },
     { path: "/institutes", icon: Building2, label: "Public listing" },
   ];
   const canAccessApplications = subscription.active && ["read_only", "full"].includes(subscription.leadAccessMode);
@@ -1036,6 +1037,11 @@ const InstituteDashboard = () => {
                     <Button variant="outline" className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]" onClick={() => setProfileEditorOpen(true)}>
                       <Edit3 className="mr-2 h-4 w-4" />
                       Edit profile
+                    </Button>
+                  )}
+                  {canEditOwnedProfile && (
+                    <Button asChild variant="outline" className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]">
+                      <Link to={`/institute/blogs?college=${encodeURIComponent(activeInstitute.id)}`}><FileText className="mr-2 h-4 w-4" />Manage blog</Link>
                     </Button>
                   )}
                   <Button asChild variant="outline" className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]">

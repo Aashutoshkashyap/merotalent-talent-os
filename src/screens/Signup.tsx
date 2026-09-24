@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AppRole, useAuth } from "@/contexts/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -12,57 +12,13 @@ import {
   Lock,
   User,
   Chrome,
-  Building2,
-  BriefcaseBusiness,
-  UserRoundSearch,
 } from "lucide-react";
 
-type SignupRole = Exclude<AppRole, "admin">;
-
-const accountTypes: Array<{
-  value: SignupRole;
-  label: string;
-  description: string;
-  icon: typeof User;
-}> = [
-  {
-    value: "talent",
-    label: "Talent",
-    description: "Learn, compete and get hired",
-    icon: User,
-  },
-  {
-    value: "mentor",
-    label: "Mentor",
-    description: "Guide the next generation",
-    icon: UserRoundSearch,
-  },
-  {
-    value: "company",
-    label: "Company",
-    description: "Discover proven talent",
-    icon: BriefcaseBusiness,
-  },
-  {
-    value: "institution",
-    label: "Institution",
-    description: "Enable student outcomes",
-    icon: Building2,
-  },
-];
-
 const Signup = () => {
-  const [searchParams] = useSearchParams();
-  const requestedRole = searchParams.get("role") as SignupRole | null;
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [accountType, setAccountType] = useState<SignupRole>(
-    requestedRole && accountTypes.some((type) => type.value === requestedRole)
-      ? requestedRole
-      : "talent",
-  );
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { signUp, signInWithOAuth } = useAuth();
@@ -71,7 +27,7 @@ const Signup = () => {
 
   const handleGoogleSignUp = async () => {
     setIsGoogleLoading(true);
-    const { error } = await signInWithOAuth("google", accountType);
+    const { error } = await signInWithOAuth("google");
     
     if (error) {
       toast({
@@ -106,7 +62,7 @@ const Signup = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(email, password, fullName, accountType);
+    const { error } = await signUp(email, password, fullName);
 
     if (error) {
       toast({
@@ -118,19 +74,17 @@ const Signup = () => {
     } else {
       toast({
         title: "Account created!",
-        description: accountType === "talent"
-          ? "Please check your email to verify your account."
-          : "Please verify your email. Your module workspace request will be reviewed by Super Admin.",
+        description: "Please check your email to verify your account.",
       });
-      navigate(accountType === "talent" ? "/onboarding" : "/pending-approval");
+      navigate("/onboarding");
     }
   };
 
   return (
     <AuthShell
-      eyebrow="Choose your path"
-      title="Build a workspace around your ambition."
-      description="Join as talent, a mentor, a company or an institution. Every account gets a focused workspace with the tools that matter."
+      eyebrow="Create your account"
+      title="Start your MeroTalent journey."
+      description="Every new account starts with student access. You can request any additional workspace after signing in."
       footer={
         <p>
           Already have an account?{" "}
@@ -141,43 +95,9 @@ const Signup = () => {
       }
     >
       <div className="space-y-6">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs font-bold text-slate-700">Start as</Label>
-            <span className="text-[11px] font-semibold text-slate-400">Student access is immediate</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {accountTypes.map((type) => {
-              const Icon = type.icon;
-              const active = accountType === type.value;
-              return (
-                <button
-                  key={type.value}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setAccountType(type.value)}
-                  className={`group rounded-[15px] border p-2.5 text-left transition-all duration-200 cursor-pointer ${
-                    active
-                      ? "border-[#0073e6] bg-blue-50/50 shadow-xs"
-                      : "border-slate-200 bg-white hover:border-[#0073e6]/50"
-                  }`}
-                >
-                  <span className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                    <span className={`grid h-6 w-6 place-items-center rounded-[8px] flex-shrink-0 ${active ? "bg-[#0073e6] text-white" : "bg-slate-100 text-slate-500"}`}>
-                      <Icon className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="truncate">{type.label}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {accountType !== "talent" && (
-            <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-800">
-              You will start with a student account. Super Admin must approve this workspace request before you can manage a module.
-            </p>
-          )}
-        </div>
+        <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-blue-800">
+          Student access is ready after verification. Request College, Jobs, Mentor, or Events access later; Super Admin reviews every workspace request.
+        </p>
 
         {/* Google Sign Up Button */}
         <button

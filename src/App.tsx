@@ -21,10 +21,13 @@ import OAuthCallback from "./screens/auth/OAuthCallback";
 
 // Public Pages
 import CoursesPage from "./screens/courses/CoursesPage";
+import CourseDetailPage from "./screens/courses/CourseDetailPage";
 import JobsPage from "./screens/jobs/JobsPage";
 import JobDetailPage from "./screens/jobs/JobDetailPage";
 import InstitutesPage from "./screens/institutes/InstitutesPage";
 import InstituteDetailPage from "./screens/institutes/InstituteDetailPage";
+import InstituteBlogsPage from "./screens/institutes/InstituteBlogsPage";
+import InstituteBlogDetailPage from "./screens/institutes/InstituteBlogDetailPage";
 import CompetitionsPage from "./screens/competitions/CompetitionsPage";
 import MentorshipPage from "./screens/mentorship/MentorshipPage";
 import MentorDetailPage from "./screens/mentorship/MentorDetailPage";
@@ -81,6 +84,7 @@ import RequestSubAdminAccess from "./screens/RequestSubAdminAccess";
 // Institute Pages
 import InstituteDashboard from "./screens/institute/InstituteDashboard";
 import InstituteNotices from "./screens/institute/InstituteNotices";
+import InstituteBlogs from "./screens/institute/InstituteBlogs";
 import RoleWorkspace from "./screens/role/RoleWorkspace";
 import ModuleAIWorkspace from "./screens/role/ModuleAIWorkspace";
 import LegalPage from "./screens/LegalPage";
@@ -109,10 +113,13 @@ const App = () => (
               
               {/* Public Landing Pages */}
               <Route path="/courses" element={<CoursesPage />} />
+              <Route path="/courses/:id" element={<CourseDetailPage />} />
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/institutes" element={<InstitutesPage />} />
               <Route path="/institutes/:slug" element={<InstituteDetailPage />} />
+              <Route path="/institutes/:slug/blogs" element={<InstituteBlogsPage />} />
+              <Route path="/institutes/:slug/blogs/:blogSlug" element={<InstituteBlogDetailPage />} />
               <Route path="/competitions" element={<ComingSoonPage moduleKey="competitions" />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/events/:id" element={<EventDetailPage />} />
@@ -198,6 +205,10 @@ const App = () => (
                     <InstituteNotices />
                   </ProtectedRoute>
                 }
+              />
+              <Route
+                path="/institute/blogs"
+                element={<ProtectedRoute requiredRole="institution"><InstituteBlogs /></ProtectedRoute>}
               />
 
               <Route

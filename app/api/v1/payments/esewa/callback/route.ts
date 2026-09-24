@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const redirect = (request: Request, status: string) => {
-  const destination = new URL("/dashboard/subscription", request.url);
+  const destination = new URL("/dashboard/payments", request.url);
   destination.searchParams.set("payment", status);
   return NextResponse.redirect(destination, 303);
 };

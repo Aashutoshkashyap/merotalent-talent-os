@@ -40,7 +40,6 @@ interface AuthContextType {
     email: string,
     password: string,
     fullName: string,
-    accountType: Exclude<AppRole, "admin">,
   ) => Promise<{ error: Error | null }>;
   signIn: (
     email: string,
@@ -48,7 +47,6 @@ interface AuthContextType {
   ) => Promise<{ error: Error | null; redirectTo?: string }>;
   signInWithOAuth: (
     provider: "google" | "apple",
-    accountType?: Exclude<AppRole, "admin">,
   ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -211,7 +209,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     fullName: string,
-    accountType: Exclude<AppRole, "admin">,
   ) => {
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -237,7 +234,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: window.location.origin,
         data: {
           full_name: fullName,
-          account_type: accountType,
+          // Every new account begins as Student/User. Privileged module access
+          // can only be requested after signup and granted by Super Admin.
+          account_type: "talent",
         },
       },
     });
@@ -299,16 +298,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithOAuth = async (
     provider: "google" | "apple",
-    accountType: Exclude<AppRole, "admin"> = "talent",
   ) => {
-    if (accountType === "talent") {
-      clearPendingModuleAccessRole();
-    } else {
-      window.sessionStorage.setItem(
-        pendingModuleAccessKey,
-        JSON.stringify({ role: accountType, createdAt: Date.now() }),
-      );
-    }
+    clearPendingModuleAccessRole();
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,

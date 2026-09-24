@@ -5,7 +5,9 @@ const contentSecurityPolicy = [
   "base-uri 'self'",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "font-src 'self' data:",
-  "form-action 'self'",
+  // eSewa uses a browser form POST. Keep this limited to the documented UAT
+  // and production ePay endpoints rather than permitting arbitrary providers.
+  "form-action 'self' https://rc-epay.esewa.com.np https://epay.esewa.com.np",
   "frame-ancestors 'none'",
   "frame-src 'self' https://www.youtube-nocookie.com https://player.vdocipher.com https://player.vimeo.com",
   "img-src 'self' data: blob: https://*.supabase.co",

@@ -21,7 +21,7 @@ export default function InstituteCard({ institute }: InstituteCardProps) {
 
   return (
     <article className="group flex min-h-full flex-col overflow-hidden rounded-[22px] border border-slate-200/90 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.055)] transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_20px_46px_rgba(0,115,230,0.12)]">
-      <div className="relative aspect-video overflow-hidden bg-slate-100">
+      <div className="relative aspect-[2.63/1] overflow-hidden bg-slate-100">
         <Link to={path} aria-label={`View ${institute.name}`} className="absolute inset-0 z-10">
           <InstituteImage
             source={institute.cover_image_url}
