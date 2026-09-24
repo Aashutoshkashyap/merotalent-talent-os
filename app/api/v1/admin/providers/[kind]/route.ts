@@ -2,6 +2,7 @@ import { adminApiErrorResponse, AdminRequestError, readAdminJsonBody } from "@/l
 import { authenticateAdminRequest } from "@/lib/server/auth";
 import { getProviderStatus, isProviderKind, saveProviderConfiguration } from "@/lib/server/provider-config-service";
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { ServerConfigurationError } from "@/lib/server/supabase";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,6 +49,16 @@ export async function PUT(request: Request, context: RouteContext) {
     });
     return jsonApiResponse({ data, error: null, meta: { requestId } });
   } catch (error) {
+    if (error instanceof ServerConfigurationError && error.message.includes("provider-secret storage")) {
+      return jsonApiResponse({
+        data: null,
+        error: {
+          code: "PROVIDER_SECRET_STORAGE_UNAVAILABLE",
+          message: "Secure provider-secret storage is unavailable. Configure PROVIDER_CONFIG_ENCRYPTION_KEY on the server before saving a provider secret.",
+        },
+        meta: { requestId },
+      }, 503);
+    }
     return adminApiErrorResponse(error, requestId, "write provider configuration");
   }
 }

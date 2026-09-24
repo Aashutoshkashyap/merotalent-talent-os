@@ -12,6 +12,8 @@ describe("provider secret storage", () => {
 
   it("requires a valid deployment encryption key", () => {
     expect(isSecretStorageConfigured({})).toBe(false);
+    expect(isSecretStorageConfigured({ PROVIDER_CONFIG_ENCRYPTION_KEY: "not-base64" })).toBe(false);
+    expect(isSecretStorageConfigured({ PROVIDER_CONFIG_ENCRYPTION_KEY: Buffer.alloc(31, 7).toString("base64") })).toBe(false);
     expect(() => encryptProviderSecret("secret", {})).toThrow(/storage/i);
   });
 });

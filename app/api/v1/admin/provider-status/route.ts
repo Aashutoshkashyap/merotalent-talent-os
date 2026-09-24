@@ -1,8 +1,6 @@
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { authenticateAdminRequest } from "@/lib/server/auth";
-import { getPaymentProvider } from "@/lib/server/payment-provider";
-import { getConfiguredTransactionalEmailProvider } from "@/lib/server/email-provider";
-import { getProviderStatus, loadProviderSecret } from "@/lib/server/provider-config-service";
+import { getProviderStatus } from "@/lib/server/provider-config-service";
 import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
 
 export const dynamic = "force-dynamic";
@@ -21,27 +19,31 @@ export async function GET(request: Request) {
     return adminApiErrorResponse(error, requestId, "authenticate provider status");
   }
 
-  const paymentConfig = await loadProviderSecret("payment");
-  const emailConfig = await loadProviderSecret("email");
-  const payment = paymentConfig ? getPaymentProvider(paymentConfig) : null;
-  const email = emailConfig ? getConfiguredTransactionalEmailProvider(emailConfig) : null;
-  const ai = await getProviderStatus("ai");
-  const paymentConfigured = payment?.name === "esewa";
-  const emailConfigured = email?.name === "resend";
+  const [payment, email, ai] = await Promise.all([
+    getProviderStatus("payment"),
+    getProviderStatus("email"),
+    getProviderStatus("ai"),
+  ]);
+  // Provider Center needs to remain readable when the server encryption key is
+  // absent. Report stored ciphertext separately from runtime delivery readiness;
+  // do not decrypt or serialize a provider credential in this endpoint.
+  const paymentConfigured = payment.providerName === "esewa" && payment.enabled && payment.configured;
+  const emailConfigured = email.providerName === "resend" && email.enabled && email.configured;
+  const aiConfigured = ai.enabled && ai.configured;
 
   return jsonApiResponse({
     data: {
       payment: {
         status: paymentConfigured ? "configured" : "not_configured",
-        deliveryAvailable: paymentConfigured,
+        deliveryAvailable: paymentConfigured && payment.secretStorageReady,
       },
       email: {
         status: emailConfigured ? "configured" : "not_configured",
-        deliveryAvailable: emailConfigured,
+        deliveryAvailable: emailConfigured && email.secretStorageReady,
       },
       ai: {
-        status: ai.enabled && ai.configured ? "configured" : "not_configured",
-        deliveryAvailable: ai.enabled && ai.configured,
+        status: aiConfigured ? "configured" : "not_configured",
+        deliveryAvailable: aiConfigured && ai.secretStorageReady,
       },
     },
     error: null,

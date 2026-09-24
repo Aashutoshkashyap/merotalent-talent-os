@@ -70,6 +70,14 @@ links fail closed unless this server-only value is HTTPS, has no query,
 fragment, credentials, or custom port, and uses the exact `/reset-password`
 path. It is never derived from the request Host header.
 
+Provider credentials (eSewa, email, and platform AI) additionally require the
+server-only `PROVIDER_CONFIG_ENCRYPTION_KEY`: base64 for exactly 32 random bytes.
+It encrypts provider credentials with AES-256-GCM and must never be named with a
+`NEXT_PUBLIC_` prefix or committed. Generate it with `openssl rand -base64 32`.
+Read [provider-secret storage](docs/provider-secret-storage.md) before setting
+or rotating it in Vercel; rotation makes secrets encrypted by the prior key
+unreadable until they are replaced.
+
 Apply every SQL file in `supabase/migrations` in timestamp order before enabling
 sign-ups against a new Supabase project. The modular platform migration adds
 RBAC permissions, subscriptions, college applications, mentor bookings, jobs,

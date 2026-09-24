@@ -16,6 +16,16 @@ type ProviderRow = {
   updated_at: string;
 };
 
+export type ProviderConfigurationStatus = {
+  providerName: string | null;
+  enabled: boolean;
+  configured: boolean;
+  secretStorageReady: boolean;
+  publicConfig: Record<string, unknown>;
+  configuredAt: string | null;
+  updatedAt: string | null;
+};
+
 export const isProviderKind = (value: string): value is ProviderKind =>
   (PROVIDER_KINDS as readonly string[]).includes(value);
 
@@ -26,11 +36,20 @@ const publicConfig = (value: unknown): Record<string, unknown> =>
     ))
     : {};
 
-const safeStatus = (row: ProviderRow | null) => ({
+export const hasEncryptedProviderSecret = (
+  row: Pick<ProviderRow, "secret_ciphertext" | "secret_iv" | "secret_tag"> | null,
+) => Boolean(row?.secret_ciphertext?.trim() && row.secret_iv?.trim() && row.secret_tag?.trim());
+
+export const toProviderConfigurationStatus = (
+  row: ProviderRow | null,
+  secretStorageReady = isSecretStorageConfigured(),
+): ProviderConfigurationStatus => ({
   providerName: row?.provider_name ?? null,
   enabled: Boolean(row?.is_enabled),
-  configured: Boolean(row?.secret_ciphertext && row?.secret_iv && row?.secret_tag),
-  secretStorageReady: isSecretStorageConfigured(),
+  // Stored configuration and this deployment's encryption readiness are
+  // intentionally separate states. No ciphertext is ever returned here.
+  configured: hasEncryptedProviderSecret(row),
+  secretStorageReady,
   publicConfig: publicConfig(row?.public_config),
   configuredAt: row?.configured_at ?? null,
   updatedAt: row?.updated_at ?? null,
@@ -43,7 +62,7 @@ export async function getProviderStatus(kind: ProviderKind) {
     .eq("provider_kind", kind)
     .maybeSingle();
   if (error) throw error;
-  return safeStatus((data as ProviderRow | null) ?? null);
+  return toProviderConfigurationStatus((data as ProviderRow | null) ?? null);
 }
 
 export async function saveProviderConfiguration(input: {
@@ -58,12 +77,12 @@ export async function saveProviderConfiguration(input: {
     throw new Error("Choose a supported provider identifier.");
   }
   const existing = await getProviderStatus(input.kind);
-  if (input.enabled && !input.secret && !existing.configured) {
+  const secret = input.secret?.trim();
+  if (input.enabled && !secret && !existing.configured) {
     throw new Error("A provider secret is required before this provider can be enabled.");
   }
 
   const now = new Date().toISOString();
-  const secret = input.secret?.trim();
   const encrypted = secret ? encryptProviderSecret(secret) : null;
   const payload: Record<string, unknown> = {
     provider_kind: input.kind,
@@ -71,7 +90,9 @@ export async function saveProviderConfiguration(input: {
     is_enabled: input.enabled,
     public_config: publicConfig(input.publicConfig),
     configured_by: input.actorUserId,
-    configured_at: now,
+    // A public-settings save must preserve the existing encrypted material and
+    // its original configuration timestamp when no replacement secret is sent.
+    configured_at: encrypted ? now : existing.configuredAt,
     updated_at: now,
   };
   if (encrypted) {
@@ -104,7 +125,7 @@ export async function loadProviderSecret(kind: ProviderKind) {
     .maybeSingle();
   if (error) throw error;
   const row = data as ProviderRow | null;
-  if (!row?.is_enabled || !row.secret_ciphertext || !row.secret_iv || !row.secret_tag) return null;
+  if (!row?.is_enabled || !hasEncryptedProviderSecret(row)) return null;
   return {
     providerName: row.provider_name,
     publicConfig: publicConfig(row.public_config),

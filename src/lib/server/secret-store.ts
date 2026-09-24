@@ -9,16 +9,19 @@ export interface EncryptedSecret {
 }
 
 const loadEncryptionKey = (environment: Record<string, string | undefined> = process.env) => {
-  const encoded = environment.PROVIDER_CONFIG_ENCRYPTION_KEY;
+  const encoded = environment.PROVIDER_CONFIG_ENCRYPTION_KEY?.trim();
   if (!encoded) {
     throw new ServerConfigurationError(
-      "Secure provider-secret storage is not configured.",
+      "Secure provider-secret storage is unavailable. Configure PROVIDER_CONFIG_ENCRYPTION_KEY on the server.",
     );
   }
   const key = Buffer.from(encoded, "base64");
-  if (key.byteLength !== 32) {
+  // Buffer accepts malformed base64 strings permissively. Require canonical
+  // base64 as well as the AES-256 key length so a mistyped variable is not
+  // silently accepted as a different encryption key.
+  if (key.byteLength !== 32 || key.toString("base64") !== encoded) {
     throw new ServerConfigurationError(
-      "Secure provider-secret storage is misconfigured.",
+      "Secure provider-secret storage is unavailable. Configure a valid PROVIDER_CONFIG_ENCRYPTION_KEY on the server.",
     );
   }
   return key;
