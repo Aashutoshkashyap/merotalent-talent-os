@@ -64,10 +64,10 @@ function DetailSkeleton() {
   return (
     <div className="mx-auto w-full max-w-[1280px] px-5 py-8 sm:px-8 lg:px-10">
       <Skeleton className="aspect-[2.2/1] max-h-[480px] w-full rounded-[28px] bg-slate-100 sm:aspect-[2.63/1]" />
-      <div className="relative -mt-14 px-4 sm:-mt-20 sm:px-8">
-        <div className="flex items-end gap-5">
-          <Skeleton className="h-28 w-28 rounded-[24px] border-4 border-white bg-slate-100 sm:h-40 sm:w-40" />
-          <div className="mb-2 flex-1 space-y-3">
+      <div className="relative px-4 pb-6 sm:px-8 sm:pb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <Skeleton className="-mt-14 h-28 w-28 rounded-[24px] border-4 border-white bg-slate-100 sm:-mt-20 sm:h-40 sm:w-40" />
+          <div className="flex-1 space-y-3 sm:pb-1">
             <Skeleton className="h-8 w-3/5 bg-slate-100" />
             <Skeleton className="h-4 w-2/5 bg-slate-100" />
           </div>
@@ -196,8 +196,8 @@ export default function InstituteDetailPage() {
           </div>
 
           <div className="relative px-5 pb-6 sm:px-8 sm:pb-8">
-            <div className="-mt-14 flex flex-col gap-4 sm:-mt-20 sm:flex-row sm:items-end">
-              <div className="relative z-10 h-28 w-28 shrink-0 overflow-hidden rounded-[24px] border-4 border-white bg-white shadow-xl sm:h-40 sm:w-40">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div className="relative z-10 -mt-14 h-28 w-28 shrink-0 overflow-hidden rounded-[24px] border-4 border-white bg-white shadow-xl sm:-mt-20 sm:h-40 sm:w-40">
                 <InstituteImage source={institute.logo_url} alt={`${institute.name} logo`} className="h-full w-full object-contain p-3" />
               </div>
 
