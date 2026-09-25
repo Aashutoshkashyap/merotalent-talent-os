@@ -1700,6 +1700,10 @@ export type Database = {
           affiliation: string | null
           applications_enabled: boolean | null
           available_seats: number | null
+          chairperson_designation: string | null
+          chairperson_image_url: string | null
+          chairperson_message: string | null
+          chairperson_name: string | null
           contact_email: string | null
           contact_info: Json | null
           contact_phone: string | null
@@ -1715,8 +1719,13 @@ export type Database = {
           level: string | null
           location: string | null
           logo_url: string | null
+          map_location: string | null
           name: string
           payment_verified: boolean | null
+          principal_designation: string | null
+          principal_image_url: string | null
+          principal_message: string | null
+          principal_name: string | null
           program_names: string[] | null
           ranking: number | null
           salient_features: string[] | null

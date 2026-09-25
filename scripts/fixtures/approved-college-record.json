@@ -1,0 +1,15 @@
+{
+  "name": "Example Institute of Technology",
+  "short_name": "EIT",
+  "category": "college",
+  "type": "College",
+  "affiliation": "Example University",
+  "level": "Bachelor",
+  "location": "Kathmandu, Nepal",
+  "email": "admissions@example.edu.np",
+  "telephone": "+977-1-5550000",
+  "website": "https://example.edu.np",
+  "programs": ["BSc Computer Science", { "name": "Bachelor of Business Administration", "level": "Bachelor" }],
+  "established_year": 2001,
+  "source_url": "https://edusanjal.com/college/example-institute-of-technology/"
+}

@@ -27,7 +27,6 @@ export interface InstituteRecord {
   gallery_urls: string[] | null;
   youtube_url: string | null;
   website: string | null;
-  source_url: string | null;
   chairperson_name: string | null;
   chairperson_designation: string | null;
   chairperson_message: string | null;
@@ -204,6 +203,19 @@ const queryCache = new Map<string, CacheEntry<PublicInstituteResult>>();
 const detailCache = new Map<string, CacheEntry<InstituteRecord | null>>();
 const CACHE_TTL_MS = 30000; // 30 seconds TTL
 
+// This is deliberately explicit rather than `*`: public pages must consume
+// only MeroTalent's public directory contract, never internal provenance.
+const publicInstituteSelect = [
+  "id", "name", "short_name", "slug", "type", "institution_category", "affiliation", "level",
+  "description", "logo_url", "cover_image_url", "gallery_urls", "youtube_url", "website",
+  "chairperson_name", "chairperson_designation", "chairperson_message", "chairperson_image_url",
+  "principal_name", "principal_designation", "principal_message", "principal_image_url",
+  "location", "map_location", "contact_email", "contact_phone", "contact_info", "courses_offered",
+  "salient_features", "scholarships", "admission_guidelines", "established_year", "total_seats",
+  "available_seats", "admission_status", "admission_deadline", "applications_enabled", "payment_verified",
+  "program_names", "search_tags", "search_document", "is_featured", "ranking", "status", "created_at", "updated_at",
+].join(",");
+
 export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promise<PublicInstituteResult> {
   const cacheKey = JSON.stringify(query);
   const cached = queryCache.get(cacheKey);
@@ -215,7 +227,7 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
 
   let request = supabase
     .from("institute_directory")
-    .select("*", { count: "exact" });
+    .select(publicInstituteSelect, { count: "exact" });
 
   const searchTokens = tokenizeInstituteSearch(search);
   for (const token of searchTokens) {
@@ -249,7 +261,7 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
   const { data, error, count } = await request.range(0, Math.max(0, limit - 1));
   if (error) throw new Error(error.message);
 
-  let rawList = (data ?? []) as InstituteRecord[];
+  let rawList = (data ?? []) as unknown as InstituteRecord[];
 
   // Apply canonical multi-tier sort: Open Admissions > Admin Ranking/Position > Featured > Alphabetical
   if (!sort || sort === "recommended") {
@@ -292,7 +304,7 @@ export async function fetchPublicInstitute(identifier: string): Promise<Institut
 
   let request = supabase
     .from("institute_directory")
-    .select("*");
+    .select(publicInstituteSelect);
 
   request = uuidPattern.test(identifier)
     ? request.eq("id", identifier)
@@ -301,7 +313,7 @@ export async function fetchPublicInstitute(identifier: string): Promise<Institut
   const { data, error } = await request.maybeSingle();
   if (error) throw new Error(error.message);
 
-  const record = data as InstituteRecord | null;
+  const record = data as unknown as InstituteRecord | null;
   detailCache.set(cacheKey, { timestamp: Date.now(), data: record });
   return record;
 }

@@ -122,7 +122,6 @@ export default function InstituteDetailPage() {
   const gallery = institute?.gallery_urls?.filter(Boolean).slice(0, 12) ?? [];
   const youtubeEmbedUrl = getYoutubeEmbedUrl(institute?.youtube_url);
   const website = safeExternalUrl(institute?.website);
-  const sourceUrl = safeExternalUrl(institute?.source_url);
   const deadline = displayDate(institute?.admission_deadline ?? null);
   const address = getContactValue(institute?.contact_info, ["address", "street_address"]);
   const mapEmbedUrl = getGoogleMapsEmbedUrl(institute?.map_location);
@@ -493,9 +492,6 @@ export default function InstituteDetailPage() {
                 )}
                 {website && (
                   <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-xl p-2 text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-[#0073e6]"><Globe2 className="mt-0.5 h-4 w-4 shrink-0" /><span>Official website</span><ExternalLink className="ml-auto mt-0.5 h-3.5 w-3.5" /></a>
-                )}
-                {sourceUrl && sourceUrl !== website && (
-                  <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-xl p-2 text-sm font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-[#0073e6]"><ExternalLink className="mt-0.5 h-4 w-4 shrink-0" /><span>Directory source</span></a>
                 )}
                 {!institute.contact_phone && !institute.contact_email && !website && (
                   <p className="text-sm font-medium leading-relaxed text-slate-500">Contact details will be added by the institution.</p>
