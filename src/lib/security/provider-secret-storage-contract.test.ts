@@ -21,9 +21,10 @@ describe("provider-secret configuration boundaries", () => {
 
   it("preserves encrypted fields when a public-only provider update is saved", () => {
     const service = read("src/lib/server/provider-config-service.ts");
-    expect(service).toContain("if (encrypted) {");
-    expect(service).toContain("configured_at: encrypted ? now : existing.configuredAt");
-    expect(service).toContain("payload.secret_ciphertext = encrypted.ciphertext");
+    expect(service).toContain('"admin_save_provider_configuration"');
+    expect(service).toContain("p_secret_ciphertext: encrypted?.ciphertext ?? null");
+    expect(service).toContain("p_secret_iv: encrypted?.iv ?? null");
+    expect(service).toContain("p_secret_tag: encrypted?.tag ?? null");
   });
 
   it("explains the deployment requirement without asking for a provider credential", () => {

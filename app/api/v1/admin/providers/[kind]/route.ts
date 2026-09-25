@@ -1,6 +1,6 @@
 import { adminApiErrorResponse, AdminRequestError, readAdminJsonBody } from "@/lib/admin/admin-route-utils";
 import { authenticateAdminRequest } from "@/lib/server/auth";
-import { getProviderStatus, isProviderKind, saveProviderConfiguration } from "@/lib/server/provider-config-service";
+import { getProviderStatus, isProviderKind, ProviderConfigurationPersistenceError, saveProviderConfiguration } from "@/lib/server/provider-config-service";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { ServerConfigurationError } from "@/lib/server/supabase";
 
@@ -39,9 +39,10 @@ export async function PUT(request: Request, context: RouteContext) {
       const config = value.publicConfig;
       const merchantCode = config && typeof config === "object" && !Array.isArray(config) ? (config as Record<string, unknown>).merchant_code : null;
       const environment = config && typeof config === "object" && !Array.isArray(config) ? (config as Record<string, unknown>).environment : null;
-      if (value.providerName !== "esewa" || typeof merchantCode !== "string" || !/^[A-Za-z0-9-]{2,128}$/.test(merchantCode) || !["uat", "production"].includes(String(environment))) {
-        throw new AdminRequestError(422, "INVALID_ESEWA_CONFIGURATION", "Provide an eSewa merchant code and choose UAT or production.");
-      }
+      if (value.providerName !== "esewa") throw new AdminRequestError(422, "INVALID_ESEWA_CONFIGURATION", "Choose eSewa as the payment provider.");
+      if (typeof merchantCode !== "string" || !merchantCode.trim()) throw new AdminRequestError(422, "ESEWA_MERCHANT_CODE_REQUIRED", "eSewa merchant code is required.");
+      if (!/^[A-Za-z0-9-]{2,128}$/.test(merchantCode.trim())) throw new AdminRequestError(422, "INVALID_ESEWA_MERCHANT_CODE", "Enter a valid eSewa merchant code.");
+      if (!["uat", "production"].includes(String(environment))) throw new AdminRequestError(422, "INVALID_ESEWA_ENVIRONMENT", "Choose eSewa UAT or Production.");
     }
     const data = await saveProviderConfiguration({
       kind, providerName: value.providerName, enabled: value.enabled,
@@ -49,6 +50,13 @@ export async function PUT(request: Request, context: RouteContext) {
     });
     return jsonApiResponse({ data, error: null, meta: { requestId } });
   } catch (error) {
+    if (error instanceof ProviderConfigurationPersistenceError) {
+      return jsonApiResponse({
+        data: null,
+        error: { code: error.code, message: error.message },
+        meta: { requestId },
+      }, error.code === "PROVIDER_AUDIT_UNAVAILABLE" ? 503 : 500);
+    }
     if (error instanceof ServerConfigurationError && error.message.includes("provider-secret storage")) {
       return jsonApiResponse({
         data: null,

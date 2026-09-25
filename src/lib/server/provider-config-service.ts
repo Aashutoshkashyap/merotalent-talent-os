@@ -26,6 +26,16 @@ export type ProviderConfigurationStatus = {
   updatedAt: string | null;
 };
 
+export class ProviderConfigurationPersistenceError extends Error {
+  constructor(
+    readonly code: "PROVIDER_AUDIT_UNAVAILABLE" | "PROVIDER_CONFIGURATION_PERSIST_FAILED",
+    message: string,
+  ) {
+    super(message);
+    this.name = "ProviderConfigurationPersistenceError";
+  }
+}
+
 export const isProviderKind = (value: string): value is ProviderKind =>
   (PROVIDER_KINDS as readonly string[]).includes(value);
 
@@ -82,39 +92,48 @@ export async function saveProviderConfiguration(input: {
     throw new Error("A provider secret is required before this provider can be enabled.");
   }
 
-  const now = new Date().toISOString();
   const encrypted = secret ? encryptProviderSecret(secret) : null;
-  const payload: Record<string, unknown> = {
-    provider_kind: input.kind,
-    provider_name: input.providerName,
-    is_enabled: input.enabled,
-    public_config: publicConfig(input.publicConfig),
-    configured_by: input.actorUserId,
-    // A public-settings save must preserve the existing encrypted material and
-    // its original configuration timestamp when no replacement secret is sent.
-    configured_at: encrypted ? now : existing.configuredAt,
-    updated_at: now,
-  };
-  if (encrypted) {
-    payload.secret_ciphertext = encrypted.ciphertext;
-    payload.secret_iv = encrypted.iv;
-    payload.secret_tag = encrypted.tag;
+  const publicSettings = publicConfig(input.publicConfig);
+  const { data, error } = await (getAdminClient() as any).rpc(
+    "admin_save_provider_configuration",
+    {
+      p_actor_user_id: input.actorUserId,
+      p_provider_kind: input.kind,
+      p_provider_name: input.providerName,
+      p_is_enabled: input.enabled,
+      p_public_config: publicSettings,
+      p_secret_ciphertext: encrypted?.ciphertext ?? null,
+      p_secret_iv: encrypted?.iv ?? null,
+      p_secret_tag: encrypted?.tag ?? null,
+    },
+  );
+  if (error) {
+    if (error.code === "P0001" && /audit/i.test(error.message ?? "")) {
+      throw new ProviderConfigurationPersistenceError(
+        "PROVIDER_AUDIT_UNAVAILABLE",
+        "Provider configuration could not be saved because its audit record could not be persisted. No configuration was changed.",
+      );
+    }
+    throw new ProviderConfigurationPersistenceError(
+      "PROVIDER_CONFIGURATION_PERSIST_FAILED",
+      "Provider configuration could not be persisted.",
+    );
   }
-  const { error } = await (getAdminClient() as any)
-    .from("provider_configurations")
-    .upsert(payload, { onConflict: "provider_kind" });
-  if (error) throw error;
-  const { error: auditError } = await (getAdminClient() as any)
-    .from("audit_logs")
-    .insert({
-      actor_user_id: input.actorUserId,
-      action: "configure_provider",
-      entity_type: "provider",
-      entity_id: input.kind,
-      metadata: { provider_name: input.providerName, enabled: input.enabled, secret_replaced: Boolean(secret) },
-    });
-  if (auditError) throw auditError;
-  return getProviderStatus(input.kind);
+  // The RPC has committed both the provider row and its audit row. Build the
+  // secret-free response from that confirmed write rather than issuing another
+  // query that could turn a successful configuration save into a false failure.
+  const persisted = data && typeof data === "object" && !Array.isArray(data)
+    ? data as Record<string, unknown>
+    : {};
+  return {
+    providerName: typeof persisted.provider_name === "string" ? persisted.provider_name : input.providerName,
+    enabled: typeof persisted.is_enabled === "boolean" ? persisted.is_enabled : input.enabled,
+    configured: Boolean(secret) || existing.configured,
+    secretStorageReady: isSecretStorageConfigured(),
+    publicConfig: publicSettings,
+    configuredAt: typeof persisted.configured_at === "string" ? persisted.configured_at : existing.configuredAt,
+    updatedAt: typeof persisted.updated_at === "string" ? persisted.updated_at : null,
+  } satisfies ProviderConfigurationStatus;
 }
 
 export async function loadProviderSecret(kind: ProviderKind) {

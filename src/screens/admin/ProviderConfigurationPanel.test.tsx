@@ -1,14 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const auth = vi.hoisted(() => ({ getSession: vi.fn() }));
+const auth = vi.hoisted(() => ({ getSession: vi.fn(), toast: vi.fn() }));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: { getSession: auth.getSession } },
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast: auth.toast }),
 }));
 
 import { ProviderConfigurationPanel } from "./ProviderConfigurationPanel";
@@ -60,10 +60,20 @@ describe("ProviderConfigurationPanel", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: status(true) }), { status: 200 })));
     render(<ProviderConfigurationPanel kind="payment" title="eSewa payment" description="Payment provider" providers={["esewa"]} onSaved={onSaved} />);
     await waitFor(() => expect(screen.getByRole("button", { name: "Save eSewa payment" })).toBeEnabled());
+    fireEvent.change(screen.getByPlaceholderText("Merchant code supplied by eSewa"), { target: { value: "EPAYTEST" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Save eSewa payment" }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not send an invalid eSewa save when merchant code is missing", async () => {
+    await renderPanel(true);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save eSewa payment" })).toBeEnabled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Save eSewa payment" }));
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });

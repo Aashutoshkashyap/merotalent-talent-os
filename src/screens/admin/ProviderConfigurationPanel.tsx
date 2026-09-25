@@ -46,18 +46,47 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
   }, [kind, defaultProvider]);
 
   const save = async () => {
-    const accessToken = await token(); if (!accessToken) return;
+    const accessToken = await token();
+    if (!accessToken) {
+      toast({ variant: "destructive", title: `${title} not saved`, description: "Sign in again before saving provider settings." });
+      return;
+    }
+    const trimmedSecret = secret.trim();
+    const merchantCode = modelOrIdentifier.trim();
+    if (kind === "payment") {
+      if (!merchantCode) {
+        toast({ variant: "destructive", title: "eSewa merchant code is required." });
+        return;
+      }
+      if (!/^[A-Za-z0-9-]{2,128}$/.test(merchantCode)) {
+        toast({ variant: "destructive", title: "Enter a valid eSewa merchant code." });
+        return;
+      }
+      if (environment !== "uat" && environment !== "production") {
+        toast({ variant: "destructive", title: "Choose eSewa UAT or Production." });
+        return;
+      }
+    }
+    if (enabled && !status?.configured && !trimmedSecret) {
+      toast({ variant: "destructive", title: `${title} not saved`, description: "A provider secret is required before this provider can be enabled." });
+      return;
+    }
     setSaving(true);
     try {
-      const publicConfig = kind === "ai" ? { model: modelOrIdentifier } : kind === "payment" ? { merchant_code: modelOrIdentifier.trim(), environment } : { from_address: modelOrIdentifier };
+      const publicConfig = kind === "ai" ? { model: modelOrIdentifier } : kind === "payment" ? { merchant_code: merchantCode, environment } : { from_address: modelOrIdentifier };
       const response = await fetch(`/api/v1/admin/providers/${kind}`, {
         method: "PUT", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ providerName, enabled, publicConfig, ...(secret ? { secret } : {}) }),
+        body: JSON.stringify({ providerName, enabled, publicConfig, ...(trimmedSecret ? { secret: trimmedSecret } : {}) }),
       });
       const payload = await response.json() as { data?: Status; error?: { message?: string } };
       if (!response.ok || !payload.data) throw new Error(payload.error?.message || "Provider configuration was not saved.");
       setStatus(payload.data); setSecret("");
-      await onSaved?.();
+      try {
+        await onSaved?.();
+      } catch {
+        // The provider write is already confirmed. A stale dashboard summary
+        // must never turn that successful save into a false failure toast.
+      }
       toast({ title: `${title} saved`, description: "The secret was encrypted server-side and will not be shown again." });
     } catch (error) { toast({ variant: "destructive", title: `${title} not saved`, description: error instanceof Error ? error.message : "Please try again." }); }
     finally { setSaving(false); }
