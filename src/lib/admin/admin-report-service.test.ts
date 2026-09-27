@@ -79,4 +79,14 @@ describe("admin report exporters", () => {
       '<Data ss:Type="DateTime">2026-08-06T00:00:00.000</Data>',
     );
   });
+
+  it("exports applicant details instead of internal lead and user IDs", () => {
+    const applications = getAdminReport("applications");
+    expect(applications.columns.map((column) => column.label)).toEqual(
+      expect.arrayContaining(["Applicant Name", "Email", "College / Job"]),
+    );
+    expect(applications.columns.map((column) => column.label)).not.toEqual(
+      expect.arrayContaining(["Lead ID", "Applicant User ID"]),
+    );
+  });
 });

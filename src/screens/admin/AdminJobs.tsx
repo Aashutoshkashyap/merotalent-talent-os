@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { generateJobDetails } from "@/lib/ai/ai-generator";
 import {
+  AdminClientError,
   createAdminResource,
   deleteAdminResource,
   listAdminResource,
@@ -61,6 +62,15 @@ interface OwnerOption {
   full_name: string | null;
   email: string;
 }
+
+const adminErrorDescription = (error: unknown, fallback: string) => {
+  if (error instanceof AdminClientError && error.fields) {
+    const messages = Object.entries(error.fields)
+      .flatMap(([field, details]) => details.map((detail) => `${field.replaceAll("_", " ")}: ${detail}`));
+    if (messages.length > 0) return messages.join(" ");
+  }
+  return error instanceof Error ? error.message : fallback;
+};
 
 const AdminJobs = () => {
   const { toast } = useToast();
@@ -235,7 +245,7 @@ const AdminJobs = () => {
       toast({
         variant: "destructive",
         title: "Unable to save job",
-        description: error instanceof Error ? error.message : "The job could not be saved.",
+        description: adminErrorDescription(error, "The job could not be saved."),
       });
     } finally {
       setIsSubmitting(false);

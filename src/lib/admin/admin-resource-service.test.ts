@@ -161,6 +161,35 @@ describe("admin write validation", () => {
     );
   });
 
+  it("accepts the complete Super Admin job form payload", () => {
+    expect(
+      sanitizeAdminWrite(getAdminResource("jobs"), "create", {
+        title: "Operations Associate",
+        company_id: null,
+        owner_user_id: uuid,
+        description: null,
+        location: "Kathmandu, Nepal",
+        job_type: "part-time",
+        experience_level: "mid",
+        salary_min: 150000,
+        salary_max: 200000,
+        skills_required: ["Operations", "Communication"],
+        requirements: ["A relevant degree"],
+        is_remote: false,
+        external_link: null,
+        application_deadline: "2026-09-27T01:44:00.000Z",
+        expires_at: "2026-09-27T01:44:00.000Z",
+        status: "published",
+        rejection_reason: null,
+      }),
+    ).toMatchObject({
+      title: "Operations Associate",
+      owner_user_id: uuid,
+      status: "published",
+      application_deadline: "2026-09-27T01:44:00.000Z",
+    });
+  });
+
   it("allows partnered course redirects only on the HTTPS learning host", () => {
     const base = {
       title: "Product Design",
