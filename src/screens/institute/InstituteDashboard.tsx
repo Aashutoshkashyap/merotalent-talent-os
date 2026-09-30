@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import InstituteProfileEditor from "@/components/owner/InstituteProfileEditor";
+import { CollegeClaimSearch, type ClaimCollegeOption } from "@/components/owner/CollegeClaimSearch";
 import OwnerStatusActions from "@/components/owner/OwnerStatusActions";
 import {
   Dialog,
@@ -237,6 +238,7 @@ const InstituteDashboard = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [claimType, setClaimType] = useState<"claim" | "list_new">("claim");
   const [claimCollegeName, setClaimCollegeName] = useState("");
+  const [selectedClaimCollege, setSelectedClaimCollege] = useState<ClaimCollegeOption | null>(null);
   const [claimPhone, setClaimPhone] = useState("");
   const [claimEmail, setClaimEmail] = useState("");
   const [claimNotes, setClaimNotes] = useState("");
@@ -261,19 +263,13 @@ const InstituteDashboard = () => {
     try {
       let requestError: any = null;
       if (claimType === "claim") {
-        const { data: college, error: lookupError } = await (supabase as any)
-          .from("institutes")
-          .select("id")
-          .ilike("name", claimCollegeName.trim())
-          .is("deleted_at", null)
-          .maybeSingle();
-        if (lookupError || !college?.id) {
-          throw new Error("Choose the exact college name from the directory before submitting a claim.");
+        if (!selectedClaimCollege || selectedClaimCollege.name !== claimCollegeName) {
+          throw new Error("Choose a college from the matching directory list before submitting a claim.");
         }
         ({ error: requestError } = await (supabase as any).rpc("request_entity_scope", {
           p_module_key: "college",
           p_entity_type: "college",
-          p_entity_id: college.id,
+          p_entity_id: selectedClaimCollege.id,
           p_request_kind: "claim",
           p_request_data: {},
           p_reason: `Claim request. Phone: ${claimPhone}. Email: ${claimEmail}. Notes: ${claimNotes}`,
@@ -300,6 +296,7 @@ const InstituteDashboard = () => {
       });
       setIsClaimModalOpen(false);
       setClaimCollegeName("");
+      setSelectedClaimCollege(null);
       setClaimPhone("");
       setClaimEmail("");
       setClaimNotes("");
@@ -1213,7 +1210,17 @@ const InstituteDashboard = () => {
         </div>
       </div>
       {/* Claim or List College Modal */}
-      <Dialog open={isClaimModalOpen} onOpenChange={setIsClaimModalOpen}>
+      <Dialog open={isClaimModalOpen} onOpenChange={(open) => {
+        setIsClaimModalOpen(open);
+        if (!open) {
+          setClaimType("claim");
+          setClaimCollegeName("");
+          setSelectedClaimCollege(null);
+          setClaimPhone("");
+          setClaimEmail("");
+          setClaimNotes("");
+        }
+      }}>
         <DialogContent className="max-w-md rounded-3xl p-6">
           <form onSubmit={handleClaimSubmit} className="space-y-4">
             <DialogHeader>
@@ -1233,7 +1240,7 @@ const InstituteDashboard = () => {
                     type="button"
                     variant={claimType === "claim" ? "hero" : "outline"}
                     className="flex-1 text-xs font-bold rounded-xl"
-                    onClick={() => setClaimType("claim")}
+                    onClick={() => { setClaimType("claim"); setClaimCollegeName(""); setSelectedClaimCollege(null); }}
                   >
                     Claim Existing
                   </Button>
@@ -1241,7 +1248,7 @@ const InstituteDashboard = () => {
                     type="button"
                     variant={claimType === "list_new" ? "hero" : "outline"}
                     className="flex-1 text-xs font-bold rounded-xl"
-                    onClick={() => setClaimType("list_new")}
+                    onClick={() => { setClaimType("list_new"); setClaimCollegeName(""); setSelectedClaimCollege(null); }}
                   >
                     List New College
                   </Button>
@@ -1249,14 +1256,25 @@ const InstituteDashboard = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">College / Institution Name *</Label>
-                <Input
-                  placeholder="e.g. St. Xavier's College or IOE Pulchowk"
-                  value={claimCollegeName}
-                  onChange={(e) => setClaimCollegeName(e.target.value)}
-                  className="h-10 text-xs rounded-xl"
-                  required
-                />
+                <Label htmlFor="claim-college-search" className="text-xs font-bold text-slate-700">College / Institution Name *</Label>
+                {claimType === "claim" ? (
+                  <CollegeClaimSearch
+                    value={claimCollegeName}
+                    selected={selectedClaimCollege}
+                    onChange={(value) => { setClaimCollegeName(value); setSelectedClaimCollege(null); }}
+                    onSelect={(college) => { setClaimCollegeName(college.name); setSelectedClaimCollege(college); }}
+                    disabled={isSubmittingClaim}
+                  />
+                ) : (
+                  <Input
+                    id="claim-college-search"
+                    placeholder="Enter the new college name"
+                    value={claimCollegeName}
+                    onChange={(e) => setClaimCollegeName(e.target.value)}
+                    className="h-10 rounded-xl text-sm"
+                    required
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1297,7 +1315,7 @@ const InstituteDashboard = () => {
               <Button type="button" variant="outline" onClick={() => setIsClaimModalOpen(false)} className="rounded-xl text-xs">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmittingClaim} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white text-xs font-extrabold px-5">
+              <Button type="submit" disabled={isSubmittingClaim || (claimType === "claim" && !selectedClaimCollege)} className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white text-xs font-extrabold px-5">
                 {isSubmittingClaim ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                 Submit Request
               </Button>
