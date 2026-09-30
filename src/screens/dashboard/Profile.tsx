@@ -210,16 +210,36 @@ const Profile = () => {
       return;
     }
 
+    if (!profile?.user_id) {
+      toast({
+        variant: "destructive",
+        title: "Sign in required",
+        description: "Please sign in again before linking your LinkedIn profile.",
+      });
+      return;
+    }
+
     setIsImporting(true);
-    
-    // Note: Full LinkedIn API integration would require OAuth setup
-    // For now, we save the URL and show a helpful message
-    toast({
-      title: "LinkedIn linked!",
-      description: "Your LinkedIn profile URL has been saved. Full profile import requires LinkedIn API access.",
-    });
-    
+    const { error } = await supabase
+      .from("profiles")
+      .update({ linkedin_url: formData.linkedin_url })
+      .eq("user_id", profile.user_id);
     setIsImporting(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Could not link LinkedIn",
+        description: error.message,
+      });
+      return;
+    }
+
+    await refreshProfile();
+    toast({
+      title: "LinkedIn profile linked!",
+      description: "Your profile URL is saved. Full profile import requires LinkedIn API access.",
+    });
   };
 
   return (

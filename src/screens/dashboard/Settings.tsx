@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +23,20 @@ import {
   Save,
   Moon,
   Sun,
-  Monitor
+  Monitor,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  normalizeAccountLanguage,
+  normalizeAccountTheme,
+  normalizeNotificationPreferences,
+  type AccountLanguage,
+  type AccountTheme,
+  type NotificationPreferences,
+} from "@/lib/account/preferences";
 import {
   dashboardPrimaryButton,
   dashboardSurface,
@@ -33,20 +44,144 @@ import {
 } from "@/components/dashboard/dashboardStyles";
 
 const Settings = () => {
-  const { profile, signOut } = useAuth();
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: true,
-    competitions: true,
-    mentorship: true,
-    jobs: false,
-    marketing: false,
+  const { profile, refreshProfile, signOut } = useAuth();
+  const [personalInfo, setPersonalInfo] = useState({
+    full_name: "",
+    phone: "",
+    location: "",
+    bio: "",
   });
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
-  const [language, setLanguage] = useState("en");
+  const [notifications, setNotifications] = useState<NotificationPreferences>({
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+  });
+  const [theme, setTheme] = useState<AccountTheme>("system");
+  const [language, setLanguage] = useState<AccountLanguage>("en");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSave = () => {
-    toast.success("Settings saved successfully!");
+  useEffect(() => {
+    setPersonalInfo({
+      full_name: profile?.full_name || "",
+      phone: profile?.phone || "",
+      location: profile?.location || "",
+      bio: profile?.bio || "",
+    });
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    let cancelled = false;
+    const loadPreferences = async () => {
+      const { data, error } = await supabase
+        .from("user_preferences")
+        .select("notification_preferences, theme, language")
+        .eq("user_id", profile.user_id)
+        .maybeSingle();
+
+      if (cancelled || !data) {
+        if (!cancelled && error && error.code !== "PGRST116") {
+          toast.error("Could not load your saved preferences.");
+        }
+        return;
+      }
+
+      setNotifications(normalizeNotificationPreferences(data.notification_preferences));
+      setTheme(normalizeAccountTheme(data.theme));
+      setLanguage(normalizeAccountLanguage(data.language));
+    };
+
+    void loadPreferences();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.user_id]);
+
+  useEffect(() => {
+    const resolvedTheme = theme === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      : theme;
+    document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
+    localStorage.setItem("theme", resolvedTheme);
+  }, [theme]);
+
+  const handleSaveProfile = async () => {
+    if (!profile?.user_id) {
+      toast.error("Please sign in again before saving your profile.");
+      return;
+    }
+    if (!personalInfo.full_name.trim()) {
+      toast.error("Your full name is required.");
+      return;
+    }
+
+    setIsSavingProfile(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: personalInfo.full_name.trim(),
+        phone: personalInfo.phone.trim() || null,
+        location: personalInfo.location.trim() || null,
+        bio: personalInfo.bio.trim() || null,
+      })
+      .eq("user_id", profile.user_id);
+    setIsSavingProfile(false);
+
+    if (error) {
+      toast.error(`Could not save your personal information: ${error.message}`);
+      return;
+    }
+    await refreshProfile();
+    toast.success("Personal information saved.");
+  };
+
+  const handleSavePreferences = async (message: string) => {
+    if (!profile?.user_id) {
+      toast.error("Please sign in again before saving your preferences.");
+      return;
+    }
+
+    setIsSavingPreferences(true);
+    const { error } = await supabase
+      .from("user_preferences")
+      .upsert({
+        user_id: profile.user_id,
+        notification_preferences: notifications,
+        theme,
+        language,
+      }, { onConflict: "user_id" });
+    setIsSavingPreferences(false);
+
+    if (error) {
+      toast.error(`Could not save your preferences: ${error.message}`);
+      return;
+    }
+    toast.success(message);
+  };
+
+  const handleUpdatePassword = async () => {
+    if (newPassword.length < 8) {
+      toast.error("Your new password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Your new passwords do not match.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsUpdatingPassword(false);
+    if (error) {
+      toast.error(`Could not update your password: ${error.message}`);
+      return;
+    }
+    setNewPassword("");
+    setConfirmPassword("");
+    toast.success("Password updated securely.");
   };
 
   return (
@@ -88,7 +223,11 @@ const Settings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name</Label>
-                  <Input id="fullName" defaultValue={profile?.full_name || ""} />
+                  <Input
+                    id="fullName"
+                    value={personalInfo.full_name}
+                    onChange={(event) => setPersonalInfo({ ...personalInfo, full_name: event.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -97,11 +236,21 @@ const Settings = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" defaultValue={profile?.phone || ""} placeholder="+977 98XXXXXXXX" />
+                  <Input
+                    id="phone"
+                    value={personalInfo.phone}
+                    onChange={(event) => setPersonalInfo({ ...personalInfo, phone: event.target.value })}
+                    placeholder="+977 98XXXXXXXX"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input id="location" defaultValue={profile?.location || ""} placeholder="Kathmandu, Nepal" />
+                  <Input
+                    id="location"
+                    value={personalInfo.location}
+                    onChange={(event) => setPersonalInfo({ ...personalInfo, location: event.target.value })}
+                    placeholder="Kathmandu, Nepal"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
@@ -109,13 +258,14 @@ const Settings = () => {
                 <textarea
                   id="bio"
                   className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  defaultValue={profile?.bio || ""}
+                  value={personalInfo.bio}
+                  onChange={(event) => setPersonalInfo({ ...personalInfo, bio: event.target.value })}
                   placeholder="Tell us about yourself..."
                 />
               </div>
-              <Button variant="hero" className={dashboardPrimaryButton} onClick={handleSave}>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
+              <Button variant="hero" className={dashboardPrimaryButton} onClick={handleSaveProfile} disabled={isSavingProfile}>
+                {isSavingProfile ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                {isSavingProfile ? "Saving..." : "Save personal information"}
               </Button>
             </CardContent>
           </Card>
@@ -133,13 +283,17 @@ const Settings = () => {
                 <select
                   id="language"
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
+                  onChange={(e) => setLanguage(normalizeAccountLanguage(e.target.value))}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="en">English</option>
                   <option value="ne">नेपाली (Nepali)</option>
                 </select>
               </div>
+              <Button variant="outline" onClick={() => void handleSavePreferences("Language preference saved.")} disabled={isSavingPreferences}>
+                {isSavingPreferences && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save language
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -179,6 +333,10 @@ const Settings = () => {
                   onCheckedChange={(checked) => setNotifications({ ...notifications, push: checked })}
                 />
               </div>
+              <Button variant="outline" onClick={() => void handleSavePreferences("Notification preferences saved.")} disabled={isSavingPreferences}>
+                {isSavingPreferences && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save notification preferences
+              </Button>
             </CardContent>
           </Card>
 
@@ -207,6 +365,10 @@ const Settings = () => {
                   />
                 </div>
               ))}
+              <Button variant="outline" onClick={() => void handleSavePreferences("Notification preferences saved.")} disabled={isSavingPreferences}>
+                {isSavingPreferences && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save notification preferences
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -241,6 +403,10 @@ const Settings = () => {
                   </button>
                 ))}
               </div>
+              <Button className="mt-5" variant="outline" onClick={() => void handleSavePreferences("Appearance preference saved.")} disabled={isSavingPreferences}>
+                {isSavingPreferences && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save appearance
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -257,18 +423,17 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <Input id="currentPassword" type="password" />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
-                <Input id="newPassword" type="password" />
+                <Input id="newPassword" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input id="confirmPassword" type="password" />
+                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" />
               </div>
-              <Button variant="outline">Update Password</Button>
+              <Button variant="outline" onClick={() => void handleUpdatePassword()} disabled={isUpdatingPassword}>
+                {isUpdatingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isUpdatingPassword ? "Updating..." : "Update Password"}
+              </Button>
             </CardContent>
           </Card>
 
