@@ -105,6 +105,15 @@ interface ApplicationPreview {
   phone: string | null;
 }
 
+interface CollegeScopeRequest {
+  id: string;
+  request_kind: "claim" | "create";
+  status: string;
+  entity_id: string | null;
+  request_data: { name?: string } | null;
+  created_at: string;
+}
+
 type AppStatusTab = "all" | CollegeApplicationStatus;
 
 const APP_STATUS_TABS: readonly AppStatusTab[] = [
@@ -221,6 +230,7 @@ const InstituteDashboard = () => {
   const [recentNotices, setRecentNotices] = useState<NoticePreview[]>([]);
   const [recentApplications, setRecentApplications] = useState<ApplicationPreview[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionSummary>(emptySubscription);
+  const [scopeRequests, setScopeRequests] = useState<CollegeScopeRequest[]>([]);
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
@@ -300,6 +310,7 @@ const InstituteDashboard = () => {
       setClaimPhone("");
       setClaimEmail("");
       setClaimNotes("");
+      void fetchInstituteData();
     } catch (err: any) {
       toast({ variant: "destructive", title: "Submission Error", description: err?.message || "Failed to submit request." });
     } finally {
@@ -397,12 +408,20 @@ const InstituteDashboard = () => {
     // Phase 2 uses the Phase 1 capability/entity model. This avoids the old
     // one-row institute_admins lookup and supports a user assigned to several
     // colleges without exposing any unassigned institution.
-    const [workspaceResult, capabilityResult, requestResult] = await Promise.all([
+    const [workspaceResult, capabilityResult, requestResult, scopeRequestResult] = await Promise.all([
       db.rpc("get_my_college_workspaces"),
       db.rpc("has_active_module_capability", { p_user_id: user.id, p_module_key: "college" }),
       db.rpc("get_my_module_access_requests"),
+      db.from("entity_scope_requests")
+        .select("id, request_kind, status, entity_id, request_data, created_at")
+        .eq("user_id", user.id)
+        .eq("module_key", "college")
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
     if (workspaceResult.error) failures.add("college workspace");
+    if (scopeRequestResult.error) failures.add("college requests");
+    setScopeRequests((scopeRequestResult.data || []) as CollegeScopeRequest[]);
     const workspaceRows = (workspaceResult.data || []) as any[];
     const workspaceInstitutes = workspaceRows.map((row) => ({
       ...row,
@@ -411,8 +430,8 @@ const InstituteDashboard = () => {
     setManagedInstitutes(workspaceInstitutes);
 
     const selected = workspaceInstitutes.find((item) => item.id === selectedInstituteId) || workspaceInstitutes[0];
-    let instituteRecord = selected || null;
-    let instituteAccess: InstituteAdminAccess | null = selected
+    const instituteRecord = selected || null;
+    const instituteAccess: InstituteAdminAccess | null = selected
       ? {
           can_edit_profile: workspaceRows.find((row) => row.id === selected.id)?.can_edit_profile === true,
           can_manage_courses: workspaceRows.find((row) => row.id === selected.id)?.subscription_active === true,
@@ -420,43 +439,32 @@ const InstituteDashboard = () => {
         }
       : null;
 
-    if (!instituteRecord && capabilityResult.data !== true) {
+    if (capabilityResult.data !== true) {
       const requests = (requestResult.data || []) as Array<{ status: string; requested_modules: string[] }>;
       const latest = requests.find((request) => request.requested_modules?.includes("college"));
       setAccessStatus(latest?.status === "pending" ? "pending" : latest?.status === "rejected" ? "rejected" : "none");
+      setInstitute(null);
+      setAccess(null);
+      setSubscription(emptySubscription);
+      setRecentNotices([]);
+      setRecentApplications([]);
       setIsLoading(false);
       return;
     }
     setAccessStatus("approved");
 
-    // Approved capability with no entity assignment yet: show a non-persistent
-    // claim/add workspace. It can never be used as a UUID database filter.
+    // A capability alone never creates a college workspace. Super Admin must
+    // approve and assign a real college before an entitlement can unlock it.
     if (!instituteRecord) {
-      instituteRecord = {
-        id: UNCLAIMED_WORKSPACE_ID,
-        name: user?.user_metadata?.full_name ? `${user.user_metadata.full_name}'s College Workspace` : "College Module Workspace",
-        short_name: "Workspace",
-        description: "Unclaimed College Workspace. Click 'Claim / List College' to link your official college listing or submit a new listing request.",
-        location: "Kathmandu, Nepal",
-        map_location: null,
-        website: "https://merotalent.com",
-        contact_email: user?.email || "",
-        contact_phone: null,
-        youtube_url: null,
-        logo_url: null,
-        type: "College",
-        is_verified: false,
-        owner_user_id: user?.id || null,
-        courses_offered: ["BSc CSIT", "BCA", "BIT", "BBA", "MBA"],
-        total_seats: 120,
-        available_seats: 45,
-        admission_status: "Open",
-      };
-      instituteAccess = {
-        can_edit_profile: false,
-        can_manage_courses: false,
-        can_post_notices: false,
-      };
+      setInstitute(null);
+      setAccess(null);
+      setSubscription(emptySubscription);
+      setRecentNotices([]);
+      setRecentApplications([]);
+      setStats({ notices: 0, courses: 0, applications: 0 });
+      setFailedSources([...failures]);
+      setIsLoading(false);
+      return;
     }
 
     setInstitute(instituteRecord);
@@ -465,7 +473,8 @@ const InstituteDashboard = () => {
     // An unclaimed workspace has no institutes row, so its id is not a uuid.
     // Sending it to a uuid column fails the request with 22P02, which is why
     // these two queries are skipped rather than filtered.
-    const hasPersistedInstitute = isUuid(instituteRecord.id);
+    const scopedWorkspace = workspaceRows.find((row) => row.id === instituteRecord.id);
+    const hasPersistedInstitute = isUuid(instituteRecord.id) && scopedWorkspace?.subscription_active === true;
 
     const [noticesResult, applicationsResult, subscriptionsResult] = await Promise.all([
       hasPersistedInstitute
@@ -504,7 +513,6 @@ const InstituteDashboard = () => {
       subscriptionCandidates.find(isSubscriptionActive) ?? subscriptionCandidates[0];
     let subscriptionSummary = emptySubscription;
 
-    const scopedWorkspace = workspaceRows.find((row) => row.id === instituteRecord.id);
     if (scopedWorkspace) {
       subscriptionSummary = {
         packageName: scopedWorkspace.package_name ?? "No package",
@@ -758,9 +766,57 @@ const InstituteDashboard = () => {
   ];
   const canAccessApplications = subscription.active && ["read_only", "full"].includes(subscription.leadAccessMode);
   const canEditOwnedProfile = access?.can_edit_profile === true;
+  const workspaceReady = isUuid(activeInstitute.id) && subscription.active;
+  const latestScopeRequest = scopeRequests.find((request) => request.status === "pending") || scopeRequests[0];
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-white text-[#17162e]">
+      {!workspaceReady ? (
+        <main className="mx-auto flex min-h-screen max-w-2xl items-center px-4 py-12 sm:px-6">
+          <Card className="w-full rounded-[26px] border-[#e5e7eb] shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+            <CardContent className="p-6 sm:p-9">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff6ff] text-[#1d4ed8]">
+                {isUuid(activeInstitute.id) ? <Lock className="h-6 w-6" /> : <Building2 className="h-6 w-6" />}
+              </div>
+              <h1 className="text-2xl font-black text-slate-950 sm:text-3xl">
+                {isUuid(activeInstitute.id) ? "College workspace locked" : "Claim or list your college"}
+              </h1>
+              {isUuid(activeInstitute.id) ? (
+                <>
+                  <p className="mt-3 text-base leading-relaxed text-slate-600">
+                    {subscription.status === "expired"
+                      ? "Your subscription/trial has expired. Renew to restore College Module access."
+                      : `${activeInstitute.name} is assigned to you, but an active plan or trial is required before its dashboard opens.`}
+                  </p>
+                  <p className="mt-3 text-sm text-slate-500">
+                    Payment must be verified, or a free trial/manual entitlement activated by Super Admin. Starting checkout alone does not grant access.
+                  </p>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <Button asChild className="rounded-xl bg-[#1d4ed8] text-white hover:bg-[#1e40af]"><Link to="/dashboard/payments">View plans and payments</Link></Button>
+                    <Button asChild variant="outline" className="rounded-xl"><Link to="/dashboard">Back to student dashboard</Link></Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="mt-3 text-base leading-relaxed text-slate-600">
+                    Super Admin must approve your claim or new listing and assign the college before you can access its workspace. After approval, activate a plan or trial to unlock the dashboard.
+                  </p>
+                  {latestScopeRequest && (
+                    <div className="mt-5 rounded-xl border border-[#dbeafe] bg-[#f8fbff] p-4 text-sm text-slate-700" role="status">
+                      Your {latestScopeRequest.request_kind === "claim" ? "claim" : "new college"} request is <strong className="capitalize">{latestScopeRequest.status}</strong>.
+                      {latestScopeRequest.status === "pending" && " Super Admin will review it; submitting again will update the pending request."}
+                    </div>
+                  )}
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <Button onClick={() => setIsClaimModalOpen(true)} className="rounded-xl bg-[#1d4ed8] text-white hover:bg-[#1e40af]">Claim or list college</Button>
+                    <Button asChild variant="outline" className="rounded-xl"><Link to="/dashboard">Back to student dashboard</Link></Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      ) : (
       <div className="min-h-screen w-full overflow-x-hidden bg-white">
       {/* Header */}
       <header className="border-b border-[#f0e3da] bg-white/90 backdrop-blur">
@@ -1209,6 +1265,8 @@ const InstituteDashboard = () => {
           </main>
         </div>
       </div>
+      </div>
+      )}
       {/* Claim or List College Modal */}
       <Dialog open={isClaimModalOpen} onOpenChange={(open) => {
         setIsClaimModalOpen(open);
@@ -1437,7 +1495,6 @@ const InstituteDashboard = () => {
           onSaved={() => void fetchInstituteData()}
         />
       )}
-      </div>
     </div>
   );
 };

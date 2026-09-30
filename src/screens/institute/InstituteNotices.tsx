@@ -80,6 +80,7 @@ const InstituteNotices = () => {
   const [instituteId, setInstituteId] = useState<string | null>(null);
   const [instituteName, setInstituteName] = useState<string>("College Notices");
   const [isLoading, setIsLoading] = useState(true);
+  const [hasWorkspaceAccess, setHasWorkspaceAccess] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
   const [formData, setFormData] = useState({
@@ -110,40 +111,24 @@ const InstituteNotices = () => {
   const fetchInstituteAccess = async () => {
     if (!user) return;
     const db = supabase as any;
-
-    const { data: adminData } = await db
-      .from("institute_admins")
-      .select("institute_id, institutes(name)")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (adminData?.institute_id) {
-      setInstituteId(adminData.institute_id);
-      if (adminData.institutes?.name) setInstituteName(adminData.institutes.name);
-      fetchNotices(adminData.institute_id);
-    } else {
-      const { data: ownerData } = await db
-        .from("institutes")
-        .select("id, name")
-        .eq("owner_user_id", user.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (ownerData) {
-        setInstituteId(ownerData.id);
-        setInstituteName(ownerData.name);
-        fetchNotices(ownerData.id);
-      } else {
-        const { data: anyInst } = await db.from("institutes").select("id, name").limit(1).maybeSingle();
-        if (anyInst) {
-          setInstituteId(anyInst.id);
-          setInstituteName(anyInst.name);
-          fetchNotices(anyInst.id);
-        } else {
-          setIsLoading(false);
-        }
-      }
+    const [workspaceResult, capabilityResult] = await Promise.all([
+      db.rpc("get_my_college_workspaces"),
+      db.rpc("has_active_module_capability", { p_user_id: user.id, p_module_key: "college" }),
+    ]);
+    if (workspaceResult.error || capabilityResult.error) toast({ variant: "destructive", title: "Could not load college access", description: workspaceResult.error?.message || capabilityResult.error?.message });
+    const workspace = capabilityResult.data === true && !workspaceResult.error
+      ? (workspaceResult.data || []).find((row: { id: string; subscription_active: boolean }) => row.subscription_active === true)
+      : null;
+    if (!workspace) {
+      setInstituteId(null);
+      setHasWorkspaceAccess(false);
+      setIsLoading(false);
+      return;
     }
+    setHasWorkspaceAccess(true);
+    setInstituteId(workspace.id);
+    setInstituteName(workspace.name);
+    void fetchNotices(workspace.id);
   };
 
   const fetchNotices = async (instId: string) => {
@@ -161,7 +146,7 @@ const InstituteNotices = () => {
   };
 
   const handleSubmit = async () => {
-    if (!instituteId || !formData.title) return;
+    if (!hasWorkspaceAccess || !instituteId || !formData.title) return;
 
     if (editingNotice) {
       const { error } = await supabase
@@ -197,6 +182,7 @@ const InstituteNotices = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!hasWorkspaceAccess || !instituteId) return;
     const { error } = await supabase.from("institute_notices").delete().eq("id", id);
     if (!error && instituteId) {
       toast({ title: "Notice deleted" });
@@ -220,6 +206,11 @@ const InstituteNotices = () => {
     });
     setIsDialogOpen(true);
   };
+
+  if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-white"><span className="text-sm text-slate-600">Checking college access…</span></div>;
+  if (!hasWorkspaceAccess) {
+    return <div className="mx-auto max-w-xl px-4 py-16"><Card><CardContent className="space-y-4 p-6"><h1 className="text-xl font-bold">College workspace unavailable</h1><p className="text-sm text-muted-foreground">Super Admin approval, an assigned college, and an active plan or trial are required before managing notices.</p><Button asChild variant="outline"><Link to="/institute">View access status</Link></Button></CardContent></Card></div>;
+  }
 
   return (
     <div className="min-h-screen w-full bg-white text-[#17162e]">

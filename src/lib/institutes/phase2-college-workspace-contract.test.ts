@@ -18,6 +18,12 @@ const mediaMigration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260910141000_phase3_college_media_assignment_access.sql"),
   "utf8",
 );
+const claimFixMigration = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20260930110000_fix_college_claim_request_ambiguity.sql"),
+  "utf8",
+);
+const notices = readFileSync(resolve(process.cwd(), "src/screens/institute/InstituteNotices.tsx"), "utf8");
+const blogs = readFileSync(resolve(process.cwd(), "src/screens/institute/InstituteBlogs.tsx"), "utf8");
 
 describe("Phase 2 college workspace contract", () => {
   it("calculates verification from accountable ownership and an active paid plan or trial", () => {
@@ -46,5 +52,25 @@ describe("Phase 2 college workspace contract", () => {
   it("keeps the expiry state explicit instead of hiding a locked workspace", () => {
     expect(workspace).toContain("Your subscription/trial has expired. Renew to restore College Module access.");
     expect(workspace).toContain("const canAccessApplications = subscription.active");
+  });
+
+  it("qualifies the college claim RPC variable so upsert does not collide with module_key", () => {
+    expect(claimFixMigration).toContain("normalized_module_key text := public.normalize_module_capability_key(p_module_key)");
+    expect(claimFixMigration).toContain("actor, normalized_module_key, 'college'");
+    expect(claimFixMigration).not.toMatch(/DECLARE\s+module_key\s+text/i);
+    expect(claimFixMigration).toContain("ON CONFLICT (user_id, module_key, entity_type");
+  });
+
+  it("shows the dashboard only for an assigned college with an active entitlement", () => {
+    expect(workspace).toContain("const workspaceReady = isUuid(activeInstitute.id) && subscription.active");
+    expect(workspace).toContain("!workspaceReady ? (");
+    expect(workspace).toContain('db.from("entity_scope_requests")');
+    expect(workspace).toContain("scopedWorkspace?.subscription_active === true");
+    expect(workspace).toContain("if (capabilityResult.data !== true)");
+    expect(notices).toContain('db.rpc("get_my_college_workspaces")');
+    expect(notices).toContain('db.rpc("has_active_module_capability"');
+    expect(notices).not.toContain('from("institutes").select("id, name").limit(1)');
+    expect(blogs).toContain('rpc("has_active_module_capability"');
+    expect(blogs).toContain("row.id === instituteId && row.subscription_active === true");
   });
 });
