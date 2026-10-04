@@ -12,6 +12,7 @@ import {
   type SignedMediaAsset,
 } from "@/components/media/SignedMediaUploader";
 import { resolveCollegeMediaUrl } from "@/lib/institutes/public-institutes";
+import { validateInstituteSeatCounts } from "@/lib/institutes/admin-institute-form";
 import type { Database, Json } from "@/integrations/supabase/types";
 import {
   Table,
@@ -265,6 +266,12 @@ const AdminInstitutions = () => {
         title: "Name required",
         description: "Please enter an institute name.",
       });
+      return;
+    }
+
+    const seatError = validateInstituteSeatCounts(formData.total_seats, formData.available_seats);
+    if (seatError) {
+      toast({ variant: "destructive", title: "Check seat counts", description: seatError });
       return;
     }
 
@@ -615,6 +622,8 @@ const AdminInstitutions = () => {
                   <Label>Total Seats</Label>
                   <Input
                     type="number"
+                    min="0"
+                    step="1"
                     placeholder="e.g., 96"
                     value={formData.total_seats}
                     onChange={(e) => setFormData({ ...formData, total_seats: e.target.value })}
@@ -624,6 +633,8 @@ const AdminInstitutions = () => {
                   <Label>Available Seats</Label>
                   <Input
                     type="number"
+                    min="0"
+                    step="1"
                     placeholder="e.g., 12"
                     value={formData.available_seats}
                     onChange={(e) => setFormData({ ...formData, available_seats: e.target.value })}
