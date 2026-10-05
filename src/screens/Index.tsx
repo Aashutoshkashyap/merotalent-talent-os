@@ -129,7 +129,7 @@ export default function Index() {
           .order("created_at", { ascending: false })
           .limit(18),
         fetchPublicInstitutes({
-          search: "", category: "all", location: "", affiliation: "", admissionStatus: "", sort: "newest", limit: 6,
+          search: "", category: "all", location: "", affiliation: "", admissionStatus: "", sort: "recommended", limit: 6,
         }).catch(() => null),
         (supabase as any)
           .from("mentors")

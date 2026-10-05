@@ -11,7 +11,7 @@ import {
   SignedMediaUploader,
   type SignedMediaAsset,
 } from "@/components/media/SignedMediaUploader";
-import { resolveCollegeMediaUrl } from "@/lib/institutes/public-institutes";
+import { invalidatePublicInstituteCache, resolveCollegeMediaUrl } from "@/lib/institutes/public-institutes";
 import { validateInstituteSeatCounts } from "@/lib/institutes/admin-institute-form";
 import type { Database, Json } from "@/integrations/supabase/types";
 import {
@@ -328,6 +328,7 @@ const AdminInstitutions = () => {
         description: error.message,
       });
     } else {
+      invalidatePublicInstituteCache();
       toast({
         title: editingInstitute ? "Institute updated!" : "Institute added!",
         description: `${formData.name} has been ${editingInstitute ? "updated" : "added"} successfully.`,
@@ -347,12 +348,24 @@ const AdminInstitutions = () => {
         description: error.message,
       });
     } else {
+      invalidatePublicInstituteCache();
       toast({
         title: "Institute deleted",
         description: "The institute has been removed successfully.",
       });
       fetchInstitutes();
     }
+  };
+
+  const handlePublish = async (institute: Institute) => {
+    const { error } = await supabase.from("institutes").update({ status: "approved" }).eq("id", institute.id);
+    if (error) {
+      toast({ variant: "destructive", title: "Publish failed", description: error.message });
+      return;
+    }
+    invalidatePublicInstituteCache();
+    toast({ title: `${institute.name} published`, description: "It is now eligible for the public directory and featured placements. This does not mark payment as verified." });
+    void fetchInstitutes();
   };
 
   const handleEdit = (institute: Institute) => {
@@ -692,6 +705,11 @@ const AdminInstitutions = () => {
                   <p className="text-xs text-muted-foreground">
                     Approval controls directory visibility, not paid verification.
                   </p>
+                  {formData.is_featured && formData.status !== "approved" && (
+                    <p role="status" className="text-xs font-semibold text-amber-700">
+                      Featured placement will not appear publicly until this listing is Approved.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-start justify-between gap-4 rounded-md bg-background p-3">
                   <div>
@@ -877,7 +895,7 @@ const AdminInstitutions = () => {
                         {(institute as any).is_featured && (
                           <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 py-0 px-1.5">
                             <Star className="w-2.5 h-2.5 mr-0.5 fill-amber-500 text-amber-500" />
-                            Featured
+                            {institute.status === "approved" ? "Featured" : "Featured · awaiting approval"}
                           </Badge>
                         )}
                       </div>
@@ -957,6 +975,11 @@ const AdminInstitutions = () => {
                         <DropdownMenuItem onClick={() => handleEdit(institute)}>
                           <Pencil className="w-4 h-4 mr-2" />Edit
                         </DropdownMenuItem>
+                        {institute.status !== "approved" && (
+                          <DropdownMenuItem onClick={() => void handlePublish(institute)}>
+                            <CheckCircle className="w-4 h-4 mr-2" />Publish to directory
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem 
                           className="text-destructive" 
                           onClick={() => handleDelete(institute.id)}

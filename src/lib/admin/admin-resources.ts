@@ -475,7 +475,7 @@ const resources = {
   "college-applications": {
     resource: "college-applications",
     table: "college_applications",
-    select: "id,institute_id,applicant_id,full_name,email,phone,program_interest,intake,message,attachments,form_data,status,submitted_at,updated_at,deleted_at",
+    select: "id,institute_id,applicant_id,full_name,email,phone,program_interest,intake,message,attachments,form_data,status,submitted_at,updated_at,deleted_at,institutes(name)",
     searchColumn: "email",
     sortColumns: ["status", "submitted_at", "updated_at"],
     defaultSort: "submitted_at",

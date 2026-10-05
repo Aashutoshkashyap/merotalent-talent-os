@@ -42,6 +42,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { OperationsPage } from "./OperationsUI";
+import { safeExternalUrl } from "@/lib/institutes/public-institutes";
 import {
   SignedMediaUploader,
   type SignedMediaAsset,
@@ -87,6 +88,11 @@ const defaultSiteSettings = {
   meta_description: "",
   contact_email: "",
   contact_phone: "",
+  contact_address: "",
+  facebook_url: "",
+  twitter_url: "",
+  linkedin_url: "",
+  instagram_url: "",
 };
 
 const emptyForm = (): SectionFormData => ({
@@ -439,12 +445,19 @@ const STANDARD_HOME_SECTIONS = [
   };
 
   const handleSaveBranding = async () => {
+    const invalidSocial = ["facebook_url", "twitter_url", "linkedin_url", "instagram_url"]
+      .find((key) => siteSettings[key as keyof typeof siteSettings] && !safeExternalUrl(siteSettings[key as keyof typeof siteSettings]));
+    if (invalidSocial) {
+      toast({ variant: "destructive", title: "Invalid social link", description: "Social links must be full http or https URLs." });
+      return;
+    }
     setIsSavingSettings(true);
     const db = supabase as any;
 
     const rows = Object.entries(siteSettings).map(([key, value]) => ({
       key,
       value,
+      is_public: true,
       updated_at: new Date().toISOString(),
     }));
 
@@ -973,6 +986,18 @@ const STANDARD_HOME_SECTIONS = [
                       onChange={(e) => setSiteSettings({ ...siteSettings, contact_phone: e.target.value })}
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Public contact address</Label>
+                  <Input placeholder="Leave empty until confirmed" value={siteSettings.contact_address} onChange={(e) => setSiteSettings({ ...siteSettings, contact_address: e.target.value })} />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {(["facebook_url", "twitter_url", "linkedin_url", "instagram_url"] as const).map((key) => (
+                    <div key={key} className="space-y-2">
+                      <Label htmlFor={key}>{key.replace("_url", "").replace(/\b\w/g, (letter) => letter.toUpperCase())} URL</Label>
+                      <Input id={key} type="url" placeholder="https://..." value={siteSettings[key]} onChange={(e) => setSiteSettings({ ...siteSettings, [key]: e.target.value })} />
+                    </div>
+                  ))}
                 </div>
               </div>
 

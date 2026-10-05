@@ -203,6 +203,11 @@ const queryCache = new Map<string, CacheEntry<PublicInstituteResult>>();
 const detailCache = new Map<string, CacheEntry<InstituteRecord | null>>();
 const CACHE_TTL_MS = 30000; // 30 seconds TTL
 
+export const invalidatePublicInstituteCache = () => {
+  queryCache.clear();
+  detailCache.clear();
+};
+
 // This is deliberately explicit rather than `*`: public pages must consume
 // only MeroTalent's public directory contract, never internal provenance.
 const publicInstituteSelect = [
@@ -252,9 +257,9 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
     request = request.order("created_at", { ascending: false });
   } else {
     request = request
-      .order("admission_status", { ascending: false })
-      .order("ranking", { ascending: true, nullsFirst: false })
       .order("is_featured", { ascending: false })
+      .order("ranking", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false })
       .order("name", { ascending: true });
   }
 
@@ -263,25 +268,21 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
 
   let rawList = (data ?? []) as unknown as InstituteRecord[];
 
-  // Apply canonical multi-tier sort: Open Admissions > Admin Ranking/Position > Featured > Alphabetical
+  // Preserve the database's full-result ordering. Sorting only the current page
+  // after LIMIT can never bring a featured record from a later page to the top.
   if (!sort || sort === "recommended") {
     rawList = [...rawList].sort((a, b) => {
-      // 1. Admission open first
-      const aOpen = a.admission_status === "open" ? 1 : 0;
-      const bOpen = b.admission_status === "open" ? 1 : 0;
-      if (aOpen !== bOpen) return bOpen - aOpen;
-
-      // 2. Ranking / Position number set by admin (1 is top, null/0 is unranked)
-      const aRank = typeof a.ranking === "number" && a.ranking > 0 ? a.ranking : 999999;
-      const bRank = typeof b.ranking === "number" && b.ranking > 0 ? b.ranking : 999999;
-      if (aRank !== bRank) return aRank - bRank;
-
-      // 3. Featured flag
+      // Editorial feature and ranking are global ordering keys, independent
+      // of admission status. An approved featured college must be discoverable.
       const aFeat = a.is_featured ? 1 : 0;
       const bFeat = b.is_featured ? 1 : 0;
       if (aFeat !== bFeat) return bFeat - aFeat;
 
-      // 4. Alphabetical order
+      const aRank = typeof a.ranking === "number" && a.ranking > 0 ? a.ranking : 999999;
+      const bRank = typeof b.ranking === "number" && b.ranking > 0 ? b.ranking : 999999;
+      if (aRank !== bRank) return aRank - bRank;
+      const createdDifference = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (Number.isFinite(createdDifference) && createdDifference !== 0) return createdDifference;
       return a.name.localeCompare(b.name);
     });
   }

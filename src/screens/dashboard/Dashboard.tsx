@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStudentActivity } from "@/hooks/useStudentActivity";
 import { getBookmarkedJobIds, getLoggedActivities, type LoggedActivity } from "@/lib/activityLogger";
 import { Button } from "@/components/ui/button";
+import FeaturedSection from "@/components/landing/FeaturedSection";
 import {
   Dialog,
   DialogContent,
@@ -544,6 +545,10 @@ const Dashboard = () => {
             </div>
           </Link>
         ))}
+      </motion.section>
+
+      <motion.section variants={rise} className={`${surface} overflow-hidden`}>
+        <FeaturedSection title="Featured opportunities" />
       </motion.section>
 
       {/* Date Details Modal Dialog */}

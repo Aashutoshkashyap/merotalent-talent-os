@@ -5,6 +5,7 @@ import FeaturedPosterCard, { FeaturedCardData } from "./FeaturedPosterCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPartnerCourseRedirect } from "@/lib/courses/partnered-courses";
+import { resolveCollegeMediaUrl } from "@/lib/institutes/public-institutes";
 
 interface FeaturedSectionProps {
   cards?: FeaturedCardData[];
@@ -150,7 +151,7 @@ export default function FeaturedSection({
         entities.set(`college:${college.id}`, {
           title: college.name,
           description: college.description || college.location || null,
-          image: college.cover_image_url || college.logo_url || null,
+          image: college.cover_image_url || college.logo_url ? resolveCollegeMediaUrl(college.cover_image_url || college.logo_url) : null,
           path: `/institutes/${college.slug || college.id}`,
           brand: college.type || college.location || "College",
           label: "College",

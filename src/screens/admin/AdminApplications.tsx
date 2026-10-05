@@ -3,12 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, GraduationCap } from "lucide-react";
+import { Search, GraduationCap, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
-import { listAdminResource } from "@/lib/admin/admin-client";
+import { listAdminResource, updateAdminResource } from "@/lib/admin/admin-client";
 import {
   COLLEGE_APPLICATION_STATUSES,
   collegeApplicationStatusLabel,
@@ -26,14 +28,30 @@ interface CollegeApp {
   intake: string | null;
   status: string;
   submitted_at: string;
-  institutes?: { name: string };
+  message: string | null;
+  form_data: Record<string, unknown> | null;
+  institutes?: { name: string } | { name: string }[] | null;
 }
+
+const collegeName = (application: CollegeApp) => {
+  const relation = application.institutes;
+  return (Array.isArray(relation) ? relation[0]?.name : relation?.name) || "Institution unavailable";
+};
+
+const readableField = (key: string) => key.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const readableValue = (value: unknown): string => {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) return value.map(readableValue).join(", ");
+  return "—";
+};
 
 export default function AdminApplications() {
   const { toast } = useToast();
   const [applications, setApplications] = useState<CollegeApp[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedApplication, setSelectedApplication] = useState<CollegeApp | null>(null);
 
   useEffect(() => {
     fetchApplications();
@@ -64,11 +82,13 @@ export default function AdminApplications() {
   };
 
   const updateStatus = async (id: string, newStatus: CollegeApplicationStatus) => {
-    const { error } = await (supabase as any).from("college_applications").update({ status: newStatus }).eq("id", id);
-    if (error) {
-      toast({ variant: "destructive", title: "Status update failed", description: error.message });
+    try {
+      await updateAdminResource("college-applications", id, { status: newStatus });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Status update failed", description: error instanceof Error ? error.message : "Please retry." });
       return;
     }
+    setSelectedApplication((current) => current?.id === id ? { ...current, status: newStatus } : current);
     toast({ title: `Application status updated to ${collegeApplicationStatusLabel(newStatus)}` });
     fetchApplications();
   };
@@ -77,7 +97,7 @@ export default function AdminApplications() {
     a.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     a.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (a.program_interest || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (a.institutes?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    collegeName(a).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -123,7 +143,7 @@ export default function AdminApplications() {
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     <GraduationCap className="w-4 h-4 text-primary" />
-                    <span className="font-medium text-sm">{app.institutes?.name || "College"}</span>
+                    <span className="font-medium text-sm">{collegeName(app)}</span>
                   </div>
                 </TableCell>
                 <TableCell>{app.program_interest || "-"}</TableCell>
@@ -136,6 +156,10 @@ export default function AdminApplications() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setSelectedApplication(app)} aria-label={`View application from ${app.full_name}`}>
+                    <Eye className="mr-1 h-4 w-4" /> Details
+                  </Button>
                   <Select
                     value={app.status}
                     onValueChange={(val) => updateStatus(app.id, val as CollegeApplicationStatus)}
@@ -151,6 +175,7 @@ export default function AdminApplications() {
                       ))}
                     </SelectContent>
                   </Select>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -164,6 +189,41 @@ export default function AdminApplications() {
           </TableBody>
         </Table>
       </Card>
+      <Dialog open={selectedApplication !== null} onOpenChange={(open) => { if (!open) setSelectedApplication(null); }}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Application details</DialogTitle>
+            <DialogDescription>Private applicant information for Super Admin review.</DialogDescription>
+          </DialogHeader>
+          {selectedApplication && (
+            <div className="grid gap-4 text-sm sm:grid-cols-2">
+              {[
+                ["Applicant", selectedApplication.full_name],
+                ["College", collegeName(selectedApplication)],
+                ["Email", selectedApplication.email],
+                ["Phone", selectedApplication.phone || "—"],
+                ["Program", selectedApplication.program_interest || "—"],
+                ["Intake", selectedApplication.intake || "—"],
+                ["Status", collegeApplicationStatusLabel(selectedApplication.status as CollegeApplicationStatus)],
+                ["Submitted", new Date(selectedApplication.submitted_at).toLocaleString()],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 break-words font-medium">{value}</p></div>
+              ))}
+              {selectedApplication.message && <div className="rounded-lg border p-3 sm:col-span-2"><p className="text-xs text-muted-foreground">Message</p><p className="mt-1 whitespace-pre-wrap">{selectedApplication.message}</p></div>}
+              {selectedApplication.form_data && Object.entries(selectedApplication.form_data).length > 0 && (
+                <div className="rounded-lg border p-3 sm:col-span-2">
+                  <p className="mb-2 font-semibold">Additional application information</p>
+                  <dl className="grid gap-3 sm:grid-cols-2">
+                    {Object.entries(selectedApplication.form_data).filter(([key]) => !/token|secret|password|internal/i.test(key)).map(([key, value]) => (
+                      <div key={key}><dt className="text-xs text-muted-foreground">{readableField(key)}</dt><dd className="break-words">{readableValue(value)}</dd></div>
+                    ))}
+                  </dl>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </OperationsPage>
   );
 }

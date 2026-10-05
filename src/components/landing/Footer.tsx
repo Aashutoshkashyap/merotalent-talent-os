@@ -2,12 +2,21 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, MapPin, Mail, Phone, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
+import { MapPin, Mail, Phone, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 
 import { useSiteCMS } from "@/hooks/useSiteCMS";
+import { safeExternalUrl } from "@/lib/institutes/public-institutes";
 
 export default function Footer() {
   const { settings } = useSiteCMS();
+  const email = settings.contact_email || settings.support_email;
+  const phone = settings.contact_phone || settings.support_phone;
+  const socialLinks = [
+    { label: "Facebook", url: settings.facebook_url, Icon: Facebook },
+    { label: "X / Twitter", url: settings.twitter_url, Icon: Twitter },
+    { label: "LinkedIn", url: settings.linkedin_url, Icon: Linkedin },
+    { label: "Instagram", url: settings.instagram_url, Icon: Instagram },
+  ].map((item) => ({ ...item, href: safeExternalUrl(item.url) })).filter((item) => item.href);
 
   return (
     <footer className="w-full bg-white border-t border-slate-200/80 pt-12 pb-8 px-6 sm:px-10 lg:px-16 font-sans">
@@ -34,44 +43,9 @@ export default function Footer() {
             </p>
 
             {/* Social Icons Row */}
-            <div className="flex items-center gap-3 pt-2">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full text-slate-700 hover:text-[#0073e6] hover:bg-blue-50 flex items-center justify-center transition-all border border-slate-200/80 shadow-2xs"
-                title="Facebook"
-              >
-                <Facebook className="w-4 h-4 fill-slate-700 hover:fill-[#0073e6]" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full text-slate-700 hover:text-[#0073e6] hover:bg-blue-50 flex items-center justify-center transition-all border border-slate-200/80 shadow-2xs"
-                title="Twitter"
-              >
-                <Twitter className="w-4 h-4 fill-slate-700 hover:fill-[#0073e6]" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full text-slate-700 hover:text-[#0073e6] hover:bg-blue-50 flex items-center justify-center transition-all border border-slate-200/80 shadow-2xs"
-                title="LinkedIn"
-              >
-                <Linkedin className="w-4 h-4 fill-slate-700 hover:fill-[#0073e6]" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full text-slate-700 hover:text-[#0073e6] hover:bg-blue-50 flex items-center justify-center transition-all border border-slate-200/80 shadow-2xs"
-                title="Instagram"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-            </div>
+            {socialLinks.length > 0 && <div className="flex items-center gap-3 pt-2">
+              {socialLinks.map(({ label, href, Icon }) => <a key={label} href={href!} target="_blank" rel="noopener noreferrer" aria-label={label} className="w-9 h-9 rounded-full text-slate-700 hover:text-[#0073e6] hover:bg-blue-50 flex items-center justify-center transition-all border border-slate-200/80 shadow-2xs"><Icon className="w-4 h-4" /></a>)}
+            </div>}
           </div>
 
           {/* Column 2: Contact Us */}
@@ -80,41 +54,36 @@ export default function Footer() {
               Contact Us
             </h4>
             <ul className="flex flex-col gap-4">
-              <li className="flex items-start gap-3 text-sm font-semibold text-slate-600">
+              {settings.contact_address && <li className="flex items-start gap-3 text-sm font-semibold text-slate-600">
                 <MapPin className="w-5 h-5 text-[#0073e6] flex-shrink-0 mt-0.5" />
-                <span>123 Technology Park, Pulchowk, Lalitpur, Nepal</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm font-semibold text-slate-600">
+                <span>{settings.contact_address}</span>
+              </li>}
+              {email && <li className="flex items-center gap-3 text-sm font-semibold text-slate-600">
                 <Mail className="w-5 h-5 text-[#071a3d] flex-shrink-0" />
-                <a href={`mailto:${settings.contact_email || "support@merotalent.com"}`} className="hover:text-[#071a3d] transition-colors">
-                  {settings.contact_email || "support@merotalent.com"}
+                <a href={`mailto:${email}`} className="hover:text-[#071a3d] transition-colors">
+                  {email}
                 </a>
-              </li>
-              <li className="flex items-center gap-3 text-sm font-semibold text-slate-600">
+              </li>}
+              {phone && <li className="flex items-center gap-3 text-sm font-semibold text-slate-600">
                 <Phone className="w-5 h-5 text-[#071a3d] flex-shrink-0" />
-                <a href={`tel:${settings.contact_phone || "+977-01-4400000"}`} className="hover:text-[#071a3d] transition-colors">
-                  {settings.contact_phone || "+977-01-4400000"}
+                <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} className="hover:text-[#071a3d] transition-colors">
+                  {phone}
                 </a>
-              </li>
+              </li>}
+              {!email && !phone && !settings.contact_address && <li className="text-sm text-slate-600">Contact details will appear when configured by MeroTalent.</li>}
             </ul>
           </div>
         </div>
 
         {/* Bottom Copyright Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500">
-          <p>© 2026 MeroTalent. All rights reserved. Made with care in Nepal.</p>
+          <p>© {new Date().getFullYear()} MeroTalent. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-6">
             <Link to="/terms" className="hover:text-[#0073e6] transition-colors">
               Terms of Service
             </Link>
             <Link to="/privacy" className="hover:text-[#0073e6] transition-colors">
               Privacy Policy
-            </Link>
-            <Link to="/terms" className="hover:text-[#0073e6] transition-colors">
-              Cookie Policy
-            </Link>
-            <Link to="/sitemap" className="hover:text-[#0073e6] transition-colors">
-              Sitemap
             </Link>
           </div>
         </div>

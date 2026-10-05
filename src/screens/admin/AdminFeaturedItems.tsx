@@ -62,7 +62,7 @@ export default function AdminFeaturedItems() {
 
       try {
         if (formData.entity_type === "college") {
-          const { data } = await supabase.from("institutes").select("id, name, location").order("name").limit(100);
+          const { data } = await supabase.from("institute_directory").select("id, name, location").order("name").limit(100);
           if (data) {
             options = data.map((item) => ({
               id: item.id,
@@ -74,6 +74,8 @@ export default function AdminFeaturedItems() {
           const { data, error } = await (supabase as any)
             .from("jobs")
             .select("id,title,company_id")
+            .eq("status", "published")
+            .eq("approval_status", "approved")
             .is("deleted_at", null)
             .order("title")
             .limit(100);
@@ -94,7 +96,7 @@ export default function AdminFeaturedItems() {
             }));
           }
         } else if (formData.entity_type === "course") {
-          const { data } = await supabase.from("courses").select("id, title").order("title").limit(100);
+          const { data } = await (supabase as any).from("courses").select("id, title").eq("status", "published").eq("is_published", true).order("title").limit(100);
           if (data) {
             options = data.map((item) => ({
               id: item.id,
@@ -103,7 +105,7 @@ export default function AdminFeaturedItems() {
             }));
           }
         } else if (formData.entity_type === "event") {
-          const { data } = await (supabase as any).from("events").select("id, title, location").order("title").limit(100);
+          const { data } = await (supabase as any).from("events").select("id, title, location").eq("approval_status", "approved").in("status", ["approved", "published"]).order("title").limit(100);
           if (data) {
             options = data.map((item: any) => ({
               id: item.id,
@@ -115,6 +117,7 @@ export default function AdminFeaturedItems() {
           const { data, error } = await (supabase as any)
             .from("mentors")
             .select("id,user_id,headline")
+            .eq("approval_status", "approved")
             .is("deleted_at", null)
             .limit(100);
           if (error) throw error;
