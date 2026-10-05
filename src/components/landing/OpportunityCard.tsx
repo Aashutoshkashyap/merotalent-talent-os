@@ -12,6 +12,7 @@ export interface OpportunityCardData {
   location?: string;
   isOnline?: boolean;
   path?: string;
+  externalHref?: string;
 }
 
 interface OpportunityCardProps {
@@ -63,5 +64,8 @@ export default function OpportunityCard({ data }: OpportunityCardProps) {
     </div>
   );
 
+  if (data.externalHref) {
+    return <a href={data.externalHref} target="_blank" rel="noopener noreferrer">{card}</a>;
+  }
   return data.path ? <Link to={data.path}>{card}</Link> : card;
 }

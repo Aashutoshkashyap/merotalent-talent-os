@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BadgeCheck,
+  Bell,
   BookOpen,
   Building2,
   CalendarDays,
   CheckCircle2,
   ExternalLink,
+  FileText,
   Globe2,
   GraduationCap,
   ImageIcon,
@@ -35,11 +37,14 @@ import {
   getGoogleMapsSearchUrl,
   getInstitutePrograms,
   getYoutubeEmbedUrl,
+  institutePath,
   safeExternalUrl,
 } from "@/lib/institutes/public-institutes";
+import { supabase } from "@/integrations/supabase/client";
 
 const sectionLinks = [
   { id: "about", label: "About" },
+  { id: "updates", label: "Updates" },
   { id: "leadership", label: "Leadership" },
   { id: "admissions", label: "Admissions" },
   { id: "programs", label: "Programs" },
@@ -100,6 +105,28 @@ export default function InstituteDetailPage() {
     retry: 1,
   });
 
+  const updatesQuery = useQuery({
+    queryKey: ["public-college-updates", instituteQuery.data?.id],
+    enabled: Boolean(instituteQuery.data?.id),
+    queryFn: async () => {
+      const instituteId = instituteQuery.data!.id;
+      const [blogsResult, noticesResult] = await Promise.all([
+        (supabase as any).from("college_blogs")
+          .select("id,title,slug,excerpt,published_at")
+          .eq("institute_id", instituteId).eq("status", "published").is("deleted_at", null)
+          .order("published_at", { ascending: false }).limit(3),
+        (supabase as any).from("institute_notices")
+          .select("id,title,content,published_at")
+          .eq("institute_id", instituteId).lte("published_at", new Date().toISOString())
+          .order("published_at", { ascending: false }).limit(3),
+      ]);
+      return {
+        blogs: blogsResult.error ? [] : (blogsResult.data || []) as Array<{ id: string; title: string; slug: string; excerpt: string | null; published_at: string | null }>,
+        notices: noticesResult.error ? [] : (noticesResult.data || []) as Array<{ id: string; title: string; content: string; published_at: string | null }>,
+      };
+    },
+  });
+
   useEffect(() => {
     if (searchParams.get("apply") !== "1" || authLoading) return;
 
@@ -126,6 +153,9 @@ export default function InstituteDetailPage() {
   const address = getContactValue(institute?.contact_info, ["address", "street_address"]);
   const mapEmbedUrl = getGoogleMapsEmbedUrl(institute?.map_location);
   const mapSearchUrl = getGoogleMapsSearchUrl(institute?.map_location);
+  const blogs = updatesQuery.data?.blogs ?? [];
+  const notices = updatesQuery.data?.notices ?? [];
+  const hasUpdates = blogs.length > 0 || notices.length > 0;
 
   const openApplication = () => {
     if (!user) {
@@ -246,7 +276,7 @@ export default function InstituteDetailPage() {
         <div className="mt-7 grid gap-7 xl:grid-cols-[180px_minmax(0,1fr)_300px] xl:items-start">
           <aside className="sticky top-[72px] z-20 -mx-4 overflow-x-auto border-y border-slate-200 bg-white/95 px-4 py-2 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:mx-0 xl:rounded-2xl xl:border xl:p-2 xl:shadow-sm">
             <nav aria-label="College detail sections" className="flex min-w-max gap-1 xl:min-w-0 xl:flex-col">
-              {sectionLinks.map((item) => (
+              {sectionLinks.filter((item) => item.id !== "updates" || hasUpdates).map((item) => (
                 <a
                   key={item.id}
                   href={`#${item.id}`}
@@ -271,6 +301,29 @@ export default function InstituteDetailPage() {
                 {institute.description || "A detailed institution profile will be available soon."}
               </p>
             </section>
+
+            {hasUpdates && (
+              <section id="updates" className="scroll-mt-28 rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">Latest college updates</h2>
+                <div className="mt-4 grid gap-3">
+                  {blogs.map((blog) => (
+                    <Link key={blog.id} to={`${institutePath(institute)}/blogs/${blog.slug}`} className="rounded-2xl border border-slate-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/40">
+                      <p className="flex items-center gap-2 text-xs font-extrabold text-[#0073e6]"><FileText className="h-4 w-4" /> College post {displayDate(blog.published_at) ? `· ${displayDate(blog.published_at)}` : ""}</p>
+                      <h3 className="mt-1 font-black text-slate-900">{blog.title}</h3>
+                      {blog.excerpt && <p className="mt-1 line-clamp-2 text-sm text-slate-600">{blog.excerpt}</p>}
+                    </Link>
+                  ))}
+                  {notices.map((notice) => (
+                    <article key={notice.id} className="rounded-2xl border border-slate-100 p-4">
+                      <p className="flex items-center gap-2 text-xs font-extrabold text-[#0073e6]"><Bell className="h-4 w-4" /> Notice {displayDate(notice.published_at) ? `· ${displayDate(notice.published_at)}` : ""}</p>
+                      <h3 className="mt-1 font-black text-slate-900">{notice.title}</h3>
+                      <p className="mt-1 line-clamp-3 whitespace-pre-line text-sm text-slate-600">{notice.content}</p>
+                    </article>
+                  ))}
+                </div>
+                {blogs.length > 0 && <Link to={`${institutePath(institute)}/blogs`} className="mt-4 inline-block text-sm font-extrabold text-[#0073e6] hover:underline">View all college posts →</Link>}
+              </section>
+            )}
 
             {(institute.chairperson_name || institute.chairperson_message || institute.principal_name || institute.principal_message) && (
               <section id="leadership" className="scroll-mt-28 rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">

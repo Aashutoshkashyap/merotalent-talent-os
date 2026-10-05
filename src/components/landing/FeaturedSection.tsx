@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import FeaturedPosterCard, { FeaturedCardData } from "./FeaturedPosterCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getPartnerCourseRedirect } from "@/lib/courses/partnered-courses";
 
 interface FeaturedSectionProps {
   cards?: FeaturedCardData[];
@@ -23,25 +24,45 @@ export default function FeaturedSection({
 
     const loadFeatured = async () => {
       const now = new Date().toISOString();
-      const { data, error } = await (supabase as any)
-        .from("featured_items")
-        .select("id, entity_type, entity_id, title, placement, priority, start_date, end_date")
-        .eq("is_active", true)
-        .or(`start_date.is.null,start_date.lte.${now}`)
-        .or(`end_date.is.null,end_date.gte.${now}`)
-        .order("priority", { ascending: false })
-        .limit(12);
-      if (error) {
-        if (!isCancelled) setLiveCards([]);
-        return;
-      }
+      const [featuredResult, collegeFlags, mentorFlags, jobFlags, eventFlags] = await Promise.all([
+        (supabase as any).from("featured_items")
+          .select("id, entity_type, entity_id, title, placement, priority, start_date, end_date")
+          .eq("is_active", true)
+          .lte("start_date", now)
+          .or(`end_date.is.null,end_date.gte.${now}`)
+          .is("deleted_at", null)
+          .order("priority", { ascending: false })
+          .limit(12),
+        (supabase as any).from("institutes").select("id").eq("status", "approved")
+          .is("deleted_at", null).eq("is_featured", true)
+          .or(`featured_until.is.null,featured_until.gt.${now}`)
+          .order("ranking", { ascending: true, nullsFirst: false }).limit(8),
+        (supabase as any).from("mentors").select("id").eq("is_featured", true)
+          .eq("approval_status", "approved").eq("is_available", true).is("deleted_at", null).limit(8),
+        (supabase as any).from("jobs").select("id").eq("is_featured", true)
+          .eq("status", "published").eq("approval_status", "approved").eq("is_active", true)
+          .is("deleted_at", null).or(`expires_at.is.null,expires_at.gt.${now}`).limit(8),
+        (supabase as any).from("events").select("id").eq("is_featured", true)
+          .in("status", ["approved", "published"]).eq("approval_status", "approved").eq("is_active", true)
+          .is("deleted_at", null).gt("end_date", now).limit(8),
+      ]);
 
-      const featuredRows = (data || []) as Array<{
+      type FeaturedRow = {
         id: string;
         entity_type: "college" | "mentor" | "course" | "job" | "event";
         entity_id: string;
         title: string | null;
-      }>;
+      };
+      const featuredRows: FeaturedRow[] = [...(featuredResult.error ? [] : featuredResult.data || [])];
+      for (const [entityType, result] of [
+        ["college", collegeFlags], ["mentor", mentorFlags], ["job", jobFlags], ["event", eventFlags],
+      ] as const) {
+        if (result.error) continue;
+        for (const row of result.data || []) {
+          if (featuredRows.some((item) => item.entity_type === entityType && item.entity_id === row.id)) continue;
+          featuredRows.push({ id: `${entityType}:${row.id}`, entity_type: entityType, entity_id: row.id, title: null });
+        }
+      }
       const idsFor = (entityType: string) => featuredRows
         .filter((item) => item.entity_type === entityType)
         .map((item) => item.entity_id);
@@ -64,24 +85,41 @@ export default function FeaturedSection({
             .from("mentors")
             .select("id,user_id,headline,description,expertise,profile_image_url,cover_image_url")
             .in("id", mentorIds)
+            .eq("approval_status", "approved")
+            .eq("is_available", true)
+            .is("deleted_at", null)
           : emptyResult,
         courseIds.length
           ? (supabase as any)
             .from("courses")
-            .select("id,title,description,category,thumbnail_url,partner_name")
+            .select("id,title,description,category,thumbnail_url,partner_name,redirect_url")
             .in("id", courseIds)
+            .eq("is_partnered", true)
+            .eq("is_published", true)
+            .eq("status", "published")
+            .is("deleted_at", null)
           : emptyResult,
         jobIds.length
           ? (supabase as any)
             .from("jobs")
             .select("id,title,description,location,job_type,companies(name,logo_url)")
             .in("id", jobIds)
+            .eq("status", "published")
+            .eq("approval_status", "approved")
+            .eq("is_active", true)
+            .is("deleted_at", null)
+            .or(`expires_at.is.null,expires_at.gt.${now}`)
           : emptyResult,
         eventIds.length
           ? (supabase as any)
             .from("events")
             .select("id,title,description,event_type,format,location,cover_image_url")
             .in("id", eventIds)
+            .in("status", ["approved", "published"])
+            .eq("approval_status", "approved")
+            .eq("is_active", true)
+            .is("deleted_at", null)
+            .gt("end_date", now)
           : emptyResult,
       ]);
 
@@ -102,6 +140,7 @@ export default function FeaturedSection({
         description: string | null;
         image: string | null;
         path: string;
+        externalHref?: string;
         brand: string;
         label: string;
         actionLabel: string;
@@ -125,18 +164,21 @@ export default function FeaturedSection({
           title: profile?.full_name || mentor.headline || "Name unavailable",
           description: mentor.description || profile?.bio || expertise,
           image: mentor.cover_image_url || mentor.profile_image_url || profile?.avatar_url || null,
-          path: `/mentorship?mentor=${encodeURIComponent(mentor.id)}`,
+          path: `/mentorship/${mentor.id}`,
           brand: mentor.headline || profile?.location || "Mentor",
           label: "Mentor",
           actionLabel: "Book Mentor",
         });
       }
       for (const course of courseResult.data || []) {
+        const externalHref = getPartnerCourseRedirect(course.redirect_url);
+        if (!externalHref) continue;
         entities.set(`course:${course.id}`, {
           title: course.title,
           description: course.description || course.category || null,
           image: course.thumbnail_url || null,
           path: `/courses/${course.id}`,
+          externalHref,
           brand: course.partner_name || course.category || "Partner course",
           label: "Course",
           actionLabel: "View Course",
@@ -148,7 +190,7 @@ export default function FeaturedSection({
           title: job.title,
           description: job.description || job.location || null,
           image: company?.logo_url || null,
-          path: `/jobs?job=${encodeURIComponent(job.id)}`,
+          path: `/jobs/${job.id}`,
           brand: company?.name || job.location || "Job",
           label: job.job_type ? String(job.job_type).replace(/_/g, " ") : "Job",
           actionLabel: "Apply Now",
@@ -159,7 +201,7 @@ export default function FeaturedSection({
           title: event.title,
           description: event.description || event.location || null,
           image: event.cover_image_url || null,
-          path: `/events?event=${encodeURIComponent(event.id)}`,
+          path: `/events/${event.id}`,
           brand: event.location || event.format || "Event",
           label: event.event_type === "paid" ? "Paid event" : "Event",
           actionLabel: "Register Now",
@@ -183,6 +225,7 @@ export default function FeaturedSection({
           title: displayTitle,
           actionLabel: entity.actionLabel,
           path: entity.path,
+          externalHref: entity.externalHref,
           posterContent: {
             brandTag: entity.brand,
             bannerTitle: entity.label,
@@ -191,7 +234,7 @@ export default function FeaturedSection({
           },
         } satisfies FeaturedCardData];
       });
-      if (!isCancelled) setLiveCards(hydratedCards);
+      if (!isCancelled) setLiveCards(hydratedCards.slice(0, 12));
     };
     void loadFeatured();
 
@@ -208,6 +251,8 @@ export default function FeaturedSection({
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
+
+  if (cards.length === 0) return null;
 
   return (
     <section className="py-10 px-4 sm:px-8 max-w-7xl mx-auto w-full">
@@ -246,11 +291,7 @@ export default function FeaturedSection({
         className="flex items-center gap-5 overflow-x-auto pb-4 pt-1 scrollbar-none scroll-smooth"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {cards.length === 0 ? (
-          <div className="w-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center text-sm font-semibold text-slate-500">
-            Featured items enabled in Admin will appear here.
-          </div>
-        ) : cards.map((card) => (
+        {cards.map((card) => (
           <FeaturedPosterCard key={card.id} data={card} />
         ))}
       </div>

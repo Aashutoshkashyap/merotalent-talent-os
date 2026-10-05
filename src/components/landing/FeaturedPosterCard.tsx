@@ -17,6 +17,7 @@ export interface FeaturedCardData {
     brandTag?: string;
   };
   path: string;
+  externalHref?: string;
 }
 
 interface FeaturedPosterCardProps {
@@ -24,11 +25,9 @@ interface FeaturedPosterCardProps {
 }
 
 export default function FeaturedPosterCard({ data }: FeaturedPosterCardProps) {
-  return (
-    <Link
-      to={data.path}
-      className="group flex flex-col rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer w-full min-w-[280px] sm:min-w-[310px] max-w-[340px] flex-shrink-0"
-    >
+  const className = "group flex flex-col rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer w-full min-w-[280px] sm:min-w-[310px] max-w-[340px] flex-shrink-0";
+  const content = (
+    <>
       {/* Top Visual Poster Area */}
       <div
         className={`relative h-88 sm:h-[400px] w-full ${data.posterBg} bg-cover bg-center p-6 sm:p-7 flex flex-col justify-between overflow-hidden`}
@@ -79,6 +78,9 @@ export default function FeaturedPosterCard({ data }: FeaturedPosterCardProps) {
           {data.title}
         </h3>
       </div>
-    </Link>
+    </>
   );
+  return data.externalHref
+    ? <a href={data.externalHref} target="_blank" rel="noopener noreferrer" className={className}>{content}</a>
+    : <Link to={data.path} className={className}>{content}</Link>;
 }

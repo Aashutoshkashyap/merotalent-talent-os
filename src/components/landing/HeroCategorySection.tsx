@@ -38,7 +38,7 @@ export const DEFAULT_CATEGORIES: CategoryCardData[] = [
     bgGradient: "bg-gradient-to-b from-amber-50 to-yellow-100/60",
     borderColor: "border-amber-200/60",
     iconBg: "bg-amber-100/80",
-    path: "/competitions",
+    path: "/events",
     icon: (
       <svg className="w-10 h-10" viewBox="0 0 64 64" fill="none">
         <path d="M18 16H46V28C46 35.732 39.732 42 32 42C24.268 42 18 35.732 18 28V16Z" fill="#F59E0B" />
