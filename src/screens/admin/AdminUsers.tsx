@@ -183,7 +183,7 @@ const AdminUsers = () => {
       setEnrollAmountPaid(0);
       setEnrollTransactionId("");
       setEnrollNote("");
-      void fetchUsers();
+      void fetchUsers(currentPage, pageSize);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Enrollment Failed", description: err?.message || "Could not grant module access." });
     } finally {
@@ -191,34 +191,27 @@ const AdminUsers = () => {
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (targetPage = currentPage, targetPageSize = pageSize) => {
     setIsLoading(true);
     try {
       try {
         const { data: auth } = await supabase.auth.getSession();
         if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
-        const collected: any[] = [];
-        let page = 1;
-        let hasMore = true;
-        do {
-          const response = await fetch(`/api/v1/admin/auth-users?page=${page}&page_size=100`, {
-            headers: { Authorization: `Bearer ${auth.session.access_token}` },
-          });
-          const payload = await response.json().catch(() => null);
-          if (!response.ok || payload?.error || !Array.isArray(payload?.data)) {
-            throw new Error(payload?.error?.message || "Could not load registered Auth users.");
-          }
-          collected.push(...payload.data);
-          const totalPages = Number(payload?.meta?.totalPages) || 1;
-          hasMore = Boolean(payload?.meta?.hasNextPage) || (payload.data.length === 100 && page < totalPages);
-          page += 1;
-        } while (hasMore);
 
-        setUsers(collected.map((account: any) => ({
+        const response = await fetch(`/api/v1/admin/auth-users?page=${targetPage}&page_size=${targetPageSize}`, {
+          headers: { Authorization: `Bearer ${auth.session.access_token}` },
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.error || !Array.isArray(payload?.data)) {
+          throw new Error(payload?.error?.message || "Could not load registered Auth users.");
+        }
+
+        setUsers(payload.data.map((account: any) => ({
           id: account.id,
           user_id: account.id,
           email: account.email || "Email unavailable",
@@ -229,15 +222,20 @@ const AdminUsers = () => {
           created_at: account.createdAt,
           roles: Array.isArray(account.roles) ? account.roles : [],
         })));
+        setTotalCount(Number(payload?.meta?.total) || payload.data.length);
+        setTotalPages(Number(payload?.meta?.totalPages) || 1);
       } catch (authListError: any) {
         try {
           const profiles = await listAdminResource<any>("users");
           const roles = await listAdminResource<any>("user-roles");
-          setUsers(profiles.map((profile: any) => ({
+          const mapped = profiles.map((profile: any) => ({
             ...profile,
             email_verified: true,
             roles: roles.filter((role: any) => role.user_id === profile.user_id).map((role: any) => role.role),
-          })));
+          }));
+          setUsers(mapped);
+          setTotalCount(mapped.length);
+          setTotalPages(Math.ceil(mapped.length / targetPageSize) || 1);
         } catch {
           throw authListError;
         }
@@ -247,7 +245,11 @@ const AdminUsers = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, pageSize, toast]);
+
+  useEffect(() => {
+    void fetchUsers(1, pageSize);
+  }, []);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,22 +366,21 @@ const AdminUsers = () => {
     }
   };
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch = !searchQuery || 
-      (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (u.phone || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || (roleFilter === "talent" ? u.roles.length === 0 || u.roles.includes("talent") : u.roles.includes(roleFilter));
-    return matchesSearch && matchesRole;
-  });
-
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredUsers.slice(start, start + pageSize);
-  }, [filteredUsers, currentPage, pageSize]);
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchesSearch =
+        !searchQuery ||
+        (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.phone || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRole =
+        roleFilter === "all" ||
+        (roleFilter === "talent"
+          ? u.roles.length === 0 || u.roles.includes("talent")
+          : u.roles.includes(roleFilter));
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchQuery, roleFilter]);
 
   return (
     <OperationsPage>
@@ -388,7 +389,11 @@ const AdminUsers = () => {
         <div>
           <h1 className="text-2xl font-display font-bold text-[#0f172a]">
             User Management
-            {users.length > 0 && <span className="ml-2 text-base font-normal text-slate-400">({users.length})</span>}
+            {totalCount > 0 && (
+              <span className="ml-2 text-base font-normal text-slate-400">
+                ({totalCount})
+              </span>
+            )}
           </h1>
           <p className="text-muted-foreground text-sm">
             View registered members, create user accounts, send password resets, and manage role access.
@@ -449,7 +454,7 @@ const AdminUsers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedUsers.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id} className="hover:bg-slate-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -555,13 +560,17 @@ const AdminUsers = () => {
           <div className="border-t border-slate-100 px-4 bg-slate-50/50">
             <SystemPagination
               currentPage={currentPage}
-              totalPages={Math.ceil(filteredUsers.length / pageSize)}
-              totalItems={filteredUsers.length}
+              totalPages={totalPages}
+              totalItems={totalCount}
               pageSize={pageSize}
-              onPageChange={setCurrentPage}
+              onPageChange={(nextPage) => {
+                setCurrentPage(nextPage);
+                void fetchUsers(nextPage, pageSize);
+              }}
               onPageSizeChange={(size) => {
                 setPageSize(size);
                 setCurrentPage(1);
+                void fetchUsers(1, size);
               }}
               itemLabel="users"
             />

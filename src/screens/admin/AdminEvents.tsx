@@ -525,23 +525,36 @@ export default function AdminEvents() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <SignedMediaUploader
-                  label="Event Banner / Attachment File"
-                  module="event_cover"
-                  resourceId={editingEvent?.id || undefined}
-                  onUploaded={([asset]: SignedMediaAsset[]) => {
-                    if (asset) {
-                      setFormData((current) => ({ ...current, cover_image_url: asset.publicUrl || asset.path }));
-                    }
-                  }}
-                />
-                {formData.cover_image_url && (
-                  <div className="relative h-28 w-full overflow-hidden rounded-xl border">
-                    <img src={formData.cover_image_url} alt="Cover preview" className="h-full w-full object-cover" />
-                  </div>
-                )}
-              </div>
+              {editingEvent ? (
+                <div className="space-y-2">
+                  <SignedMediaUploader
+                    label="Event Banner Image"
+                    module="event_cover"
+                    resourceId={editingEvent.id}
+                    onUploaded={([asset]: SignedMediaAsset[]) => {
+                      if (asset) {
+                        setFormData((current) => ({
+                          ...current,
+                          cover_image_url: asset.publicUrl || asset.path,
+                        }));
+                      }
+                    }}
+                  />
+                  {formData.cover_image_url && (
+                    <div className="relative h-28 w-full overflow-hidden rounded-xl border">
+                      <img
+                        src={formData.cover_image_url}
+                        alt="Cover preview"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border/80 bg-muted/10 p-4 text-xs text-muted-foreground">
+                  💡 Save the event draft first to upload event banner images and attachments with verified storage security.
+                </div>
+              )}
 
               <div className="grid sm:grid-cols-2 gap-4 pt-2 items-end">
                 <div className="space-y-2">

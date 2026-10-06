@@ -24,6 +24,7 @@ export type CollegeMediaModule =
   | "college_cover"
   | "college_gallery"
   | "event_cover"
+  | "event_attachment"
   | "course_thumbnail"
   | "mentor_profile"
   | "advertisement"
@@ -42,6 +43,7 @@ const signedBucketByModule: Partial<Record<CollegeMediaModule, string>> = {
   college_gallery: "college-media",
   mentor_profile: "mentor-media",
   event_cover: "event-media",
+  event_attachment: "event-attachments",
   course_thumbnail: "course-media",
   advertisement: "ad-media",
   job_attachment: "job-files",
@@ -294,7 +296,8 @@ export function SignedMediaUploader({
   const [error, setError] = useState<string | null>(null);
   const [uploadedCount, setUploadedCount] = useState(0);
   const [totalFiles, setTotalFiles] = useState(0);
-  const isDocumentUpload = module === "job_attachment";
+  const isDocumentUpload =
+    module === "job_attachment" || module === "event_attachment";
   const acceptedTypes = isDocumentUpload
     ? acceptedDocumentTypes
     : acceptedImageTypes;
