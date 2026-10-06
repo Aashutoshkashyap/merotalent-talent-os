@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     "courses",
     "skill-based hiring",
   ],
-  metadataBase: new URL("https://merotalent.vercel.app"),
+  metadataBase: new URL("https://www.merotalent.com"),
   openGraph: {
     title: "Merotalent — Talent meets opportunity",
     description:

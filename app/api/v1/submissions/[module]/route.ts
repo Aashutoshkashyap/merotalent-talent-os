@@ -199,7 +199,7 @@ export async function POST(request: Request, context: RouteContext) {
     };
 
     const missing = missingStudentProfileFields(module, fallbackProfile, authenticated.user.email);
-    if (missing.length && !fallbackProfile.email) {
+    if (missing.length) {
       return response(requestId, 422, null, {
         code: "PROFILE_INCOMPLETE",
         message: `Complete your student profile before submitting: ${missing.join(", ")}.`,

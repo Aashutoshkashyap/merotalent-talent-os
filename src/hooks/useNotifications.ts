@@ -83,13 +83,27 @@ export function useNotifications() {
   }, [user]);
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 10000);
+    void fetchNotifications();
+    if (!user) return;
 
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `recipient_id=eq.${user.id}` },
+        () => void fetchNotifications(),
+      )
+      .subscribe();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void fetchNotifications();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchNotifications, user]);
 
   const markAllAsRead = async () => {
     setNotifications((prev) =>

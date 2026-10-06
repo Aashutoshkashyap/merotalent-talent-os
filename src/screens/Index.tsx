@@ -494,7 +494,7 @@ export default function Index() {
       <SidebarNav activeRole="talent" activeNavId="home" onHoverChange={setIsSidebarExpanded} />
       <div className="flex min-h-screen flex-1 flex-col transition-all duration-300 ease-in-out" style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}>
         <HeaderNav />
-        <main className="flex-1 bg-gradient-to-b from-slate-50/50 via-white to-slate-50/30 pb-16">
+        <main className="flex-1 bg-gradient-to-b from-slate-50/50 via-white to-slate-50/30 pb-0">
           {/* Dynamically Ordered & Controlled Homepage Sections */}
           {activeSections.map((s) => s.render())}
         </main>

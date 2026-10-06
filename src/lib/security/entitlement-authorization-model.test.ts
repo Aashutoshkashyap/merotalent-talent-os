@@ -50,10 +50,14 @@ describe("authoritative entitlement authorization model", () => {
     expect(aiRoute).not.toContain("secret: configured.secret, status");
   });
 
-  it("accepts Free as an entitlement provenance only through the Super Admin route", () => {
+  it("centralizes dated manual assignments and payment tracking in one Super Admin transaction", () => {
+    const assignmentMigration = read("supabase/migrations/20261006150000_centralize_admin_module_assignment.sql");
     const accessMatrixRoute = read("app/api/v1/admin/access-matrix/route.ts");
-    expect(accessMatrixRoute).toContain('"FREE", "ADMIN_MANUAL"');
-    expect(accessMatrixRoute).toContain("Choose an active Free package");
+    expect(assignmentMigration).toContain("admin_assign_module_access_with_payment");
+    expect(assignmentMigration).toContain("admin_assign_entity_scope");
+    expect(assignmentMigration).toContain("admin_manage_module_entitlement");
+    expect(assignmentMigration).toContain("INSERT INTO public.payments");
+    expect(accessMatrixRoute).toContain("ACCESS_ASSIGNMENT_MOVED");
   });
 
   it("bridges legacy Free subscription controls to the ledger and lets only Super Admin revoke", () => {

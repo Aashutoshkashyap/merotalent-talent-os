@@ -136,7 +136,7 @@ export default function Payments() {
 
       // Enrich mentor booking transactions
       const mentorBookingIds = rows.filter((r) => r.payment_type === "mentor_booking").map((r) => r.reference_id);
-      let mentorMap = new Map<string, { mentorName: string; mentorId: string }>();
+      const mentorMap = new Map<string, { mentorName: string; mentorId: string }>();
       if (mentorBookingIds.length > 0) {
         const { data: bookings } = await (supabase as any)
           .from("mentor_bookings")
@@ -160,7 +160,7 @@ export default function Payments() {
 
       // Enrich event transactions
       const eventRefIds = rows.filter((r) => r.payment_type === "event_registration").map((r) => r.reference_id);
-      let eventMap = new Map<string, { eventTitle: string; eventId: string }>();
+      const eventMap = new Map<string, { eventTitle: string; eventId: string }>();
       if (eventRefIds.length > 0) {
         const { data: registrations } = await (supabase as any)
           .from("event_registrations")

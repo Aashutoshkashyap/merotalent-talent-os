@@ -65,7 +65,7 @@ Server routes additionally require the unprefixed Supabase variables. Keep
 local/Vercel secret manager only; never expose them through `NEXT_PUBLIC_*`.
 Set `AUTH_INVITE_REDIRECT_URL` to the exact allowlisted production password
 setup route, for example
-`https://merotalent.vercel.app/reset-password`. Administrator invitation
+`https://www.merotalent.com/reset-password`. Administrator invitation
 links fail closed unless this server-only value is HTTPS, has no query,
 fragment, credentials, or custom port, and uses the exact `/reset-password`
 path. It is never derived from the request Host header.

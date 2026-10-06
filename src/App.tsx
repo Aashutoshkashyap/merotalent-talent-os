@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
@@ -45,7 +45,6 @@ import Competitions from "./screens/dashboard/Competitions";
 import Mentors from "./screens/dashboard/Mentors";
 import Jobs from "./screens/dashboard/Jobs";
 import Sessions from "./screens/dashboard/Sessions";
-import Messages from "./screens/dashboard/Messages";
 import Settings from "./screens/dashboard/Settings";
 
 import Colleges from "./screens/dashboard/Colleges";
@@ -65,7 +64,6 @@ import AdminJobs from "./screens/admin/AdminJobs";
 import AdminNotifications from "./screens/admin/AdminNotifications";
 import AdminQueries from "./screens/admin/AdminQueries";
 import AdminManagement from "./screens/admin/AdminManagement";
-import AdminRoleManagement from "./screens/admin/AdminRoleManagement";
 import AdminEvents from "./screens/admin/AdminEvents";
 import AdminPackages from "./screens/admin/AdminPackages";
 import AdminSubscriptions from "./screens/admin/AdminSubscriptions";
@@ -78,7 +76,6 @@ import AdminApplications from "./screens/admin/AdminApplications";
 import AdminBookings from "./screens/admin/AdminBookings";
 import AdminPageEditor from "./screens/admin/AdminPageEditor";
 import AdminAccessRequests from "./screens/admin/AdminAccessRequests";
-import AdminAccessMatrix from "./screens/admin/AdminAccessMatrix";
 import RequestSubAdminAccess from "./screens/RequestSubAdminAccess";
 
 // Institute Pages
@@ -91,7 +88,16 @@ import LegalPage from "./screens/LegalPage";
 
 import ComingSoonPage from "./screens/ComingSoonPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -148,7 +154,7 @@ const App = () => (
                   <Route path="payments" element={<Payments />} />
                   <Route path="ai-workspace" element={<ModuleAIWorkspace />} />
                 <Route path="sessions" element={<Sessions />} />
-                <Route path="messages" element={<Messages />} />
+                <Route path="messages" element={<Navigate to="/dashboard" replace />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 
@@ -182,9 +188,9 @@ const App = () => (
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="queries" element={<AdminQueries />} />
                 <Route path="admins" element={<AdminManagement />} />
-                <Route path="roles" element={<AdminRoleManagement />} />
+                <Route path="roles" element={<Navigate to="/admin/users" replace />} />
                 <Route path="access-requests" element={<AdminAccessRequests />} />
-                <Route path="access-matrix" element={<AdminAccessMatrix />} />
+                <Route path="access-matrix" element={<Navigate to="/admin/users" replace />} />
                 <Route path="pages" element={<AdminPageEditor />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

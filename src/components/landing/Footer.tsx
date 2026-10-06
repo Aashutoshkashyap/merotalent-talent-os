@@ -19,12 +19,12 @@ export default function Footer() {
   ].map((item) => ({ ...item, href: safeExternalUrl(item.url) })).filter((item) => item.href);
 
   return (
-    <footer className="w-full bg-white border-t border-slate-200/80 pt-12 pb-8 px-6 sm:px-10 lg:px-16 font-sans">
-      <div className="w-full max-w-[1400px] mx-auto flex flex-col justify-between min-h-[420px]">
+    <footer className="w-full bg-white border-t border-slate-200/80 py-5 px-6 sm:px-10 lg:px-16 font-sans">
+      <div className="w-full max-w-[1400px] mx-auto flex flex-col">
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 pb-12 border-b border-slate-200/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 pb-5 border-b border-slate-200/80">
           {/* Column 1: Brand Logo, Description & Social Icons */}
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3">
             <Link to="/" className="inline-flex items-center gap-2.5">
               <img
                 src={settings.logo_url || "/logo.png"}
@@ -76,7 +76,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Copyright Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500">
           <p>© {new Date().getFullYear()} MeroTalent. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-6">
             <Link to="/terms" className="hover:text-[#0073e6] transition-colors">

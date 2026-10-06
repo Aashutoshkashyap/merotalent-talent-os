@@ -43,6 +43,53 @@ interface PublicSectionVisibility {
   is_visible: boolean;
 }
 
+interface CmsSnapshot {
+  sections: PageSection[];
+  sectionVisibility: Record<string, PublicSectionVisibility>;
+  settings: SiteSettings;
+}
+
+const CMS_CACHE_TTL_MS = 5 * 60 * 1000;
+const cmsCache = new Map<string, { expiresAt: number; value: CmsSnapshot }>();
+const cmsRequests = new Map<string, Promise<CmsSnapshot>>();
+
+const loadCmsSnapshot = (page: string): Promise<CmsSnapshot> => {
+  const cached = cmsCache.get(page);
+  if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value);
+  const pending = cmsRequests.get(page);
+  if (pending) return pending;
+
+  const request = (async () => {
+    const db = supabase as any;
+    const [sectionsRes, visibilityRes, settingsRes] = await Promise.all([
+      db.from("page_sections").select("*").eq("page", page).eq("is_visible", true).order("display_order", { ascending: true }),
+      db.rpc("get_public_page_section_visibility", { requested_page: page }),
+      db.from("site_settings").select("*"),
+    ]);
+    if (sectionsRes.error) throw sectionsRes.error;
+
+    const visibilityRows = visibilityRes.error ? [] : (visibilityRes.data || []) as PublicSectionVisibility[];
+    if (visibilityRes.error) console.error("Failed to load public section visibility:", visibilityRes.error);
+    const settings: SiteSettings = { ...DEFAULT_SITE_SETTINGS };
+    (settingsRes.data || []).forEach((row: { key: string; value: string }) => {
+      if (row.key && row.value) settings[row.key] = row.value;
+    });
+    const value: CmsSnapshot = {
+      sections: sectionsRes.data || [],
+      sectionVisibility: visibilityRows.reduce((result: Record<string, PublicSectionVisibility>, section) => {
+        result[section.section_key] = section;
+        return result;
+      }, {}),
+      settings,
+    };
+    cmsCache.set(page, { expiresAt: Date.now() + CMS_CACHE_TTL_MS, value });
+    return value;
+  })().finally(() => cmsRequests.delete(page));
+
+  cmsRequests.set(page, request);
+  return request;
+};
+
 export function useSiteCMS(page = "home") {
   const [sections, setSections] = useState<PageSection[]>([]);
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, PublicSectionVisibility>>({});
@@ -53,56 +100,24 @@ export function useSiteCMS(page = "home") {
     async function loadCMS() {
       setIsLoading(true);
       try {
-        const db = supabase as any;
-        const [sectionsRes, visibilityRes, settingsRes] = await Promise.all([
-          db.from("page_sections").select("*").eq("page", page).eq("is_visible", true).order("display_order", { ascending: true }),
-          db.rpc("get_public_page_section_visibility", { requested_page: page }),
-          db.from("site_settings").select("*"),
-        ]);
-
-        if (sectionsRes.data && sectionsRes.data.length > 0) {
-          setSections(sectionsRes.data);
-        } else setSections([]);
-
-        if (visibilityRes.error) {
-          // Retain the legacy page defaults only until a newly deployed
-          // database migration is available. Once the registry loads, an
-          // explicit hidden setting always wins over a component default.
-          console.error("Failed to load public section visibility:", visibilityRes.error);
-          setSectionVisibility({});
-        } else {
-          const visibilityRows = (visibilityRes.data || []) as PublicSectionVisibility[];
-          setSectionVisibility(
-            visibilityRows.reduce((result: Record<string, PublicSectionVisibility>, section) => {
-              result[section.section_key] = section;
-              return result;
-            }, {}),
-          );
-        }
-
-        if (settingsRes.data && settingsRes.data.length > 0) {
-          const settingsObj: SiteSettings = {};
-          settingsRes.data.forEach((row: { key: string; value: string }) => {
-            if (row.key && row.value) {
-              settingsObj[row.key] = row.value;
-            }
-          });
-          setSettings((prev) => ({ ...prev, ...settingsObj }));
+        const snapshot = await loadCmsSnapshot(page);
+        setSections(snapshot.sections);
+        setSectionVisibility(snapshot.sectionVisibility);
+        setSettings(snapshot.settings);
 
           // Dynamically update document title & favicon
-          if (settingsObj.site_title) {
-            document.title = settingsObj.site_title;
+          if (snapshot.settings.site_title) {
+            document.title = snapshot.settings.site_title;
           }
-          if (settingsObj.favicon_url) {
+          if (snapshot.settings.favicon_url) {
             let faviconLink = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
             if (!faviconLink) {
               faviconLink = document.createElement("link");
               faviconLink.rel = "shortcut icon";
               document.getElementsByTagName("head")[0].appendChild(faviconLink);
             }
-            faviconLink.href = settingsObj.favicon_url;
+            faviconLink.href = snapshot.settings.favicon_url;
           }
-        }
       } catch (err) {
         console.error("Failed to load CMS content:", err);
       } finally {

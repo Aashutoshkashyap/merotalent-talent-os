@@ -1,10 +1,11 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoredGuestCollegeApplicationToken } from "@/lib/forms/guest-college-application";
 import { invalidateStudentActivityCache } from "@/lib/student/activity-cache";
 import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
 import { signOutToPublicHome } from "@/lib/auth/sign-out";
+import { getAuthCallbackUrl, getPublicOrigin } from "@/lib/auth/public-origin";
 import { toast } from "sonner";
 
 export type AppRole = "admin" | "super_admin" | "talent" | "institution" | "company" | "mentor";
@@ -88,6 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [permissions, setPermissions] = useState<AppPermission[]>([]);
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const hydratedUserIdRef = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
@@ -159,12 +161,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Supabase emits INITIAL_SESSION immediately after subscription. Relying on
+    // that single source prevents the same profile/access requests from being
+    // fired once by the listener and again by getSession on every page load.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (currentSession?.user) {
           setSession(currentSession);
           setUser(currentSession.user);
+          // Token refreshes should update the session without reloading the
+          // same profile, roles, permissions and capabilities from the API.
+          if (event === "TOKEN_REFRESHED" && hydratedUserIdRef.current === currentSession.user.id) {
+            setIsLoading(false);
+            return;
+          }
+          hydratedUserIdRef.current = currentSession.user.id;
           setTimeout(async () => {
             await Promise.all([
               fetchProfile(currentSession.user.id),
@@ -174,6 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(false);
           }, 0);
         } else {
+          hydratedUserIdRef.current = null;
           setUser(null);
           setSession(null);
           setProfile(null);
@@ -184,22 +196,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     );
-
-    // THEN get the initial session
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
-      if (initialSession?.user) {
-        setSession(initialSession);
-        setUser(initialSession.user);
-        Promise.all([
-          fetchProfile(initialSession.user.id),
-          fetchAccessContext(initialSession.user.id),
-          claimGuestCollegeApplications(initialSession.user.id),
-        ])
-          .then(() => setIsLoading(false));
-      } else {
-        setIsLoading(false);
-      }
-    });
 
     return () => subscription.unsubscribe();
     // The Supabase listener must be registered once; its helpers do not depend
@@ -233,7 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email: normalizedEmail,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getPublicOrigin(),
         data: {
           full_name: fullName,
           // Every new account begins as Student/User. Privileged module access
@@ -306,7 +302,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getAuthCallbackUrl(),
       },
     });
 

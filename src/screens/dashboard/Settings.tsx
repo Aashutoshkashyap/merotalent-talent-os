@@ -13,7 +13,6 @@ import {
   User, 
   Bell, 
   Shield, 
-  Palette, 
   Globe,
   Key,
   Smartphone,
@@ -21,8 +20,6 @@ import {
   LogOut,
   Trash2,
   Save,
-  Moon,
-  Sun,
   Monitor,
   Loader2,
 } from "lucide-react";
@@ -31,10 +28,8 @@ import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   normalizeAccountLanguage,
-  normalizeAccountTheme,
   normalizeNotificationPreferences,
   type AccountLanguage,
-  type AccountTheme,
   type NotificationPreferences,
 } from "@/lib/account/preferences";
 import {
@@ -54,7 +49,6 @@ const Settings = () => {
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     ...DEFAULT_NOTIFICATION_PREFERENCES,
   });
-  const [theme, setTheme] = useState<AccountTheme>("system");
   const [language, setLanguage] = useState<AccountLanguage>("en");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
@@ -78,7 +72,7 @@ const Settings = () => {
     const loadPreferences = async () => {
       const { data, error } = await supabase
         .from("user_preferences")
-        .select("notification_preferences, theme, language")
+        .select("notification_preferences, language")
         .eq("user_id", profile.user_id)
         .maybeSingle();
 
@@ -90,7 +84,6 @@ const Settings = () => {
       }
 
       setNotifications(normalizeNotificationPreferences(data.notification_preferences));
-      setTheme(normalizeAccountTheme(data.theme));
       setLanguage(normalizeAccountLanguage(data.language));
     };
 
@@ -147,7 +140,7 @@ const Settings = () => {
       .upsert({
         user_id: profile.user_id,
         notification_preferences: notifications,
-        theme,
+        theme: "light",
         language,
       }, { onConflict: "user_id" });
     setIsSavingPreferences(false);
@@ -198,10 +191,6 @@ const Settings = () => {
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="w-4 h-4" />
             Notifications
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="flex items-center gap-2">
-            <Palette className="w-4 h-4" />
-            Appearance
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
@@ -366,22 +355,6 @@ const Settings = () => {
                 {isSavingPreferences && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save notification preferences
               </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Appearance */}
-        <TabsContent value="appearance" className="space-y-6">
-          <Card className={dashboardSurface}>
-            <CardHeader>
-              <CardTitle>Theme & Visual Mode</CardTitle>
-              <CardDescription>MeroTalent is currently formatted in standard clean Light Mode</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm">
-                <Sun className="w-5 h-5 text-amber-600 shrink-0" />
-                <p>Default interface theme is set to Light Mode for optimal readability and accessibility across all modules.</p>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>

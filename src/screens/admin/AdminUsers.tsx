@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { SystemPagination } from "@/components/ui/SystemPagination";
@@ -42,7 +41,6 @@ import {
   Search,
   MoreHorizontal,
   RefreshCw,
-  Shield,
   UserPlus,
   KeyRound,
   Ban,
@@ -54,6 +52,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { listAdminResource } from "@/lib/admin/admin-client";
+import { getPasswordResetUrl } from "@/lib/auth/public-origin";
 
 interface UserRecord {
   id: string;
@@ -66,6 +65,20 @@ interface UserRecord {
   roles: string[];
 }
 
+interface EntityOption {
+  id: string;
+  label: string;
+}
+
+const formatDateInput = (date: Date) => date.toISOString().slice(0, 10);
+
+const defaultSubscriptionDates = () => {
+  const start = new Date();
+  const end = new Date(start);
+  end.setDate(end.getDate() + 30);
+  return { start: formatDateInput(start), end: formatDateInput(end) };
+};
+
 const AdminUsers = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -77,63 +90,99 @@ const AdminUsers = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createEmail, setCreateEmail] = useState("");
   const [createName, setCreateName] = useState("");
-  const [createRole, setCreateRole] = useState("talent");
   const [isCreating, setIsCreating] = useState(false);
 
-  // Manual Module Enrollment Modal State
+  // This is the single Super Admin surface for operational module assignment.
   const [isEnrollOpen, setIsEnrollOpen] = useState(false);
   const [enrollUser, setEnrollUser] = useState<UserRecord | null>(null);
   const [enrollModuleKey, setEnrollModuleKey] = useState("college");
-  const [enrollDurationDays, setEnrollDurationDays] = useState(30);
+  const [enrollEntityId, setEnrollEntityId] = useState("");
+  const [enrollEntityOptions, setEnrollEntityOptions] = useState<EntityOption[]>([]);
+  const [isLoadingEntities, setIsLoadingEntities] = useState(false);
+  const initialDates = defaultSubscriptionDates();
+  const [enrollStartDate, setEnrollStartDate] = useState(initialDates.start);
+  const [enrollEndDate, setEnrollEndDate] = useState(initialDates.end);
   const [enrollAmountPaid, setEnrollAmountPaid] = useState(0);
+  const [enrollTransactionId, setEnrollTransactionId] = useState("");
+  const [enrollNote, setEnrollNote] = useState("");
   const [isEnrolling, setIsEnrolling] = useState(false);
+
+  const loadEntityOptions = useCallback(async (moduleKey: string) => {
+    setIsLoadingEntities(true);
+    setEnrollEntityId("");
+    try {
+      if (moduleKey === "college") {
+        const { data, error } = await (supabase as any).from("institutes").select("id,name").is("deleted_at", null).order("name").limit(500);
+        if (error) throw error;
+        setEnrollEntityOptions((data ?? []).map((row: any) => ({ id: row.id, label: row.name })));
+      } else if (moduleKey === "jobs") {
+        const { data, error } = await (supabase as any).from("companies").select("id,name").is("deleted_at", null).order("name").limit(500);
+        if (error) throw error;
+        setEnrollEntityOptions((data ?? []).map((row: any) => ({ id: row.id, label: row.name })));
+      } else if (moduleKey === "mentor") {
+        const { data, error } = await (supabase as any).from("mentors").select("id,user_id,headline").is("deleted_at", null).order("created_at", { ascending: false }).limit(500);
+        if (error) throw error;
+        const mentorRows = data ?? [];
+        const userIds = mentorRows.map((row: any) => row.user_id).filter(Boolean);
+        const { data: profiles } = userIds.length
+          ? await (supabase as any).from("profiles").select("user_id,full_name,email").in("user_id", userIds)
+          : { data: [] };
+        const profileMap = new Map((profiles ?? []).map((profile: any) => [profile.user_id, profile]));
+        setEnrollEntityOptions(mentorRows.map((row: any) => {
+          const profile = profileMap.get(row.user_id) as any;
+          return { id: row.id, label: profile?.full_name || profile?.email || row.headline || `Mentor ${row.id.slice(0, 8)}` };
+        }));
+      } else {
+        const { data, error } = await (supabase as any).from("events").select("id,title").is("deleted_at", null).order("title").limit(500);
+        if (error) throw error;
+        setEnrollEntityOptions((data ?? []).map((row: any) => ({ id: row.id, label: row.title })));
+      }
+    } catch (error: any) {
+      setEnrollEntityOptions([]);
+      toast({ variant: "destructive", title: "Entities unavailable", description: error?.message || "Could not load assignable records." });
+    } finally {
+      setIsLoadingEntities(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    if (isEnrollOpen) void loadEntityOptions(enrollModuleKey);
+  }, [enrollModuleKey, isEnrollOpen, loadEntityOptions]);
 
   const handleManualEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!enrollUser) return;
+    if (!enrollUser || !enrollEntityId) {
+      toast({ variant: "destructive", title: "Entity required", description: "Select the college, company, mentor, or event this person may manage." });
+      return;
+    }
     setIsEnrolling(true);
     try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + Number(enrollDurationDays));
-
-      // Record entitlement
-      await (supabase as any).from("module_entitlements").insert({
-        user_id: enrollUser.user_id,
-        module_key: enrollModuleKey,
-        entity_type: enrollModuleKey,
-        entity_id: enrollUser.user_id,
-        source: "ADMIN_MANUAL",
-        status: "active",
-        start_at: new Date().toISOString(),
-        expires_at: expiresAt.toISOString(),
-        reason: `Superadmin manual enrollment. Received NPR ${enrollAmountPaid}`,
-      });
-
-      // Record payment transaction
-      if (Number(enrollAmountPaid) > 0) {
-        await (supabase as any).from("payments").insert({
-          user_id: enrollUser.user_id,
-          payment_type: "subscription",
-          reference_id: enrollUser.user_id,
-          amount: Number(enrollAmountPaid),
-          currency: "NPR",
-          status: "completed",
-          payment_method: "cash_manual",
-          transaction_id: `manual-${Date.now()}`,
-          metadata: { module: enrollModuleKey, duration_days: enrollDurationDays },
-        });
+      const startAt = new Date(`${enrollStartDate}T00:00:00`);
+      const expiresAt = new Date(`${enrollEndDate}T23:59:59`);
+      if (!Number.isFinite(startAt.getTime()) || !Number.isFinite(expiresAt.getTime()) || expiresAt <= startAt) {
+        throw new Error("Choose a subscription end date after its start date.");
       }
-
-      // Assign module role
-      const targetRole = enrollModuleKey === "college" ? "institution" : enrollModuleKey === "jobs" ? "company" : enrollModuleKey === "mentor" ? "mentor" : "admin";
-      await (supabase as any).from("user_roles").upsert({
-        user_id: enrollUser.user_id,
-        role: targetRole,
+      const entityType = enrollModuleKey === "college" ? "college" : enrollModuleKey === "jobs" ? "company" : enrollModuleKey === "mentor" ? "mentor" : "event";
+      const { error } = await (supabase as any).rpc("admin_assign_module_access_with_payment", {
+        p_target_user_id: enrollUser.user_id,
+        p_module_key: enrollModuleKey,
+        p_entity_type: entityType,
+        p_entity_id: enrollEntityId,
+        p_start_at: startAt.toISOString(),
+        p_expires_at: expiresAt.toISOString(),
+        p_amount: Number(enrollAmountPaid) || 0,
+        p_transaction_id: enrollTransactionId.trim() || null,
+        p_note: enrollNote.trim() || null,
       });
+      if (error) throw error;
 
-      toast({ title: "Module Access Granted!", description: `Granted ${enrollModuleKey} access to ${enrollUser.email} for ${enrollDurationDays} days.` });
+      toast({ title: "Module access assigned", description: `Granted ${enrollModuleKey} access to ${enrollUser.email}. The subscription and any received payment were recorded together.` });
       setIsEnrollOpen(false);
-      fetchUsers();
+      setEnrollEntityId("");
+      setEnrollAmountPaid(0);
+      setEnrollTransactionId("");
+      setEnrollNote("");
+      void fetchUsers();
     } catch (err: any) {
       toast({ variant: "destructive", title: "Enrollment Failed", description: err?.message || "Could not grant module access." });
     } finally {
@@ -148,38 +197,46 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      let profiles: any[] = [];
       try {
-        profiles = await listAdminResource<any>("users");
-      } catch {
-        const { data } = await (supabase as any)
-          .from("profiles")
-          .select("*")
-          .order("created_at", { ascending: false });
-        profiles = data || [];
-      }
+        const { data: auth } = await supabase.auth.getSession();
+        if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
+        const collected: any[] = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const response = await fetch(`/api/v1/admin/auth-users?page=${page}&page_size=100`, {
+            headers: { Authorization: `Bearer ${auth.session.access_token}` },
+          });
+          const payload = await response.json().catch(() => null);
+          if (!response.ok || payload?.error || !Array.isArray(payload?.data)) {
+            throw new Error(payload?.error?.message || "Could not load registered Auth users.");
+          }
+          collected.push(...payload.data);
+          totalPages = Math.max(1, Number(payload?.meta?.totalPages) || 1);
+          page += 1;
+        } while (page <= totalPages);
 
-      if (profiles && profiles.length > 0) {
-        let roles: any[] = [];
+        setUsers(collected.map((account: any) => ({
+          id: account.id,
+          user_id: account.id,
+          email: account.email || "Email unavailable",
+          full_name: account.profile?.metadata?.fullName || null,
+          phone: null,
+          account_status: account.profile?.accountStatus || (account.banned ? "suspended" : "active"),
+          created_at: account.createdAt,
+          roles: Array.isArray(account.roles) ? account.roles : [],
+        })));
+      } catch (authListError: any) {
         try {
-          roles = await listAdminResource<any>("user-roles");
+          const profiles = await listAdminResource<any>("users");
+          const roles = await listAdminResource<any>("user-roles");
+          setUsers(profiles.map((profile: any) => ({
+            ...profile,
+            roles: roles.filter((role: any) => role.user_id === profile.user_id).map((role: any) => role.role),
+          })));
         } catch {
-          const userIds = profiles.map((p: any) => p.user_id);
-          const { data: rolesData } = await (supabase as any)
-            .from("user_roles")
-            .select("user_id, role")
-            .in("user_id", userIds);
-          roles = rolesData || [];
+          throw authListError;
         }
-
-        const usersWithRoles = profiles.map((profile: any) => ({
-          ...profile,
-          roles: roles?.filter((r: any) => r.user_id === profile.user_id).map((r: any) => r.role) || [],
-        }));
-
-        setUsers(usersWithRoles);
-      } else {
-        setUsers([]);
       }
     } catch (err: any) {
       toast({ variant: "destructive", title: "Fetch Failed", description: err?.message || "Could not fetch users." });
@@ -207,7 +264,7 @@ const AdminUsers = () => {
         },
         body: JSON.stringify({
           email: createEmail.trim(),
-          role: createRole,
+          role: "talent",
           metadata: createName.trim() ? { full_name: createName.trim() } : {},
         }),
       });
@@ -222,7 +279,6 @@ const AdminUsers = () => {
       setIsCreateOpen(false);
       setCreateEmail("");
       setCreateName("");
-      setCreateRole("talent");
       fetchUsers();
     } catch (err: any) {
       toast({ variant: "destructive", title: "Creation Error", description: err?.message || "Could not create user account." });
@@ -234,7 +290,7 @@ const AdminUsers = () => {
   const handleSendPasswordReset = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getPasswordResetUrl(),
       });
       if (error) throw error;
       toast({
@@ -458,20 +514,18 @@ const AdminUsers = () => {
                           )}
                         </DropdownMenuItem>
                         <DropdownMenuItem
+                          disabled={user.roles.includes("admin") || user.roles.includes("super_admin")}
                           onClick={() => {
+                            const dates = defaultSubscriptionDates();
                             setEnrollUser(user);
+                            setEnrollStartDate(dates.start);
+                            setEnrollEndDate(dates.end);
                             setIsEnrollOpen(true);
                           }}
                           className="text-xs font-semibold text-[#071a3d] cursor-pointer"
                         >
                           <UserRoundCog className="w-4 h-4 mr-2 text-indigo-600" />
-                          Manual Module Enrollment
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild className="text-xs font-semibold cursor-pointer">
-                          <Link to="/admin/roles">
-                            <Shield className="w-4 h-4 mr-2 text-blue-600" />
-                            Manage Roles
-                          </Link>
+                          Assign Module Access
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleDeleteUser(user.user_id, user.email)} className="text-xs font-semibold text-red-600 cursor-pointer">
@@ -550,20 +604,9 @@ const AdminUsers = () => {
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Account Primary Role *</Label>
-                <Select value={createRole} onValueChange={setCreateRole}>
-                  <SelectTrigger className="h-10 text-xs rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="talent">Student / Talent</SelectItem>
-                    <SelectItem value="institution">Institution / College Admin</SelectItem>
-                    <SelectItem value="mentor">Mentor</SelectItem>
-                    <SelectItem value="company">Company / Recruiter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-600">
+                Invitations create a standard Student / Talent account. Assign operational module access from this user's action menu after the account exists.
+              </p>
             </div>
 
             <DialogFooter className="pt-2">
@@ -580,14 +623,14 @@ const AdminUsers = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Manual Module Enrollment Dialog */}
+      {/* The only Super Admin module-assignment workflow. */}
       <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
         <DialogContent className="max-w-md rounded-3xl p-6">
           <form onSubmit={handleManualEnroll} className="space-y-4">
             <DialogHeader>
-              <DialogTitle className="text-xl font-black text-slate-900">Manual Module Enrollment</DialogTitle>
+              <DialogTitle className="text-xl font-black text-slate-900">Assign Module Access</DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Super Admin manual grant for <span className="font-bold text-slate-800">{enrollUser?.email}</span>. Grant module access and log cash/offline payment record.
+                Assign one person to a specific record, set the subscription period, and record any offline payment in the same audited action.
               </DialogDescription>
             </DialogHeader>
 
@@ -608,16 +651,31 @@ const AdminUsers = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Access Duration (Days) *</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={3650}
-                  value={enrollDurationDays}
-                  onChange={(e) => setEnrollDurationDays(Number(e.target.value))}
-                  required
-                  className="h-10 text-xs rounded-xl"
-                />
+                <Label className="text-xs font-bold text-slate-700">Assigned record *</Label>
+                <Select value={enrollEntityId} onValueChange={setEnrollEntityId} disabled={isLoadingEntities}>
+                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                    <SelectValue placeholder={isLoadingEntities ? "Loading records..." : "Choose the exact record"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enrollEntityOptions.map((entity) => (
+                      <SelectItem key={entity.id} value={entity.id}>{entity.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isLoadingEntities && enrollEntityOptions.length === 0 ? (
+                  <p className="text-[10px] text-amber-700">Create the module record first, then assign its administrator here.</p>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-slate-700" htmlFor="subscription-start">Subscription starts *</Label>
+                  <Input id="subscription-start" type="date" value={enrollStartDate} onChange={(e) => setEnrollStartDate(e.target.value)} required className="h-10 text-xs rounded-xl" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-slate-700" htmlFor="subscription-end">Subscription ends *</Label>
+                  <Input id="subscription-end" type="date" min={enrollStartDate} value={enrollEndDate} onChange={(e) => setEnrollEndDate(e.target.value)} required className="h-10 text-xs rounded-xl" />
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -630,7 +688,17 @@ const AdminUsers = () => {
                   placeholder="e.g. 5000"
                   className="h-10 text-xs rounded-xl"
                 />
-                <p className="text-[10px] text-slate-500">Inputs 0 for free manual grant or custom amount received for transaction record keeping.</p>
+                <p className="text-[10px] text-slate-500">Use 0 for a complimentary grant. Positive amounts are added to Payments as successful manual transactions.</p>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700" htmlFor="transaction-reference">Payment reference</Label>
+                <Input id="transaction-reference" value={enrollTransactionId} onChange={(e) => setEnrollTransactionId(e.target.value)} maxLength={180} placeholder="Receipt or bank reference (optional)" className="h-10 text-xs rounded-xl" />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700" htmlFor="assignment-note">Internal note</Label>
+                <Input id="assignment-note" value={enrollNote} onChange={(e) => setEnrollNote(e.target.value)} maxLength={1000} placeholder="Reason or collection note (optional)" className="h-10 text-xs rounded-xl" />
               </div>
             </div>
 
@@ -641,7 +709,7 @@ const AdminUsers = () => {
 
               <Button type="submit" disabled={isEnrolling} className="rounded-xl bg-[#071a3d] hover:bg-[#05132d] text-white text-xs font-extrabold px-5">
                 {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserRoundCog className="w-4 h-4 mr-2" />}
-                Grant Access & Record Transaction
+                Assign Access
               </Button>
             </DialogFooter>
           </form>

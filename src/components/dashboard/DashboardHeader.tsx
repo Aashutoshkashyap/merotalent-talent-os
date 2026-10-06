@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command, Briefcase, Building2, UserCog, Check, Sun, Moon } from "lucide-react";
+import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command, Briefcase, Building2, UserCog, Check } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
@@ -55,7 +55,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
       ["job career role", "/dashboard/jobs"],
       ["profile portfolio", "/dashboard/profile"],
       ["session appointment", "/dashboard/sessions"],
-      ["message chat", "/dashboard/messages"],
       ["setting account", "/dashboard/settings"],
     ].find(([keywords]) => keywords.split(" ").some((keyword) => normalized.includes(keyword)))?.[1];
 
@@ -70,7 +69,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     "/dashboard/jobs": "Jobs",
     "/dashboard/profile": "My profile",
     "/dashboard/sessions": "Sessions",
-    "/dashboard/messages": "Messages",
     "/dashboard/settings": "Settings",
   };
   const pageTitle =

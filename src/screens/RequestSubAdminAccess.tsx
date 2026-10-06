@@ -184,41 +184,15 @@ export default function RequestSubAdminAccess() {
         `Justification: ${reason.trim()}`,
       ].filter(Boolean).join("\n");
 
-      let submitted = false;
-
-      // 1. Try RPC
-      try {
-        const { error: rpcError } = await (supabase as any).rpc(
-          "request_sub_admin_access",
-          {
-            p_requested_modules: selectedModules,
-            p_reason: fullReason,
-            p_organization: organization.trim() || selectedCollege?.name || null,
-          },
-        );
-        if (!rpcError) submitted = true;
-      } catch {
-        submitted = false;
-      }
-
-      // 2. Direct fallback
-      if (!submitted) {
-        const { error: directErr } = await (supabase as any)
-          .from("sub_admin_requests")
-          .insert({
-            user_id: user.id,
-            user_name: profile?.full_name || user.email,
-            user_email: user.email,
-            requested_modules: selectedModules,
-            reason: fullReason,
-            organization: organization.trim() || selectedCollege?.name || null,
-            status: "pending",
-          });
-        if (directErr) {
-          // If table doesn't exist, create audit log / toast
-          console.warn("Direct request fallback note:", directErr);
-        }
-      }
+      const { error: rpcError } = await (supabase as any).rpc(
+        "request_sub_admin_access",
+        {
+          p_requested_modules: selectedModules,
+          p_reason: fullReason,
+          p_organization: organization.trim() || selectedCollege?.name || null,
+        },
+      );
+      if (rpcError) throw rpcError;
 
       // Log activity
       const { logUserActivity } = await import("@/lib/activityLogger");
