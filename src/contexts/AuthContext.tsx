@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getStoredGuestCollegeApplicationToken } from "@/lib/forms/guest-college-application";
 import { invalidateStudentActivityCache } from "@/lib/student/activity-cache";
 import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
+import { signOutToPublicHome } from "@/lib/auth/sign-out";
+import { toast } from "sonner";
 
 export type AppRole = "admin" | "super_admin" | "talent" | "institution" | "company" | "mentor";
 export type AppPermission = string;
@@ -316,13 +318,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-    setRoles([]);
-    setPermissions([]);
-    setCapabilities([]);
+    try {
+      const error = await signOutToPublicHome(
+        () => supabase.auth.signOut(),
+        () => {
+          if (user?.id) invalidateStudentActivityCache(user.id);
+          clearPendingModuleAccessRole();
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setRoles([]);
+          setPermissions([]);
+          setCapabilities([]);
+        },
+        (path) => window.location.replace(path),
+      );
+      if (error) toast.error("Sign out failed. Please try again.");
+    } catch {
+      toast.error("Sign out failed. Please try again.");
+    }
   };
 
   const isSuperAdmin = roles.includes("super_admin");
