@@ -87,13 +87,25 @@ const Profile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.user_id) return;
+    const targetUserId = user?.id || profile?.user_id;
+    if (!targetUserId) {
+      toast({
+        variant: "destructive",
+        title: "Sign in required",
+        description: "Please sign in to update your profile.",
+      });
+      return;
+    }
 
     setIsLoading(true);
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("profiles")
-      .update(formData)
-      .eq("user_id", profile.user_id);
+      .upsert({
+        user_id: targetUserId,
+        email: user?.email || profile?.email || "",
+        ...formData,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
 
     if (error) {
       toast({
@@ -109,6 +121,56 @@ const Profile = () => {
       await refreshProfile();
     }
     setIsLoading(false);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const targetUserId = user?.id || profile?.user_id;
+    if (!file || !targetUserId) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Avatar image must be less than 5MB",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${targetUserId}/avatar_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      let avatarUrl = filePath;
+      if (!uploadError) {
+        const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        if (publicUrlData?.publicUrl) avatarUrl = publicUrlData.publicUrl;
+      }
+
+      const { error: updateError } = await (supabase as any)
+        .from('profiles')
+        .upsert({
+          user_id: targetUserId,
+          email: user?.email || profile?.email || "",
+          avatar_url: avatarUrl,
+        }, { onConflict: 'user_id' });
+
+      if (updateError) {
+        toast({ variant: "destructive", title: "Could not save avatar", description: updateError.message });
+      } else {
+        toast({ title: "Photo updated!", description: "Your profile photo has been updated." });
+        await refreshProfile();
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Upload failed", description: err.message || "Could not upload avatar" });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const toggleSkill = async (skillId: string) => {
@@ -257,10 +319,20 @@ const Profile = () => {
         <Card className={`${dashboardSurface} lg:col-span-1`}>
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[30px] bg-[#c2410c] text-3xl font-black text-white shadow-[0_16px_34px_rgba(249,115,22,0.24)] ring-8 ring-[#fff2e8]">
-                {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || "U"}
+              <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-[30px] bg-[#c2410c] text-3xl font-black text-white shadow-[0_16px_34px_rgba(249,115,22,0.24)] ring-8 ring-[#fff2e8] flex items-center justify-center">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.full_name || "User"} className="h-full w-full object-cover" />
+                ) : (
+                  profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || "U"
+                )}
               </div>
-              <h3 className="mt-4 font-semibold text-lg">{profile?.full_name || "User"}</h3>
+              <div className="mt-2 flex justify-center">
+                <label className="cursor-pointer text-xs font-semibold text-primary hover:underline">
+                  Change Photo
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                </label>
+              </div>
+              <h3 className="mt-2 font-semibold text-lg">{profile?.full_name || "User"}</h3>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
               
               {formData.linkedin_url && (
