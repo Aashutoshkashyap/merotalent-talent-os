@@ -10,6 +10,7 @@ import ActiveAdvertisements from "@/components/landing/ActiveAdvertisements";
 import TrustStrip from "@/components/landing/TrustStrip";
 import OpportunitiesSection from "@/components/landing/OpportunitiesSection";
 import AboutUs from "@/components/landing/AboutUs";
+import Features from "@/components/landing/Features";
 import Testimonials from "@/components/landing/Testimonials";
 import FAQ from "@/components/landing/FAQ";
 import ContactForm from "@/components/landing/ContactForm";
@@ -433,6 +434,12 @@ export default function Index() {
           description={aboutSection?.body || undefined}
         />
       ),
+    },
+    {
+      key: "features",
+      order: 8.5,
+      isVisible: true,
+      render: () => <Features key="features" />,
     },
     {
       key: "testimonials",
