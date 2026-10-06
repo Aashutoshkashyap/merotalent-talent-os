@@ -671,9 +671,9 @@ const AdminInstitutions = () => {
                 </div>
                 <div className="flex items-center justify-between gap-4 rounded-md bg-background p-3">
                   <div>
-                    <Label htmlFor="is-featured">Feature on Top</Label>
+                    <Label htmlFor="is-featured">Featured listing</Label>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Pins this institution with a Featured badge in recommendations.
+                      Shows a Featured badge and prioritizes unnumbered recommendations. Use the position number for an exact directory slot.
                     </p>
                   </div>
                   <Switch

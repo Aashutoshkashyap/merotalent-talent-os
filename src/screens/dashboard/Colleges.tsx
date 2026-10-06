@@ -11,6 +11,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -301,6 +302,12 @@ export default function Colleges() {
                       <div className="absolute top-3 left-3 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1 border border-emerald-400 shadow-xs">
                         <CheckCircle2 className="w-3 h-3" />
                         Applied
+                      </div>
+                    )}
+                    {college.is_featured && (
+                      <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full border border-white/40 bg-blue-700 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
+                        <Star className="h-3 w-3 fill-current" aria-hidden="true" />
+                        Featured
                       </div>
                     )}
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-black text-[#0073e6] border border-white/40">

@@ -23,14 +23,14 @@ describe("college publication and discovery", () => {
     expect(directory).toContain("i.status = 'approved'");
   });
 
-  it("uses global featured order in public discovery and includes it in the student dashboard", () => {
+  it("uses numbered placement after editorial ordering and includes featured colleges in the student dashboard", () => {
     const directory = read("src/lib/institutes/public-institutes.ts");
-    const featuredPosition = directory.indexOf('.order("is_featured"');
-    const rankingPosition = directory.indexOf('.order("ranking"');
-    expect(featuredPosition).toBeGreaterThan(-1);
-    expect(featuredPosition).toBeLessThan(rankingPosition);
+    expect(directory).toContain('.order("is_featured"');
+    expect(directory).toContain('placeInstitutes(');
+    expect(directory).toContain('.eq("admission_status", "open")');
     expect(read("src/screens/Index.tsx")).toContain('sort: "recommended", limit: 6');
     expect(read("src/screens/dashboard/Dashboard.tsx")).toContain('<FeaturedSection title="Featured opportunities" />');
+    expect(read("src/screens/dashboard/Colleges.tsx")).toContain("college.is_featured");
   });
 });
 

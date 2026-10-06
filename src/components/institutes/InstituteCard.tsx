@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, BookOpen, MapPin } from "lucide-react";
+import { BadgeCheck, BookOpen, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import InstituteImage from "./InstituteImage";
 import {
@@ -35,6 +35,12 @@ export default function InstituteCard({ institute }: InstituteCardProps) {
         {institute.institution_category && (
           <span className="absolute left-3 top-3 z-20 rounded-full border border-white/50 bg-white/90 px-3 py-1 text-[11px] font-extrabold capitalize text-slate-700 shadow-sm backdrop-blur">
             {formatInstituteCategory(institute.institution_category)}
+          </span>
+        )}
+        {institute.is_featured && (
+          <span className="absolute bottom-3 left-3 z-20 inline-flex items-center gap-1 rounded-full border border-white/40 bg-blue-700 px-3 py-1.5 text-[11px] font-extrabold text-white shadow-sm">
+            <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+            Featured
           </span>
         )}
         {canApply && (

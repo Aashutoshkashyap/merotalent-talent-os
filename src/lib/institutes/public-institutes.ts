@@ -4,6 +4,7 @@ import {
   cleanInstituteFilterText,
   tokenizeInstituteSearch,
 } from "./directory-search";
+import { placeInstitutes } from "./placement";
 export {
   getGoogleMapsEmbedUrl,
   getGoogleMapsSearchUrl,
@@ -230,26 +231,22 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
 
   const { search, category, location, affiliation, admissionStatus, sort, limit } = query;
 
-  let request = supabase
-    .from("institute_directory")
-    .select(publicInstituteSelect, { count: "exact" });
-
   const searchTokens = tokenizeInstituteSearch(search);
-  for (const token of searchTokens) {
-    request = request.ilike("search_document", `%${token}%`);
-  }
-
-  if (category !== "all") {
-    request = request.in("institution_category", categoryValues[category]);
-  }
-
   const normalizedLocation = cleanInstituteFilterText(location);
-  if (normalizedLocation) request = request.ilike("location", `%${normalizedLocation}%`);
-
   const normalizedAffiliation = cleanInstituteFilterText(affiliation);
-  if (normalizedAffiliation) request = request.ilike("affiliation", `%${normalizedAffiliation}%`);
+  const buildRequest = () => {
+    let request = supabase
+      .from("institute_directory")
+      .select(publicInstituteSelect, { count: "exact" });
+    for (const token of searchTokens) request = request.ilike("search_document", `%${token}%`);
+    if (category !== "all") request = request.in("institution_category", categoryValues[category]);
+    if (normalizedLocation) request = request.ilike("location", `%${normalizedLocation}%`);
+    if (normalizedAffiliation) request = request.ilike("affiliation", `%${normalizedAffiliation}%`);
+    if (admissionStatus) request = request.eq("admission_status", admissionStatus);
+    return request;
+  };
 
-  if (admissionStatus) request = request.eq("admission_status", admissionStatus);
+  let request = buildRequest();
 
   if (sort === "name") {
     request = request.order("name", { ascending: true });
@@ -258,37 +255,39 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
   } else {
     request = request
       .order("is_featured", { ascending: false })
-      .order("ranking", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false })
       .order("name", { ascending: true });
+  }
+
+  if (sort === "recommended") {
+    // Fetch the approved directory's numbered colleges independently of the
+    // first page. Applying LIMIT before placement loses a college assigned to
+    // a later slot (for example, #12 on a six-card student page).
+    const { data: positions, error: positionError } = await buildRequest()
+      .eq("admission_status", "open")
+      .not("ranking", "is", null)
+      .order("ranking", { ascending: true })
+      .order("name", { ascending: true })
+      .limit(1000);
+    if (positionError) throw new Error(positionError.message);
+
+    const positioned = (positions ?? []) as unknown as InstituteRecord[];
+    const { data, error, count } = await request.range(0, Math.max(0, limit + positioned.length - 1));
+    if (error) throw new Error(error.message);
+
+    const result: PublicInstituteResult = {
+      institutes: placeInstitutes((data ?? []) as unknown as InstituteRecord[], positioned, count ?? 0, limit),
+      count: count ?? 0,
+    };
+    queryCache.set(cacheKey, { timestamp: Date.now(), data: result });
+    return result;
   }
 
   const { data, error, count } = await request.range(0, Math.max(0, limit - 1));
   if (error) throw new Error(error.message);
 
-  let rawList = (data ?? []) as unknown as InstituteRecord[];
-
-  // Preserve the database's full-result ordering. Sorting only the current page
-  // after LIMIT can never bring a featured record from a later page to the top.
-  if (!sort || sort === "recommended") {
-    rawList = [...rawList].sort((a, b) => {
-      // Editorial feature and ranking are global ordering keys, independent
-      // of admission status. An approved featured college must be discoverable.
-      const aFeat = a.is_featured ? 1 : 0;
-      const bFeat = b.is_featured ? 1 : 0;
-      if (aFeat !== bFeat) return bFeat - aFeat;
-
-      const aRank = typeof a.ranking === "number" && a.ranking > 0 ? a.ranking : 999999;
-      const bRank = typeof b.ranking === "number" && b.ranking > 0 ? b.ranking : 999999;
-      if (aRank !== bRank) return aRank - bRank;
-      const createdDifference = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (Number.isFinite(createdDifference) && createdDifference !== 0) return createdDifference;
-      return a.name.localeCompare(b.name);
-    });
-  }
-
   const result: PublicInstituteResult = {
-    institutes: rawList,
+    institutes: (data ?? []) as unknown as InstituteRecord[],
     count: count ?? data?.length ?? 0,
   };
 
