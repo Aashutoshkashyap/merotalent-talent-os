@@ -809,7 +809,13 @@ const InstituteDashboard = () => {
                     </div>
                   )}
                   <div className="mt-6 flex flex-wrap gap-3">
-                    <Button onClick={() => setIsClaimModalOpen(true)} className="rounded-xl bg-[#1d4ed8] text-white hover:bg-[#1e40af]">Claim or list college</Button>
+                    {latestScopeRequest?.status === "approved" ? (
+                      <Button asChild className="rounded-xl bg-[#1d4ed8] text-white hover:bg-[#1e40af]">
+                        <Link to="/dashboard/payments">View Plans & Pay</Link>
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setIsClaimModalOpen(true)} className="rounded-xl bg-[#1d4ed8] text-white hover:bg-[#1e40af]">Claim or list college</Button>
+                    )}
                     <Button asChild variant="outline" className="rounded-xl"><Link to="/dashboard">Back to student dashboard</Link></Button>
                   </div>
                 </>

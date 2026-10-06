@@ -315,7 +315,17 @@ export default function RequestSubAdminAccess() {
                               {request.organization && <p className="mt-1 text-slate-500">{request.organization}</p>}
                               {request.decision_note && <p className="mt-1 text-slate-600">{request.decision_note}</p>}
                               {request.status === "approved" && request.assigned_capabilities?.length > 0 && (
-                                <p className="mt-1 text-emerald-700">Granted: {request.assigned_capabilities.join(", ")}. Request or receive an entity assignment to manage records.</p>
+                                <div className="mt-1 space-y-1.5">
+                                  <p className="text-emerald-700">Granted: {request.assigned_capabilities.join(", ")}. Your module access is approved!</p>
+                                  <div className="flex flex-wrap gap-2 pt-1">
+                                    <Button asChild size="sm" className="h-7 px-2.5 text-xs bg-[#071a3d] text-white hover:bg-[#05132d]">
+                                      <Link to="/dashboard/payments">View Plans & Pay</Link>
+                                    </Button>
+                                    <Button asChild variant="outline" size="sm" className="h-7 px-2.5 text-xs">
+                                      <Link to="/institute">Go to College Workspace</Link>
+                                    </Button>
+                                  </div>
+                                </div>
                               )}
                               {request.status === "pending" && (
                                 <Button type="button" variant="ghost" size="sm" className="mt-1 h-7 px-2 text-xs text-slate-600 hover:text-rose-700" disabled={cancellingRequestId === request.id} onClick={() => void cancelRequest(request.id)}>
