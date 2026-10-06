@@ -34,6 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { StudentProfileRequirement } from "@/components/forms/StudentProfileRequirement";
+import { missingStudentProfileFields } from "@/lib/student/profile-readiness";
 
 type FormValue = string | number | boolean | string[];
 type FormValues = Record<string, FormValue>;
@@ -65,8 +67,9 @@ const initialValueForField = (
 ): FormValue => {
   if (field.key === definition.targetField) return targetId;
   if (field.key === "fullName") return profile?.full_name || "";
-  if (field.key === "email") return profile?.email || userEmail || "";
+  if (field.key === "email") return userEmail || profile?.email || "";
   if (field.key === "phone") return profile?.phone || "";
+  if (field.key === "currentQualification") return profile?.education || "";
   if (field.key === "attendeeCount") return 1;
   if (field.type === "checkbox") return false;
   if (field.type === "multiselect") return [];
@@ -84,7 +87,7 @@ export default function ModuleSubmissionDialog({
   successTitle = "Registration submitted",
   successDescription,
 }: ModuleSubmissionDialogProps) {
-  const { profile, session, user } = useAuth();
+  const { profile, session, user, refreshProfile } = useAuth();
   const [definition, setDefinition] = useState<ModuleFormDefinition | null>(null);
   const [values, setValues] = useState<FormValues>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -119,7 +122,19 @@ export default function ModuleSubmissionDialog({
           );
         }
         setDefinition(formDefinition);
-        setValues(defaults);
+        setValues((current) => {
+          if (current[formDefinition.targetField] !== targetId) return defaults;
+          return {
+            ...defaults,
+            ...current,
+            fullName: defaults.fullName,
+            email: defaults.email,
+            phone: defaults.phone,
+            ...(formDefinition.module === "college_application" && !current.currentQualification
+              ? { currentQualification: defaults.currentQualification }
+              : {}),
+          };
+        });
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -148,6 +163,10 @@ export default function ModuleSubmissionDialog({
       setFormError("Sign in again before submitting this form.");
       return;
     }
+    if (missingStudentProfileFields(module, profile, user?.email).length) {
+      setFormError("Complete your student profile before submitting this form.");
+      return;
+    }
 
     setIsSubmitting(true);
     setFormError(null);
@@ -163,6 +182,7 @@ export default function ModuleSubmissionDialog({
     } catch (error) {
       if (error instanceof ModuleFormClientError) {
         setFieldErrors(error.fields);
+        if (error.code === "PROFILE_INCOMPLETE") void refreshProfile();
       }
       setFormError(
         error instanceof Error ? error.message : "The form could not be submitted.",
@@ -207,6 +227,7 @@ export default function ModuleSubmissionDialog({
               </div>
             ) : definition ? (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {session && <StudentProfileRequirement module={module} profile={profile} email={user?.email} onRefresh={refreshProfile} />}
                 <div className="grid gap-4 sm:grid-cols-2">
                   {definition.fields.map((field) => {
                     if (field.type === "hidden") {
@@ -308,6 +329,7 @@ export default function ModuleSubmissionDialog({
                             max={field.max}
                             step={field.step}
                             autoComplete={field.autocomplete}
+                            readOnly={Boolean(session) && ["fullName", "email", "phone"].includes(field.key)}
                             aria-invalid={Boolean(error)}
                             className="h-11 rounded-xl border-slate-200"
                           />
@@ -331,7 +353,7 @@ export default function ModuleSubmissionDialog({
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-slate-200">
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-[#0073e6] hover:bg-[#0062c4]">
+                  <Button type="submit" disabled={isSubmitting || Boolean(session && missingStudentProfileFields(module, profile, user?.email).length)} className="rounded-xl bg-[#0073e6] hover:bg-[#0062c4]">
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                     {definition.submitLabel}
                   </Button>

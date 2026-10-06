@@ -12,11 +12,13 @@ export interface TransactionalEmail {
     | "college_lead_received"
     | "mentor_booking_received"
     | "event_registration_received"
-    | "job_application_received";
+    | "job_application_received"
+    | "guest_application_verification";
   to: string;
   subject: string;
   text: string;
   html?: string;
+  idempotencyKey?: string;
 }
 
 export interface EmailDeliveryResult {
@@ -38,7 +40,7 @@ class ResendEmailProvider implements TransactionalEmailProvider {
   async send(message: TransactionalEmail): Promise<EmailDeliveryResult> {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json", ...(message.idempotencyKey ? { "Idempotency-Key": message.idempotencyKey } : {}) },
       body: JSON.stringify({ from: this.from, to: [message.to], subject: message.subject, text: message.text, ...(message.html ? { html: message.html } : {}) }),
     });
     const body = await response.json().catch(() => null) as { id?: string; message?: string } | null;
@@ -67,8 +69,10 @@ class UnconfiguredEmailProvider implements TransactionalEmailProvider {
 export const getTransactionalEmailProvider = (
   environment: Record<string, string | undefined> = process.env,
 ): TransactionalEmailProvider => {
-  if (environment.EMAIL_PROVIDER === "resend" && environment.RESEND_API_KEY && environment.EMAIL_FROM) {
-    return new ResendEmailProvider(environment.RESEND_API_KEY, environment.EMAIL_FROM);
+  const apiKey = environment.RESEND_API_KEY;
+  if (apiKey) {
+    const fromAddress = environment.EMAIL_FROM || "onboarding@resend.dev";
+    return new ResendEmailProvider(apiKey, fromAddress);
   }
   return new UnconfiguredEmailProvider();
 };

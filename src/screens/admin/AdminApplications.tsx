@@ -24,6 +24,9 @@ interface CollegeApp {
   full_name: string;
   email: string;
   phone: string | null;
+  whatsapp_number?: string | null;
+  guest_email_verified_at?: string | null;
+  guest_whatsapp_verified_at?: string | null;
   program_interest: string | null;
   intake: string | null;
   status: string;
@@ -201,7 +204,8 @@ export default function AdminApplications() {
                 ["Applicant", selectedApplication.full_name],
                 ["College", collegeName(selectedApplication)],
                 ["Email", selectedApplication.email],
-                ["Phone", selectedApplication.phone || "—"],
+                [selectedApplication.whatsapp_number ? "Verified WhatsApp" : "Phone", selectedApplication.whatsapp_number || selectedApplication.phone || "—"],
+                ...(selectedApplication.whatsapp_number ? [["Email verified", selectedApplication.guest_email_verified_at ? new Date(selectedApplication.guest_email_verified_at).toLocaleString() : "—"]] : []),
                 ["Program", selectedApplication.program_interest || "—"],
                 ["Intake", selectedApplication.intake || "—"],
                 ["Status", collegeApplicationStatusLabel(selectedApplication.status as CollegeApplicationStatus)],

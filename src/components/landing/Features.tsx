@@ -44,18 +44,26 @@ const Features = () => {
     <section id="features" className="relative w-full overflow-hidden bg-white py-24">
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
-            <Zap className="w-4 h-4 text-accent" />
-            <span className="text-sm font-medium text-accent">Powerful Features</span>
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 mb-6">
+            <Zap className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-semibold text-blue-600">Why MeroTalent?</span>
           </div>
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
-            Everything You Need to{" "}
-            <span className="gradient-text">Grow Your Career</span>
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-slate-900">
+            Why <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">MeroTalent?</span>
           </h2>
-          <p className="text-lg text-muted-foreground">
-            A complete ecosystem for talent discovery, skill development, and career advancement.
+          <p className="text-lg text-slate-600 leading-relaxed">
+            A complete ecosystem empowering Nepalese talent, connecting students, mentors, institutions, and companies seamlessly.
           </p>
+        </div>
+
+        {/* Hero Feature Banner Image */}
+        <div className="max-w-5xl mx-auto mb-16 overflow-hidden rounded-3xl border border-slate-200 shadow-2xl shadow-blue-500/10">
+          <img
+            src="https://plus.unsplash.com/premium_photo-1712952354748-0c51436e7dc7?q=80&w=2357&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            alt="Why MeroTalent Platform Ecosystem"
+            className="w-full h-[320px] sm:h-[420px] object-cover object-center transform hover:scale-105 transition-transform duration-700"
+          />
         </div>
 
         {/* Features Grid */}

@@ -36,6 +36,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logUserActivity } from "@/lib/activityLogger";
 import { submitAuthenticatedModuleForm } from "@/lib/forms/module-form-client";
+import { StudentProfileRequirement } from "@/components/forms/StudentProfileRequirement";
+import { missingStudentProfileFields } from "@/lib/student/profile-readiness";
 import {
   fetchPublicInstitutes,
   resolveCollegeMediaUrl,
@@ -50,7 +52,7 @@ type Level = "+2" | "Bachelors" | "Masters";
 const PAGE_SIZE = 6;
 
 export default function Colleges() {
-  const { user, profile, session } = useAuth();
+  const { user, profile, session, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<InstituteCategory>("all");
@@ -72,6 +74,11 @@ export default function Colleges() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [appliedCollegeNames, setAppliedCollegeNames] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setPhone(profile?.phone || "");
+    setTempAddress((current) => current || profile?.location || "");
+  }, [profile?.phone, profile?.location]);
 
   useEffect(() => {
     if (!user) return;
@@ -143,6 +150,10 @@ export default function Colleges() {
       toast({ variant: "destructive", title: "Authentication required", description: "Please sign in to apply." });
       return;
     }
+    if (missingStudentProfileFields("college_application", profile, user.email).length) {
+      toast({ variant: "destructive", title: "Complete your profile", description: "Add the missing profile details before applying." });
+      return;
+    }
 
     const isNepalPhone = /^(?:98|97)\d{8}$/.test(phone.trim());
     if (phone.trim() && !isNepalPhone) {
@@ -156,8 +167,8 @@ export default function Colleges() {
         module: "college_application",
         values: {
           collegeId: selectedCollege?.id,
-          fullName: profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Student",
-          email: user?.email || "",
+          fullName: profile!.full_name || "",
+          email: user.email || "",
           phone: phone,
           intendedCourse: targetProgram,
           preferredIntake: level,
@@ -423,6 +434,10 @@ export default function Colleges() {
             </div>
           ) : (
             <form onSubmit={handleSubmitApplication} className="space-y-4 pt-2">
+              <StudentProfileRequirement module="college_application" profile={profile} email={user?.email} onRefresh={refreshProfile} />
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Applying as <span className="font-bold">{profile?.full_name || "Student"}</span> · {user?.email || "Email unavailable"}
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Target Level *</Label>
@@ -513,7 +528,7 @@ export default function Colleges() {
                 <Input
                   placeholder="e.g. 9801010802"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  readOnly
                   className="h-10 text-xs rounded-xl"
                   required
                 />
@@ -530,7 +545,7 @@ export default function Colleges() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || missingStudentProfileFields("college_application", profile, user?.email).length > 0}
                   className="bg-[#0073e6] hover:bg-[#0062c4] text-white text-xs font-extrabold rounded-xl px-6"
                 >
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}

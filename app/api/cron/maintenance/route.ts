@@ -114,9 +114,33 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  let guestCleanup: Awaited<ReturnType<typeof supabase.rpc>>;
+  try {
+    guestCleanup = await supabase.rpc("prune_guest_college_verifications");
+  } catch {
+    console.error("[cron:maintenance] Guest verification cleanup request failed");
+    return jsonResponse(
+      { data: null, error: { code: "GUEST_VERIFICATION_CLEANUP_FAILED", message: "Scheduled guest verification cleanup did not complete." } },
+      500,
+    );
+  }
+  if (guestCleanup.error) {
+    console.error("[cron:maintenance] Guest verification cleanup failed", { code: guestCleanup.error.code });
+    return jsonResponse(
+      {
+        data: null,
+        error: {
+          code: "GUEST_VERIFICATION_CLEANUP_FAILED",
+          message: "Scheduled guest verification cleanup did not complete.",
+        },
+      },
+      500,
+    );
+  }
+
   return jsonResponse(
     {
-      data: data ?? {},
+      data: { ...(data && typeof data === "object" && !Array.isArray(data) ? data : {}), guestVerification: guestCleanup.data ?? {} },
       error: null,
       meta: { completedAt: new Date().toISOString() },
     },

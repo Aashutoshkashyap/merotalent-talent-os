@@ -124,6 +124,7 @@ const fieldSchema = (field: ModuleFormField): z.ZodTypeAny => {
     }
     case "multiselect": {
       let schema = z.array(z.string().trim().min(1).max(100));
+      if (field.required) schema = schema.min(1, "Add at least one skill");
       if (field.max !== undefined) schema = schema.max(field.max);
       return optionalize(schema, field);
     }

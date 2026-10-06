@@ -79,10 +79,18 @@ export async function POST(request: Request) {
     const body = await readJsonObject(request, 8 * 1024);
     const intent = parseMediaDownloadIntent(body);
 
+    // Delegated job administrators can retain a student primary role. Resolve
+    // their exact entity authorization before permitting a foreign file path.
+    let scopedJobAccess = false;
+    if (intent.module === "job_attachment" && intent.path.split("/")[0] !== context.user.id) {
+      const { data, error } = await context.userClient.rpc("can_review_job_applications", { p_job_id: intent.resourceId });
+      if (error || data !== true) throw new MediaPolicyError(403, "MEDIA_ACCESS_DENIED", "You do not have access to this application's documents.");
+      scopedJobAccess = true;
+    }
     const objectOwnerUserId = assertMediaObjectPath(
       intent,
       context.user.id,
-      canReadForeignOwnerMedia(context.actor, intent.module),
+      scopedJobAccess || canReadForeignOwnerMedia(context.actor, intent.module),
     );
     assertMediaCapability(context.actor, intent.module);
     await authorizeMediaAccess(

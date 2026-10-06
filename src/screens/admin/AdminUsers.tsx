@@ -79,6 +79,67 @@ const AdminUsers = () => {
   const [createRole, setCreateRole] = useState("talent");
   const [isCreating, setIsCreating] = useState(false);
 
+  // Manual Module Enrollment Modal State
+  const [isEnrollOpen, setIsEnrollOpen] = useState(false);
+  const [enrollUser, setEnrollUser] = useState<UserRecord | null>(null);
+  const [enrollModuleKey, setEnrollModuleKey] = useState("college");
+  const [enrollDurationDays, setEnrollDurationDays] = useState(30);
+  const [enrollAmountPaid, setEnrollAmountPaid] = useState(0);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+
+  const handleManualEnroll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enrollUser) return;
+    setIsEnrolling(true);
+    try {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + Number(enrollDurationDays));
+
+      // Record entitlement
+      await (supabase as any).from("module_entitlements").insert({
+        user_id: enrollUser.user_id,
+        module_key: enrollModuleKey,
+        entity_type: enrollModuleKey,
+        entity_id: enrollUser.user_id,
+        source: "ADMIN_MANUAL",
+        status: "active",
+        start_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+        reason: `Superadmin manual enrollment. Received NPR ${enrollAmountPaid}`,
+      });
+
+      // Record payment transaction
+      if (Number(enrollAmountPaid) > 0) {
+        await (supabase as any).from("payments").insert({
+          user_id: enrollUser.user_id,
+          payment_type: "subscription",
+          reference_id: enrollUser.user_id,
+          amount: Number(enrollAmountPaid),
+          currency: "NPR",
+          status: "completed",
+          payment_method: "cash_manual",
+          transaction_id: `manual-${Date.now()}`,
+          metadata: { module: enrollModuleKey, duration_days: enrollDurationDays },
+        });
+      }
+
+      // Assign module role
+      const targetRole = enrollModuleKey === "college" ? "institution" : enrollModuleKey === "jobs" ? "company" : enrollModuleKey === "mentor" ? "mentor" : "admin";
+      await (supabase as any).from("user_roles").upsert({
+        user_id: enrollUser.user_id,
+        role: targetRole,
+      });
+
+      toast({ title: "Module Access Granted!", description: `Granted ${enrollModuleKey} access to ${enrollUser.email} for ${enrollDurationDays} days.` });
+      setIsEnrollOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Enrollment Failed", description: err?.message || "Could not grant module access." });
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -386,6 +447,16 @@ const AdminUsers = () => {
                             </>
                           )}
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEnrollUser(user);
+                            setIsEnrollOpen(true);
+                          }}
+                          className="text-xs font-semibold text-[#071a3d] cursor-pointer"
+                        >
+                          <UserRoundCog className="w-4 h-4 mr-2 text-indigo-600" />
+                          Manual Module Enrollment
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild className="text-xs font-semibold cursor-pointer">
                           <Link to="/admin/roles">
                             <Shield className="w-4 h-4 mr-2 text-blue-600" />
@@ -478,6 +549,74 @@ const AdminUsers = () => {
               <Button type="submit" disabled={isCreating} className="rounded-xl bg-[#071a3d] hover:bg-[#05132d] text-white text-xs font-extrabold px-5">
                 {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
                 Send Invitation
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Module Enrollment Dialog */}
+      <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6">
+          <form onSubmit={handleManualEnroll} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black text-slate-900">Manual Module Enrollment</DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Super Admin manual grant for <span className="font-bold text-slate-800">{enrollUser?.email}</span>. Grant module access and log cash/offline payment record.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Module to Grant *</Label>
+                <Select value={enrollModuleKey} onValueChange={setEnrollModuleKey}>
+                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="college">Institution / College Admin</SelectItem>
+                    <SelectItem value="jobs">Job / Career Admin</SelectItem>
+                    <SelectItem value="mentor">Mentor Admin</SelectItem>
+                    <SelectItem value="events">Event Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Access Duration (Days) *</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={3650}
+                  value={enrollDurationDays}
+                  onChange={(e) => setEnrollDurationDays(Number(e.target.value))}
+                  required
+                  className="h-10 text-xs rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Amount Received (NPR) *</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={enrollAmountPaid}
+                  onChange={(e) => setEnrollAmountPaid(Number(e.target.value))}
+                  placeholder="e.g. 5000"
+                  className="h-10 text-xs rounded-xl"
+                />
+                <p className="text-[10px] text-slate-500">Inputs 0 for free manual grant or custom amount received for transaction record keeping.</p>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsEnrollOpen(false)} className="rounded-xl text-xs">
+                Cancel
+              </Button>
+
+              <Button type="submit" disabled={isEnrolling} className="rounded-xl bg-[#071a3d] hover:bg-[#05132d] text-white text-xs font-extrabold px-5">
+                {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserRoundCog className="w-4 h-4 mr-2" />}
+                Grant Access & Record Transaction
               </Button>
             </DialogFooter>
           </form>

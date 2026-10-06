@@ -66,6 +66,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 const SessionCard = ({ booking }: { booking: StudentMentorBooking }) => {
   const minutes = durationMinutes(booking);
+  const isPaid = booking.paymentStatus === "success";
   return (
     <Card className={dashboardInteractiveSurface}>
       <CardContent className="p-4">
@@ -80,7 +81,9 @@ const SessionCard = ({ booking }: { booking: StudentMentorBooking }) => {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="truncate font-semibold">{booking.mentorName}</h3>
+                <Link to={`/mentorship/${booking.mentorId}`} className="truncate font-semibold text-foreground hover:text-primary hover:underline">
+                  {booking.mentorName}
+                </Link>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {booking.mentorExpertise.slice(0, 2).map((skill) => (
                     <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
@@ -107,11 +110,22 @@ const SessionCard = ({ booking }: { booking: StudentMentorBooking }) => {
 
             {booking.notes && <p className="mt-2 text-sm italic text-muted-foreground">{booking.notes}</p>}
 
-            <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-3 text-xs">
-              <span className="rounded-full bg-muted px-2.5 py-1 font-semibold">Payment: {formatStatus(booking.paymentStatus)}</span>
-              <span className="font-semibold text-muted-foreground">
-                {booking.amount > 0 ? `${booking.currency} ${booking.amount.toLocaleString()}` : "No charge recorded"}
-              </span>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                {isPaid ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 ring-1 ring-emerald-200"><CheckCircle className="h-3 w-3" />Payment Confirmed</span>
+                ) : (
+                  <span className="rounded-full bg-muted px-2.5 py-1 font-semibold">Payment: {formatStatus(booking.paymentStatus)}</span>
+                )}
+                <span className="font-bold text-foreground">
+                  {booking.amount > 0 ? `${booking.currency} ${booking.amount.toLocaleString()}` : "Free session"}
+                </span>
+                <span className="text-muted-foreground">to {booking.mentorName}</span>
+                <span className="text-muted-foreground">· {minutes > 0 ? `${minutes} min session` : ""}</span>
+              </div>
+              <Link to={`/mentorship/${booking.mentorId}`} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10">
+                <ArrowRight className="h-3 w-3" />View Mentor
+              </Link>
             </div>
           </div>
         </div>

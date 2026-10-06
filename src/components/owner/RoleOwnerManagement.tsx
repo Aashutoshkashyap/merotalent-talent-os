@@ -465,7 +465,7 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
                       </div>
                       <span className="shrink-0 text-[10px] font-semibold capitalize text-[#8d8179]">{prettify(application.status)}</span>
                     </div>
-                    <OwnerStatusActions workflow="job_application" recordId={application.id} status={application.status} onSaved={onSaved} />
+                    <a href="#job-applicants" className="mt-2 inline-block text-sm underline">Review details and schedule interview</a>
                   </div>
                 );
               })}

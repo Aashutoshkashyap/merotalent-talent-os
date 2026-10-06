@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   SignedMediaUploader,
@@ -21,9 +19,11 @@ import {
   ModuleFormClientError,
   submitAuthenticatedModuleForm,
 } from "@/lib/forms/module-form-client";
+import { StudentProfileRequirement } from "@/components/forms/StudentProfileRequirement";
+import { missingStudentProfileFields } from "@/lib/student/profile-readiness";
 import {
   MapPin, Building2, DollarSign, ChevronRight, ChevronLeft,
-  Check, Star, Loader2
+  Check, Loader2
 } from "lucide-react";
 
 interface JobApplicationWizardProps {
@@ -44,13 +44,19 @@ interface JobApplicationWizardProps {
 const steps = [
   { id: 1, title: "Review Job", description: "Confirm job details" },
   { id: 2, title: "Resume", description: "Upload your resume" },
-  { id: 3, title: "Cover Letter", description: "Add a cover letter" },
-  { id: 4, title: "Skills Match", description: "Confirm your skills" },
-  { id: 5, title: "Submit", description: "Review and apply" },
+  { id: 3, title: "Your Details", description: "Contact, salary and cover letter" },
+  { id: 4, title: "Skills", description: "Type your relevant skills" },
+  { id: 5, title: "Experience", description: "Add experience if any" },
+  { id: 6, title: "Training", description: "Add training if any" },
+  { id: 7, title: "Submit", description: "Review and apply" },
 ];
 
+const parseSkills = (value: string) => [...new Map(
+  value.split(/[,\n]/).map((skill) => skill.trim()).filter(Boolean).map((skill) => [skill.toLowerCase(), skill] as const),
+).values()];
+
 const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicationWizardProps) => {
-  const { profile, session, user } = useAuth();
+  const { profile, session, user, refreshProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [resumeUrl, setResumeUrl] = useState("");
   const [fullName, setFullName] = useState("");
@@ -58,7 +64,12 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
   const [phone, setPhone] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [skillsText, setSkillsText] = useState("");
+  const [expectedSalary, setExpectedSalary] = useState("");
+  const [experienceSummary, setExperienceSummary] = useState("");
+  const [experienceLetterUrl, setExperienceLetterUrl] = useState("");
+  const [trainingSummary, setTrainingSummary] = useState("");
+  const [trainingDocumentUrl, setTrainingDocumentUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const { toast } = useToast();
@@ -67,9 +78,9 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
 
   useEffect(() => {
     if (!isOpen) return;
-    setFullName((current) => current || profile?.full_name || "");
-    setEmail((current) => current || profile?.email || user?.email || "");
-    setPhone((current) => current || profile?.phone || "");
+    setFullName(profile?.full_name || "");
+    setEmail(user?.email || profile?.email || "");
+    setPhone(profile?.phone || "");
   }, [isOpen, profile?.email, profile?.full_name, profile?.phone, user?.email]);
 
   const handleResumeUploaded = (assets: SignedMediaAsset[]) => {
@@ -83,16 +94,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
     });
   };
 
-  const toggleSkill = (skill: string) => {
-    setSelectedSkills((prev) =>
-      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
-    );
-  };
-
-  const calculateMatchScore = () => {
-    if (job.skills.length === 0) return 0;
-    return Math.round((selectedSkills.length / job.skills.length) * 100);
-  };
+  const typedSkills = parseSkills(skillsText);
 
   const handleSubmit = async () => {
     if (!user || !session) {
@@ -101,6 +103,10 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
         title: "Login required",
         description: "Please login to submit your application.",
       });
+      return;
+    }
+    if (missingStudentProfileFields("job_application", profile, user.email).length) {
+      toast({ variant: "destructive", title: "Complete your profile", description: "Add the missing profile details before applying." });
       return;
     }
 
@@ -122,7 +128,12 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
           resumeUrl,
           coverLetter,
           portfolioUrl,
-          skills: selectedSkills,
+          skills: typedSkills,
+          ...(expectedSalary.trim() ? { expectedSalary: Number(expectedSalary) } : {}),
+          ...(experienceSummary.trim() ? { experienceSummary: experienceSummary.trim() } : {}),
+          ...(experienceLetterUrl ? { experienceLetterUrl } : {}),
+          ...(trainingSummary.trim() ? { trainingSummary: trainingSummary.trim() } : {}),
+          ...(trainingDocumentUrl ? { trainingDocumentUrl } : {}),
         },
       });
 
@@ -149,17 +160,26 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
       setResumeUrl("");
       setCoverLetter("");
       setPortfolioUrl("");
-      setSelectedSkills([]);
+      setSkillsText("");
+      setExpectedSalary("");
+      setExperienceSummary("");
+      setExperienceLetterUrl("");
+      setTrainingSummary("");
+      setTrainingDocumentUrl("");
     } catch (error) {
       if (error instanceof ModuleFormClientError) {
         setFieldErrors(error.fields);
         const keys = Object.keys(error.fields);
         if (keys.includes("resumeUrl") || keys.includes("portfolioUrl")) {
           setCurrentStep(2);
-        } else if (keys.some((key) => ["fullName", "email", "phone", "coverLetter"].includes(key))) {
+        } else if (keys.some((key) => ["fullName", "email", "phone", "coverLetter", "expectedSalary"].includes(key))) {
           setCurrentStep(3);
         } else if (keys.includes("skills")) {
           setCurrentStep(4);
+        } else if (keys.some((key) => ["experienceSummary", "experienceLetterUrl"].includes(key))) {
+          setCurrentStep(5);
+        } else if (keys.some((key) => ["trainingSummary", "trainingDocumentUrl"].includes(key))) {
+          setCurrentStep(6);
         }
       }
       toast({
@@ -173,16 +193,22 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
   };
 
   const canProceed = () => {
+    if (session && missingStudentProfileFields("job_application", profile, user?.email).length) return false;
     switch (currentStep) {
       case 1:
         return true;
       case 2:
         return !!resumeUrl;
       case 3:
-        return fullName.trim().length >= 2 && !!email.trim() && !!phone.trim();
+        return fullName.trim().length >= 2 && !!email.trim() && !!phone.trim()
+          && (!expectedSalary.trim() || (/^\d{1,9}$/.test(expectedSalary.trim()) && Number(expectedSalary) <= 100_000_000));
       case 4:
-        return job.skills.length === 0 || selectedSkills.length > 0;
+        return typedSkills.length > 0 && typedSkills.length <= 30 && typedSkills.every((skill) => skill.length <= 100);
       case 5:
+        return experienceSummary.trim().length <= 2_000;
+      case 6:
+        return trainingSummary.trim().length <= 2_000;
+      case 7:
         return true;
       default:
         return false;
@@ -198,6 +224,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
             {job.title} at {job.company}
           </DialogDescription>
         </DialogHeader>
+        {session && <StudentProfileRequirement module="job_application" profile={profile} email={user?.email} onRefresh={refreshProfile} />}
 
         {/* Progress Bar */}
         <div className="space-y-3">
@@ -300,8 +327,9 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
               )}
 
               <div className="space-y-2">
-                <Label>Portfolio URL (optional)</Label>
+                <Label htmlFor="job-portfolio">Portfolio URL (optional)</Label>
                 <Input
+                  id="job-portfolio"
                   type="url"
                   placeholder="https://yourportfolio.com"
                   value={portfolioUrl}
@@ -312,7 +340,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
             </div>
           )}
 
-          {/* Step 3: Cover Letter */}
+          {/* Step 3: Applicant details */}
           {currentStep === 3 && (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -323,6 +351,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
                     autoComplete="name"
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
+                    readOnly={Boolean(session)}
                     required
                   />
                   {fieldErrors.fullName?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.fullName[0]}</p>}
@@ -335,6 +364,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
                     autoComplete="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
+                    readOnly={Boolean(session)}
                     required
                   />
                   {fieldErrors.email?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.email[0]}</p>}
@@ -347,6 +377,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
                     autoComplete="tel"
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
+                    readOnly={Boolean(session)}
                     placeholder="+977 98XXXXXXXX"
                     required
                   />
@@ -355,82 +386,89 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
               </div>
 
               <div className="space-y-2">
-                <Label>Cover Letter (optional)</Label>
+                <Label htmlFor="job-cover-letter">Cover Letter (optional)</Label>
                 <Textarea
+                  id="job-cover-letter"
                   placeholder="Tell the employer why you're a great fit for this role..."
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   rows={6}
+                  maxLength={5_000}
                 />
                 {fieldErrors.coverLetter?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.coverLetter[0]}</p>}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="job-expected-salary">Expected salary in NPR (optional)</Label>
+                <Input
+                  id="job-expected-salary"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={100_000_000}
+                  step={1}
+                  placeholder="Enter a whole amount, if you have one"
+                  value={expectedSalary}
+                  onChange={(event) => setExpectedSalary(event.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Leave this blank if you prefer to discuss salary with the employer.</p>
+                {fieldErrors.expectedSalary?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.expectedSalary[0]}</p>}
+              </div>
             </div>
           )}
 
-          {/* Step 4: Skills Match */}
+          {/* Step 4: Typed skills */}
           {currentStep === 4 && (
-            <div className="space-y-6">
-              <div className="text-center p-6 bg-muted/50 rounded-xl">
-                <div className="relative w-24 h-24 mx-auto mb-4">
-                  <svg className="w-24 h-24 transform -rotate-90">
-                    <circle
-                      cx="48"
-                      cy="48"
-                      r="40"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="none"
-                      className="text-muted"
-                    />
-                    <circle
-                      cx="48"
-                      cy="48"
-                      r="40"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="none"
-                      strokeDasharray={251.2}
-                      strokeDashoffset={251.2 - (251.2 * calculateMatchScore()) / 100}
-                      className="text-primary transition-all duration-500"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold">{calculateMatchScore()}%</span>
-                  </div>
-                </div>
-                <h3 className="font-semibold">Skills Match Score</h3>
-                <p className="text-sm text-muted-foreground">
-                  Select the skills you have from the job requirements
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label>Select Your Matching Skills</Label>
-                <div className="grid gap-2">
-                  {job.skills.map((skill) => (
-                    <div
-                      key={skill}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        selectedSkills.includes(skill)
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                      onClick={() => toggleSkill(skill)}
-                    >
-                      <Checkbox checked={selectedSkills.includes(skill)} />
-                      <span className="font-medium">{skill}</span>
-                      {selectedSkills.includes(skill) && (
-                        <Star className="w-4 h-4 text-amber-500 ml-auto" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="job-typed-skills">Your relevant skills *</Label>
+                <Textarea
+                  id="job-typed-skills"
+                  value={skillsText}
+                  onChange={(event) => setSkillsText(event.target.value)}
+                  placeholder="Type your skills, separated by commas. For example: React, customer service, project planning"
+                  rows={4}
+                  maxLength={3_100}
+                  aria-invalid={Boolean(fieldErrors.skills?.length) || typedSkills.length > 30 || typedSkills.some((skill) => skill.length > 100)}
+                />
+                <p className="text-xs text-muted-foreground">Add your own skills, even if they are not listed in the job. Use commas or new lines between skills (up to 30).</p>
+                {fieldErrors.skills?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.skills[0]}</p>}
+                {(typedSkills.length > 30 || typedSkills.some((skill) => skill.length > 100)) && <p className="text-xs font-semibold text-destructive">Use no more than 30 skills, each under 100 characters.</p>}
               </div>
             </div>
           )}
 
-          {/* Step 5: Review & Submit */}
+          {/* Step 5: Optional experience */}
           {currentStep === 5 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Experience is optional. If you have relevant work experience, describe it and add a letter if available.</p>
+              <div className="space-y-2">
+                <Label htmlFor="job-experience-summary">Work experience (optional)</Label>
+                <Textarea id="job-experience-summary" value={experienceSummary} onChange={(event) => setExperienceSummary(event.target.value)} placeholder="Role, employer, dates and what you did" rows={5} maxLength={2_000} />
+                {fieldErrors.experienceSummary?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.experienceSummary[0]}</p>}
+              </div>
+              <SignedMediaUploader label="Experience letter (optional)" module="job_attachment" resourceId={job.id} onUploaded={(assets) => setExperienceLetterUrl(assets[0]?.path || "")} />
+              {experienceLetterUrl && <p className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><Check className="h-4 w-4" />Experience letter uploaded</p>}
+              {fieldErrors.experienceLetterUrl?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.experienceLetterUrl[0]}</p>}
+            </div>
+          )}
+
+          {/* Step 6: Optional training */}
+          {currentStep === 6 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Training is optional. Include courses, workshops or certifications relevant to this position.</p>
+              <div className="space-y-2">
+                <Label htmlFor="job-training-summary">Training (optional)</Label>
+                <Textarea id="job-training-summary" value={trainingSummary} onChange={(event) => setTrainingSummary(event.target.value)} placeholder="Training title, provider, dates and what you learned" rows={5} maxLength={2_000} />
+                {fieldErrors.trainingSummary?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.trainingSummary[0]}</p>}
+              </div>
+              <SignedMediaUploader label="Training document (optional)" module="job_attachment" resourceId={job.id} onUploaded={(assets) => setTrainingDocumentUrl(assets[0]?.path || "")} />
+              {trainingDocumentUrl && <p className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><Check className="h-4 w-4" />Training document uploaded</p>}
+              {fieldErrors.trainingDocumentUrl?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.trainingDocumentUrl[0]}</p>}
+            </div>
+          )}
+
+          {/* Step 7: Review & Submit */}
+          {currentStep === 7 && (
             <div className="space-y-4">
               <Card>
                 <CardHeader>
@@ -453,9 +491,21 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
                     <span className="text-muted-foreground">Cover Letter</span>
                     <span className="font-medium">{coverLetter ? "Added" : "Not added"}</span>
                   </div>
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-muted-foreground">Skills</span>
+                    <span className="max-w-[65%] text-right font-medium">{typedSkills.join(", ")}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-muted-foreground">Expected salary</span>
+                    <span className="font-medium">{expectedSalary.trim() ? `NPR ${Number(expectedSalary).toLocaleString()}` : "Not provided"}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-muted-foreground">Experience</span>
+                    <span className="text-right font-medium">{experienceSummary.trim() ? "Added" : "Not added"}{experienceLetterUrl ? " · Letter uploaded" : ""}</span>
+                  </div>
                   <div className="flex justify-between items-center py-2">
-                    <span className="text-muted-foreground">Skills Match</span>
-                    <Badge variant="secondary">{calculateMatchScore()}%</Badge>
+                    <span className="text-muted-foreground">Training</span>
+                    <span className="text-right font-medium">{trainingSummary.trim() ? "Added" : "Not added"}{trainingDocumentUrl ? " · Document uploaded" : ""}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -472,7 +522,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
           <Button
             variant="outline"
             onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || isSubmitting}
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Back
@@ -488,7 +538,7 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button variant="hero" onClick={handleSubmit} disabled={isSubmitting}>
+            <Button variant="hero" onClick={handleSubmit} disabled={isSubmitting || Boolean(session && missingStudentProfileFields("job_application", profile, user?.email).length)}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

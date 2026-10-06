@@ -383,7 +383,7 @@ const resources = {
         create: false,
         update: true,
         maxLength: 40,
-        values: ["submitted", "screening", "interview", "offered", "rejected", "withdrawn"],
+        values: ["submitted", "screening", "follow_up", "interview", "offered", "confirmed", "rejected", "withdrawn"],
       }),
       notes: text({ create: false, update: true, nullable: true, maxLength: 5_000 }),
       skills_match_score: { kind: "integer", create: false, update: true, nullable: true, min: 0, max: 100 },
@@ -475,7 +475,7 @@ const resources = {
   "college-applications": {
     resource: "college-applications",
     table: "college_applications",
-    select: "id,institute_id,applicant_id,full_name,email,phone,program_interest,intake,message,attachments,form_data,status,submitted_at,updated_at,deleted_at,institutes(name)",
+    select: "id,institute_id,applicant_id,full_name,email,phone,whatsapp_number,guest_email_verified_at,guest_whatsapp_verified_at,program_interest,intake,message,attachments,form_data,status,submitted_at,updated_at,deleted_at,institutes(name)",
     searchColumn: "email",
     sortColumns: ["status", "submitted_at", "updated_at"],
     defaultSort: "submitted_at",

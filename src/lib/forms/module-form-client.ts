@@ -114,15 +114,20 @@ export const submitAuthenticatedModuleForm = async ({
 
 export const submitGuestCollegeApplication = async ({
   guestToken,
+  verificationId,
   idempotencyKey = crypto.randomUUID(),
   values,
 }: {
   guestToken: string;
+  verificationId: string;
   idempotencyKey?: string;
   values: ModuleFormValues;
 }): Promise<ModuleSubmissionResult> => {
   if (!/^[a-f0-9-]{36}$/i.test(guestToken)) {
     throw new ModuleFormClientError("Your browser could not prepare this application. Please refresh and try again.", 400, "INVALID_GUEST_TOKEN");
+  }
+  if (!/^[a-f0-9-]{36}$/i.test(verificationId)) {
+    throw new ModuleFormClientError("Verify your email and WhatsApp number before applying.", 403, "GUEST_VERIFICATION_REQUIRED");
   }
 
   const response = await fetch("/api/v1/submissions/college_application", {
@@ -131,6 +136,7 @@ export const submitGuestCollegeApplication = async ({
       "Content-Type": "application/json",
       "Idempotency-Key": idempotencyKey,
       "X-Guest-Application-Token": guestToken,
+      "X-Guest-Verification-Id": verificationId,
     },
     body: JSON.stringify(values),
   });

@@ -94,7 +94,7 @@ export default function HeaderNav({
   brandHref = "/",
 }: HeaderNavProps) {
   return (
-    <header className="sticky top-0 right-0 left-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 h-[60px] px-5 md:px-8 flex items-center justify-between z-30">
+    <header className="sticky top-0 right-0 left-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 h-[60px] px-5 md:px-8 flex items-center justify-between z-50">
       {/* Left: Brand Logo */}
       <div className="flex items-center gap-4 flex-shrink-0">
         <Link

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import JobApplicantReview from "@/components/jobs/JobApplicantReview";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
@@ -770,6 +771,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
               <div className="absolute -bottom-16 -right-14 h-40 w-40 rounded-full border-[22px] border-white/5" />
             </article>
           </section>
+          {role === "company" && <JobApplicantReview />}
         </main>
       </div>
     </div>

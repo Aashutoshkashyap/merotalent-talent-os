@@ -48,7 +48,11 @@ export default function RequestSubAdminAccess() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(profile?.phone || "");
+  const [collegesList, setCollegesList] = useState<{ id: string; name: string; location?: string }[]>([]);
+  const [selectedCollege, setSelectedCollege] = useState<{ id: string; name: string } | null>(null);
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState("");
+  const [proofDocs, setProofDocs] = useState<Record<string, string>>({});
   const [moduleOptions, setModuleOptions] = useState<ModuleOption[]>([]);
   const [isLoadingModules, setIsLoadingModules] = useState(true);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
@@ -59,6 +63,24 @@ export default function RequestSubAdminAccess() {
   const [accessRequests, setAccessRequests] = useState<AccessRequestStatus[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(Boolean(user));
   const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.phone && !phone) setPhone(profile.phone);
+  }, [profile?.phone]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data } = await (supabase as any)
+        .from("institutes")
+        .select("id, name, location")
+        .order("name");
+      if (active && data) {
+        setCollegesList(data.map((c: any) => ({ id: c.id, name: c.name, location: c.location })));
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const loadMyRequests = async () => {
     if (!user) {
@@ -313,16 +335,7 @@ export default function RequestSubAdminAccess() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Organization / College / Company Name *</Label>
-                  <Input
-                    placeholder="e.g. IOE Pulchowk Campus, Leapfrog Tech, or Self"
-                    value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
-                    required
-                  />
-                </div>
-
+                {/* Module Selection */}
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-slate-900">
                     Select Modules You Want to Manage *
@@ -353,6 +366,114 @@ export default function RequestSubAdminAccess() {
                   </div>
                 </div>
 
+                {/* Searchable College Dropdown (Only if College Module Selected) */}
+                {selectedModules.includes("college") && (
+                  <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                    <Label className="text-xs font-bold text-blue-900">Select College / Institution to Manage *</Label>
+                    <Input
+                      placeholder="Type college name to search (e.g. Pulchowk, Kathmandu University...)"
+                      value={collegeSearchQuery}
+                      onChange={(e) => setCollegeSearchQuery(e.target.value)}
+                      className="bg-white border-blue-200"
+                    />
+                    {collegesList.length > 0 && (
+                      <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+                        {collegesList
+                          .filter((c) => !collegeSearchQuery || c.name.toLowerCase().includes(collegeSearchQuery.toLowerCase()))
+                          .slice(0, 8)
+                          .map((college) => (
+                            <button
+                              key={college.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCollege(college);
+                                setOrganization(college.name);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-md text-xs transition-colors ${
+                                selectedCollege?.id === college.id
+                                  ? "bg-blue-600 text-white font-bold"
+                                  : "hover:bg-slate-100 text-slate-800"
+                              }`}
+                            >
+                              <p className="font-medium">{college.name}</p>
+                              {college.location && <p className="text-[10px] opacity-80">{college.location}</p>}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                    {selectedCollege && (
+                      <p className="text-xs text-blue-700 font-semibold">
+                        Selected: {selectedCollege.name}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Proof Documents Section based on Selected Modules */}
+                {selectedModules.length > 0 && (
+                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      Required Proof Documents for Selected Modules *
+                    </Label>
+                    <div className="space-y-3">
+                      {selectedModules.includes("college") && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-slate-700">College Recommendation Letter *</Label>
+                          <Input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={(e) => setProofDocs((prev) => ({ ...prev, college: e.target.files?.[0]?.name || "" }))}
+                            className="bg-white text-xs"
+                          />
+                        </div>
+                      )}
+                      {selectedModules.includes("event") && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-slate-700">Event Proposal Document *</Label>
+                          <Input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => setProofDocs((prev) => ({ ...prev, event: e.target.files?.[0]?.name || "" }))}
+                            className="bg-white text-xs"
+                          />
+                        </div>
+                      )}
+                      {selectedModules.includes("mentor") && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-slate-700">CV / Resume *</Label>
+                          <Input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => setProofDocs((prev) => ({ ...prev, mentor: e.target.files?.[0]?.name || "" }))}
+                            className="bg-white text-xs"
+                          />
+                        </div>
+                      )}
+                      {selectedModules.includes("jobs") && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-slate-700">Company Recommendation Letter *</Label>
+                          <Input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={(e) => setProofDocs((prev) => ({ ...prev, jobs: e.target.files?.[0]?.name || "" }))}
+                            className="bg-white text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Organization / Company Name *</Label>
+                  <Input
+                    placeholder="e.g. IOE Pulchowk Campus, Leapfrog Tech, or Self"
+                    value={organization}
+                    onChange={(e) => setOrganization(e.target.value)}
+                    required
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label>Justification & Qualifications *</Label>
                   <Textarea
@@ -364,10 +485,13 @@ export default function RequestSubAdminAccess() {
                   />
                 </div>
 
-                <div className="pt-2 border-t flex justify-end">
-                  <Button type="submit" className="bg-[#071a3d] text-white hover:bg-[#05132d] px-8" disabled={isSubmitting}>
+                <div className="pt-2 border-t flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <p className="text-xs text-slate-500">
+                    Once submitted, module access will be reviewed & activated after eSewa fee settlement.
+                  </p>
+                  <Button type="submit" className="w-full sm:w-auto bg-[#071a3d] text-white hover:bg-[#05132d] px-8" disabled={isSubmitting}>
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                    Submit Sub-Admin Request
+                    Submit & Continue to Pay
                   </Button>
                 </div>
               </form>

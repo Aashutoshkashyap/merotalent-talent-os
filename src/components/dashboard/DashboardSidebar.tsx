@@ -66,7 +66,6 @@ const DashboardSidebar = ({
     { icon: Calendar, label: "My Sessions", href: "/dashboard/sessions" },
     { icon: Activity, label: "My Activity", href: "/dashboard/activity" },
     { icon: CreditCard, label: "Payments", href: "/dashboard/payments" },
-    { icon: MessageCircle, label: "Messages", href: "/dashboard/messages" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
     { icon: ShieldAlert, label: "Request Access / Discard", href: "/request-access" },
   ];

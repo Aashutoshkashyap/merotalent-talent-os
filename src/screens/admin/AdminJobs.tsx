@@ -639,6 +639,7 @@ const AdminJobs = () => {
         />
       </div>
 
+      <JobApplicantReview />
       {/* Jobs Table */}
       <Card>
         <Table>
@@ -740,3 +741,4 @@ const AdminJobs = () => {
 };
 
 export default AdminJobs;
+import JobApplicantReview from "@/components/jobs/JobApplicantReview";

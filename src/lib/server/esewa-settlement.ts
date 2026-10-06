@@ -18,9 +18,56 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
     if (error) throw error;
     return { checkoutId: checkout.id, duplicate: false, status: "expired", subscriptionId: null };
   }
+
+  const terminal = input.status === "successful" ? "success" : "failed";
+
+  if (checkout.entity_type === "mentor_booking") {
+    const { data: existingPayment } = await db.from("payments").select("id").eq("reference_id", checkout.entity_id).eq("payment_type", "mentor_booking").maybeSingle();
+    let paymentId = existingPayment?.id;
+    if (existingPayment) {
+      const { error } = await db.from("payments").update({
+        status: terminal,
+        gateway: input.provider,
+        gateway_transaction_id: input.transactionId,
+        paid_at: input.status === "successful" ? now.toISOString() : null,
+        failed_at: input.status === "successful" ? null : now.toISOString(),
+      }).eq("id", existingPayment.id);
+      if (error) throw error;
+    } else {
+      const { data: created, error } = await db.from("payments").insert({
+        user_id: checkout.user_id,
+        payment_type: "mentor_booking",
+        reference_id: checkout.entity_id,
+        amount: checkout.amount,
+        currency: checkout.currency,
+        status: terminal,
+        gateway: input.provider,
+        gateway_transaction_id: input.transactionId,
+        paid_at: input.status === "successful" ? now.toISOString() : null,
+        failed_at: input.status === "successful" ? null : now.toISOString(),
+        metadata: { checkout_session_id: checkout.id },
+      }).select("id").single();
+      if (error) throw error;
+      paymentId = created.id;
+    }
+
+    const bookingUpdate = input.status === "successful"
+      ? { payment_status: "success", status: "confirmed", ...(paymentId ? { payment_id: paymentId } : {}) }
+      : { payment_status: "failed", status: "pending" };
+    const { error: bookingError } = await db.from("mentor_bookings").update(bookingUpdate).eq("id", checkout.entity_id);
+    if (bookingError) throw bookingError;
+
+    const { error: checkoutUpdateError } = await db.from("payment_checkout_sessions").update({ status: input.status, completed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", checkout.id);
+    if (checkoutUpdateError) throw checkoutUpdateError;
+
+    const auditPayload = { actor_user_id: null, action: input.status === "successful" ? "PAYMENT_VERIFIED" : "PAYMENT_FAILED", entity_type: "mentor_booking", entity_id: checkout.entity_id, metadata: { provider: input.provider, checkout_session_id: checkout.id, payment_id: paymentId } };
+    const { error: auditError } = await db.from("audit_logs").insert(auditPayload);
+    if (auditError) throw auditError;
+    return { checkoutId: checkout.id, duplicate: false, status: input.status, subscriptionId: null };
+  }
+
   const { data: pkg, error: packageError } = await db.from("packages").select("id,price,currency,billing_interval,duration_days,module_scope,features").eq("id", checkout.package_id).maybeSingle();
   if (packageError || !pkg || Number(pkg.price) !== Number(checkout.amount)) throw new Error("Subscription package does not match this payment session.");
-  const terminal = input.status === "successful" ? "success" : "failed";
   const paymentPayload = {
     user_id: checkout.user_id, payment_type: "subscription", reference_id: checkout.package_id,
     amount: checkout.amount, currency: checkout.currency, status: terminal, gateway: input.provider,
@@ -58,3 +105,4 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
   if (auditError) throw auditError;
   return { checkoutId: checkout.id, duplicate: false, status: input.status, subscriptionId };
 }
+

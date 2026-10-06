@@ -44,7 +44,7 @@ const idempotencyKeyPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{7,127}$/;
 const mediaObjectNamePattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:pdf|doc|docx)$/i;
 
-const isCanonicalJobResume = (
+const isCanonicalJobDocument = (
   value: unknown,
   actorId: string,
   jobId: string,
@@ -93,7 +93,7 @@ export const submitModuleForm = async (
 
   if (
     module === "job_application" &&
-    !isCanonicalJobResume(validated.data.resumeUrl, actor.id, targetId)
+    !isCanonicalJobDocument(validated.data.resumeUrl, actor.id, targetId)
   ) {
     throw new ModuleFormValidationError(
       {
@@ -103,6 +103,18 @@ export const submitModuleForm = async (
       },
       [],
     );
+  }
+
+  if (module === "job_application") {
+    for (const field of ["experienceLetterUrl", "trainingDocumentUrl"] as const) {
+      const path = validated.data[field];
+      if (path !== undefined && !isCanonicalJobDocument(path, actor.id, targetId)) {
+        throw new ModuleFormValidationError(
+          { [field]: ["Upload the document through the secure job-application media endpoint before submitting."] },
+          [],
+        );
+      }
+    }
   }
 
   return gateway.submit({

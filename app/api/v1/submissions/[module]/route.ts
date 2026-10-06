@@ -2,6 +2,8 @@ import { ApiAuthError, authenticateRequest, getBearerToken } from "@/lib/server/
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { isModuleFormType } from "@/lib/forms/module-form-definitions";
 import { getAdminClient, ServerConfigurationError } from "@/lib/server/supabase";
+import { missingStudentProfileFields, valuesFromStudentProfile } from "@/lib/student/profile-readiness";
+import { GuestVerificationError, normalizeGuestIdentity } from "@/lib/server/guest-college-verification";
 import {
   ModuleFormValidationError,
   submitModuleForm,
@@ -154,6 +156,56 @@ export async function POST(request: Request, context: RouteContext) {
     });
   }
 
+  let guestVerificationId: string | null = null;
+  if (isGuestCollegeApplication) {
+    guestVerificationId = request.headers.get("x-guest-verification-id");
+    if (!guestVerificationId || !/^[0-9a-f-]{36}$/i.test(guestVerificationId)) {
+      return response(requestId, 403, null, {
+        code: "GUEST_VERIFICATION_REQUIRED",
+        message: "Verify your email and WhatsApp number before applying.",
+      });
+    }
+    try {
+      const submitted = values && typeof values === "object" && !Array.isArray(values)
+        ? values as Record<string, unknown> : {};
+      const identity = normalizeGuestIdentity({
+        guestToken: request.headers.get("x-guest-application-token"),
+        collegeId: submitted.collegeId,
+        email: submitted.email,
+        whatsappNumber: submitted.phone,
+      });
+      values = { ...submitted, email: identity.email, phone: identity.whatsappNumber };
+    } catch (error) {
+      if (error instanceof GuestVerificationError) {
+        return response(requestId, error.status, null, { code: error.code, message: error.message });
+      }
+      return response(requestId, 400, null, { code: "INVALID_GUEST_DETAILS", message: "Enter valid application details." });
+    }
+  }
+
+  if (authenticated) {
+    const { data: studentProfile, error: profileError } = await authenticated.userClient
+      .from("profiles")
+      .select("full_name,email,phone,location,education")
+      .eq("user_id", authenticated.user.id)
+      .maybeSingle();
+    if (profileError) {
+      console.error("Module submission profile lookup failed", { requestId, code: profileError.code });
+      return response(requestId, 503, null, {
+        code: "PROFILE_UNAVAILABLE",
+        message: "Your profile could not be checked. Please try again.",
+      });
+    }
+    const missing = missingStudentProfileFields(module, studentProfile, authenticated.user.email);
+    if (missing.length) {
+      return response(requestId, 422, null, {
+        code: "PROFILE_INCOMPLETE",
+        message: `Complete your student profile before submitting: ${missing.join(", ")}.`,
+      });
+    }
+    values = valuesFromStudentProfile(module, values, studentProfile!, authenticated.user.email);
+  }
+
   const gateway: FormSubmissionGateway = {
     async submit(command: FormSubmissionCommand) {
       // The database RPC owns authorization, subscription enforcement, pricing,
@@ -183,6 +235,7 @@ export async function POST(request: Request, context: RouteContext) {
             p_payload: payload,
             p_guest_token: guestToken,
             p_idempotency_key: command.idempotencyKey ?? null,
+            p_verification_id: guestVerificationId,
           }));
         } catch (serverError) {
           if (serverError instanceof ServerConfigurationError) {
@@ -255,8 +308,10 @@ export async function POST(request: Request, context: RouteContext) {
     }
     if (databaseCode === "42501" || databaseCode === "PGRST301") {
       return response(requestId, 403, null, {
-        code: "SUBMISSION_NOT_ALLOWED",
-        message: "You do not have permission to submit this form.",
+        code: isGuestCollegeApplication ? "GUEST_VERIFICATION_REQUIRED" : "SUBMISSION_NOT_ALLOWED",
+        message: isGuestCollegeApplication
+          ? "Verify your email and WhatsApp number again before applying."
+          : "You do not have permission to submit this form.",
       });
     }
     if (databaseCode === "23503" || databaseCode === "P0002") {

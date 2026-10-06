@@ -101,12 +101,9 @@ const Settings = () => {
   }, [profile?.user_id]);
 
   useEffect(() => {
-    const resolvedTheme = theme === "system"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-      : theme;
-    document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
-    localStorage.setItem("theme", resolvedTheme);
-  }, [theme]);
+    document.documentElement.classList.remove("dark");
+    localStorage.setItem("theme", "light");
+  }, []);
 
   const handleSaveProfile = async () => {
     if (!profile?.user_id) {
@@ -377,36 +374,14 @@ const Settings = () => {
         <TabsContent value="appearance" className="space-y-6">
           <Card className={dashboardSurface}>
             <CardHeader>
-              <CardTitle>Theme</CardTitle>
-              <CardDescription>Customize how the app looks</CardDescription>
+              <CardTitle>Theme & Visual Mode</CardTitle>
+              <CardDescription>MeroTalent is currently formatted in standard clean Light Mode</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { value: "light", icon: Sun, label: "Light" },
-                  { value: "dark", icon: Moon, label: "Dark" },
-                  { value: "system", icon: Monitor, label: "System" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setTheme(option.value as typeof theme)}
-                    className={`rounded-2xl border-2 p-4 transition-all ${
-                      theme === option.value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <option.icon className={`w-8 h-8 mx-auto mb-2 ${theme === option.value ? "text-primary" : "text-muted-foreground"}`} />
-                    <p className={`text-sm font-medium ${theme === option.value ? "text-primary" : ""}`}>
-                      {option.label}
-                    </p>
-                  </button>
-                ))}
+              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm">
+                <Sun className="w-5 h-5 text-amber-600 shrink-0" />
+                <p>Default interface theme is set to Light Mode for optimal readability and accessibility across all modules.</p>
               </div>
-              <Button className="mt-5" variant="outline" onClick={() => void handleSavePreferences("Appearance preference saved.")} disabled={isSavingPreferences}>
-                {isSavingPreferences && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save appearance
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>

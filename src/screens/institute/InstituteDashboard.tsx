@@ -103,6 +103,7 @@ interface ApplicationPreview {
   submitted_at: string;
   intake: string | null;
   phone: string | null;
+  whatsapp_number?: string | null;
 }
 
 interface CollegeScopeRequest {
@@ -488,7 +489,7 @@ const InstituteDashboard = () => {
       hasPersistedInstitute
         ? db
             .from("college_applications")
-            .select("id, full_name, program_interest, intake, phone, status, submitted_at", { count: "exact" })
+            .select("id, full_name, program_interest, intake, phone, whatsapp_number, status, submitted_at", { count: "exact" })
             .eq("institute_id", instituteRecord.id)
             .is("deleted_at", null)
             .order("submitted_at", { ascending: false })
@@ -1227,8 +1228,8 @@ const InstituteDashboard = () => {
                                   {application.program_interest || "Program not specified"}
                                   {application.intake ? ` · ${application.intake}` : ""}
                                 </p>
-                                {application.phone && (
-                                  <p className="mt-0.5 text-xs text-slate-500">📞 {application.phone}</p>
+                                {(application.whatsapp_number || application.phone) && (
+                                  <p className="mt-0.5 text-xs text-slate-500">{application.whatsapp_number ? "WhatsApp" : "Phone"}: {application.whatsapp_number || application.phone}</p>
                                 )}
                               </div>
                               <Badge className={`shrink-0 text-[10px] font-bold border ${badgeClass}`}>

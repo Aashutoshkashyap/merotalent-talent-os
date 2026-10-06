@@ -137,6 +137,48 @@ describe("module form validation", () => {
 });
 
 describe("submission service", () => {
+  const jobValues = {
+    jobId: jobUuid,
+    fullName: "Maya Rai",
+    email: "maya@example.com",
+    phone: "+977 9812345678",
+    resumeUrl: `${uuid}/job_attachment/${jobUuid}/${objectUuid}.pdf`,
+    skills: ["Customer service", "React"],
+  };
+
+  it("allows experience, training and salary to be omitted", () => {
+    expect(validateModuleForm("job_application", jobValues).success).toBe(true);
+  });
+
+  it("persists optional job details in the submission command", async () => {
+    const submit = vi.fn().mockResolvedValue({ id: uuid, status: "submitted" });
+    const values = {
+      ...jobValues,
+      expectedSalary: 45000,
+      experienceSummary: "Two years in customer service",
+      experienceLetterUrl: jobValues.resumeUrl,
+      trainingSummary: "Professional communication workshop",
+      trainingDocumentUrl: jobValues.resumeUrl,
+    };
+    await submitModuleForm("job_application", values, { id: uuid }, { submit });
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({ values: expect.objectContaining(values) }));
+  });
+
+  it.each(["experienceLetterUrl", "trainingDocumentUrl"])("rejects another job's %s", async (field) => {
+    const submit = vi.fn();
+    await expect(submitModuleForm("job_application", {
+      ...jobValues,
+      [field]: `${uuid}/job_attachment/${uuid}/${objectUuid}.pdf`,
+    }, { id: uuid }, { submit })).rejects.toMatchObject({ fieldErrors: { [field]: expect.any(Array) } });
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty skills, negative salary and oversized descriptions", () => {
+    for (const invalid of [{ skills: [] }, { expectedSalary: -1 }, { experienceSummary: "x".repeat(2001) }, { trainingSummary: "x".repeat(2001) }]) {
+      expect(validateModuleForm("job_application", { ...jobValues, ...invalid }).success).toBe(false);
+    }
+  });
+
   it("passes only validated values and actor identity to the gateway", async () => {
     const submit = vi.fn().mockResolvedValue({ id: uuid, status: "submitted" });
     const result = await submitModuleForm(
@@ -147,6 +189,7 @@ describe("submission service", () => {
         email: "maya@example.com",
         phone: "+977 9812345678",
         resumeUrl: `${uuid}/job_attachment/${jobUuid}/${objectUuid}.pdf`,
+        skills: ["Communication"],
       },
       { id: uuid, email: "maya@example.com" },
       { submit },
@@ -174,6 +217,7 @@ describe("submission service", () => {
           email: "maya@example.com",
           phone: "+977 9812345678",
           resumeUrl: `${uuid}/job_attachment/${uuid}/${objectUuid}.pdf`,
+          skills: ["Communication"],
         },
         { id: uuid, email: "maya@example.com" },
         { submit: vi.fn() },

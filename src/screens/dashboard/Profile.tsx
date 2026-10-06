@@ -249,6 +249,9 @@ const Profile = () => {
         title="My profile"
         description="Keep your proof of work, experience and strengths clear for mentors and employers."
       />
+      <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-slate-700">
+        Before applying or registering, save your full name, phone number and location here. College and job applications also need your education. Forms will use these saved contact details automatically.
+      </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className={`${dashboardSurface} lg:col-span-1`}>

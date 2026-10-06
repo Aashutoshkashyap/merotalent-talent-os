@@ -22,26 +22,14 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const { profile, roles, signOut } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return document.documentElement.classList.contains("dark") || localStorage.getItem("theme") === "dark";
-  });
   const location = useLocation();
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDarkMode]);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
-  };
+    document.documentElement.classList.remove("dark");
+    localStorage.setItem("theme", "light");
+  }, []);
 
   useEffect(() => {
     const focusCommandSearch = (event: KeyboardEvent) => {

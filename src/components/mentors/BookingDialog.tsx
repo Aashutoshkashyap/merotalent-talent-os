@@ -31,6 +31,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { StudentProfileRequirement } from "@/components/forms/StudentProfileRequirement";
+import { missingStudentProfileFields } from "@/lib/student/profile-readiness";
 
 interface Mentor {
   id: string;
@@ -69,9 +71,24 @@ const timeSlots = [
   "06:00 PM",
 ];
 
+const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) => {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = checkoutUrl;
+  for (const [key, value] of Object.entries(fields)) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  }
+  document.body.appendChild(form);
+  form.submit();
+};
+
 const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogProps) => {
   const { toast } = useToast();
-  const { profile, session, user } = useAuth();
+  const { profile, session, user, refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState("");
@@ -81,7 +98,8 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("khalti");
+  const [address, setAddress] = useState("");
+  const [paymentMethod] = useState("esewa");
   const [services, setServices] = useState<MentorService[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [servicesLoading, setServicesLoading] = useState(false);
@@ -91,10 +109,11 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
 
   useEffect(() => {
     if (!isOpen) return;
-    setFullName((current) => current || profile?.full_name || "");
-    setEmail((current) => current || profile?.email || user?.email || "");
-    setPhone((current) => current || profile?.phone || "");
-  }, [isOpen, profile?.email, profile?.full_name, profile?.phone, user?.email]);
+    setFullName(profile?.full_name || "");
+    setEmail(user?.email || profile?.email || "");
+    setPhone(profile?.phone || "");
+    setAddress(profile?.location || "");
+  }, [isOpen, profile?.email, profile?.full_name, profile?.phone, profile?.location, user?.email]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -134,6 +153,10 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
   const estimatedAmount = selectedService?.price ?? mentor.hourlyRate * (durationMinutes / 60);
 
   const handleNext = () => {
+    if (session && missingStudentProfileFields("mentor_booking", profile, user?.email).length) {
+      toast({ variant: "destructive", title: "Complete your profile", description: "Add the missing profile details before booking an appointment." });
+      return;
+    }
     if (step === 1 && servicesError) {
       toast({
         variant: "destructive",
@@ -179,7 +202,6 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
     setDuration("60");
     setTopic("");
     setNotes("");
-    setPaymentMethod("khalti");
     setSelectedServiceId("");
     setFieldErrors({});
   };
@@ -191,6 +213,10 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
         title: "Login required",
         description: "Sign in again before booking a session.",
       });
+      return;
+    }
+    if (missingStudentProfileFields("mentor_booking", profile, user.email).length) {
+      toast({ variant: "destructive", title: "Complete your profile", description: "Add the missing profile details before booking an appointment." });
       return;
     }
 
@@ -210,18 +236,49 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
           scheduledTime: selectedTime,
           durationMinutes: String(durationMinutes),
           topic,
-          notes,
-          paymentMethod,
+          notes: [address ? `Location: ${address}` : "", notes].filter(Boolean).join("\n"),
+          paymentMethod: "esewa",
         },
       });
 
-      toast({
-        title: "Booking request created",
-        description: `Your session request with ${mentor.name} is stored. Complete payment when a configured gateway is available.`,
-      });
-      onSubmitted?.(result.id);
-      resetForm();
-      onClose();
+      if (estimatedAmount > 0) {
+        toast({
+          title: "Booking created",
+          description: "Initiating secure payment with eSewa...",
+        });
+
+        const checkoutRes = await fetch("/api/v1/payments/checkout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ bookingId: result.id }),
+        });
+
+        const checkoutPayload = await checkoutRes.json();
+        if (!checkoutRes.ok || !checkoutPayload.data?.checkoutUrl || !checkoutPayload.data?.checkoutFields) {
+          toast({
+            variant: "destructive",
+            title: "eSewa Checkout Unavailable",
+            description: checkoutPayload.error?.message || "eSewa checkout could not be created. Please try again or contact support.",
+          });
+          onSubmitted?.(result.id);
+          resetForm();
+          onClose();
+          return;
+        }
+
+        postToCheckout(checkoutPayload.data.checkoutUrl, checkoutPayload.data.checkoutFields);
+      } else {
+        toast({
+          title: "Booking request created",
+          description: `Your free session request with ${mentor.name} has been submitted.`,
+        });
+        onSubmitted?.(result.id);
+        resetForm();
+        onClose();
+      }
     } catch (error) {
       if (error instanceof ModuleFormClientError) {
         setFieldErrors(error.fields);
@@ -250,9 +307,10 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
           <DialogDescription>
             {step === 1 && "Choose your preferred date and time"}
             {step === 2 && "Tell the mentor what you would like to discuss"}
-            {step === 3 && "Review the server-calculated booking request"}
+            {step === 3 && "Review your session details and complete payment"}
           </DialogDescription>
         </DialogHeader>
+        {session && <StudentProfileRequirement module="mentor_booking" profile={profile} email={user?.email} onRefresh={refreshProfile} />}
 
         {step === 1 && (
           <div className="space-y-4">
@@ -338,22 +396,22 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="booking-full-name">Full name</Label>
-                <Input id="booking-full-name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
+                <Input id="booking-full-name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} readOnly={Boolean(session)} />
                 {fieldErrors.fullName?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.fullName[0]}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="booking-email">Email</Label>
-                <Input id="booking-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                <Input id="booking-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} readOnly={Boolean(session)} />
                 {fieldErrors.email?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.email[0]}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="booking-phone">Phone *</Label>
-                <Input id="booking-phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="e.g. 9801010802" />
+                <Input id="booking-phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="e.g. 9801010802" readOnly={Boolean(session)} />
                 {fieldErrors.phone?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.phone[0]}</p>}
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="booking-address">Address *</Label>
-                <Input id="booking-address" placeholder="e.g. Kathmandu, Nepal" value={notes} onChange={(event) => setNotes(event.target.value)} />
+                <Input id="booking-address" placeholder="e.g. Kathmandu, Nepal" value={address} onChange={(event) => setAddress(event.target.value)} readOnly={Boolean(session)} />
               </div>
             </div>
 
@@ -404,26 +462,23 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
             </div>
 
             <div className="space-y-2">
-              <Label>Preferred payment method</Label>
-              {[
-                { id: "khalti", label: "Khalti", icon: Wallet },
-                { id: "esewa", label: "eSewa", icon: Wallet },
-                { id: "card", label: "Card", icon: CreditCard },
-                { id: "bank_transfer", label: "Bank transfer", icon: CreditCard },
-              ].map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setPaymentMethod(id)}
-                  className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${paymentMethod === id ? "border-primary bg-primary/5" : "border-border"}`}
-                >
-                  <Icon className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">{label}</span>
-                </button>
-              ))}
-              {fieldErrors.paymentMethod?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.paymentMethod[0]}</p>}
+              <Label>Payment method</Label>
+              <div className="flex w-full items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-50/50 p-3.5 text-left transition-colors dark:bg-emerald-950/20">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#60BB46] font-bold text-xs text-white shadow-sm">
+                    eSewa
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">eSewa Mobile Wallet</p>
+                    <p className="text-xs text-muted-foreground">Pay securely via eSewa account</p>
+                  </div>
+                </div>
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#60BB46] text-xs text-white">
+                  ✓
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">
-                The database will calculate the final amount and create a pending payment record. This screen does not mark a payment as complete.
+                You will be redirected securely to eSewa to complete your payment upon submitting.
               </p>
             </div>
           </div>
@@ -432,13 +487,14 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
         <DialogFooter className="flex gap-2">
           {step > 1 && <Button type="button" variant="outline" onClick={() => setStep((current) => current - 1)}>Back</Button>}
           {step < 3 ? (
-            <Button type="button" variant="hero" onClick={handleNext} disabled={step === 1 && servicesLoading}>
+            <Button type="button" variant="hero" onClick={handleNext} disabled={(step === 1 && servicesLoading) || Boolean(session && missingStudentProfileFields("mentor_booking", profile, user?.email).length)}>
               <CalendarIcon className="mr-2 h-4 w-4" />Continue
             </Button>
           ) : (
-            <Button type="button" variant="hero" onClick={handleBooking} disabled={isProcessing}>
+            <Button type="button" variant="hero" onClick={handleBooking} disabled={isProcessing || Boolean(session && missingStudentProfileFields("mentor_booking", profile, user?.email).length)}>
               {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create booking request
+              <Wallet className="mr-2 h-4 w-4" />
+              {estimatedAmount > 0 ? "Continue to Pay" : "Confirm Free Session"}
             </Button>
           )}
         </DialogFooter>
@@ -448,3 +504,4 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
 };
 
 export default BookingDialog;
+

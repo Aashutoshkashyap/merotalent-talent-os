@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getGuestCollegeApplicationToken } from "@/lib/forms/guest-college-application";
@@ -19,6 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { StudentProfileRequirement } from "@/components/forms/StudentProfileRequirement";
+import { missingStudentProfileFields } from "@/lib/student/profile-readiness";
 
 interface CollegeApplicationDialogProps {
   instituteId: string;
@@ -36,6 +38,9 @@ interface ApiEnvelope<T> {
 }
 
 type FormValues = Record<string, string | number | boolean>;
+type VerificationChannel = "email" | "whatsapp";
+type VerificationState = { code: string; requested: boolean; verified: boolean; busy: boolean; error: string | null };
+const emptyVerification = (): VerificationState => ({ code: "", requested: false, verified: false, busy: false, error: null });
 
 const inputType = (field: ModuleFormField) => {
   if (["email", "tel", "url", "number", "date", "time"].includes(field.type)) return field.type;
@@ -48,7 +53,7 @@ export default function CollegeApplicationDialog({
   open,
   onOpenChange,
 }: CollegeApplicationDialogProps) {
-  const { session, user, profile } = useAuth();
+  const { session, user, profile, refreshProfile } = useAuth();
   const [definition, setDefinition] = useState<ModuleFormDefinition | null>(null);
   const [values, setValues] = useState<FormValues>({ collegeId: instituteId });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -56,6 +61,10 @@ export default function CollegeApplicationDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [verificationId, setVerificationId] = useState<string | null>(null);
+  const [emailVerification, setEmailVerification] = useState<VerificationState>(emptyVerification);
+  const [whatsappVerification, setWhatsappVerification] = useState<VerificationState>(emptyVerification);
+  const identityRevision = useRef(0);
 
   useEffect(() => {
     if (!open) return;
@@ -76,10 +85,20 @@ export default function CollegeApplicationDialog({
         for (const field of formDefinition.fields) {
           if (field.key === formDefinition.targetField) defaults[field.key] = instituteId;
           else if (field.key === "fullName") defaults[field.key] = profile?.full_name || "";
-          else if (field.key === "email") defaults[field.key] = profile?.email || user?.email || "";
+          else if (field.key === "email") defaults[field.key] = user?.email || profile?.email || "";
+          else if (field.key === "phone") defaults[field.key] = profile?.phone || "";
+          else if (field.key === "currentQualification") defaults[field.key] = profile?.education || "";
           else defaults[field.key] = field.type === "checkbox" ? false : "";
         }
-        setValues(defaults);
+        setValues((current) => {
+          if (current[formDefinition.targetField] !== instituteId) return defaults;
+          return {
+            ...defaults,
+            ...current,
+            ...(session ? { fullName: defaults.fullName, email: defaults.email, phone: defaults.phone } : {}),
+            ...(!current.currentQualification ? { currentQualification: defaults.currentQualification } : {}),
+          };
+        });
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -88,7 +107,7 @@ export default function CollegeApplicationDialog({
       .finally(() => setIsLoading(false));
 
     return () => controller.abort();
-  }, [instituteId, open, profile?.email, profile?.full_name, user]);
+  }, [instituteId, open, profile?.email, profile?.full_name, profile?.phone, profile?.education, session, user?.email]);
 
   useEffect(() => {
     if (!open) {
@@ -96,8 +115,13 @@ export default function CollegeApplicationDialog({
       setFieldErrors({});
       setFormError(null);
       setDefinition(null);
+      setValues({ collegeId: instituteId });
+      identityRevision.current += 1;
+      setVerificationId(null);
+      setEmailVerification(emptyVerification());
+      setWhatsappVerification(emptyVerification());
     }
-  }, [open]);
+  }, [instituteId, open]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen);
@@ -108,6 +132,12 @@ export default function CollegeApplicationDialog({
       ? Number(rawValue)
       : rawValue;
     setValues((current) => ({ ...current, [field.key]: value }));
+    if (!session && (field.key === "email" || field.key === "phone")) {
+      identityRevision.current += 1;
+      setVerificationId(null);
+      setEmailVerification(emptyVerification());
+      setWhatsappVerification(emptyVerification());
+    }
     setFieldErrors((current) => {
       if (!current[field.key]) return current;
       const next = { ...current };
@@ -116,9 +146,60 @@ export default function CollegeApplicationDialog({
     });
   };
 
+  const verifyContact = async (channel: VerificationChannel, action: "start" | "check") => {
+    const revision = identityRevision.current;
+    const setChannel = channel === "email" ? setEmailVerification : setWhatsappVerification;
+    setChannel((current) => ({ ...current, busy: true, error: null }));
+    try {
+      const response = await fetch("/api/v1/guest-college-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          channel,
+          guestToken: getGuestCollegeApplicationToken(),
+          collegeId: instituteId,
+          email: values.email,
+          whatsappNumber: values.phone,
+          ...(action === "check" ? {
+            verificationId,
+            code: channel === "email" ? emailVerification.code : whatsappVerification.code,
+          } : {}),
+        }),
+      });
+      const result = (await response.json()) as ApiEnvelope<{ verificationId: string; verified?: boolean }>;
+      if (revision !== identityRevision.current) return;
+      if (!response.ok || !result.data) throw new Error(result.error?.message || "Verification is unavailable. Please try again.");
+      setVerificationId(result.data.verificationId);
+      setChannel((current) => ({
+        ...current,
+        busy: false,
+        requested: true,
+        verified: action === "check" ? Boolean(result.data?.verified) : false,
+        code: action === "check" ? "" : current.code,
+      }));
+    } catch (error) {
+      if (revision !== identityRevision.current) return;
+      setChannel((current) => ({ ...current, busy: false, error: error instanceof Error ? error.message : "Verification failed." }));
+    }
+  };
+
+  const setChannelCode = (channel: VerificationChannel, raw: string) => {
+    const setChannel = channel === "email" ? setEmailVerification : setWhatsappVerification;
+    setChannel((current) => ({ ...current, code: raw.replace(/\D/g, "").slice(0, 6), error: null }));
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!definition) {
+      return;
+    }
+    if (session && missingStudentProfileFields("college_application", profile, user?.email).length) {
+      setFormError("Complete your student profile before submitting this application.");
+      return;
+    }
+    if (!session && (!verificationId || !emailVerification.verified || !whatsappVerification.verified)) {
+      setFormError("Verify both your email and WhatsApp number before submitting.");
       return;
     }
 
@@ -137,12 +218,14 @@ export default function CollegeApplicationDialog({
       } else {
         await submitGuestCollegeApplication({
           guestToken: getGuestCollegeApplicationToken(),
+          verificationId: verificationId!,
           values,
         });
       }
 
       setSubmitted(true);
     } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "PROFILE_INCOMPLETE") void refreshProfile();
       setFormError(error instanceof Error ? error.message : "Your application could not be submitted.");
     } finally {
       setIsSubmitting(false);
@@ -151,7 +234,7 @@ export default function CollegeApplicationDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-xl border-slate-200">
+      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto border-slate-200">
         {submitted ? (
           <div className="flex flex-col items-center px-2 py-8 text-center">
             <div className="grid h-16 w-16 place-items-center rounded-full bg-emerald-50 text-emerald-600">
@@ -184,6 +267,7 @@ export default function CollegeApplicationDialog({
               </div>
             ) : definition ? (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {session && <StudentProfileRequirement module="college_application" profile={profile} email={user?.email} onRefresh={refreshProfile} />}
                 <div className="grid gap-4 sm:grid-cols-2">
                   {definition.fields.map((field) => {
                     if (field.type === "hidden") {
@@ -195,14 +279,14 @@ export default function CollegeApplicationDialog({
                     return (
                       <div key={field.key} className={`space-y-1.5 ${fullWidth ? "sm:col-span-2" : ""}`}>
                         <Label htmlFor={`college-application-${field.key}`} className="text-xs font-extrabold text-slate-700">
-                          {field.label}{field.required ? " *" : ""}
+                          {!session && field.key === "phone" ? "WhatsApp number" : field.label}{field.required || (!session && field.key === "phone") ? " *" : ""}
                         </Label>
                         {field.type === "textarea" ? (
                           <Textarea
                             id={`college-application-${field.key}`}
                             value={String(values[field.key] ?? "")}
                             onChange={(event) => updateValue(field, event.target.value)}
-                            placeholder={field.placeholder}
+                            placeholder={!session && field.key === "phone" ? "e.g., 9800000000" : field.placeholder}
                             required={field.required}
                             minLength={field.minLength}
                             maxLength={field.maxLength}
@@ -224,16 +308,54 @@ export default function CollegeApplicationDialog({
                             max={field.max}
                             step={field.step}
                             autoComplete={field.autocomplete}
+                            readOnly={Boolean(session) && ["fullName", "email", "phone"].includes(field.key)}
                             aria-invalid={Boolean(error)}
                             className="h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
                           />
                         )}
-                        {field.helpText && <p className="text-[11px] text-slate-500">{field.helpText}</p>}
+                        {field.helpText && field.key !== "phone" && <p className="text-[11px] text-slate-500">{field.helpText}</p>}
+                        {!session && field.key === "phone" && <p className="text-xs text-slate-500">A WhatsApp-enabled number is required. A separate contact number is not needed.</p>}
                         {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
                       </div>
                     );
                   })}
                 </div>
+
+                {!session && (
+                  <section aria-label="Verify your contact details" className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+                    <div>
+                      <h3 className="font-bold text-slate-900">Verify your contact details</h3>
+                      <p className="text-sm text-slate-600">We will send one code to your email and another to WhatsApp. Both are required to apply.</p>
+                    </div>
+                    {(["email", "whatsapp"] as const).map((channel) => {
+                      const state = channel === "email" ? emailVerification : whatsappVerification;
+                      const label = channel === "email" ? "Email" : "WhatsApp";
+                      return (
+                        <div key={channel} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-semibold text-slate-800">{label}</span>
+                            {state.verified && <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700"><CheckCircle2 className="h-4 w-4" /> Verified</span>}
+                          </div>
+                          {!state.verified && (
+                            <div className="flex flex-wrap gap-2">
+                              <Button type="button" variant="outline" disabled={state.busy || !String(values.email || "").trim() || !String(values.phone || "").trim()} onClick={() => void verifyContact(channel, "start")}>
+                                {state.busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                {state.requested ? "Request another code" : `Request ${label} code`}
+                              </Button>
+                              {state.requested && (
+                                <>
+                                  <Input aria-label={`${label} verification code`} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} placeholder="6-digit code" value={state.code} onChange={(event) => setChannelCode(channel, event.target.value)} className="h-10 w-36 bg-white" />
+                                  <Button type="button" disabled={state.busy || !/^[0-9]{6}$/.test(state.code)} onClick={() => void verifyContact(channel, "check")}>Verify</Button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                          {state.error && <p role="alert" className="text-sm font-medium text-red-700">{state.error}</p>}
+                        </div>
+                      );
+                    })}
+                  </section>
+                )}
 
                 {formError && (
                   <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
@@ -246,7 +368,7 @@ export default function CollegeApplicationDialog({
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-slate-200">
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-[#0073e6] hover:bg-[#0062c4]">
+                  <Button type="submit" disabled={isSubmitting || Boolean(session && missingStudentProfileFields("college_application", profile, user?.email).length) || Boolean(!session && (!verificationId || !emailVerification.verified || !whatsappVerification.verified))} className="rounded-xl bg-[#0073e6] hover:bg-[#0062c4]">
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                     {definition.submitLabel}
                   </Button>
