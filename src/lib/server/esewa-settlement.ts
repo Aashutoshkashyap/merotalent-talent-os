@@ -21,7 +21,91 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
 
   const terminal = input.status === "successful" ? "success" : "failed";
 
+  if (checkout.entity_type === "college_scope_request") {
+    const [{ data: requestRecord, error: requestError }, { data: pkg, error: packageError }] = await Promise.all([
+      db.from("entity_scope_requests")
+        .select("id,user_id,status,entity_id,payment_status")
+        .eq("id", checkout.entity_id)
+        .eq("user_id", checkout.user_id)
+        .maybeSingle(),
+      db.from("packages")
+        .select("id,price,currency,module_scope")
+        .eq("id", checkout.package_id)
+        .maybeSingle(),
+    ]);
+    if (requestError || !requestRecord) throw new Error("College access request was not found.");
+    if (packageError || !pkg || Number(pkg.price) !== Number(checkout.amount) || !Array.isArray(pkg.module_scope) || !pkg.module_scope.includes("college")) {
+      throw new Error("College plan does not match this payment session.");
+    }
+
+    const { data: payment, error: paymentError } = await db.from("payments").insert({
+      user_id: checkout.user_id,
+      payment_type: "module_access_request",
+      reference_id: requestRecord.id,
+      amount: checkout.amount,
+      currency: checkout.currency,
+      status: terminal,
+      gateway: input.provider,
+      gateway_transaction_id: input.transactionId,
+      paid_at: input.status === "successful" ? now.toISOString() : null,
+      failed_at: input.status === "successful" ? null : now.toISOString(),
+      metadata: { checkout_session_id: checkout.id, package_id: checkout.package_id, module: "college" },
+    }).select("id").single();
+    if (paymentError) throw paymentError;
+
+    const requestPaymentStatus = input.status === "successful"
+      ? "success"
+      : (["cancelled", "expired"].includes(input.status) ? input.status : "failed");
+    const { error: requestUpdateError } = await db.from("entity_scope_requests").update({
+      package_id: checkout.package_id,
+      payment_id: payment.id,
+      payment_status: requestPaymentStatus,
+      paid_at: input.status === "successful" ? now.toISOString() : null,
+      updated_at: now.toISOString(),
+    }).eq("id", requestRecord.id).eq("user_id", checkout.user_id);
+    if (requestUpdateError) throw requestUpdateError;
+
+    let activation: Record<string, unknown> = { activated: false, reason: "awaiting_approval" };
+    if (input.status === "successful") {
+      const { data, error } = await db.rpc("activate_verified_college_scope_request", { p_request_id: requestRecord.id });
+      if (error) throw error;
+      if (data && typeof data === "object" && !Array.isArray(data)) activation = data as Record<string, unknown>;
+    }
+
+    const { error: checkoutUpdateError } = await db.from("payment_checkout_sessions").update({
+      status: input.status,
+      completed_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    }).eq("id", checkout.id);
+    if (checkoutUpdateError) throw checkoutUpdateError;
+
+    const { error: auditError } = await db.from("audit_logs").insert({
+      actor_user_id: null,
+      action: input.status === "successful" ? "COLLEGE_SCOPE_PAYMENT_VERIFIED" : "COLLEGE_SCOPE_PAYMENT_FAILED",
+      entity_type: "entity_scope_request",
+      entity_id: requestRecord.id,
+      metadata: { provider: input.provider, checkout_session_id: checkout.id, payment_id: payment.id, activation },
+    });
+    if (auditError) throw auditError;
+
+    return {
+      checkoutId: checkout.id,
+      duplicate: false,
+      status: input.status,
+      subscriptionId: typeof activation.subscription_id === "string" ? activation.subscription_id : null,
+    };
+  }
+
   if (checkout.entity_type === "mentor_booking") {
+    const { data: booking } = await db.from("mentor_bookings").select("id,mentor_id").eq("id", checkout.entity_id).maybeSingle();
+    let commissionRate = 0;
+    if (booking?.mentor_id) {
+      const { data: mentor } = await db.from("mentors").select("commission_rate").eq("id", booking.mentor_id).maybeSingle();
+      commissionRate = Number(mentor?.commission_rate) || 0;
+    }
+    const commissionAmount = (Number(checkout.amount) * commissionRate) / 100;
+    const mentorPayable = Number(checkout.amount) - commissionAmount;
+
     const { data: existingPayment } = await db.from("payments").select("id").eq("reference_id", checkout.entity_id).eq("payment_type", "mentor_booking").maybeSingle();
     let paymentId = existingPayment?.id;
     if (existingPayment) {
@@ -31,6 +115,9 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
         gateway_transaction_id: input.transactionId,
         paid_at: input.status === "successful" ? now.toISOString() : null,
         failed_at: input.status === "successful" ? null : now.toISOString(),
+        commission_amount: commissionAmount,
+        payout_status: input.status === "successful" ? "pending" : "not_applicable",
+        payout_amount: mentorPayable,
       }).eq("id", existingPayment.id);
       if (error) throw error;
     } else {
@@ -45,7 +132,10 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
         gateway_transaction_id: input.transactionId,
         paid_at: input.status === "successful" ? now.toISOString() : null,
         failed_at: input.status === "successful" ? null : now.toISOString(),
-        metadata: { checkout_session_id: checkout.id },
+        commission_amount: commissionAmount,
+        payout_status: input.status === "successful" ? "pending" : "not_applicable",
+        payout_amount: mentorPayable,
+        metadata: { checkout_session_id: checkout.id, commission_rate: commissionRate, mentor_id: booking?.mentor_id },
       }).select("id").single();
       if (error) throw error;
       paymentId = created.id;
@@ -60,7 +150,52 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
     const { error: checkoutUpdateError } = await db.from("payment_checkout_sessions").update({ status: input.status, completed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", checkout.id);
     if (checkoutUpdateError) throw checkoutUpdateError;
 
-    const auditPayload = { actor_user_id: null, action: input.status === "successful" ? "PAYMENT_VERIFIED" : "PAYMENT_FAILED", entity_type: "mentor_booking", entity_id: checkout.entity_id, metadata: { provider: input.provider, checkout_session_id: checkout.id, payment_id: paymentId } };
+    const auditPayload = { actor_user_id: null, action: input.status === "successful" ? "PAYMENT_VERIFIED" : "PAYMENT_FAILED", entity_type: "mentor_booking", entity_id: checkout.entity_id, metadata: { provider: input.provider, checkout_session_id: checkout.id, payment_id: paymentId, commission_amount: commissionAmount } };
+    const { error: auditError } = await db.from("audit_logs").insert(auditPayload);
+    if (auditError) throw auditError;
+    return { checkoutId: checkout.id, duplicate: false, status: input.status, subscriptionId: null };
+  }
+
+  if (checkout.entity_type === "event_registration") {
+    const { data: existingPayment } = await db.from("payments").select("id").eq("reference_id", checkout.entity_id).eq("payment_type", "event_ticket").maybeSingle();
+    let paymentId = existingPayment?.id;
+    if (existingPayment) {
+      const { error } = await db.from("payments").update({
+        status: terminal,
+        gateway: input.provider,
+        gateway_transaction_id: input.transactionId,
+        paid_at: input.status === "successful" ? now.toISOString() : null,
+        failed_at: input.status === "successful" ? null : now.toISOString(),
+      }).eq("id", existingPayment.id);
+      if (error) throw error;
+    } else {
+      const { data: created, error } = await db.from("payments").insert({
+        user_id: checkout.user_id,
+        payment_type: "event_ticket",
+        reference_id: checkout.entity_id,
+        amount: checkout.amount,
+        currency: checkout.currency,
+        status: terminal,
+        gateway: input.provider,
+        gateway_transaction_id: input.transactionId,
+        paid_at: input.status === "successful" ? now.toISOString() : null,
+        failed_at: input.status === "successful" ? null : now.toISOString(),
+        metadata: { checkout_session_id: checkout.id },
+      }).select("id").single();
+      if (error) throw error;
+      paymentId = created.id;
+    }
+
+    const regUpdate = input.status === "successful"
+      ? { payment_status: "success", status: "confirmed", ...(paymentId ? { payment_id: paymentId } : {}) }
+      : { payment_status: "failed", status: "pending" };
+    const { error: regError } = await db.from("event_registrations").update(regUpdate).eq("id", checkout.entity_id);
+    if (regError) throw regError;
+
+    const { error: checkoutUpdateError } = await db.from("payment_checkout_sessions").update({ status: input.status, completed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", checkout.id);
+    if (checkoutUpdateError) throw checkoutUpdateError;
+
+    const auditPayload = { actor_user_id: null, action: input.status === "successful" ? "EVENT_TICKET_PAYMENT_VERIFIED" : "EVENT_TICKET_PAYMENT_FAILED", entity_type: "event_registration", entity_id: checkout.entity_id, metadata: { provider: input.provider, checkout_session_id: checkout.id, payment_id: paymentId } };
     const { error: auditError } = await db.from("audit_logs").insert(auditPayload);
     if (auditError) throw auditError;
     return { checkoutId: checkout.id, duplicate: false, status: input.status, subscriptionId: null };
@@ -105,4 +240,3 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
   if (auditError) throw auditError;
   return { checkoutId: checkout.id, duplicate: false, status: input.status, subscriptionId };
 }
-

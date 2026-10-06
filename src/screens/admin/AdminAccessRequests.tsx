@@ -39,9 +39,13 @@ interface EntityScopeRequest {
   entity_type: string;
   entity_id: string | null;
   request_kind: "claim" | "create";
-  request_data: { name?: string; location?: string };
+  request_data: { name?: string; location?: string; email?: string; phone?: string };
   reason: string;
   status: "pending" | "approved" | "rejected" | "cancelled";
+  payment_status: "not_started" | "pending" | "success" | "failed" | "cancelled" | "expired";
+  college_name?: string;
+  applicant_name?: string;
+  applicant_email?: string;
   decision_note: string | null;
   created_at: string;
 }
@@ -96,10 +100,31 @@ export default function AdminAccessRequests() {
       setRequests(data);
       const { data: scopeRequests, error: scopeError } = await (supabase as any)
         .from("entity_scope_requests")
-        .select("id,user_id,module_key,entity_type,entity_id,request_kind,request_data,reason,status,decision_note,created_at")
+        .select("id,user_id,module_key,entity_type,entity_id,request_kind,request_data,reason,status,payment_status,decision_note,created_at")
         .order("created_at", { ascending: false });
       if (scopeError) throw scopeError;
-      setEntityScopeRequests(scopeRequests || []);
+      const rows = (scopeRequests || []) as EntityScopeRequest[];
+      const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
+      const collegeIds = [...new Set(rows.map((row) => row.entity_id).filter((id): id is string => Boolean(id)))];
+      const [{ data: profiles }, { data: colleges }] = await Promise.all([
+        userIds.length
+          ? (supabase as any).from("profiles").select("user_id,full_name,email").in("user_id", userIds)
+          : Promise.resolve({ data: [] }),
+        collegeIds.length
+          ? (supabase as any).from("institutes").select("id,name").in("id", collegeIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+      const profileByUser = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]));
+      const collegeById = new Map((colleges || []).map((college: any) => [college.id, college.name]));
+      setEntityScopeRequests(rows.map((row) => {
+        const profile = profileByUser.get(row.user_id) as any;
+        return {
+          ...row,
+          college_name: (row.request_data?.name || (row.entity_id ? (collegeById.get(row.entity_id) as string | undefined) : undefined) || "College name unavailable") as string,
+          applicant_name: profile?.full_name || "Applicant",
+          applicant_email: profile?.email || row.request_data?.email || "Email unavailable",
+        };
+      }));
     } catch (error) {
       setRequests([]);
       setEntityScopeRequests([]);
@@ -374,16 +399,23 @@ export default function AdminAccessRequests() {
           ) : (
             <div className="table-responsive">
               <Table>
-                <TableHeader><TableRow><TableHead>Request</TableHead><TableHead>Applicant</TableHead><TableHead>Reason</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>College requested</TableHead><TableHead>Applicant</TableHead><TableHead>Request details</TableHead><TableHead>Payment</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {entityScopeRequests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>
-                        <p className="font-semibold capitalize">{request.request_kind} {request.entity_type}</p>
-                        <p className="text-xs text-muted-foreground">{request.request_data?.name || request.entity_id || "Existing directory college"}</p>
+                        <p className="font-semibold text-slate-900">{request.college_name}</p>
+                        <p className="text-xs capitalize text-muted-foreground">{request.request_kind === "claim" ? "Claim existing college" : "Add new college"}</p>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{request.user_id}</TableCell>
-                      <TableCell className="max-w-xs text-xs">{request.reason}</TableCell>
+                      <TableCell>
+                        <p className="text-sm font-semibold text-slate-800">{request.applicant_name}</p>
+                        <p className="text-xs text-muted-foreground">{request.applicant_email}</p>
+                      </TableCell>
+                      <TableCell className="max-w-xs text-xs">
+                        <p className="line-clamp-2" title={request.reason}>{request.reason}</p>
+                        {request.request_data?.phone && <p className="mt-1 text-muted-foreground">Phone: {request.request_data.phone}</p>}
+                      </TableCell>
+                      <TableCell><Badge variant="outline" className="capitalize">{request.payment_status?.replace("_", " ") || "Not started"}</Badge></TableCell>
                       <TableCell><Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "outline"} className="capitalize">{request.status}</Badge></TableCell>
                       <TableCell className="text-right">
                         {request.status === "pending" && <div className="flex justify-end gap-2">
