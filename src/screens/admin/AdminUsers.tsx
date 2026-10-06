@@ -203,7 +203,7 @@ const AdminUsers = () => {
         if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
         const collected: any[] = [];
         let page = 1;
-        let totalPages = 1;
+        let hasMore = true;
         do {
           const response = await fetch(`/api/v1/admin/auth-users?page=${page}&page_size=100`, {
             headers: { Authorization: `Bearer ${auth.session.access_token}` },
@@ -213,9 +213,10 @@ const AdminUsers = () => {
             throw new Error(payload?.error?.message || "Could not load registered Auth users.");
           }
           collected.push(...payload.data);
-          totalPages = Math.max(1, Number(payload?.meta?.totalPages) || 1);
+          const totalPages = Number(payload?.meta?.totalPages) || 1;
+          hasMore = Boolean(payload?.meta?.hasNextPage) || (payload.data.length === 100 && page < totalPages);
           page += 1;
-        } while (page <= totalPages);
+        } while (hasMore);
 
         setUsers(collected.map((account: any) => ({
           id: account.id,

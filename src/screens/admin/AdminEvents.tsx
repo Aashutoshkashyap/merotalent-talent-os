@@ -527,9 +527,9 @@ export default function AdminEvents() {
 
               <div className="space-y-2">
                 <SignedMediaUploader
-                  label="Event Banner / Cover Image"
+                  label="Event Banner / Attachment File"
                   module="event_cover"
-                  resourceId={editingEvent?.id || "new-event"}
+                  resourceId={editingEvent?.id || undefined}
                   onUploaded={([asset]: SignedMediaAsset[]) => {
                     if (asset) {
                       setFormData((current) => ({ ...current, cover_image_url: asset.publicUrl || asset.path }));

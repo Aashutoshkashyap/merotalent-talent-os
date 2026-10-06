@@ -114,8 +114,8 @@ export const mediaPolicies: Record<MediaModule, MediaPolicy> = {
   event_cover: {
     bucket: "event-media",
     maxBytes: 8 * megabyte,
-    mimeTypes: imageMimeTypes,
-    resourceRequired: true,
+    mimeTypes: [...imageMimeTypes, ...documentMimeTypes],
+    resourceRequired: false,
     permission: "event.organize",
   },
   course_thumbnail: {
@@ -217,7 +217,7 @@ function validateResourceRequirement(
       { resourceId: ["A resource ID is required for this media module."] },
     );
   }
-  if (!policy.resourceRequired && resourceId) {
+  if (!policy.resourceRequired && resourceId && ["profile_avatar", "resume"].includes(module)) {
     throw new MediaPolicyError(
       422,
       "RESOURCE_NOT_ALLOWED",

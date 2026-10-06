@@ -48,7 +48,10 @@ export async function GET(request: Request) {
       authenticated.userClient,
       users.map((user) => user.id),
     );
-    const total = "total" in data && typeof data.total === "number" ? data.total : 0;
+    const total = "total" in data && typeof (data as any).total === "number" ? (data as any).total : 0;
+    const hasNextPage = typeof (data as any).nextPage === "number" ? (data as any).nextPage > 0 : users.length === list.pageSize;
+    const computedTotal = total > 0 ? total : (hasNextPage ? (list.page * list.pageSize + 1) : ((list.page - 1) * list.pageSize + users.length));
+    const computedTotalPages = total > 0 ? Math.ceil(total / list.pageSize) : (hasNextPage ? list.page + 1 : list.page);
 
     return jsonApiResponse(
       {
@@ -64,8 +67,9 @@ export async function GET(request: Request) {
           requestId,
           page: list.page,
           pageSize: list.pageSize,
-          total,
-          totalPages: Math.ceil(total / list.pageSize),
+          total: computedTotal,
+          totalPages: computedTotalPages,
+          hasNextPage,
         },
       },
       200,

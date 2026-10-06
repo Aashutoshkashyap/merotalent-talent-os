@@ -62,7 +62,7 @@ interface UploadSigningResponse {
 export interface SignedMediaUploaderProps {
   label: string;
   module: CollegeMediaModule;
-  resourceId: string;
+  resourceId?: string | null;
   multiple?: boolean;
   maxFiles?: number;
   disabled?: boolean;
@@ -209,7 +209,7 @@ async function compressImage(file: File, module?: CollegeMediaModule): Promise<F
 export async function uploadSignedCollegeMedia(
   file: File,
   module: CollegeMediaModule,
-  resourceId: string,
+  resourceId?: string | null,
 ): Promise<SignedMediaAsset> {
   const processedFile = await compressImage(file, module);
   const { data: sessionData } = await supabase.auth.getSession();
@@ -219,6 +219,7 @@ export async function uploadSignedCollegeMedia(
     throw new Error("Sign in again before uploading media.");
   }
 
+  const isValidUuid = typeof resourceId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(resourceId);
   const expectedBucket = signedBucketByModule[module] || "job-files";
 
   // The signing endpoint is the only authorization gate for uploads, so it is
@@ -233,7 +234,7 @@ export async function uploadSignedCollegeMedia(
     },
     body: JSON.stringify({
       module,
-      resourceId,
+      resourceId: isValidUuid ? resourceId : undefined,
       fileName: processedFile.name,
       contentType: processedFile.type,
       sizeBytes: processedFile.size,
