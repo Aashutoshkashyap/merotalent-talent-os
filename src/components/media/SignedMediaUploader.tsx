@@ -372,8 +372,8 @@ export function SignedMediaUploader({
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
           {isDocumentUpload
-            ? "PDF, DOC or DOCX, up to 5 MB. The private upload is validated and signed by the server."
-            : "AVIF, JPEG, PNG or WebP. Files are validated and signed by the server."}
+            ? "PDF, DOC or DOCX, up to 5 MB."
+            : "AVIF, JPEG, PNG or WebP."}
         </p>
         {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
         {!error && uploadedCount > 0 && !isUploading && (
