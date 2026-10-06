@@ -229,7 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email: normalizedEmail,
       password,
       options: {
-        emailRedirectTo: getPublicOrigin(),
+        emailRedirectTo: getAuthCallbackUrl(),
         data: {
           full_name: fullName,
           // Every new account begins as Student/User. Privileged module access

@@ -61,6 +61,7 @@ interface UserRecord {
   full_name: string | null;
   phone?: string | null;
   account_status?: string | null;
+  email_verified: boolean;
   created_at: string;
   roles: string[];
 }
@@ -223,6 +224,7 @@ const AdminUsers = () => {
           full_name: account.profile?.metadata?.fullName || null,
           phone: null,
           account_status: account.profile?.accountStatus || (account.banned ? "suspended" : "active"),
+          email_verified: Boolean(account.emailVerified),
           created_at: account.createdAt,
           roles: Array.isArray(account.roles) ? account.roles : [],
         })));
@@ -232,6 +234,7 @@ const AdminUsers = () => {
           const roles = await listAdminResource<any>("user-roles");
           setUsers(profiles.map((profile: any) => ({
             ...profile,
+            email_verified: true,
             roles: roles.filter((role: any) => role.user_id === profile.user_id).map((role: any) => role.role),
           })));
         } catch {
@@ -382,7 +385,10 @@ const AdminUsers = () => {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-display font-bold text-[#0f172a]">User Management</h1>
+          <h1 className="text-2xl font-display font-bold text-[#0f172a]">
+            User Management
+            {users.length > 0 && <span className="ml-2 text-base font-normal text-slate-400">({users.length})</span>}
+          </h1>
           <p className="text-muted-foreground text-sm">
             View registered members, create user accounts, send password resets, and manage role access.
           </p>
@@ -477,11 +483,16 @@ const AdminUsers = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {user.account_status === "suspended" ? (
-                      <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] font-extrabold">Suspended</Badge>
-                    ) : (
-                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] font-extrabold">Active</Badge>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {user.account_status === "suspended" ? (
+                        <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] font-extrabold">Suspended</Badge>
+                      ) : (
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] font-extrabold">Active</Badge>
+                      )}
+                      {!user.email_verified && (
+                        <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-bold">Unconfirmed</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                     {new Date(user.created_at).toLocaleDateString()}
