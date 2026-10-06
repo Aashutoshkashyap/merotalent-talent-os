@@ -131,6 +131,14 @@ export default function EventsPage() {
               >
                 {/* Header Banner */}
                 <div className="relative h-44 bg-gradient-to-br from-[#071a3d] via-[#1d4ed8] to-blue-600 p-6 flex flex-col justify-between text-white overflow-hidden">
+                  {event.cover_image_url && (
+                    <img
+                      src={event.cover_image_url}
+                      alt={event.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#071a3d]/90 via-[#071a3d]/40 to-transparent" />
                   <div className="flex items-center justify-between z-10">
                     <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md">
                       {event.format}
