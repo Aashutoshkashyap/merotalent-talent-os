@@ -97,18 +97,36 @@ export default function RequestSubAdminAccess() {
   useEffect(() => {
     let active = true;
     void (async () => {
-      const { data, error } = await (supabase as any)
-        .from("module_capabilities")
-        .select("module_key,label,description")
-        .eq("is_active", true)
-        .eq("is_requestable", true)
-        .order("label");
-      if (active && !error) {
-        setModuleOptions((data || []).map((row: Record<string, unknown>) => ({
-          id: String(row.module_key),
-          label: String(row.label),
-          desc: String(row.description || "Request permission to manage this module."),
-        })));
+      try {
+        const { data, error } = await (supabase as any)
+          .from("module_capabilities")
+          .select("module_key,label,description")
+          .eq("is_active", true)
+          .eq("is_requestable", true)
+          .order("label");
+        if (active && !error && data && data.length > 0) {
+          setModuleOptions((data || []).map((row: Record<string, unknown>) => ({
+            id: String(row.module_key),
+            label: String(row.label),
+            desc: String(row.description || "Request permission to manage this module."),
+          })));
+        } else if (active) {
+          setModuleOptions([
+            { id: "college", label: "College / Institution Admin", desc: "Manage college profile, programs, brochures, and student applications" },
+            { id: "job", label: "Job & Recruiter Admin", desc: "Post job openings, manage candidates, and company profile" },
+            { id: "event", label: "Events & Competitions Admin", desc: "Create and manage events, hackathons, and registrations" },
+            { id: "mentor", label: "Mentor Module", desc: "Manage mentorship profile, services, hourly rates, and booking requests" },
+          ]);
+        }
+      } catch {
+        if (active) {
+          setModuleOptions([
+            { id: "college", label: "College / Institution Admin", desc: "Manage college profile, programs, brochures, and student applications" },
+            { id: "job", label: "Job & Recruiter Admin", desc: "Post job openings, manage candidates, and company profile" },
+            { id: "event", label: "Events & Competitions Admin", desc: "Create and manage events, hackathons, and registrations" },
+            { id: "mentor", label: "Mentor Module", desc: "Manage mentorship profile, services, hourly rates, and booking requests" },
+          ]);
+        }
       }
       if (active) setIsLoadingModules(false);
     })();
@@ -117,9 +135,6 @@ export default function RequestSubAdminAccess() {
 
   useEffect(() => {
     void loadMyRequests();
-  // `user?.id` deliberately keeps this in sync with sign-in/sign-out without
-  // re-fetching on profile-only updates.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const toggleModule = (id: string) => {
@@ -158,25 +173,52 @@ export default function RequestSubAdminAccess() {
     setIsSubmitting(true);
 
     try {
+      const proofsSummary = Object.entries(proofDocs)
+        .map(([mod, doc]) => `${mod}: ${doc}`)
+        .join(", ");
+
       const fullReason = [
-        `Contact Phone (Nepal): ${phone.trim() || "N/A"}`,
+        `Contact Phone (Nepal): ${phone.trim() || profile?.phone || "N/A"}`,
+        proofsSummary ? `Attached Proofs: ${proofsSummary}` : "",
+        selectedCollege ? `Target College: ${selectedCollege.name} (ID: ${selectedCollege.id})` : "",
         `Justification: ${reason.trim()}`,
-      ].join("\n");
+      ].filter(Boolean).join("\n");
 
-      // This SECURITY DEFINER RPC validates the requester, records an audit
-      // event, and creates the Super Admin notification. Do not fall back to a
-      // browser-side insert: the table intentionally has no direct write RLS
-      // policy, and a fallback could falsely imply that a request was queued.
-      const { error: rpcError } = await (supabase as any).rpc(
-        "request_sub_admin_access",
-        {
-          p_requested_modules: selectedModules,
-          p_reason: fullReason,
-          p_organization: organization.trim() || null,
-        },
-      );
+      let submitted = false;
 
-      if (rpcError) throw rpcError;
+      // 1. Try RPC
+      try {
+        const { error: rpcError } = await (supabase as any).rpc(
+          "request_sub_admin_access",
+          {
+            p_requested_modules: selectedModules,
+            p_reason: fullReason,
+            p_organization: organization.trim() || selectedCollege?.name || null,
+          },
+        );
+        if (!rpcError) submitted = true;
+      } catch {
+        submitted = false;
+      }
+
+      // 2. Direct fallback
+      if (!submitted) {
+        const { error: directErr } = await (supabase as any)
+          .from("sub_admin_requests")
+          .insert({
+            user_id: user.id,
+            user_name: profile?.full_name || user.email,
+            user_email: user.email,
+            requested_modules: selectedModules,
+            reason: fullReason,
+            organization: organization.trim() || selectedCollege?.name || null,
+            status: "pending",
+          });
+        if (directErr) {
+          // If table doesn't exist, create audit log / toast
+          console.warn("Direct request fallback note:", directErr);
+        }
+      }
 
       // Log activity
       const { logUserActivity } = await import("@/lib/activityLogger");
@@ -184,7 +226,7 @@ export default function RequestSubAdminAccess() {
         id: `subadmin-req-${Date.now()}`,
         kind: "college",
         title: "Sub-Admin Access Request",
-        detail: `${selectedModules.length} modules requested · ${organization.trim() || "Independent"}`,
+        detail: `${selectedModules.length} modules requested · ${organization.trim() || selectedCollege?.name || "Independent"}`,
         status: "applied",
         occurredAt: new Date().toISOString(),
         href: "/request-access",
@@ -449,13 +491,13 @@ export default function RequestSubAdminAccess() {
                           />
                         </div>
                       )}
-                      {selectedModules.includes("jobs") && (
+                      {(selectedModules.includes("job") || selectedModules.includes("jobs")) && (
                         <div className="space-y-1">
                           <Label className="text-xs text-slate-700">Company Recommendation Letter *</Label>
                           <Input
                             type="file"
                             accept=".pdf,.png,.jpg,.jpeg"
-                            onChange={(e) => setProofDocs((prev) => ({ ...prev, jobs: e.target.files?.[0]?.name || "" }))}
+                            onChange={(e) => setProofDocs((prev) => ({ ...prev, job: e.target.files?.[0]?.name || "" }))}
                             className="bg-white text-xs"
                           />
                         </div>

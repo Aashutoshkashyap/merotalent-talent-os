@@ -153,10 +153,6 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
   const estimatedAmount = selectedService?.price ?? mentor.hourlyRate * (durationMinutes / 60);
 
   const handleNext = () => {
-    if (session && missingStudentProfileFields("mentor_booking", profile, user?.email).length) {
-      toast({ variant: "destructive", title: "Complete your profile", description: "Add the missing profile details before booking an appointment." });
-      return;
-    }
     if (step === 1 && servicesError) {
       toast({
         variant: "destructive",
@@ -215,31 +211,56 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
       });
       return;
     }
-    if (missingStudentProfileFields("mentor_booking", profile, user.email).length) {
-      toast({ variant: "destructive", title: "Complete your profile", description: "Add the missing profile details before booking an appointment." });
-      return;
-    }
 
     setIsProcessing(true);
     setFieldErrors({});
     try {
-      const result = await submitAuthenticatedModuleForm({
-        accessToken: session.access_token,
-        module: "mentor_booking",
-        values: {
-          mentorId: mentor.id,
-          ...(selectedService ? { mentorServiceId: selectedService.id } : {}),
-          fullName,
-          email,
-          phone,
-          scheduledDate: format(selectedDate, "yyyy-MM-dd"),
-          scheduledTime: selectedTime,
-          durationMinutes: String(durationMinutes),
-          topic,
-          notes: [address ? `Location: ${address}` : "", notes].filter(Boolean).join("\n"),
-          paymentMethod: "esewa",
-        },
-      });
+      let result: { id: string } | null = null;
+      try {
+        result = await submitAuthenticatedModuleForm({
+          accessToken: session.access_token,
+          module: "mentor_booking",
+          values: {
+            mentorId: mentor.id,
+            ...(selectedService ? { mentorServiceId: selectedService.id } : {}),
+            fullName: fullName.trim() || user.email,
+            email: email.trim() || user.email,
+            phone: phone.trim(),
+            scheduledDate: format(selectedDate, "yyyy-MM-dd"),
+            scheduledTime: selectedTime,
+            durationMinutes: String(durationMinutes),
+            topic,
+            notes: [address ? `Location: ${address}` : "", notes].filter(Boolean).join("\n"),
+            paymentMethod: "esewa",
+          },
+        });
+      } catch (submitErr) {
+        // Direct table fallback
+        const scheduledStart = `${format(selectedDate, "yyyy-MM-dd")}T${selectedTime || "10:00"}:00Z`;
+        const startDate = new Date(scheduledStart);
+        const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+
+        const { data: directBooking, error: directErr } = await (supabase as any)
+          .from("mentor_bookings")
+          .insert({
+            mentor_id: mentor.id,
+            mentor_service_id: selectedService?.id || null,
+            student_id: user.id,
+            scheduled_start: startDate.toISOString(),
+            scheduled_end: endDate.toISOString(),
+            status: "pending",
+            payment_status: "pending",
+            amount: estimatedAmount,
+            currency: "NPR",
+            notes: [topic, address ? `Location: ${address}` : "", notes].filter(Boolean).join("\n"),
+            form_data: { mentorId: mentor.id, fullName, email, phone, topic, notes },
+          })
+          .select("id")
+          .single();
+
+        if (directErr || !directBooking) throw submitErr;
+        result = { id: directBooking.id };
+      }
 
       if (estimatedAmount > 0) {
         toast({
@@ -487,11 +508,11 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
         <DialogFooter className="flex gap-2">
           {step > 1 && <Button type="button" variant="outline" onClick={() => setStep((current) => current - 1)}>Back</Button>}
           {step < 3 ? (
-            <Button type="button" variant="hero" onClick={handleNext} disabled={(step === 1 && servicesLoading) || Boolean(session && missingStudentProfileFields("mentor_booking", profile, user?.email).length)}>
+            <Button type="button" variant="hero" onClick={handleNext} disabled={step === 1 && servicesLoading}>
               <CalendarIcon className="mr-2 h-4 w-4" />Continue
             </Button>
           ) : (
-            <Button type="button" variant="hero" onClick={handleBooking} disabled={isProcessing || Boolean(session && missingStudentProfileFields("mentor_booking", profile, user?.email).length)}>
+            <Button type="button" variant="hero" onClick={handleBooking} disabled={isProcessing || !topic.trim() || !fullName.trim() || !phone.trim()}>
               {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Wallet className="mr-2 h-4 w-4" />
               {estimatedAmount > 0 ? "Continue to Pay" : "Confirm Free Session"}

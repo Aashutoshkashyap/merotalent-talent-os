@@ -42,11 +42,12 @@ export function valuesFromStudentProfile(
   const submitted = values as Record<string, unknown>;
   return {
     ...submitted,
-    fullName: profile.full_name?.trim(),
-    email: (accountEmail || profile.email || "").trim().toLowerCase(),
-    phone: profile.phone?.trim(),
+    fullName: (profile.full_name?.trim() || (submitted.fullName as string)?.trim() || "").trim(),
+    email: (accountEmail || profile.email || (submitted.email as string) || "").trim().toLowerCase(),
+    phone: (profile.phone?.trim() || (submitted.phone as string)?.trim() || "").trim(),
     ...(module === "college_application" && !submitted.currentQualification
-      ? { currentQualification: profile.education?.trim() || "" }
+      ? { currentQualification: profile.education?.trim() || (submitted.currentQualification as string)?.trim() || "" }
       : {}),
   };
 }
+
