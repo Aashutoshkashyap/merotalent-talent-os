@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
+import { SystemPagination } from "@/components/ui/SystemPagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -286,15 +287,6 @@ const AdminUsers = () => {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.phone || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.roles.includes(roleFilter);
-    return matchesSearch && matchesRole;
-  });
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "admin":
@@ -312,9 +304,27 @@ const AdminUsers = () => {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch = !searchQuery || 
+      (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.phone || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === "all" || (roleFilter === "talent" ? u.roles.length === 0 || u.roles.includes("talent") : u.roles.includes(roleFilter));
+    return matchesSearch && matchesRole;
+  });
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
+
   return (
     <OperationsPage>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-display font-bold text-[#0f172a]">User Management</h1>
           <p className="text-muted-foreground text-sm">
@@ -335,18 +345,18 @@ const AdminUsers = () => {
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search by name, email, phone, or account ID..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="pl-10 h-10 text-xs rounded-xl"
           />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
+        <Select value={roleFilter} onValueChange={(val) => { setRoleFilter(val); setCurrentPage(1); }}>
           <SelectTrigger className="w-full sm:w-[180px] h-10 text-xs rounded-xl bg-white">
             <SelectValue placeholder="Filter by Role" />
           </SelectTrigger>
@@ -376,7 +386,7 @@ const AdminUsers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <TableRow key={user.id} className="hover:bg-slate-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -475,6 +485,21 @@ const AdminUsers = () => {
               ))}
             </TableBody>
           </Table>
+
+          <div className="border-t border-slate-100 px-4 bg-slate-50/50">
+            <SystemPagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredUsers.length / pageSize)}
+              totalItems={filteredUsers.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+              itemLabel="users"
+            />
+          </div>
 
           {filteredUsers.length === 0 && (
             <div className="p-12 text-center text-muted-foreground">

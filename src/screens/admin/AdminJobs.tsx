@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SystemPagination } from "@/components/ui/SystemPagination";
 import { generateJobDetails } from "@/lib/ai/ai-generator";
 import {
   AdminClientError,
@@ -348,6 +349,13 @@ const AdminJobs = () => {
       (job.location && job.location.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const [jobsPage, setJobsPage] = useState(1);
+  const [jobsPageSize, setJobsPageSize] = useState(15);
+  const paginatedJobs = useMemo(() => {
+    const start = (jobsPage - 1) * jobsPageSize;
+    return filteredJobs.slice(start, start + jobsPageSize);
+  }, [filteredJobs, jobsPage, jobsPageSize]);
+
   const companyNames = new Map(companies.map((company) => [company.id, company.name]));
   const ownerNames = new Map(
     owners.map((owner) => [owner.user_id, owner.full_name || owner.email]),
@@ -654,7 +662,7 @@ const AdminJobs = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredJobs.map((job) => (
+            {paginatedJobs.map((job) => (
               <TableRow key={job.id}>
                 <TableCell>
                   <div>
@@ -726,7 +734,7 @@ const AdminJobs = () => {
                 </TableCell>
               </TableRow>
             ))}
-            {filteredJobs.length === 0 && (
+            {paginatedJobs.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {isLoading ? "Loading..." : "No jobs found"}
@@ -735,6 +743,17 @@ const AdminJobs = () => {
             )}
           </TableBody>
         </Table>
+        <div className="border-t border-slate-100 px-4 bg-slate-50/50">
+          <SystemPagination
+            currentPage={jobsPage}
+            totalPages={Math.ceil(filteredJobs.length / jobsPageSize)}
+            totalItems={filteredJobs.length}
+            pageSize={jobsPageSize}
+            onPageChange={setJobsPage}
+            onPageSizeChange={(size) => { setJobsPageSize(size); setJobsPage(1); }}
+            itemLabel="jobs"
+          />
+        </div>
       </Card>
     </OperationsPage>
   );

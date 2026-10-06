@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SystemPagination } from "@/components/ui/SystemPagination";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,6 +56,8 @@ export default function AdminApplications() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedApplication, setSelectedApplication] = useState<CollegeApp | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetchApplications();
@@ -103,6 +106,11 @@ export default function AdminApplications() {
     collegeName(a).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const paginatedApps = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredApps.slice(start, start + pageSize);
+  }, [filteredApps, currentPage, pageSize]);
+
   return (
     <OperationsPage>
       <div className="flex items-center justify-between">
@@ -135,7 +143,7 @@ export default function AdminApplications() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredApps.map((app) => (
+            {paginatedApps.map((app) => (
               <TableRow key={app.id}>
                 <TableCell>
                   <div>
@@ -182,7 +190,7 @@ export default function AdminApplications() {
                 </TableCell>
               </TableRow>
             ))}
-            {filteredApps.length === 0 && (
+            {paginatedApps.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {isLoading ? "Loading applications..." : "No applications found."}
@@ -191,6 +199,17 @@ export default function AdminApplications() {
             )}
           </TableBody>
         </Table>
+        <div className="border-t border-slate-100 px-4 bg-slate-50/50">
+          <SystemPagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredApps.length / pageSize)}
+            totalItems={filteredApps.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            itemLabel="applications"
+          />
+        </div>
       </Card>
       <Dialog open={selectedApplication !== null} onOpenChange={(open) => { if (!open) setSelectedApplication(null); }}>
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">

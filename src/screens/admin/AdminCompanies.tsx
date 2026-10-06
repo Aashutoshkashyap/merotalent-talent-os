@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SystemPagination } from "@/components/ui/SystemPagination";
 import { generateCompanyDetails } from "@/lib/ai/ai-generator";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
 
@@ -253,6 +254,13 @@ const AdminCompanies = () => {
       (c.industry && c.industry.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (c.location && c.location.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const [companiesPage, setCompaniesPage] = useState(1);
+  const [companiesPageSize, setCompaniesPageSize] = useState(15);
+  const paginatedCompanies = useMemo(() => {
+    const start = (companiesPage - 1) * companiesPageSize;
+    return filteredCompanies.slice(start, start + companiesPageSize);
+  }, [filteredCompanies, companiesPage, companiesPageSize]);
 
   const stats = [
     { label: "Total Companies", value: companies.length, icon: Building2, color: "text-primary" },
@@ -468,7 +476,7 @@ const AdminCompanies = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCompanies.map((c) => (
+                {paginatedCompanies.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -544,7 +552,7 @@ const AdminCompanies = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredCompanies.length === 0 && (
+                {paginatedCompanies.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       {isLoading ? "Loading..." : "No companies found"}
@@ -553,6 +561,17 @@ const AdminCompanies = () => {
                 )}
               </TableBody>
             </Table>
+            <div className="border-t border-slate-100 px-4 bg-slate-50/50">
+              <SystemPagination
+                currentPage={companiesPage}
+                totalPages={Math.ceil(filteredCompanies.length / companiesPageSize)}
+                totalItems={filteredCompanies.length}
+                pageSize={companiesPageSize}
+                onPageChange={setCompaniesPage}
+                onPageSizeChange={(size) => { setCompaniesPageSize(size); setCompaniesPage(1); }}
+                itemLabel="companies"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

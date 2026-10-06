@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SystemPagination } from "@/components/ui/SystemPagination";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { generateMentorDetails } from "@/lib/ai/ai-generator";
 import {
@@ -328,6 +329,13 @@ const AdminMentors = () => {
       mentor.expertise.some(e => e.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const [mentorsPage, setMentorsPage] = useState(1);
+  const [mentorsPageSize, setMentorsPageSize] = useState(15);
+  const paginatedMentors = useMemo(() => {
+    const start = (mentorsPage - 1) * mentorsPageSize;
+    return filteredMentors.slice(start, start + mentorsPageSize);
+  }, [filteredMentors, mentorsPage, mentorsPageSize]);
+
   const stats = [
     { label: "Total Mentors", value: mentors.length, icon: Users, color: "text-primary" },
     { label: "Approved", value: mentors.filter(m => m.approval_status === "approved").length, icon: CheckCircle, color: "text-success" },
@@ -547,7 +555,7 @@ const AdminMentors = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredMentors.map((mentor) => (
+                {paginatedMentors.map((mentor) => (
                   <TableRow key={mentor.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -654,7 +662,7 @@ const AdminMentors = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredMentors.length === 0 && (
+                {paginatedMentors.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {isLoading ? "Loading..." : "No mentors found"}
@@ -663,6 +671,17 @@ const AdminMentors = () => {
                 )}
               </TableBody>
             </Table>
+            <div className="border-t border-slate-100 px-4 bg-slate-50/50">
+              <SystemPagination
+                currentPage={mentorsPage}
+                totalPages={Math.ceil(filteredMentors.length / mentorsPageSize)}
+                totalItems={filteredMentors.length}
+                pageSize={mentorsPageSize}
+                onPageChange={setMentorsPage}
+                onPageSizeChange={(size) => { setMentorsPageSize(size); setMentorsPage(1); }}
+                itemLabel="mentors"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

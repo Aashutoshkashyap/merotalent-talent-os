@@ -1,99 +1,578 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ShieldCheck, Sparkles, TimerReset, UserRoundPlus } from "lucide-react";
+import {
+  Shield,
+  Search,
+  RefreshCw,
+  UserCog,
+  Building2,
+  Users,
+  Loader2,
+  Trash2,
+  PlusCircle,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { OperationsPage } from "./OperationsUI";
+import { SystemPagination } from "@/components/ui/SystemPagination";
 
-type Matrix = { users: any[]; capabilities: any[]; assignments: any[]; entitlements: any[]; featureGrants: any[]; trialSettings: any[]; packages: any[]; aiUsage: any[] };
-const FEATURES = ["profile_editing", "media_management", "job_management", "session_management", "event_management", "lead_viewing", "job_applications", "mentor_bookings", "event_registrations", "college_applications", "ai.description.generate", "application_management", "registration_management"];
-const pretty = (value: string) => value.replaceAll("_", " ").replaceAll(".", " · ");
-const defaultsForModule = (moduleKey?: string): Record<string, boolean> => {
-  if (moduleKey === "college") return { profile_editing: true };
-  if (moduleKey === "jobs") return { job_management: true };
-  if (moduleKey === "mentor") return { profile_editing: true, session_management: true };
-  if (moduleKey === "events") return { event_management: true };
-  return {};
+type AppRole = "admin" | "talent" | "institution" | "company" | "mentor" | "instructor";
+
+interface UserRow {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  created_at: string;
+  roles: AppRole[];
+}
+
+interface InstituteAdminRow {
+  id: string;
+  user_id: string;
+  institute_id: string;
+  can_edit_profile: boolean | null;
+  can_manage_courses: boolean | null;
+  can_post_notices: boolean | null;
+  created_at: string;
+  institute_name?: string;
+  user_email?: string;
+  user_name?: string;
+}
+
+const ALL_ROLES: AppRole[] = ["talent", "mentor", "institution", "company", "instructor", "admin"];
+
+const roleBadgeClass = (role: string) => {
+  switch (role) {
+    case "admin": return "bg-red-100 text-red-800 border-red-200";
+    case "mentor": return "bg-amber-100 text-amber-800 border-amber-200";
+    case "institution": return "bg-blue-100 text-blue-800 border-blue-200";
+    case "company": return "bg-indigo-100 text-indigo-800 border-indigo-200";
+    case "instructor": return "bg-purple-100 text-purple-800 border-purple-200";
+    default: return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  }
 };
 
 export default function AdminAccessMatrix() {
   const { toast } = useToast();
-  const [matrix, setMatrix] = useState<Matrix | null>(null);
-  const [query, setQuery] = useState("");
-  const [userId, setUserId] = useState("");
-  const [assignmentId, setAssignmentId] = useState("");
-  const [features, setFeatures] = useState<Record<string, boolean>>({});
-  const [packageId, setPackageId] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [trialModule, setTrialModule] = useState("college");
-  const [trialDays, setTrialDays] = useState("7");
-  const [trialEnabled, setTrialEnabled] = useState(true);
 
+  // ── Data ──────────────────────────────────────────────────
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [instituteAdmins, setInstituteAdmins] = useState<InstituteAdminRow[]>([]);
+  const [institutes, setInstitutes] = useState<{ id: string; name: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  // ── Filters ───────────────────────────────────────────────
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  // ── Grant Role Dialog ─────────────────────────────────────
+  const [grantOpen, setGrantOpen] = useState(false);
+  const [grantUser, setGrantUser] = useState<UserRow | null>(null);
+  const [grantRole, setGrantRole] = useState<AppRole>("talent");
+
+  // ── Institute Admin Dialog ────────────────────────────────
+  const [iaOpen, setIAOpen] = useState(false);
+  const [iaUser, setIAUser] = useState<UserRow | null>(null);
+  const [iaInstituteId, setIAInstituteId] = useState("");
+  const [iaCanEditProfile, setIACanEditProfile] = useState(true);
+  const [iaCanManageCourses, setIACanManageCourses] = useState(false);
+  const [iaCanPostNotices, setIACanPostNotices] = useState(false);
+
+  // ── Load ──────────────────────────────────────────────────
   const load = useCallback(async () => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    if (!token) return;
-    const response = await fetch("/api/v1/admin/access-matrix", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-    const payload = await response.json();
-    if (response.ok) setMatrix(payload.data);
-    else toast({ variant: "destructive", title: "Unable to load access", description: payload.error?.message });
+    setIsLoading(true);
+    try {
+      const [profilesRes, rolesRes, iaRes, insRes] = await Promise.all([
+        (supabase as any).from("profiles").select("user_id,email,full_name,created_at").order("created_at", { ascending: false }).limit(500),
+        (supabase as any).from("user_roles").select("user_id,role"),
+        (supabase as any).from("institute_admins").select("id,user_id,institute_id,can_edit_profile,can_manage_courses,can_post_notices,created_at"),
+        (supabase as any).from("institutes").select("id,name").order("name"),
+      ]);
+
+      if (profilesRes.error) throw profilesRes.error;
+      if (rolesRes.error) throw rolesRes.error;
+
+      const rolesMap: Record<string, AppRole[]> = {};
+      for (const r of rolesRes.data || []) {
+        if (!rolesMap[r.user_id]) rolesMap[r.user_id] = [];
+        rolesMap[r.user_id].push(r.role as AppRole);
+      }
+
+      const profilesData = (profilesRes.data || []) as UserRow[];
+      setUsers(profilesData.map((p) => ({ ...p, roles: rolesMap[p.user_id] || [] })));
+
+      // Build lookup maps for institute admins display
+      const insData: { id: string; name: string }[] = insRes.data || [];
+      const insMap: Record<string, string> = {};
+      for (const ins of insData) insMap[ins.id] = ins.name;
+      const profMap: Record<string, { email: string; name: string | null }> = {};
+      for (const p of profilesData) profMap[p.user_id] = { email: p.email, name: p.full_name };
+
+      const iaData: InstituteAdminRow[] = (iaRes.data || []).map((row: any) => ({
+        ...row,
+        institute_name: insMap[row.institute_id] || row.institute_id,
+        user_email: profMap[row.user_id]?.email || row.user_id,
+        user_name: profMap[row.user_id]?.name,
+      }));
+
+      setInstituteAdmins(iaData);
+      setInstitutes(insData);
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Could not load access matrix", description: err?.message });
+    } finally {
+      setIsLoading(false);
+    }
   }, [toast]);
+
   useEffect(() => { void load(); }, [load]);
 
-  const request = async (body: Record<string, unknown>, success: string) => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    if (!token) return;
+  // ── Filtered & Paginated Users ────────────────────────────
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    return users.filter((u) => {
+      const matchSearch = !q || u.email.toLowerCase().includes(q) || (u.full_name || "").toLowerCase().includes(q);
+      const matchRole = roleFilter === "all" || u.roles.includes(roleFilter as AppRole);
+      return matchSearch && matchRole;
+    });
+  }, [users, query, roleFilter]);
+
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
+
+  // ── Role Grant ────────────────────────────────────────────
+  const handleGrantRole = async () => {
+    if (!grantUser) return;
     setBusy(true);
     try {
-      const response = await fetch("/api/v1/admin/access-matrix", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error?.message || "Access update failed.");
-      toast({ title: success });
+      const { error } = await supabase.from("user_roles").upsert({ user_id: grantUser.user_id, role: grantRole }, { onConflict: "user_id,role" });
+      if (error) throw error;
+      toast({ title: "Role granted", description: `${grantRole} role assigned to ${grantUser.email}.` });
+      setGrantOpen(false);
       await load();
-    } catch (error) {
-      toast({ variant: "destructive", title: "Access change failed", description: error instanceof Error ? error.message : "Please try again." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Role grant failed", description: err?.message });
     } finally { setBusy(false); }
   };
 
-  const users = useMemo(() => (matrix?.users || []).filter((item) => `${item.full_name || ""} ${item.email}`.toLowerCase().includes(query.toLowerCase())), [matrix, query]);
-  const selectedUser = matrix?.users.find((item) => item.user_id === userId);
-  const selectedAssignments = useMemo(() => (matrix?.assignments || []).filter((item) => item.user_id === userId && item.status === "active"), [matrix, userId]);
-  const assignment = selectedAssignments.find((item) => item.id === assignmentId);
-  const capability = matrix?.capabilities.find((item) => item.id === assignment?.user_capability_id);
-  const moduleKey = capability?.module_capabilities?.module_key as string | undefined;
-  const matchingPackages = useMemo(() => (matrix?.packages || []).filter((item) => moduleKey && item.module_scope?.includes(moduleKey)), [matrix, moduleKey]);
-  const selectedPackage = (matrix?.packages || []).find((item) => item.id === packageId);
-  const selectedEntitlements = (matrix?.entitlements || []).filter((item) => item.user_id === userId);
-  const selectedGrants = (matrix?.featureGrants || []).filter((item) => item.user_id === userId);
-  const selectedAIUsage = (matrix?.aiUsage || []).filter((item) => item.user_id === userId);
-  const scopePayload = () => assignment && moduleKey ? { userId, module: moduleKey, entityType: assignment.entity_type, entityId: assignment.entity_id, note } : null;
-
-  const selectAssignment = (value: string) => {
-    const next = selectedAssignments.find((item) => item.id === value);
-    const nextCapability = matrix?.capabilities.find((item) => item.id === next?.user_capability_id);
-    setAssignmentId(value); setPackageId(""); setExpiresAt(""); setFeatures(defaultsForModule(nextCapability?.module_capabilities?.module_key));
+  const handleRevokeRole = async (userId: string, role: AppRole) => {
+    if (!confirm(`Remove role "${role}" from this user?`)) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("user_roles").delete().match({ user_id: userId, role });
+      if (error) throw error;
+      toast({ title: "Role revoked" });
+      await load();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Revoke failed", description: err?.message });
+    } finally { setBusy(false); }
   };
-  const grant = () => {
-    const scope = scopePayload(); const isFree = selectedPackage?.package_kind === "free";
-    if (!scope || (!isFree && !expiresAt)) return;
-    void request({ action: "enroll", ...scope, expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null, source: isFree ? "FREE" : packageId ? "SUPER_ADMIN_PACKAGE" : "ADMIN_MANUAL", packageId: packageId || null, features }, isFree ? "Free access granted" : "Access granted");
+
+  // ── Institute Admin ───────────────────────────────────────
+  const handleGrantIA = async () => {
+    if (!iaUser || !iaInstituteId) return;
+    setBusy(true);
+    try {
+      const { error } = await (supabase as any).from("institute_admins").upsert({
+        user_id: iaUser.user_id,
+        institute_id: iaInstituteId,
+        can_edit_profile: iaCanEditProfile,
+        can_manage_courses: iaCanManageCourses,
+        can_post_notices: iaCanPostNotices,
+      }, { onConflict: "user_id,institute_id" });
+      if (error) throw error;
+      toast({ title: "Institute admin access granted" });
+      setIAOpen(false);
+      await load();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Institute admin grant failed", description: err?.message });
+    } finally { setBusy(false); }
   };
-  const startTrial = () => { const scope = scopePayload(); if (scope) void request({ action: "trial", ...scope }, "Trial started"); };
-  const toggleFeature = (feature: string) => setFeatures((current) => ({ ...current, [feature]: !current[feature] }));
-  const setFeature = (feature: string, active: boolean) => { const scope = scopePayload(); if (scope) void request({ action: "feature", ...scope, feature, active }, active ? "Feature granted" : "Feature revoked"); };
 
-  return <OperationsPage>
-    <div><h1 className="text-2xl font-display font-bold">Module access</h1><p className="mt-1 text-sm text-muted-foreground">Give an already-assigned administrator Free, Trial, or paid access. The system checks the assignment and entitlement automatically.</p></div>
+  const handleRevokeIA = async (id: string) => {
+    if (!confirm("Remove this institute admin assignment?")) return;
+    setBusy(true);
+    try {
+      const { error } = await (supabase as any).from("institute_admins").delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: "Institute admin removed" });
+      await load();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Removal failed", description: err?.message });
+    } finally { setBusy(false); }
+  };
 
-    <Card><CardHeader><CardTitle className="text-base">1. Choose the person and module</CardTitle><CardDescription>Only modules and entities already assigned to the selected person appear here.</CardDescription></CardHeader><CardContent className="grid gap-3 md:grid-cols-3"><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name or email" aria-label="Search users" /><Select value={userId} onValueChange={(value) => { setUserId(value); setAssignmentId(""); setPackageId(""); setFeatures({}); }}><SelectTrigger><SelectValue placeholder="Choose a person" /></SelectTrigger><SelectContent>{users.map((item) => <SelectItem key={item.user_id} value={item.user_id}>{item.full_name || item.email}</SelectItem>)}</SelectContent></Select><Select value={assignmentId} onValueChange={selectAssignment} disabled={!userId}><SelectTrigger><SelectValue placeholder="Choose their module" /></SelectTrigger><SelectContent>{selectedAssignments.map((item) => { const itemCapability = matrix?.capabilities.find((cap) => cap.id === item.user_capability_id); return <SelectItem key={item.id} value={item.id}>{itemCapability?.module_capabilities?.module_key} · {item.entity_type}</SelectItem>; })}</SelectContent></Select></CardContent>{selectedUser && <CardContent className="pt-0 text-sm text-muted-foreground">Selected: {selectedUser.full_name || selectedUser.email}{moduleKey ? ` · ${moduleKey}` : ""}</CardContent>}</Card>
+  // ── Render ────────────────────────────────────────────────
+  return (
+    <OperationsPage>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+            <Shield className="h-6 w-6 text-[#071a3d]" /> Access Matrix
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage user roles and institution admin permissions across the platform.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => void load()} disabled={isLoading} className="rounded-xl text-xs font-bold self-start sm:self-auto">
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
 
-    <div className="grid gap-4 lg:grid-cols-2"><Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><UserRoundPlus className="h-4 w-4" />2. Grant access</CardTitle><CardDescription>Free includes basic features. A paid or manual grant needs an expiry date.</CardDescription></CardHeader><CardContent className="space-y-3"><div className="space-y-2"><Label htmlFor="package">Access type</Label><Select value={packageId || "manual"} onValueChange={(value) => { setPackageId(value === "manual" ? "" : value); setExpiresAt(""); }} disabled={!assignment}><SelectTrigger id="package"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Manual access</SelectItem>{matchingPackages.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}{item.package_kind === "free" ? " · Free" : ` · ${item.duration_days} days`}</SelectItem>)}</SelectContent></Select></div>{selectedPackage?.package_kind === "free" ? <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">Free access has no automatic expiry. You can revoke it below at any time.</p> : <div className="space-y-2"><Label htmlFor="expiry">Expiry date</Label><Input id="expiry" type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} disabled={!assignment} /></div>}<div className="space-y-2"><Label htmlFor="note">Internal note <span className="text-muted-foreground">(optional)</span></Label><Input id="note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={1000} placeholder="Why is this access being granted?" disabled={!assignment} /></div><div className="flex flex-wrap gap-2"><Button disabled={busy || !assignment || (selectedPackage?.package_kind !== "free" && !expiresAt)} onClick={grant}>Grant access</Button><Button variant="outline" disabled={busy || !assignment} onClick={startTrial}><TimerReset className="mr-2 h-4 w-4" />Start trial</Button></div></CardContent></Card><Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><ShieldCheck className="h-4 w-4" />3. Current access</CardTitle><CardDescription>Revoke an entitlement to immediately remove protected module access.</CardDescription></CardHeader><CardContent className="space-y-2 text-sm">{!userId && <p className="text-muted-foreground">Choose a person to view their current access.</p>}{userId && selectedEntitlements.length === 0 && <p className="text-muted-foreground">No module access has been granted yet.</p>}{selectedEntitlements.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3"><span><b>{item.module_key}</b> · {item.source} · {item.status}{item.expires_at ? ` · expires ${new Date(item.expires_at).toLocaleDateString()}` : ""}</span>{item.status === "active" && <Button size="sm" variant="outline" disabled={busy} onClick={() => void request({ action: "revoke_entitlement", entitlementId: item.id, note }, "Access revoked")}>Revoke</Button>}</div>)}</CardContent></Card></div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Total Users", value: users.length, icon: Users, color: "text-blue-600 bg-blue-50" },
+          { label: "Mentors", value: users.filter(u => u.roles.includes("mentor")).length, icon: UserCog, color: "text-amber-600 bg-amber-50" },
+          { label: "Institutions", value: users.filter(u => u.roles.includes("institution")).length, icon: Building2, color: "text-indigo-600 bg-indigo-50" },
+          { label: "Admins", value: users.filter(u => u.roles.includes("admin")).length, icon: Shield, color: "text-red-600 bg-red-50" },
+        ].map((stat) => (
+          <Card key={stat.label} className="rounded-2xl border-border/50 shadow-sm">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${stat.color}`}>
+                <stat.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-[#0f172a]">{stat.value}</p>
+                <p className="text-[11px] font-semibold text-muted-foreground">{stat.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-    <details className="rounded-xl border bg-card p-4"><summary className="cursor-pointer font-medium">Advanced controls</summary><div className="mt-4 grid gap-6 lg:grid-cols-2"><div><p className="mb-3 text-sm text-muted-foreground">Use feature overrides only when the standard Free, Trial, or package features are not enough.</p><div className="grid gap-2 sm:grid-cols-2">{FEATURES.map((feature) => <label key={feature} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(features[feature])} onChange={() => toggleFeature(feature)} disabled={!assignment} />{pretty(feature)}</label>)}</div><div className="mt-4 flex flex-wrap gap-2">{FEATURES.map((feature) => <Button key={feature} size="sm" variant="outline" disabled={busy || !assignment} onClick={() => setFeature(feature, true)}>Grant {pretty(feature)}</Button>)}</div>{selectedGrants.length > 0 && <div className="mt-4 space-y-2 text-sm">{selectedGrants.map((grant) => <div key={grant.id} className="flex items-center justify-between rounded-lg border p-2"><span>{pretty(grant.feature_key)} · {grant.status}</span>{grant.status === "active" && <Button size="sm" variant="ghost" disabled={busy || !assignment} onClick={() => setFeature(grant.feature_key, false)}>Revoke</Button>}</div>)}</div>}</div><div className="space-y-4"><div><p className="mb-3 text-sm text-muted-foreground">AI activity is metadata only; prompts, outputs, and provider secrets are never shown here.</p>{selectedAIUsage.slice(0, 10).map((item) => <div key={item.id} className="mb-2 rounded-lg border p-2 text-sm">{item.module_key} · {item.status} · {new Date(item.created_at).toLocaleString()}</div>)}{userId && selectedAIUsage.length === 0 && <p className="text-sm text-muted-foreground">No AI activity for this person.</p>}</div><div className="border-t pt-4"><p className="mb-3 text-sm font-medium">Trial policy</p><div className="grid gap-3 sm:grid-cols-4"><Select value={trialModule} onValueChange={setTrialModule}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["college", "jobs", "mentor", "events"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><Input type="number" min="1" max="365" value={trialDays} onChange={(event) => setTrialDays(event.target.value)} aria-label="Trial duration in days" /><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={trialEnabled} onChange={(event) => setTrialEnabled(event.target.checked)} />Enabled</label><Button variant="outline" disabled={busy} onClick={() => void request({ action: "trial_settings", module: trialModule, durationDays: Number(trialDays), enabled: trialEnabled, allowIndefiniteManual: false }, "Trial policy saved")}>Save policy</Button></div></div></div></div></details>
-  </OperationsPage>;
+      {/* User Role Matrix */}
+      <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden">
+        <CardHeader className="pb-3 pt-5 px-5 bg-gradient-to-r from-[#071a3d] to-[#1e3a8a] text-white">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" /> User Role Assignments
+          </CardTitle>
+          <CardDescription className="text-blue-200 text-xs">
+            View and manage which roles each user holds. Use the dropdown menus to search, filter, or grant new roles.
+          </CardDescription>
+        </CardHeader>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 px-5 pt-4 pb-2 border-b border-slate-100">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
+              placeholder="Search by name or email…"
+              className="pl-9 h-9 text-xs rounded-xl"
+            />
+          </div>
+          <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
+            <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs rounded-xl bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              {ALL_ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>User</TableHead>
+                  <TableHead>Current Roles</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-12">
+                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Loading access data…
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginated.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-12 text-xs text-muted-foreground">
+                      No users match the current filters.
+                    </TableCell>
+                  </TableRow>
+                ) : paginated.map((user) => (
+                  <TableRow key={user.user_id} className="hover:bg-slate-50/50">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#071a3d] to-blue-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                          {(user.full_name || user.email).charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-[#0f172a] truncate">{user.full_name || "—"}</p>
+                          <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles.length === 0 ? (
+                          <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-500">no role</Badge>
+                        ) : user.roles.map((role) => (
+                          <span key={role} className="inline-flex items-center gap-1">
+                            <Badge variant="outline" className={`text-[10px] font-bold capitalize ${roleBadgeClass(role)}`}>{role}</Badge>
+                            <button
+                              onClick={() => handleRevokeRole(user.user_id, role)}
+                              disabled={busy}
+                              className="text-slate-400 hover:text-red-500 transition-colors"
+                              title={`Remove ${role} role`}
+                            >
+                              <XCircle className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-emerald-200 font-bold">Active</Badge>
+                    </TableCell>
+                    <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px] rounded-lg px-2 font-bold"
+                          onClick={() => { setGrantUser(user); setGrantRole("talent"); setGrantOpen(true); }}
+                          disabled={busy}
+                        >
+                          <PlusCircle className="h-3 w-3 mr-1" /> Grant Role
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px] rounded-lg px-2 font-bold text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                          onClick={() => { setIAUser(user); setIAInstituteId(""); setIAOpen(true); }}
+                          disabled={busy || institutes.length === 0}
+                        >
+                          <Building2 className="h-3 w-3 mr-1" /> Inst. Admin
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="border-t border-slate-100 px-4 bg-slate-50/50">
+            <SystemPagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filtered.length / pageSize)}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+              itemLabel="users"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Institute Admin Assignments */}
+      <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden">
+        <CardHeader className="pb-3 pt-5 px-5">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-indigo-600" /> Institution Admin Permissions
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Users with institute-level admin privileges and their specific permission grants.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {instituteAdmins.length === 0 ? (
+            <p className="text-center text-xs text-muted-foreground py-8">No institution admin assignments yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>User</TableHead>
+                    <TableHead>Institution</TableHead>
+                    <TableHead>Edit Profile</TableHead>
+                    <TableHead>Manage Courses</TableHead>
+                    <TableHead>Post Notices</TableHead>
+                    <TableHead>Since</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {instituteAdmins.map((ia) => (
+                    <TableRow key={ia.id} className="hover:bg-slate-50/50">
+                      <TableCell className="text-xs">
+                        <p className="font-semibold text-[#0f172a]">{ia.user_name || "—"}</p>
+                        <p className="text-[11px] text-slate-500">{ia.user_email}</p>
+                      </TableCell>
+                      <TableCell className="text-xs font-semibold">{ia.institute_name}</TableCell>
+                      <TableCell>
+                        {ia.can_edit_profile ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-slate-300" />}
+                      </TableCell>
+                      <TableCell>
+                        {ia.can_manage_courses ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-slate-300" />}
+                      </TableCell>
+                      <TableCell>
+                        {ia.can_post_notices ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-slate-300" />}
+                      </TableCell>
+                      <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
+                        {new Date(ia.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-[10px] text-red-600 hover:bg-red-50 rounded-lg px-2"
+                          onClick={() => handleRevokeIA(ia.id)}
+                          disabled={busy}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Grant Role Dialog */}
+      <Dialog open={grantOpen} onOpenChange={setGrantOpen}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-black text-[#0f172a]">Grant Role</DialogTitle>
+            <DialogDescription className="text-xs">
+              Assign a new platform role to <strong>{grantUser?.email}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label className="text-xs font-bold">Role</Label>
+            <Select value={grantRole} onValueChange={(v) => setGrantRole(v as AppRole)}>
+              <SelectTrigger className="text-xs rounded-xl h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ALL_ROLES.map((r) => (
+                  <SelectItem key={r} value={r} className="text-xs capitalize">{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGrantOpen(false)} className="rounded-xl text-xs">Cancel</Button>
+            <Button
+              disabled={busy}
+              onClick={handleGrantRole}
+              className="rounded-xl bg-[#071a3d] hover:bg-[#05132d] text-white text-xs font-bold"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Shield className="h-4 w-4 mr-1" />}
+              Grant Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Institution Admin Dialog */}
+      <Dialog open={iaOpen} onOpenChange={setIAOpen}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-black text-[#0f172a]">Assign Institution Admin</DialogTitle>
+            <DialogDescription className="text-xs">
+              Grant <strong>{iaUser?.email}</strong> admin access to a specific institution.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-xs font-bold mb-1 block">Institution</Label>
+              <Select value={iaInstituteId} onValueChange={setIAInstituteId}>
+                <SelectTrigger className="text-xs rounded-xl h-10">
+                  <SelectValue placeholder="Select an institution" />
+                </SelectTrigger>
+                <SelectContent>
+                  {institutes.map((ins) => (
+                    <SelectItem key={ins.id} value={ins.id} className="text-xs">{ins.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+              <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Permissions</p>
+              {[
+                { label: "Can Edit Profile", value: iaCanEditProfile, set: setIACanEditProfile },
+                { label: "Can Manage Courses", value: iaCanManageCourses, set: setIACanManageCourses },
+                { label: "Can Post Notices", value: iaCanPostNotices, set: setIACanPostNotices },
+              ].map(({ label, value, set }) => (
+                <label key={label} className="flex items-center justify-between text-xs cursor-pointer">
+                  <span className="font-medium text-slate-700">{label}</span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(value)}
+                    onChange={(e) => set(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[#071a3d]"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIAOpen(false)} className="rounded-xl text-xs">Cancel</Button>
+            <Button
+              disabled={busy || !iaInstituteId}
+              onClick={handleGrantIA}
+              className="rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Building2 className="h-4 w-4 mr-1" />}
+              Assign Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </OperationsPage>
+  );
 }

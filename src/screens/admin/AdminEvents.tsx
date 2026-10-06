@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Calendar, Plus, Search, MapPin, CheckCircle, XCircle, Pencil, Trash2, Loader2, Star, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { SystemPagination } from "@/components/ui/SystemPagination";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
 import { generateEventDetails } from "@/lib/ai/ai-generator";
 import {
@@ -317,6 +318,13 @@ export default function AdminEvents() {
     e.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const [eventsPage, setEventsPage] = useState(1);
+  const [eventsPageSize, setEventsPageSize] = useState(15);
+  const paginatedEvents = useMemo(() => {
+    const start = (eventsPage - 1) * eventsPageSize;
+    return filteredEvents.slice(start, start + eventsPageSize);
+  }, [filteredEvents, eventsPage, eventsPageSize]);
+
   const organizerNames = new Map(
     organizers.map((organizer) => [
       organizer.user_id,
@@ -608,7 +616,7 @@ export default function AdminEvents() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredEvents.map((event) => (
+            {paginatedEvents.map((event) => (
               <TableRow key={event.id}>
                 <TableCell>
                   <div className="font-medium flex items-center gap-2">
@@ -682,7 +690,7 @@ export default function AdminEvents() {
                 </TableCell>
               </TableRow>
             ))}
-            {filteredEvents.length === 0 && (
+            {paginatedEvents.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {isLoading ? "Loading events..." : "No events found."}
@@ -691,6 +699,17 @@ export default function AdminEvents() {
             )}
           </TableBody>
         </Table>
+        <div className="border-t border-slate-100 px-4 bg-slate-50/50">
+          <SystemPagination
+            currentPage={eventsPage}
+            totalPages={Math.ceil(filteredEvents.length / eventsPageSize)}
+            totalItems={filteredEvents.length}
+            pageSize={eventsPageSize}
+            onPageChange={setEventsPage}
+            onPageSizeChange={(size) => { setEventsPageSize(size); setEventsPage(1); }}
+            itemLabel="events"
+          />
+        </div>
       </Card>
     </OperationsPage>
   );
