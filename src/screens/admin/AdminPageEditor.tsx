@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { OperationsPage } from "./OperationsUI";
 import { safeExternalUrl } from "@/lib/institutes/public-institutes";
+import { invalidateCmsCache } from "@/hooks/useSiteCMS";
 import {
   SignedMediaUploader,
   type SignedMediaAsset,
@@ -431,11 +432,13 @@ const STANDARD_HOME_SECTIONS = [
         description:
           "This database is missing page_sections.parent_id, so the parent was not saved. Apply migration 20260822130000.",
       });
+      invalidateCmsCache(formData.page);
       setIsDialogOpen(false);
       resetForm();
       fetchSections();
     } else {
       toast({ title: editingSection ? "Section updated successfully" : "New section created" });
+      invalidateCmsCache(formData.page);
       setIsDialogOpen(false);
       resetForm();
       fetchSections();
@@ -466,6 +469,7 @@ const STANDARD_HOME_SECTIONS = [
     if (error) {
       toast({ variant: "destructive", title: "Branding save failed", description: error.message });
     } else {
+      invalidateCmsCache();
       // Update DOM favicon dynamically if specified
       if (siteSettings.favicon_url) {
         let faviconLink = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
@@ -489,6 +493,7 @@ const STANDARD_HOME_SECTIONS = [
     if (error) {
       toast({ variant: "destructive", title: "Delete failed", description: error.message });
     } else {
+      invalidateCmsCache();
       toast({ title: "Section deleted" });
       fetchSections();
     }
@@ -504,6 +509,7 @@ const STANDARD_HOME_SECTIONS = [
       toast({ variant: "destructive", title: "Visibility not changed", description: error.message });
       return;
     }
+    invalidateCmsCache(section.page);
     fetchSections();
   };
 

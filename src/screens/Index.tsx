@@ -63,7 +63,7 @@ export default function Index() {
   const [events, setEvents] = useState<OpportunityCardData[]>([]);
   const [courses, setCourses] = useState<OpportunityCardData[]>([]);
   const [collegeUpdates, setCollegeUpdates] = useState<OpportunityCardData[]>([]);
-  const { getSection, getChildSections, hasSectionConfiguration, isSectionVisible } = useSiteCMS("home");
+  const { getSection, getChildSections, hasSectionConfiguration, isSectionVisible, isLoading } = useSiteCMS("home");
 
   const heroSection = getSection("hero_banner");
   const featuredSection = getSection("featured_content") || getSection("latest_news");
@@ -294,6 +294,7 @@ export default function Index() {
   const isConfiguredSectionVisible = (primaryKey: string, fallbackKey?: string) => {
     if (hasSectionConfiguration(primaryKey)) return isSectionVisible(primaryKey);
     if (fallbackKey && hasSectionConfiguration(fallbackKey)) return isSectionVisible(fallbackKey);
+    if (isLoading) return false;
     return true;
   };
 
@@ -438,7 +439,7 @@ export default function Index() {
     {
       key: "features",
       order: 8.5,
-      isVisible: true,
+      isVisible: isConfiguredSectionVisible("features", "about_us"),
       render: () => <Features key="features" />,
     },
     {
@@ -473,7 +474,7 @@ export default function Index() {
     {
       key: "contact_form",
       order: getSection("contact_form")?.display_order ?? 11,
-      isVisible: isConfiguredSectionVisible("contact_form"),
+      isVisible: isConfiguredSectionVisible("contact_form", "contact_us"),
       render: () => <ContactForm key="contact_form" />,
     },
     {
@@ -495,8 +496,19 @@ export default function Index() {
       <div className="flex min-h-screen flex-1 flex-col transition-all duration-300 ease-in-out" style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}>
         <HeaderNav />
         <main className="flex-1 bg-gradient-to-b from-slate-50/50 via-white to-slate-50/30 pb-0">
-          {/* Dynamically Ordered & Controlled Homepage Sections */}
-          {activeSections.map((s) => s.render())}
+          {isLoading && activeSections.length === 0 ? (
+            <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-8 animate-pulse">
+              <div className="h-72 w-full rounded-3xl bg-slate-100" />
+              <div className="h-40 w-full rounded-2xl bg-slate-100" />
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="h-64 rounded-2xl bg-slate-100" />
+                <div className="h-64 rounded-2xl bg-slate-100" />
+                <div className="h-64 rounded-2xl bg-slate-100" />
+              </div>
+            </div>
+          ) : (
+            activeSections.map((s) => s.render())
+          )}
         </main>
         <Footer />
       </div>

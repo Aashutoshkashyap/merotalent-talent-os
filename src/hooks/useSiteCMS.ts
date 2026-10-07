@@ -53,9 +53,67 @@ const CMS_CACHE_TTL_MS = 5 * 60 * 1000;
 const cmsCache = new Map<string, { expiresAt: number; value: CmsSnapshot }>();
 const cmsRequests = new Map<string, Promise<CmsSnapshot>>();
 
-const loadCmsSnapshot = (page: string): Promise<CmsSnapshot> => {
-  const cached = cmsCache.get(page);
-  if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value);
+const getStoredCmsSnapshot = (page: string): CmsSnapshot | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage?.getItem(`merotalent_cms_cache_${page}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && parsed.value && typeof parsed.expiresAt === "number") {
+      if (parsed.expiresAt > Date.now()) {
+        return parsed.value as CmsSnapshot;
+      }
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+  return null;
+};
+
+const setStoredCmsSnapshot = (page: string, value: CmsSnapshot) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage?.setItem(
+      `merotalent_cms_cache_${page}`,
+      JSON.stringify({ expiresAt: Date.now() + CMS_CACHE_TTL_MS, value })
+    );
+  } catch {
+    // Ignore storage write errors
+  }
+};
+
+export const invalidateCmsCache = (page?: string) => {
+  if (page) {
+    cmsCache.delete(page);
+    try {
+      window.localStorage?.removeItem(`merotalent_cms_cache_${page}`);
+    } catch {}
+  } else {
+    cmsCache.clear();
+    try {
+      Object.keys(window.localStorage || {}).forEach((k) => {
+        if (k.startsWith("merotalent_cms_cache_")) {
+          window.localStorage.removeItem(k);
+        }
+      });
+    } catch {}
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("merotalent:cms-invalidated", { detail: { page } }));
+  }
+};
+
+const loadCmsSnapshot = (page: string, force = false): Promise<CmsSnapshot> => {
+  if (!force) {
+    const cached = cmsCache.get(page) || (() => {
+      const stored = getStoredCmsSnapshot(page);
+      return stored ? { expiresAt: Date.now() + CMS_CACHE_TTL_MS, value: stored } : null;
+    })();
+    if (cached && cached.expiresAt > Date.now()) {
+      cmsCache.set(page, cached);
+      return Promise.resolve(cached.value);
+    }
+  }
   const pending = cmsRequests.get(page);
   if (pending) return pending;
 
@@ -83,6 +141,7 @@ const loadCmsSnapshot = (page: string): Promise<CmsSnapshot> => {
       settings,
     };
     cmsCache.set(page, { expiresAt: Date.now() + CMS_CACHE_TTL_MS, value });
+    setStoredCmsSnapshot(page, value);
     return value;
   })().finally(() => cmsRequests.delete(page));
 
@@ -91,41 +150,68 @@ const loadCmsSnapshot = (page: string): Promise<CmsSnapshot> => {
 };
 
 export function useSiteCMS(page = "home") {
-  const [sections, setSections] = useState<PageSection[]>([]);
-  const [sectionVisibility, setSectionVisibility] = useState<Record<string, PublicSectionVisibility>>({});
-  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialSnapshot = cmsCache.get(page)?.value || getStoredCmsSnapshot(page);
+  const [sections, setSections] = useState<PageSection[]>(initialSnapshot?.sections || []);
+  const [sectionVisibility, setSectionVisibility] = useState<Record<string, PublicSectionVisibility>>(
+    initialSnapshot?.sectionVisibility || {}
+  );
+  const [settings, setSettings] = useState<SiteSettings>(initialSnapshot?.settings || DEFAULT_SITE_SETTINGS);
+  const [isLoading, setIsLoading] = useState(!initialSnapshot);
 
   useEffect(() => {
-    async function loadCMS() {
-      setIsLoading(true);
+    let isMounted = true;
+
+    async function loadCMS(force = false) {
+      if (!initialSnapshot || force) {
+        setIsLoading(true);
+      }
       try {
-        const snapshot = await loadCmsSnapshot(page);
+        const snapshot = await loadCmsSnapshot(page, force);
+        if (!isMounted) return;
         setSections(snapshot.sections);
         setSectionVisibility(snapshot.sectionVisibility);
         setSettings(snapshot.settings);
 
-          // Dynamically update document title & favicon
-          if (snapshot.settings.site_title) {
-            document.title = snapshot.settings.site_title;
+        // Dynamically update document title & favicon
+        if (snapshot.settings.site_title) {
+          document.title = snapshot.settings.site_title;
+        }
+        if (snapshot.settings.favicon_url) {
+          let faviconLink = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+          if (!faviconLink) {
+            faviconLink = document.createElement("link");
+            faviconLink.rel = "shortcut icon";
+            document.getElementsByTagName("head")[0].appendChild(faviconLink);
           }
-          if (snapshot.settings.favicon_url) {
-            let faviconLink = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
-            if (!faviconLink) {
-              faviconLink = document.createElement("link");
-              faviconLink.rel = "shortcut icon";
-              document.getElementsByTagName("head")[0].appendChild(faviconLink);
-            }
-            faviconLink.href = snapshot.settings.favicon_url;
-          }
+          faviconLink.href = snapshot.settings.favicon_url;
+        }
       } catch (err) {
         console.error("Failed to load CMS content:", err);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
     void loadCMS();
+
+    const handleInvalidation = (e: Event) => {
+      const customEvent = e as CustomEvent<{ page?: string }>;
+      if (!customEvent.detail?.page || customEvent.detail.page === page) {
+        void loadCMS(true);
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("merotalent:cms-invalidated", handleInvalidation);
+    }
+    return () => {
+      isMounted = false;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("merotalent:cms-invalidated", handleInvalidation);
+      }
+    };
   }, [page]);
 
   const pageSections = sections.filter((s) => s.page === page);
