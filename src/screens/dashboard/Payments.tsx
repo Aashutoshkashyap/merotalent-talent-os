@@ -98,6 +98,7 @@ const txnTypeLabel = (type: string) => {
   switch (type) {
     case "mentor_booking": return "Mentor Session";
     case "subscription": return "Subscription";
+    case "event_ticket":
     case "event_registration": return "Event Ticket";
     default: return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   }
@@ -207,7 +208,7 @@ export default function Payments() {
       }
 
       // Enrich event transactions
-      const eventRefIds = rows.filter((r) => r.payment_type === "event_registration").map((r) => r.reference_id);
+      const eventRefIds = rows.filter((r) => ["event_ticket", "event_registration"].includes(r.payment_type)).map((r) => r.reference_id);
       const eventMap = new Map<string, { eventTitle: string; eventId: string }>();
       if (eventRefIds.length > 0) {
         const { data: registrations } = await (supabase as any)
@@ -325,7 +326,7 @@ export default function Payments() {
 
   const totalPaid = transactions.filter((t) => t.status === "success").reduce((sum, t) => sum + Number(t.amount), 0);
   const mentorPayments = transactions.filter((t) => t.payment_type === "mentor_booking" && t.status === "success");
-  const eventPayments = transactions.filter((t) => t.payment_type === "event_registration" && t.status === "success");
+  const eventPayments = transactions.filter((t) => ["event_ticket", "event_registration"].includes(t.payment_type) && t.status === "success");
 
   return (
     <div className="space-y-8 pb-12 font-sans">

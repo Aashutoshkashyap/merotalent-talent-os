@@ -21,6 +21,105 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
 
   const terminal = input.status === "successful" ? "success" : "failed";
 
+  if (checkout.entity_type === "module_access_request") {
+    const [{ data: requestRecord, error: requestError }, { data: pkg, error: packageError }] = await Promise.all([
+      db.from("sub_admin_requests")
+        .select("id,user_id,requested_modules,status,payment_status")
+        .eq("id", checkout.entity_id)
+        .eq("user_id", checkout.user_id)
+        .maybeSingle(),
+      db.from("packages")
+        .select("id,price,currency,module_scope")
+        .eq("id", checkout.package_id)
+        .maybeSingle(),
+    ]);
+    if (requestError || !requestRecord) throw new Error("Module access request was not found.");
+    const requestedModules = Array.isArray(requestRecord.requested_modules) ? requestRecord.requested_modules : [];
+    const planScopes = Array.isArray(pkg?.module_scope) ? pkg.module_scope : [];
+    if (packageError || !pkg || Number(pkg.price) !== Number(checkout.amount) || requestedModules.length === 0 || requestedModules.some((module: string) => !planScopes.includes(module))) {
+      throw new Error("Module access plan does not match this payment session.");
+    }
+
+    const { data: existingPayment, error: existingError } = await db.from("payments")
+      .select("id")
+      .eq("reference_id", requestRecord.id)
+      .eq("payment_type", "module_access_request")
+      .maybeSingle();
+    if (existingError) throw existingError;
+
+    let paymentId = existingPayment?.id as string | undefined;
+    const paymentValues = {
+      status: terminal,
+      gateway: input.provider,
+      gateway_transaction_id: input.transactionId,
+      paid_at: input.status === "successful" ? now.toISOString() : null,
+      failed_at: input.status === "successful" ? null : now.toISOString(),
+      metadata: { checkout_session_id: checkout.id, package_id: checkout.package_id, requested_modules: requestedModules },
+    };
+    if (paymentId) {
+      const { error } = await db.from("payments").update(paymentValues).eq("id", paymentId);
+      if (error) throw error;
+    } else {
+      const { data: payment, error } = await db.from("payments").insert({
+        user_id: checkout.user_id,
+        payment_type: "module_access_request",
+        reference_id: requestRecord.id,
+        amount: checkout.amount,
+        currency: checkout.currency,
+        ...paymentValues,
+      }).select("id").single();
+      if (error) throw error;
+      paymentId = payment.id;
+    }
+
+    const requestPaymentStatus = input.status === "successful"
+      ? "success"
+      : (["cancelled", "expired"].includes(input.status) ? input.status : "failed");
+    const { error: requestUpdateError } = await db.from("sub_admin_requests").update({
+      package_id: checkout.package_id,
+      payment_id: paymentId,
+      payment_status: requestPaymentStatus,
+      paid_at: input.status === "successful" ? now.toISOString() : null,
+      updated_at: now.toISOString(),
+    }).eq("id", requestRecord.id).eq("user_id", checkout.user_id);
+    if (requestUpdateError) throw requestUpdateError;
+
+    const { error: checkoutUpdateError } = await db.from("payment_checkout_sessions").update({
+      status: input.status,
+      completed_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    }).eq("id", checkout.id);
+    if (checkoutUpdateError) throw checkoutUpdateError;
+
+    const { error: auditError } = await db.from("audit_logs").insert({
+      actor_user_id: null,
+      action: input.status === "successful" ? "MODULE_ACCESS_PAYMENT_VERIFIED" : "MODULE_ACCESS_PAYMENT_FAILED",
+      entity_type: "sub_admin_request",
+      entity_id: requestRecord.id,
+      metadata: { provider: input.provider, checkout_session_id: checkout.id, payment_id: paymentId },
+    });
+    if (auditError) throw auditError;
+
+    if (input.status === "successful") {
+      const { error: notificationError } = await db.from("notifications").insert({
+        recipient_id: checkout.user_id,
+        title: "Module access payment verified",
+        message: "Your eSewa payment was verified. Your module access request is awaiting Super Admin review.",
+        type: "success",
+        category: "payment",
+        channel: "dashboard",
+        status: "queued",
+        entity_type: "sub_admin_request",
+        entity_id: requestRecord.id,
+        action_url: "/request-access",
+        metadata: { payment_id: paymentId, requested_modules: requestedModules },
+      });
+      if (notificationError) throw notificationError;
+    }
+
+    return { checkoutId: checkout.id, duplicate: false, status: input.status, subscriptionId: null };
+  }
+
   if (checkout.entity_type === "college_scope_request") {
     const [{ data: requestRecord, error: requestError }, { data: pkg, error: packageError }] = await Promise.all([
       db.from("entity_scope_requests")

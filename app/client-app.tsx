@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { CmsSnapshot } from "@/hooks/useSiteCMS";
 
 const MerotalentApp = dynamic(() => import("@/App"), {
   ssr: false,
@@ -14,6 +15,6 @@ const MerotalentApp = dynamic(() => import("@/App"), {
   ),
 });
 
-export default function ClientApp() {
-  return <MerotalentApp />;
+export default function ClientApp({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }) {
+  return <MerotalentApp initialCmsSnapshot={initialCmsSnapshot} />;
 }

@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import {
   parseAuthUserListQuery,
   parseInviteAuthUserInput,
+  matchesAuthUserSearch,
   sanitizeAuthUser,
 } from "@/lib/admin/admin-auth-users";
 import {
@@ -37,31 +38,45 @@ export async function GET(request: Request) {
   try {
     const list = parseAuthUserListQuery(new URL(request.url).searchParams);
     const adminClient = getAdminClient();
-    const { data, error } = await adminClient.auth.admin.listUsers({
-      page: list.page,
-      perPage: list.pageSize,
-    });
-    if (error) throwAuthProviderError(error, "list users", requestId);
-
-    const users = data.users as User[];
+    let users: User[] = [];
+    let providerTotal = 0;
+    let providerHasNextPage = false;
+    if (list.search) {
+      // Supabase Auth does not expose a full-text listUsers filter. Search must
+      // still cover the complete Auth population, not only the current UI page.
+      const providerPageSize = 1_000;
+      for (let providerPage = 1; providerPage <= 100; providerPage += 1) {
+        const { data, error } = await adminClient.auth.admin.listUsers({ page: providerPage, perPage: providerPageSize });
+        if (error) throwAuthProviderError(error, "search users", requestId);
+        users.push(...(data.users as User[]));
+        if (data.users.length < providerPageSize) break;
+      }
+    } else {
+      const { data, error } = await adminClient.auth.admin.listUsers({ page: list.page, perPage: list.pageSize });
+      if (error) throwAuthProviderError(error, "list users", requestId);
+      users = data.users as User[];
+      providerTotal = "total" in data && typeof (data as any).total === "number" ? (data as any).total : 0;
+      providerHasNextPage = typeof (data as any).nextPage === "number" ? (data as any).nextPage > 0 : users.length === list.pageSize;
+    }
     const platform = await loadPlatformUserContext(
       authenticated.userClient,
       users.map((user) => user.id),
     );
-    const total = "total" in data && typeof (data as any).total === "number" ? (data as any).total : 0;
-    const hasNextPage = typeof (data as any).nextPage === "number" ? (data as any).nextPage > 0 : users.length === list.pageSize;
-    const computedTotal = total > 0 ? total : (hasNextPage ? (list.page * list.pageSize + 1) : ((list.page - 1) * list.pageSize + users.length));
-    const computedTotalPages = total > 0 ? Math.ceil(total / list.pageSize) : (hasNextPage ? list.page + 1 : list.page);
+    const safeUsers = users.map((user) => sanitizeAuthUser(user, platform.profiles.get(user.id), platform.roles.get(user.id) ?? []));
+    const searchedUsers = list.search ? safeUsers.filter((user) => matchesAuthUserSearch(user, list.search)) : safeUsers;
+    const pageUsers = list.search
+      ? searchedUsers.slice((list.page - 1) * list.pageSize, list.page * list.pageSize)
+      : searchedUsers;
+    const computedTotal = list.search
+      ? searchedUsers.length
+      : providerTotal > 0 ? providerTotal : (providerHasNextPage ? (list.page * list.pageSize + 1) : ((list.page - 1) * list.pageSize + users.length));
+    const computedTotalPages = Math.max(1, list.search
+      ? Math.ceil(computedTotal / list.pageSize)
+      : providerTotal > 0 ? Math.ceil(providerTotal / list.pageSize) : (providerHasNextPage ? list.page + 1 : list.page));
 
     return jsonApiResponse(
       {
-        data: users.map((user) =>
-          sanitizeAuthUser(
-            user,
-            platform.profiles.get(user.id),
-            platform.roles.get(user.id) ?? [],
-          ),
-        ),
+        data: pageUsers,
         error: null,
         meta: {
           requestId,
@@ -69,7 +84,7 @@ export async function GET(request: Request) {
           pageSize: list.pageSize,
           total: computedTotal,
           totalPages: computedTotalPages,
-          hasNextPage,
+          hasNextPage: list.page < computedTotalPages,
         },
       },
       200,

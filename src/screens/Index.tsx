@@ -19,7 +19,7 @@ import Footer from "@/components/landing/Footer";
 import type { OpportunityCardData } from "@/components/landing/OpportunityCard";
 import InstituteCard from "@/components/institutes/InstituteCard";
 import { supabase } from "@/integrations/supabase/client";
-import { useSiteCMS } from "@/hooks/useSiteCMS";
+import { useSiteCMS, type CmsSnapshot } from "@/hooks/useSiteCMS";
 import { fetchPublicInstitutes, institutePath, type InstituteRecord } from "@/lib/institutes/public-institutes";
 import { getPartnerCourseRedirect, isLivePartnerCourse, PARTNER_COURSE_SELECT, type PartnerCourse } from "@/lib/courses/partnered-courses";
 
@@ -53,7 +53,7 @@ const splitFirstWord = (value: string) => {
   };
 };
 
-export default function Index() {
+export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }) {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [competitions, setCompetitions] = useState<OpportunityCardData[]>([]);
   const [jobs, setJobs] = useState<OpportunityCardData[]>([]);
@@ -63,7 +63,7 @@ export default function Index() {
   const [events, setEvents] = useState<OpportunityCardData[]>([]);
   const [courses, setCourses] = useState<OpportunityCardData[]>([]);
   const [collegeUpdates, setCollegeUpdates] = useState<OpportunityCardData[]>([]);
-  const { getSection, getChildSections, hasSectionConfiguration, isSectionVisible, isLoading } = useSiteCMS("home");
+  const { getSection, getChildSections, hasSectionConfiguration, isSectionVisible, isLoading } = useSiteCMS("home", initialCmsSnapshot);
 
   const heroSection = getSection("hero_banner");
   const featuredSection = getSection("featured_content") || getSection("latest_news");
@@ -496,19 +496,7 @@ export default function Index() {
       <div className="flex min-h-screen flex-1 flex-col transition-all duration-300 ease-in-out" style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}>
         <HeaderNav />
         <main className="flex-1 bg-gradient-to-b from-slate-50/50 via-white to-slate-50/30 pb-0">
-          {isLoading && activeSections.length === 0 ? (
-            <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-8 animate-pulse">
-              <div className="h-72 w-full rounded-3xl bg-slate-100" />
-              <div className="h-40 w-full rounded-2xl bg-slate-100" />
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div className="h-64 rounded-2xl bg-slate-100" />
-                <div className="h-64 rounded-2xl bg-slate-100" />
-                <div className="h-64 rounded-2xl bg-slate-100" />
-              </div>
-            </div>
-          ) : (
-            activeSections.map((s) => s.render())
-          )}
+          {activeSections.map((s) => s.render())}
         </main>
         <Footer />
       </div>

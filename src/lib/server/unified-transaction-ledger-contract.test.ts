@@ -61,6 +61,11 @@ describe("Unified Transaction Ledger and Financial Architecture Contract", () =>
     expect(settlement).toContain("payout_amount");
   });
 
+  it("renders canonical event-ticket settlements in the student transaction ledger", () => {
+    const payments = readFileSync(resolve(process.cwd(), "src/screens/dashboard/Payments.tsx"), "utf-8");
+    expect(payments).toContain('["event_ticket", "event_registration"].includes');
+  });
+
   it("renders 10-point transaction inspection and reconciliation in Super Admin Payments view", () => {
     const adminPayments = readFileSync(adminPaymentsPath, "utf-8");
     expect(adminPayments).toContain("Transaction Details & Financial Chain");

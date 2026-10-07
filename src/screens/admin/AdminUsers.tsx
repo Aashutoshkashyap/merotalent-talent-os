@@ -183,7 +183,7 @@ const AdminUsers = () => {
       setEnrollAmountPaid(0);
       setEnrollTransactionId("");
       setEnrollNote("");
-      void fetchUsers(currentPage, pageSize);
+      void fetchUsers(currentPage, pageSize, searchQuery);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Enrollment Failed", description: err?.message || "Could not grant module access." });
     } finally {
@@ -196,14 +196,16 @@ const AdminUsers = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchUsers = useCallback(async (targetPage = currentPage, targetPageSize = pageSize) => {
+  const fetchUsers = useCallback(async (targetPage: number, targetPageSize: number, targetSearch: string) => {
     setIsLoading(true);
     try {
       try {
         const { data: auth } = await supabase.auth.getSession();
         if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
 
-        const response = await fetch(`/api/v1/admin/auth-users?page=${targetPage}&page_size=${targetPageSize}`, {
+        const params = new URLSearchParams({ page: String(targetPage), page_size: String(targetPageSize) });
+        if (targetSearch.trim()) params.set("search", targetSearch.trim());
+        const response = await fetch(`/api/v1/admin/auth-users?${params.toString()}`, {
           headers: { Authorization: `Bearer ${auth.session.access_token}` },
         });
         const payload = await response.json().catch(() => null);
@@ -245,11 +247,15 @@ const AdminUsers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, toast]);
+  }, [toast]);
 
   useEffect(() => {
-    void fetchUsers(1, pageSize);
-  }, []);
+    const timer = window.setTimeout(() => {
+      setCurrentPage(1);
+      void fetchUsers(1, pageSize, searchQuery);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [fetchUsers, pageSize, searchQuery]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -285,7 +291,7 @@ const AdminUsers = () => {
       setIsCreateOpen(false);
       setCreateEmail("");
       setCreateName("");
-      fetchUsers();
+      void fetchUsers(currentPage, pageSize, searchQuery);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Creation Error", description: err?.message || "Could not create user account." });
     } finally {
@@ -325,7 +331,7 @@ const AdminUsers = () => {
         title: nextStatus === "suspended" ? "User Account Suspended" : "User Account Re-activated",
         description: `Account status updated to ${nextStatus}.`,
       });
-      fetchUsers();
+      void fetchUsers(currentPage, pageSize, searchQuery);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Update Failed", description: err?.message });
     }
@@ -343,7 +349,7 @@ const AdminUsers = () => {
       const payload = await response.json().catch(() => null);
       if (!response.ok || payload?.error) throw new Error(payload?.error?.message || "The user could not be deactivated.");
       toast({ title: "User Profile Removed", description: `Record for ${email} has been deleted.` });
-      fetchUsers();
+      void fetchUsers(currentPage, pageSize, searchQuery);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Delete Failed", description: err?.message });
     }
@@ -368,19 +374,14 @@ const AdminUsers = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      const matchesSearch =
-        !searchQuery ||
-        (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (u.phone || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchesRole =
         roleFilter === "all" ||
         (roleFilter === "talent"
           ? u.roles.length === 0 || u.roles.includes("talent")
           : u.roles.includes(roleFilter));
-      return matchesSearch && matchesRole;
+      return matchesRole;
     });
-  }, [users, searchQuery, roleFilter]);
+  }, [users, roleFilter]);
 
   return (
     <OperationsPage>
@@ -405,7 +406,7 @@ const AdminUsers = () => {
             <UserPlus className="mr-2 h-4 w-4" />
             Create New User
           </Button>
-          <Button variant="outline" onClick={() => void fetchUsers()} disabled={isLoading} className="rounded-xl text-xs font-bold">
+          <Button variant="outline" onClick={() => void fetchUsers(currentPage, pageSize, searchQuery)} disabled={isLoading} className="rounded-xl text-xs font-bold">
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -420,7 +421,7 @@ const AdminUsers = () => {
             type="search"
             placeholder="Search by name, email, phone, or account ID..."
             value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 text-xs rounded-xl"
           />
         </div>
@@ -565,12 +566,12 @@ const AdminUsers = () => {
               pageSize={pageSize}
               onPageChange={(nextPage) => {
                 setCurrentPage(nextPage);
-                void fetchUsers(nextPage, pageSize);
+                void fetchUsers(nextPage, pageSize, searchQuery);
               }}
               onPageSizeChange={(size) => {
                 setPageSize(size);
                 setCurrentPage(1);
-                void fetchUsers(1, size);
+                void fetchUsers(1, size, searchQuery);
               }}
               itemLabel="users"
             />

@@ -34,6 +34,106 @@ export async function POST(request: Request) {
     const db = getAdminClient() as any;
     const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
 
+    const reuseActiveCheckout = async (entityType: string, entityId: string, description: string) => {
+      const { data: existing, error } = await db.from("payment_checkout_sessions")
+        .select("id,provider_reference,amount,currency,status,expires_at")
+        .eq("user_id", authenticated.user.id)
+        .eq("entity_type", entityType)
+        .eq("entity_id", entityId)
+        .in("status", ["initiated", "pending"])
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!existing) return null;
+      const provider = getPaymentProvider({ providerName: configured.providerName, secret: configured.secret, publicConfig: configured.publicConfig });
+      const checkout = await provider.createCheckout({
+        paymentId: existing.provider_reference,
+        amount: Number(existing.amount),
+        currency: existing.currency,
+        description,
+        returnUrl: `${origin}/api/v1/payments/esewa/callback`,
+        failureUrl: `${origin}/api/v1/payments/esewa/callback?state=failed`,
+      });
+      if (!checkout.checkoutUrl || !checkout.checkoutFields) return null;
+      return { ...existing, checkoutUrl: checkout.checkoutUrl, checkoutFields: checkout.checkoutFields, reused: true };
+    };
+
+    // Delegated module access uses the same provider adapter and verified
+    // settlement boundary as subscriptions, mentor bookings, and event tickets.
+    if (value.accessRequestId) {
+      if (!uuid(value.accessRequestId) || !uuid(value.packageId)) {
+        throw new AdminRequestError(422, "INVALID_CHECKOUT", "Choose a valid access request and plan.");
+      }
+      const [{ data: accessRequest, error: requestError }, { data: pkg, error: packageError }] = await Promise.all([
+        db.from("sub_admin_requests")
+          .select("id,user_id,requested_modules,status,payment_status")
+          .eq("id", value.accessRequestId)
+          .eq("user_id", authenticated.user.id)
+          .maybeSingle(),
+        db.from("packages")
+          .select("id,name,price,currency,is_active,deleted_at,is_publicly_selectable,package_kind,module_scope")
+          .eq("id", value.packageId)
+          .maybeSingle(),
+      ]);
+      if (requestError || !accessRequest) throw new AdminRequestError(404, "REQUEST_NOT_FOUND", "The module access request was not found.");
+      if (!['pending', 'approved'].includes(accessRequest.status)) throw new AdminRequestError(409, "REQUEST_NOT_PAYABLE", "This access request can no longer be paid.");
+      if (accessRequest.payment_status === "success") throw new AdminRequestError(409, "PAYMENT_ALREADY_VERIFIED", "This access request has already been paid.");
+      const requestedModules = Array.isArray(accessRequest.requested_modules) ? accessRequest.requested_modules : [];
+      const planScopes = Array.isArray(pkg?.module_scope) ? pkg.module_scope : [];
+      if (packageError || !pkg || !pkg.is_active || pkg.deleted_at || !pkg.is_publicly_selectable || pkg.package_kind !== "paid" || requestedModules.length === 0 || requestedModules.some((module: string) => !planScopes.includes(module))) {
+        throw new AdminRequestError(404, "PLAN_UNAVAILABLE", "This plan does not cover every requested module.");
+      }
+      const description = `${pkg.name || "MeroTalent"} module access`;
+      const reusable = await reuseActiveCheckout("module_access_request", accessRequest.id, description);
+      if (reusable) return jsonApiResponse({ data: reusable, error: null, meta: { requestId } }, 200);
+
+      const reference = `mt-ma-${randomUUID().replace(/-/g, "")}`;
+      const { data: session, error: sessionError } = await db.from("payment_checkout_sessions").insert({
+        user_id: authenticated.user.id,
+        package_id: pkg.id,
+        entity_type: "module_access_request",
+        entity_id: accessRequest.id,
+        provider_name: configured.providerName,
+        provider_reference: reference,
+        amount: pkg.price,
+        currency: pkg.currency,
+        status: "initiated",
+        expires_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+      }).select("id,provider_reference,amount,currency,status,expires_at").single();
+      if (sessionError) throw sessionError;
+
+      const provider = getPaymentProvider({ providerName: configured.providerName, secret: configured.secret, publicConfig: configured.publicConfig });
+      const checkout = await provider.createCheckout({
+        paymentId: reference,
+        amount: Number(pkg.price),
+        currency: pkg.currency,
+        description,
+        returnUrl: `${origin}/api/v1/payments/esewa/callback`,
+        failureUrl: `${origin}/api/v1/payments/esewa/callback?state=failed`,
+      });
+      if (!checkout.checkoutUrl || !checkout.checkoutFields) {
+        await db.from("payment_checkout_sessions").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", session.id);
+        throw new AdminRequestError(503, "PAYMENT_UNAVAILABLE", checkout.message || "eSewa checkout could not be created.");
+      }
+      const { error: requestUpdateError } = await db.from("sub_admin_requests").update({
+        package_id: pkg.id,
+        payment_status: "pending",
+        updated_at: new Date().toISOString(),
+      }).eq("id", accessRequest.id).eq("user_id", authenticated.user.id);
+      if (requestUpdateError) throw requestUpdateError;
+
+      await db.from("audit_logs").insert({
+        actor_user_id: authenticated.user.id,
+        action: "initiate_module_access_checkout",
+        entity_type: "sub_admin_request",
+        entity_id: accessRequest.id,
+        metadata: { package_id: pkg.id, provider: configured.providerName, checkout_session_id: session.id },
+      });
+      return jsonApiResponse({ data: { ...session, checkoutUrl: checkout.checkoutUrl, checkoutFields: checkout.checkoutFields, message: "Continue to eSewa to complete this payment." }, error: null, meta: { requestId } }, 201);
+    }
+
     // A college claim/addition may be paid before or after Super Admin review,
     // but verified payment never grants entity scope by itself. Settlement is
     // attached to the request and activation waits for both approval + payment.
@@ -65,6 +165,9 @@ export async function POST(request: Request) {
       if (packageError || !pkg || !pkg.is_active || pkg.deleted_at || !pkg.is_publicly_selectable || pkg.package_kind !== "paid" || !planScopes.includes("college")) {
         throw new AdminRequestError(404, "PLAN_UNAVAILABLE", "This college plan is unavailable.");
       }
+
+      const reusable = await reuseActiveCheckout("college_scope_request", scopeRequest.id, `${pkg.name || "MeroTalent College"} access request`);
+      if (reusable) return jsonApiResponse({ data: reusable, error: null, meta: { requestId } }, 200);
 
       const reference = `mt-cr-${randomUUID().replace(/-/g, "")}`;
       const { data: session, error: sessionError } = await db.from("payment_checkout_sessions").insert({
@@ -132,6 +235,10 @@ export async function POST(request: Request) {
 
       if (bookingError || !booking) throw new AdminRequestError(404, "BOOKING_NOT_FOUND", "The requested mentor booking was not found.");
       if (Number(booking.amount) <= 0) throw new AdminRequestError(400, "PAYMENT_NOT_REQUIRED", "This booking does not require payment.");
+      if (booking.payment_status === "success") throw new AdminRequestError(409, "PAYMENT_ALREADY_VERIFIED", "This mentor booking is already paid.");
+
+      const reusable = await reuseActiveCheckout("mentor_booking", booking.id, "Book Session with MeroTalent Mentor");
+      if (reusable) return jsonApiResponse({ data: reusable, error: null, meta: { requestId } }, 200);
 
       const reference = `mt-mb-${randomUUID().replace(/-/g, "")}`;
       const { data: session, error: sessionError } = await db.from("payment_checkout_sessions").insert({
@@ -188,6 +295,9 @@ export async function POST(request: Request) {
       if (regError || !registration) throw new AdminRequestError(404, "REGISTRATION_NOT_FOUND", "The event registration was not found.");
       if (Number(registration.total_amount) <= 0) throw new AdminRequestError(400, "PAYMENT_NOT_REQUIRED", "This registration does not require payment.");
       if (registration.payment_status === "success") throw new AdminRequestError(409, "PAYMENT_ALREADY_VERIFIED", "This registration is already paid.");
+
+      const reusable = await reuseActiveCheckout("event_registration", registration.id, "Event Registration Ticket");
+      if (reusable) return jsonApiResponse({ data: reusable, error: null, meta: { requestId } }, 200);
 
       const reference = `mt-er-${randomUUID().replace(/-/g, "")}`;
       const { data: session, error: sessionError } = await db.from("payment_checkout_sessions").insert({
@@ -253,6 +363,8 @@ export async function POST(request: Request) {
         throw new AdminRequestError(403, "ENTITY_ACCESS_DENIED", "You are not authorized to purchase a subscription for this entity.");
       }
     }
+    const reusable = await reuseActiveCheckout(String(value.entityType), String(value.entityId), pkg.name || "MeroTalent subscription");
+    if (reusable) return jsonApiResponse({ data: reusable, error: null, meta: { requestId } }, 200);
     // The amount and provider reference are derived only from the selected plan.
     // eSewa permits alphanumeric characters and hyphens in transaction_uuid.
     const reference = `mt-${randomUUID().replace(/-/g, "")}`;

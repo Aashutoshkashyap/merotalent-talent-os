@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Sparkles, CheckCircle2, ArrowLeft, Loader2, Send, Clock3, X } from "lucide-react";
+import { ShieldAlert, Sparkles, ArrowLeft, Loader2, Send, Clock3, X } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 
@@ -28,7 +28,36 @@ interface AccessRequestStatus {
   decision_note: string | null;
   decided_at: string | null;
   created_at: string;
+  package_id: string | null;
+  payment_id: string | null;
+  payment_status: "not_started" | "pending" | "success" | "failed" | "cancelled" | "expired";
 }
+
+interface AccessPlan {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  duration_days: number | null;
+  module_scope: string[];
+}
+
+const canonicalModuleKey = (value: string) => ({ job: "jobs", event: "events", institution: "college", mentor: "mentor" }[value] || value);
+
+const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) => {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = checkoutUrl;
+  for (const [name, value] of Object.entries(fields)) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+  document.body.appendChild(form);
+  form.submit();
+};
 
 const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -44,7 +73,7 @@ const errorMessage = (error: unknown) => {
 };
 
 export default function RequestSubAdminAccess() {
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -54,12 +83,13 @@ export default function RequestSubAdminAccess() {
   const [collegeSearchQuery, setCollegeSearchQuery] = useState("");
   const [proofDocs, setProofDocs] = useState<Record<string, string>>({});
   const [moduleOptions, setModuleOptions] = useState<ModuleOption[]>([]);
+  const [accessPlans, setAccessPlans] = useState<AccessPlan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
   const [isLoadingModules, setIsLoadingModules] = useState(true);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [organization, setOrganization] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [accessRequests, setAccessRequests] = useState<AccessRequestStatus[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(Boolean(user));
   const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null);
@@ -81,6 +111,33 @@ export default function RequestSubAdminAccess() {
     })();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data, error } = await (supabase as any)
+        .from("packages")
+        .select("id,name,price,currency,duration_days,module_scope")
+        .eq("is_active", true)
+        .eq("is_publicly_selectable", true)
+        .eq("package_kind", "paid")
+        .is("deleted_at", null)
+        .order("price", { ascending: true });
+      if (active && !error) setAccessPlans((data || []) as AccessPlan[]);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const compatiblePlans = accessPlans.filter((plan) => {
+    const scopes = Array.isArray(plan.module_scope) ? plan.module_scope : [];
+    return selectedModules.length > 0 && selectedModules.every((module) => scopes.includes(canonicalModuleKey(module)));
+  });
+
+  useEffect(() => {
+    if (!compatiblePlans.some((plan) => plan.id === selectedPlanId)) {
+      setSelectedPlanId(compatiblePlans[0]?.id || "");
+    }
+  }, [compatiblePlans, selectedPlanId]);
 
   const loadMyRequests = async () => {
     if (!user) {
@@ -169,6 +226,14 @@ export default function RequestSubAdminAccess() {
       toast({ variant: "destructive", title: "Reason required", description: "Please state your request reason." });
       return;
     }
+    if (!selectedPlanId) {
+      toast({ variant: "destructive", title: "Choose a plan", description: "Select the Super Admin configured plan that covers these modules." });
+      return;
+    }
+    if (!session?.access_token) {
+      toast({ variant: "destructive", title: "Session expired", description: "Sign in again before continuing to eSewa." });
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -184,7 +249,7 @@ export default function RequestSubAdminAccess() {
         `Justification: ${reason.trim()}`,
       ].filter(Boolean).join("\n");
 
-      const { error: rpcError } = await (supabase as any).rpc(
+      const { data: requestData, error: rpcError } = await (supabase as any).rpc(
         "request_sub_admin_access",
         {
           p_requested_modules: selectedModules,
@@ -193,6 +258,21 @@ export default function RequestSubAdminAccess() {
         },
       );
       if (rpcError) throw rpcError;
+      const requestId = typeof requestData?.id === "string" ? requestData.id : "";
+      if (!requestId) throw new Error("The access request was saved without a payable reference. Refresh and try again.");
+
+      const checkoutResponse = await fetch("/api/v1/payments/checkout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ accessRequestId: requestId, packageId: selectedPlanId }),
+      });
+      const checkoutPayload = await checkoutResponse.json().catch(() => null);
+      if (!checkoutResponse.ok || !checkoutPayload?.data?.checkoutUrl || !checkoutPayload?.data?.checkoutFields) {
+        throw new Error(checkoutPayload?.error?.message || "The request was saved, but eSewa checkout could not be started. Try Continue to Pay again.");
+      }
 
       // Log activity
       const { logUserActivity } = await import("@/lib/activityLogger");
@@ -206,9 +286,9 @@ export default function RequestSubAdminAccess() {
         href: "/request-access",
       });
 
-      setIsSubmitted(true);
       await loadMyRequests();
-      toast({ title: "Sub-Admin request submitted successfully!" });
+      toast({ title: "Request saved", description: "Opening eSewa to complete the required payment…" });
+      postToCheckout(checkoutPayload.data.checkoutUrl, checkoutPayload.data.checkoutFields);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -260,28 +340,7 @@ export default function RequestSubAdminAccess() {
           )}
         </div>
 
-        {isSubmitted ? (
-          <Card className="border-emerald-200 bg-white shadow-xl text-center py-12 px-6">
-            <CardContent className="space-y-4 max-w-md mx-auto">
-              <div className="h-16 w-16 bg-emerald-100 text-emerald-600 rounded-full grid place-items-center mx-auto">
-                <CheckCircle2 className="h-10 w-10" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900">Access Request Submitted!</h2>
-              <p className="text-sm text-slate-600">
-                Your request to manage sub-admin modules has been received. Super administrators will review your credentials and grant sub-admin access shortly.
-              </p>
-              <div className="pt-4 flex justify-center gap-3">
-                <Button variant="outline" asChild>
-                  <Link to="/">Return to Home</Link>
-                </Button>
-                <Button className="bg-[#071a3d] text-white hover:bg-[#05132d]" asChild>
-                  <Link to="/dashboard">Go to Dashboard</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-slate-200 shadow-xl bg-white overflow-hidden">
+        <Card className="border-slate-200 shadow-xl bg-white overflow-hidden">
             <CardHeader className="bg-[#071a3d] text-white p-6 sm:p-8">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">
                 <ShieldAlert className="h-4 w-4" />
@@ -313,6 +372,7 @@ export default function RequestSubAdminAccess() {
                                 <span className={`rounded-full border px-2 py-0.5 font-bold capitalize ${requestStatusClasses[request.status]}`}>{request.status}</span>
                               </div>
                               {request.organization && <p className="mt-1 text-slate-500">{request.organization}</p>}
+                              <p className="mt-1 font-semibold text-slate-600">Payment: {request.payment_status?.replaceAll("_", " ") || "not started"}</p>
                               {request.decision_note && <p className="mt-1 text-slate-600">{request.decision_note}</p>}
                               {request.status === "approved" && request.assigned_capabilities?.length > 0 && (
                                 <div className="mt-1 space-y-1.5">
@@ -391,6 +451,29 @@ export default function RequestSubAdminAccess() {
                     })}
                   </div>
                 </div>
+
+                {selectedModules.length > 0 && (
+                  <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+                    <Label className="text-sm font-semibold text-slate-900">Choose access plan *</Label>
+                    {compatiblePlans.length === 0 ? (
+                      <p role="alert" className="text-xs font-semibold text-amber-900">No public paid plan currently covers every selected module. Select a different module combination or ask Super Admin to configure a matching plan.</p>
+                    ) : (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {compatiblePlans.map((plan) => (
+                          <button
+                            key={plan.id}
+                            type="button"
+                            onClick={() => setSelectedPlanId(plan.id)}
+                            className={`rounded-xl border p-3 text-left transition ${selectedPlanId === plan.id ? "border-[#071a3d] bg-white ring-1 ring-[#071a3d]" : "border-amber-200 bg-white/70 hover:border-amber-300"}`}
+                          >
+                            <span className="block text-sm font-bold text-slate-900">{plan.name}</span>
+                            <span className="mt-1 block text-xs text-slate-600">{plan.currency} {Number(plan.price).toLocaleString()} · {plan.duration_days || 30} days</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Searchable College Dropdown (Only if College Module Selected) */}
                 {selectedModules.includes("college") && (
@@ -517,13 +600,12 @@ export default function RequestSubAdminAccess() {
                   </p>
                   <Button type="submit" className="w-full sm:w-auto bg-[#071a3d] text-white hover:bg-[#05132d] px-8" disabled={isSubmitting}>
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                    Submit & Continue to Pay
+                    {isSubmitting ? "Preparing eSewa…" : "Submit & Continue to Pay"}
                   </Button>
                 </div>
               </form>
             </CardContent>
           </Card>
-        )}
       </main>
 
       <Footer />

@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
+import type { CmsSnapshot } from "@/hooks/useSiteCMS";
 
 // Pages
 import Index from "./screens/Index";
@@ -99,7 +100,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
+const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }) => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
@@ -109,7 +110,7 @@ const App = () => (
           <ContentProtectionProvider enabled={true} showWarnings={true}>
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Index initialCmsSnapshot={initialCmsSnapshot} />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/reset-password" element={<ResetPassword />} />

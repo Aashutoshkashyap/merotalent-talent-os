@@ -37,13 +37,13 @@ export interface SiteSettings {
   [key: string]: string | undefined;
 }
 
-interface PublicSectionVisibility {
+export interface PublicSectionVisibility {
   section_key: string;
   display_order: number;
   is_visible: boolean;
 }
 
-interface CmsSnapshot {
+export interface CmsSnapshot {
   sections: PageSection[];
   sectionVisibility: Record<string, PublicSectionVisibility>;
   settings: SiteSettings;
@@ -149,8 +149,14 @@ const loadCmsSnapshot = (page: string, force = false): Promise<CmsSnapshot> => {
   return request;
 };
 
-export function useSiteCMS(page = "home") {
-  const initialSnapshot = cmsCache.get(page)?.value || getStoredCmsSnapshot(page);
+export function useSiteCMS(page = "home", serverSnapshot?: CmsSnapshot | null) {
+  const initialSnapshot = serverSnapshot || cmsCache.get(page)?.value || getStoredCmsSnapshot(page);
+  // The server snapshot is the authoritative first-render state. Seed the
+  // request cache synchronously so a stale browser snapshot cannot replace it
+  // immediately after hydration and re-introduce a hidden-section flash.
+  if (serverSnapshot) {
+    cmsCache.set(page, { expiresAt: Date.now() + CMS_CACHE_TTL_MS, value: serverSnapshot });
+  }
   const [sections, setSections] = useState<PageSection[]>(initialSnapshot?.sections || []);
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, PublicSectionVisibility>>(
     initialSnapshot?.sectionVisibility || {}
@@ -162,7 +168,7 @@ export function useSiteCMS(page = "home") {
     let isMounted = true;
 
     async function loadCMS(force = false) {
-      if (!initialSnapshot || force) {
+      if (force) {
         setIsLoading(true);
       }
       try {

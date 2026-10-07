@@ -24,6 +24,7 @@ export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export interface AuthUserListQuery {
   page: number;
   pageSize: number;
+  search: string;
 }
 
 export interface SafeAuthUserMetadata {
@@ -270,7 +271,7 @@ const positiveInteger = (
 export function parseAuthUserListQuery(
   searchParams: URLSearchParams,
 ): AuthUserListQuery {
-  const allowed = new Set(["page", "page_size"]);
+  const allowed = new Set(["page", "page_size", "search"]);
   for (const key of searchParams.keys()) {
     if (!allowed.has(key)) {
       invalid(key, "This query parameter is not supported.", "The list query is invalid.");
@@ -280,10 +281,24 @@ export function parseAuthUserListQuery(
     }
   }
 
+  const search = (searchParams.get("search") ?? "").trim();
+  if (search.length > 180 || CONTROL_CHARACTER_PATTERN.test(search)) {
+    invalid("search", "Use no more than 180 valid characters.", "The list query is invalid.");
+  }
+
   return {
     page: positiveInteger(searchParams.get("page"), 1, 10_000, "page"),
     pageSize: positiveInteger(searchParams.get("page_size"), 25, 100, "page_size"),
+    search,
   };
+}
+
+export function matchesAuthUserSearch(user: SafeAuthUser, search: string): boolean {
+  const query = search.trim().toLocaleLowerCase();
+  if (!query) return true;
+  return [user.id, user.email, user.profile.metadata.fullName]
+    .filter((value): value is string => typeof value === "string")
+    .some((value) => value.toLocaleLowerCase().includes(query));
 }
 
 export function parseInviteAuthUserInput(input: unknown): InviteAuthUserInput {
@@ -428,9 +443,9 @@ export function sanitizeAuthUser(
       deletedAt: profile?.deleted_at ?? null,
       metadata: {
         fullName:
-          profile?.full_name ?? safeMetadataString(rawMetadata.full_name),
+          profile?.full_name ?? safeMetadataString(rawMetadata.full_name) ?? safeMetadataString(rawMetadata.name),
         avatarUrl:
-          safeMetadataUrl(profile?.avatar_url) ?? safeMetadataUrl(rawMetadata.avatar_url),
+          safeMetadataUrl(profile?.avatar_url) ?? safeMetadataUrl(rawMetadata.avatar_url) ?? safeMetadataUrl(rawMetadata.picture),
       },
     },
   };

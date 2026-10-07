@@ -1,12 +1,40 @@
 import type { Metadata } from "next";
 import ClientApp from "../client-app";
 import { getAdminClient } from "@/lib/server/supabase";
+import type { CmsSnapshot, PublicSectionVisibility } from "@/hooks/useSiteCMS";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug?: string[] }> };
 type PublicRecord = { type: "CollegeOrUniversity" | "JobPosting" | "Person" | "Event"; title: string; description: string; image?: string | null; path: string; jsonLd: Record<string, unknown> };
 const uuid = (value: string | undefined) => Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value));
 const site = () => (process.env.NEXT_PUBLIC_SITE_URL || "https://www.merotalent.com").replace(/\/$/, "");
+
+async function getHomeCmsSnapshot(slug: string[] | undefined): Promise<CmsSnapshot | null> {
+  if (slug?.length) return null;
+  try {
+    const db = getAdminClient() as any;
+    const [sectionsResult, visibilityResult, settingsResult] = await Promise.all([
+      db.from("page_sections").select("*").eq("page", "home").eq("is_visible", true).order("display_order", { ascending: true }),
+      db.rpc("get_public_page_section_visibility", { requested_page: "home" }),
+      db.from("site_settings").select("key,value"),
+    ]);
+    if (sectionsResult.error || visibilityResult.error || settingsResult.error) return null;
+    const settings: Record<string, string> = {};
+    for (const row of settingsResult.data || []) {
+      if (typeof row.key === "string" && typeof row.value === "string") settings[row.key] = row.value;
+    }
+    return {
+      sections: sectionsResult.data || [],
+      sectionVisibility: ((visibilityResult.data || []) as PublicSectionVisibility[]).reduce((result, section) => {
+        result[section.section_key] = section;
+        return result;
+      }, {} as Record<string, PublicSectionVisibility>),
+      settings,
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function getPublicRecord(slug: string[] | undefined): Promise<PublicRecord | null> {
   if (!slug || slug.length !== 2) return null;
@@ -47,7 +75,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function AppPage({ params }: Props) {
-  const record = await getPublicRecord((await params).slug);
+  const slug = (await params).slug;
+  const [record, homeCmsSnapshot] = await Promise.all([getPublicRecord(slug), getHomeCmsSnapshot(slug)]);
   const safeJson = record ? JSON.stringify(record.jsonLd).replace(/</g, "\\u003c") : null;
-  return <>{safeJson && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJson }} />}<ClientApp /></>;
+  return <>{safeJson && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJson }} />}<ClientApp initialCmsSnapshot={homeCmsSnapshot} /></>;
 }

@@ -5,6 +5,7 @@ import {
   buildMergedAuthMetadata,
   parseAuthUserListQuery,
   parseDeleteAuthUserInput,
+  matchesAuthUserSearch,
   parseInviteAuthUserInput,
   parsePatchAuthUserInput,
   sanitizeAuthUser,
@@ -79,9 +80,10 @@ describe("admin Auth user payload validation", () => {
   });
 
   it("caps pagination and rejects unrecognized list parameters", () => {
-    expect(parseAuthUserListQuery(new URLSearchParams("page=2&page_size=100"))).toEqual({
+    expect(parseAuthUserListQuery(new URLSearchParams("page=2&page_size=100&search=Jane%20Doe"))).toEqual({
       page: 2,
       pageSize: 100,
+      search: "Jane Doe",
     });
     expect(() =>
       parseAuthUserListQuery(new URLSearchParams("page_size=101")),
@@ -92,6 +94,19 @@ describe("admin Auth user payload validation", () => {
     expect(() =>
       parseAuthUserListQuery(new URLSearchParams("include_secrets=true")),
     ).toThrowError(/invalid/i);
+  });
+
+  it("matches server-side People searches by name, email, or account ID", () => {
+    const user = sanitizeAuthUser({
+      id: userId,
+      email: "google.member@example.com",
+      created_at: "2026-10-07T00:00:00.000Z",
+      user_metadata: { full_name: "Google Member" },
+    } as unknown as User);
+    expect(matchesAuthUserSearch(user, "google mem")).toBe(true);
+    expect(matchesAuthUserSearch(user, "MEMBER@EXAMPLE")).toBe(true);
+    expect(matchesAuthUserSearch(user, "11111111")).toBe(true);
+    expect(matchesAuthUserSearch(user, "missing person")).toBe(false);
   });
 
   it("defaults to profile soft deletion and gates hard deletion by user ID", () => {
@@ -171,6 +186,24 @@ describe("admin Auth user response sanitization", () => {
     expect(serialized).not.toContain("private_note");
     expect(serialized).not.toContain("9800000000");
     expect(serialized).not.toContain("factor-id");
+  });
+
+  it("uses standard Google OAuth metadata when an application profile is still synchronizing", () => {
+    const result = sanitizeAuthUser({
+      id: userId,
+      email: "oauth@example.com",
+      created_at: "2026-10-07T00:00:00.000Z",
+      email_confirmed_at: "2026-10-07T00:00:01.000Z",
+      user_metadata: {
+        name: "OAuth Person",
+        picture: "https://images.example.com/oauth-person.png",
+      },
+    } as unknown as User);
+
+    expect(result.profile.metadata).toEqual({
+      fullName: "OAuth Person",
+      avatarUrl: "https://images.example.com/oauth-person.png",
+    });
   });
 
   it("preserves unrelated non-authorization user metadata when applying safe fields", () => {

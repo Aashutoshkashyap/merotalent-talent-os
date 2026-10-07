@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const hook = readFileSync(resolve(process.cwd(), "src/hooks/useSiteCMS.ts"), "utf8");
 const homepage = readFileSync(resolve(process.cwd(), "src/screens/Index.tsx"), "utf8");
+const serverPage = readFileSync(resolve(process.cwd(), "app/[[...slug]]/page.tsx"), "utf8");
+const clientApp = readFileSync(resolve(process.cwd(), "app/client-app.tsx"), "utf8");
 const migration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260910120000_expose_public_component_visibility.sql"),
   "utf8",
@@ -18,6 +20,17 @@ describe("public CMS component visibility contract", () => {
     expect(hook).toContain('rpc("get_public_page_section_visibility"');
     expect(hook).toContain("const isSectionVisible");
     expect(hook).toContain("const hasSectionConfiguration");
+  });
+
+  it("provides the authoritative visibility snapshot before the public homepage renders", () => {
+    expect(serverPage).toContain("getHomeCmsSnapshot");
+    expect(serverPage).toContain('rpc("get_public_page_section_visibility"');
+    expect(serverPage).toContain("initialCmsSnapshot={homeCmsSnapshot}");
+    expect(clientApp).toContain("initialCmsSnapshot={initialCmsSnapshot}");
+    expect(homepage).toContain('useSiteCMS("home", initialCmsSnapshot)');
+    expect(hook).toContain("if (serverSnapshot)");
+    expect(hook).toContain("cmsCache.set(page");
+    expect(homepage).not.toContain("animate-pulse");
   });
 
   it("keeps editable hidden content private while exposing only component state", () => {
