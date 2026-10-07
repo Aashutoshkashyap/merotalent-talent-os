@@ -43,6 +43,14 @@ interface AccessPlan {
 }
 
 const canonicalModuleKey = (value: string) => ({ job: "jobs", event: "events", institution: "college", mentor: "mentor" }[value] || value);
+const moduleWorkspacePath = (value: string) => ({
+  college: "/institute",
+  jobs: "/company",
+  job: "/company",
+  events: "/company",
+  event: "/company",
+  mentor: "/mentor",
+}[canonicalModuleKey(value)] || "/dashboard");
 
 const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) => {
   const form = document.createElement("form");
@@ -91,6 +99,7 @@ export default function RequestSubAdminAccess() {
   const [organization, setOrganization] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [accessRequests, setAccessRequests] = useState<AccessRequestStatus[]>([]);
+  const [activeEntitlementModules, setActiveEntitlementModules] = useState<Set<string>>(new Set());
   const [isLoadingRequests, setIsLoadingRequests] = useState(Boolean(user));
   const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null);
 
@@ -146,8 +155,17 @@ export default function RequestSubAdminAccess() {
       return;
     }
     setIsLoadingRequests(true);
-    const { data, error } = await (supabase as any).rpc("get_my_module_access_requests");
+    const [{ data, error }, { data: entitlements, error: entitlementError }] = await Promise.all([
+      (supabase as any).rpc("get_my_module_access_requests"),
+      (supabase as any).rpc("get_my_module_entitlements"),
+    ]);
     if (!error) setAccessRequests((data || []) as AccessRequestStatus[]);
+    if (!entitlementError) {
+      const now = Date.now();
+      setActiveEntitlementModules(new Set((entitlements || [])
+        .filter((item: any) => item.status === "active" && (!item.expires_at || new Date(item.expires_at).getTime() > now))
+        .map((item: any) => canonicalModuleKey(String(item.module_key)))));
+    }
     setIsLoadingRequests(false);
   };
 
@@ -378,16 +396,21 @@ export default function RequestSubAdminAccess() {
                                 <div className="mt-1 space-y-1.5">
                                   <p className="text-emerald-700">Granted: {request.assigned_capabilities.join(", ")}. Your module access is approved!</p>
                                   <div className="flex flex-wrap gap-2 pt-1">
-                                    <Button asChild size="sm" className="h-7 px-2.5 text-xs bg-[#071a3d] text-white hover:bg-[#05132d]">
-                                      <Link to="/dashboard/payments">View Plans & Pay</Link>
-                                    </Button>
-                                    <Button asChild variant="outline" size="sm" className="h-7 px-2.5 text-xs">
-                                      <Link to="/institute">Go to College Workspace</Link>
-                                    </Button>
+                                    {request.requested_modules.every((module) => activeEntitlementModules.has(canonicalModuleKey(module))) ? (
+                                      [...new Set(request.requested_modules.map(canonicalModuleKey))].map((module) => (
+                                        <Button key={module} asChild size="sm" className="h-7 px-2.5 text-xs bg-[#071a3d] text-white hover:bg-[#05132d]">
+                                          <Link to={moduleWorkspacePath(module)}>Open {module.replaceAll("_", " ")} workspace</Link>
+                                        </Button>
+                                      ))
+                                    ) : (
+                                      <Button asChild size="sm" className="h-7 px-2.5 text-xs bg-[#071a3d] text-white hover:bg-[#05132d]">
+                                        <Link to="/dashboard/payments">View Plans &amp; Pay</Link>
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
                               )}
-                              {request.status === "pending" && (
+                              {request.status === "pending" && request.payment_status !== "success" && (
                                 <Button type="button" variant="ghost" size="sm" className="mt-1 h-7 px-2 text-xs text-slate-600 hover:text-rose-700" disabled={cancellingRequestId === request.id} onClick={() => void cancelRequest(request.id)}>
                                   {cancellingRequestId === request.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <X className="mr-1 h-3 w-3" />} Cancel request
                                 </Button>

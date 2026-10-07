@@ -6,6 +6,7 @@ export interface StudentApplicationProfile {
   phone?: string | null;
   location?: string | null;
   education?: string | null;
+  education_history?: unknown;
 }
 
 const hasValue = (value: string | null | undefined, minimum = 1) =>
@@ -15,6 +16,8 @@ const hasValidPhone = (value: string | null | undefined) => {
   const digits = phone.replace(/\D/g, "");
   return /^[+]?[-()\s\d]{7,20}$/.test(phone) && digits.length >= 7 && digits.length <= 15;
 };
+const hasEducation = (profile: StudentApplicationProfile | null) => hasValue(profile?.education)
+  || (Array.isArray(profile?.education_history) && profile.education_history.some((entry) => entry && typeof entry === "object"));
 
 export function missingStudentProfileFields(
   module: ModuleFormType,
@@ -26,7 +29,7 @@ export function missingStudentProfileFields(
   if (!hasValue(accountEmail)) missing.push("email");
   if (!hasValidPhone(profile?.phone)) missing.push("valid phone number");
   if (!hasValue(profile?.location)) missing.push("location");
-  if (["college_application", "job_application"].includes(module) && !hasValue(profile?.education)) {
+  if (["college_application", "job_application"].includes(module) && !hasEducation(profile)) {
     missing.push("education");
   }
   return missing;
@@ -40,14 +43,18 @@ export function valuesFromStudentProfile(
 ): unknown {
   if (!values || typeof values !== "object" || Array.isArray(values)) return values;
   const submitted = values as Record<string, unknown>;
+  const firstEducation = Array.isArray(profile.education_history)
+    ? profile.education_history.find((entry) => entry && typeof entry === "object") as Record<string, unknown> | undefined
+    : undefined;
+  const educationLabel = profile.education?.trim()
+    || [firstEducation?.degree, firstEducation?.field, firstEducation?.institution].filter((item) => typeof item === "string" && item.trim()).join(" in ");
   return {
     ...submitted,
     fullName: (profile.full_name?.trim() || (submitted.fullName as string)?.trim() || "").trim(),
     email: (accountEmail || profile.email || (submitted.email as string) || "").trim().toLowerCase(),
     phone: (profile.phone?.trim() || (submitted.phone as string)?.trim() || "").trim(),
     ...(module === "college_application" && !submitted.currentQualification
-      ? { currentQualification: profile.education?.trim() || (submitted.currentQualification as string)?.trim() || "" }
+      ? { currentQualification: educationLabel || (submitted.currentQualification as string)?.trim() || "" }
       : {}),
   };
 }
-

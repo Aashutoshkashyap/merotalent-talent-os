@@ -47,6 +47,9 @@ interface EventItem {
   is_active: boolean;
   is_featured: boolean;
   cover_image_url?: string | null;
+  attachment_path?: string | null;
+  attachment_name?: string | null;
+  attachment_mime_type?: string | null;
   created_at: string;
 }
 
@@ -82,6 +85,9 @@ export default function AdminEvents() {
     capacity: "",
     ticket_price: "0",
     cover_image_url: "",
+    attachment_path: "",
+    attachment_name: "",
+    attachment_mime_type: "",
     is_featured: false,
     status: "pending_approval" as EventStatus,
     rejection_reason: "",
@@ -199,6 +205,9 @@ export default function AdminEvents() {
       capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
       ticket_price: parseFloat(formData.ticket_price || "0"),
       cover_image_url: formData.cover_image_url || null,
+      attachment_path: formData.attachment_path || null,
+      attachment_name: formData.attachment_name || null,
+      attachment_mime_type: formData.attachment_mime_type || null,
       is_featured: formData.is_featured,
       status: formData.status,
       rejection_reason: formData.status === "rejected" ? formData.rejection_reason.trim() : null,
@@ -283,6 +292,9 @@ export default function AdminEvents() {
       capacity: event.capacity ? event.capacity.toString() : "",
       ticket_price: event.ticket_price ? event.ticket_price.toString() : "0",
       cover_image_url: event.cover_image_url || "",
+      attachment_path: event.attachment_path || "",
+      attachment_name: event.attachment_name || "",
+      attachment_mime_type: event.attachment_mime_type || "",
       is_featured: event.is_featured ?? false,
       status: event.status || "pending_approval",
       rejection_reason: event.rejection_reason || "",
@@ -306,6 +318,9 @@ export default function AdminEvents() {
       capacity: "",
       ticket_price: "0",
       cover_image_url: "",
+      attachment_path: "",
+      attachment_name: "",
+      attachment_mime_type: "",
       is_featured: false,
       status: "pending_approval",
       rejection_reason: "",
@@ -548,6 +563,24 @@ export default function AdminEvents() {
                         className="h-full w-full object-cover"
                       />
                     </div>
+                  )}
+                  <SignedMediaUploader
+                    label="Private event proposal or supporting document"
+                    module="event_attachment"
+                    resourceId={editingEvent.id}
+                    onUploaded={([asset]: SignedMediaAsset[]) => {
+                      if (asset) {
+                        setFormData((current) => ({
+                          ...current,
+                          attachment_path: asset.path,
+                          attachment_name: asset.fileName,
+                          attachment_mime_type: asset.contentType,
+                        }));
+                      }
+                    }}
+                  />
+                  {formData.attachment_path && (
+                    <p className="text-xs font-semibold text-emerald-700">Attached privately: {formData.attachment_name || "Event document"}</p>
                   )}
                 </div>
               ) : (

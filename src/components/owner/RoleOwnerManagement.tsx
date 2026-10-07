@@ -24,6 +24,7 @@ import {
 import OwnerResourceDialog from "@/components/owner/OwnerResourceDialog";
 import OwnerStatusActions from "@/components/owner/OwnerStatusActions";
 import EntityAIControls from "@/components/owner/EntityAIControls";
+import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
 
 export interface OwnerCompanyRecord {
   id: string;
@@ -42,6 +43,9 @@ export interface OwnerJobRecord {
   application_deadline: string | null;
   expires_at: string | null;
   status: string;
+  attachment_path: string | null;
+  attachment_name: string | null;
+  attachment_mime_type: string | null;
   created_at: string;
 }
 
@@ -62,6 +66,9 @@ export interface OwnerEventRecord {
   ticket_price: number | null;
   currency: string | null;
   status: string;
+  attachment_path: string | null;
+  attachment_name: string | null;
+  attachment_mime_type: string | null;
   created_at: string;
 }
 
@@ -73,6 +80,7 @@ export interface OwnerMentorRecord {
   hourly_rate: number | null;
   years_experience: number | null;
   is_available: boolean | null;
+  availability?: { days?: string[]; startTime?: string; endTime?: string; timezone?: string } | null;
   approval_status: string;
 }
 
@@ -204,6 +212,9 @@ const EventEditor = ({
   const [capacity, setCapacity] = useState("");
   const [ticketPrice, setTicketPrice] = useState("0");
   const [status, setStatus] = useState<"draft" | "pending_approval">("draft");
+  const [attachmentPath, setAttachmentPath] = useState("");
+  const [attachmentName, setAttachmentName] = useState("");
+  const [attachmentMimeType, setAttachmentMimeType] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -219,6 +230,9 @@ const EventEditor = ({
     setCapacity(event?.capacity == null ? "" : String(event.capacity));
     setTicketPrice(String(event?.ticket_price ?? 0));
     setStatus(event?.status === "draft" ? "draft" : "pending_approval");
+    setAttachmentPath(event?.attachment_path ?? "");
+    setAttachmentName(event?.attachment_name ?? "");
+    setAttachmentMimeType(event?.attachment_mime_type ?? "");
   }, [event, open]);
 
   const handleSubmit = async (submitEvent: FormEvent<HTMLFormElement>) => {
@@ -252,6 +266,9 @@ const EventEditor = ({
       ticket_price: eventType === "paid" ? Number(ticketPrice) : 0,
       currency: "NPR",
       status,
+      attachment_path: attachmentPath || null,
+      attachment_name: attachmentName || null,
+      attachment_mime_type: attachmentMimeType || null,
     };
     const db = supabase as any;
     const result = event
@@ -313,6 +330,22 @@ const EventEditor = ({
           </Select>
         </div>
       </div>
+      {event ? (
+        <div className="space-y-2 rounded-2xl border border-[#f0e3da] p-4">
+          <SignedMediaUploader
+            label="Private event proposal or supporting document"
+            module="event_attachment"
+            resourceId={event.id}
+            onUploaded={([asset]: SignedMediaAsset[]) => {
+              if (!asset) return;
+              setAttachmentPath(asset.path);
+              setAttachmentName(asset.fileName);
+              setAttachmentMimeType(asset.contentType);
+            }}
+          />
+          {attachmentPath ? <p className="text-xs font-semibold text-emerald-700">Attached privately: {attachmentName || "Event document"}</p> : null}
+        </div>
+      ) : <p className="text-xs text-muted-foreground">Save the event draft once before uploading its private proposal or supporting document.</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="owner-event-location">Location</Label>
@@ -528,6 +561,9 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
   const [hourlyRate, setHourlyRate] = useState("0");
   const [yearsExperience, setYearsExperience] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
+  const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const [availableStartTime, setAvailableStartTime] = useState("09:00");
+  const [availableEndTime, setAvailableEndTime] = useState("17:00");
   const [serviceTitle, setServiceTitle] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
   const [sessionType, setSessionType] = useState("one_to_one");
@@ -544,6 +580,9 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
     setHourlyRate(String(snapshot.mentor.hourly_rate ?? 0));
     setYearsExperience(snapshot.mentor.years_experience == null ? "" : String(snapshot.mentor.years_experience));
     setIsAvailable(snapshot.mentor.is_available ?? true);
+    setAvailableDays(Array.isArray(snapshot.mentor.availability?.days) ? snapshot.mentor.availability!.days! : []);
+    setAvailableStartTime(snapshot.mentor.availability?.startTime || "09:00");
+    setAvailableEndTime(snapshot.mentor.availability?.endTime || "17:00");
   }, [profileOpen, snapshot.mentor]);
 
   useEffect(() => {
@@ -570,6 +609,12 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
         hourly_rate: Number(hourlyRate),
         years_experience: yearsExperience ? Number(yearsExperience) : null,
         is_available: isAvailable,
+        availability: {
+          days: availableDays,
+          startTime: availableStartTime,
+          endTime: availableEndTime,
+          timezone: "Asia/Kathmandu",
+        },
       })
       .eq("id", snapshot.mentor.id)
       .eq("user_id", userId);
@@ -704,6 +749,13 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
         <div className="space-y-2"><Label htmlFor="mentor-expertise">Expertise</Label><Input id="mentor-expertise" placeholder="Product strategy, UX research" value={expertise} onChange={(e) => setExpertise(e.target.value)} className={fieldClassName} /><p className="text-xs text-[#8d8179]">Separate skills with commas.</p></div>
         <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="mentor-rate">Hourly rate (NPR)</Label><Input id="mentor-rate" type="number" min={0} step="0.01" required value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className={fieldClassName} /></div><div className="space-y-2"><Label htmlFor="mentor-experience">Years of experience</Label><Input id="mentor-experience" type="number" min={0} max={80} value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} className={fieldClassName} /></div></div>
         <div className="flex items-center justify-between rounded-2xl border border-[#f0e3da] p-4"><div><Label htmlFor="mentor-available">Available for booking</Label><p className="mt-1 text-xs text-[#8d8179]">Turning this off hides the mentor from public availability.</p></div><Switch id="mentor-available" checked={isAvailable} onCheckedChange={setIsAvailable} /></div>
+        <div className="space-y-3 rounded-2xl border border-[#f0e3da] p-4">
+          <div><Label>Available days</Label><p className="mt-1 text-xs text-[#8d8179]">Students can only select the published days and time window.</p></div>
+          <div className="flex flex-wrap gap-2">
+            {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => <Button key={day} type="button" size="sm" variant={availableDays.includes(day) ? "default" : "outline"} onClick={() => setAvailableDays((days) => days.includes(day) ? days.filter((item) => item !== day) : [...days, day])}>{day.slice(0, 3)}</Button>)}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="mentor-availability-start">Available from</Label><Input id="mentor-availability-start" type="time" value={availableStartTime} onChange={(event) => setAvailableStartTime(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="mentor-availability-end">Available until</Label><Input id="mentor-availability-end" type="time" value={availableEndTime} onChange={(event) => setAvailableEndTime(event.target.value)} /></div></div>
+        </div>
       </OwnerResourceDialog>
 
       <OwnerResourceDialog open={serviceOpen} onOpenChange={setServiceOpen} title={selectedService ? "Edit mentor service" : "Create mentor service"} description="Active services are read directly by the public mentor directory and booking flow." submitLabel={selectedService ? "Save service" : "Create service"} isSubmitting={isSubmitting} onSubmit={handleServiceSubmit}>

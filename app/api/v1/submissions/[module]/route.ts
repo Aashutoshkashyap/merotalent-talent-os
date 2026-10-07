@@ -157,6 +157,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   let guestVerificationId: string | null = null;
+  let authenticatedProfileSnapshot: Record<string, unknown> | null = null;
   if (isGuestCollegeApplication) {
     guestVerificationId = request.headers.get("x-guest-verification-id");
     if (!guestVerificationId || !/^[0-9a-f-]{36}$/i.test(guestVerificationId)) {
@@ -186,9 +187,14 @@ export async function POST(request: Request, context: RouteContext) {
   if (authenticated) {
     const { data: studentProfile } = await authenticated.userClient
       .from("profiles")
-      .select("full_name,email,phone,location,education")
+      .select("full_name,email,phone,location,education,linkedin_url,resume_url,education_history,experience_history,certifications")
       .eq("user_id", authenticated.user.id)
       .maybeSingle();
+
+    const { data: studentSkills } = await authenticated.userClient
+      .from("user_skills")
+      .select("skills(name)")
+      .eq("user_id", authenticated.user.id);
 
     const fallbackProfile = studentProfile || {
       full_name: (values as any)?.fullName || null,
@@ -196,6 +202,7 @@ export async function POST(request: Request, context: RouteContext) {
       phone: (values as any)?.phone || null,
       location: null,
       education: (values as any)?.education || (values as any)?.currentQualification || null,
+      education_history: [],
     };
 
     const missing = missingStudentProfileFields(module, fallbackProfile, authenticated.user.email);
@@ -207,12 +214,29 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     values = valuesFromStudentProfile(module, values, fallbackProfile, authenticated.user.email);
+    authenticatedProfileSnapshot = studentProfile ? {
+      fullName: studentProfile.full_name,
+      email: authenticated.user.email || studentProfile.email,
+      phone: studentProfile.phone,
+      location: studentProfile.location,
+      education: studentProfile.education,
+      linkedInUrl: studentProfile.linkedin_url,
+      resumeUrl: studentProfile.resume_url,
+      educationHistory: studentProfile.education_history,
+      experienceHistory: studentProfile.experience_history,
+      certifications: studentProfile.certifications,
+      skills: (studentSkills ?? []).map((entry: any) => entry.skills?.name).filter((name: unknown): name is string => typeof name === "string"),
+      capturedAt: new Date().toISOString(),
+    } : null;
   }
 
   const gateway: FormSubmissionGateway = {
     async submit(command: FormSubmissionCommand) {
       const payload: any = {
         ...command.values,
+        ...(command.module === "job_application" && authenticatedProfileSnapshot
+          ? { profileSnapshot: authenticatedProfileSnapshot }
+          : {}),
         _formVersion: command.formVersion,
         _idempotencyKey: command.idempotencyKey ?? null,
       };
@@ -265,122 +289,9 @@ export async function POST(request: Request, context: RouteContext) {
           error = { message: String(rpcErr) };
         }
 
-        // Resilient Fallback: If RPC fails or is unavailable, execute direct insert
-        if (error || !data) {
-          try {
-            const admin = getAdminClient();
-            const actorId = authenticated!.user.id;
-            const actorEmail = authenticated!.user.email;
-            const actorName = payload.fullName || actorEmail;
-
-            if (command.module === "job_application") {
-              const targetJobId = payload.jobId || payload.job_id;
-              const { data: jobApp, error: insertErr } = await (admin as any)
-                .from("job_applications")
-                .insert({
-                  job_id: targetJobId,
-                  user_id: actorId,
-                  full_name: actorName,
-                  email: payload.email || actorEmail,
-                  phone: payload.phone || null,
-                  resume_url: payload.resumeUrl || payload.resume_url || null,
-                  cover_letter: payload.coverLetter || payload.cover_letter || null,
-                  portfolio_url: payload.portfolioUrl || payload.portfolio_url || null,
-                  status: "submitted",
-                  form_data: payload,
-                })
-                .select("id, status, applied_at")
-                .single();
-
-              if (!insertErr && jobApp) {
-                return {
-                  id: jobApp.id,
-                  status: jobApp.status || "submitted",
-                  createdAt: jobApp.applied_at || new Date().toISOString(),
-                };
-              }
-            } else if (command.module === "mentor_booking") {
-              const mentorTargetId = payload.mentorId || payload.mentor_id;
-              const scheduledStart = payload.scheduledStart || (payload.scheduledDate ? `${payload.scheduledDate}T${payload.scheduledTime || "10:00"}:00Z` : new Date().toISOString());
-              const durationMins = Number(payload.durationMinutes || 60);
-              const startDate = new Date(scheduledStart);
-              const endDate = new Date(startDate.getTime() + durationMins * 60000);
-
-              const { data: booking, error: insertErr } = await (admin as any)
-                .from("mentor_bookings")
-                .insert({
-                  mentor_id: mentorTargetId,
-                  mentor_service_id: payload.mentorServiceId || payload.serviceId || null,
-                  student_id: actorId,
-                  scheduled_start: startDate.toISOString(),
-                  scheduled_end: endDate.toISOString(),
-                  status: "pending",
-                  payment_status: "pending",
-                  amount: payload.amount || 0,
-                  currency: payload.currency || "NPR",
-                  notes: payload.notes || payload.topic || null,
-                  form_data: payload,
-                })
-                .select("id, status, created_at")
-                .single();
-
-              if (!insertErr && booking) {
-                return {
-                  id: booking.id,
-                  status: booking.status || "pending",
-                  createdAt: booking.created_at || new Date().toISOString(),
-                };
-              }
-            } else if (command.module === "college_application") {
-              const collegeTargetId = payload.collegeId || payload.institute_id;
-              const { data: colApp, error: insertErr } = await (admin as any)
-                .from("college_applications")
-                .insert({
-                  institute_id: collegeTargetId,
-                  applicant_id: actorId,
-                  full_name: actorName,
-                  email: payload.email || actorEmail,
-                  phone: payload.phone || null,
-                  program_interest: payload.intendedCourse || payload.program_interest || null,
-                  intake: payload.preferredIntake || payload.intake || null,
-                  message: payload.message || null,
-                  attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
-                  form_data: payload,
-                })
-                .select("id, status, submitted_at")
-                .single();
-
-              if (!insertErr && colApp) {
-                return {
-                  id: colApp.id,
-                  status: colApp.status || "submitted",
-                  createdAt: colApp.submitted_at || new Date().toISOString(),
-                };
-              }
-            } else if (command.module === "event_registration") {
-              const compId = payload.eventId || payload.competition_id;
-              const { data: compReg, error: insertErr } = await (admin as any)
-                .from("competition_registrations")
-                .insert({
-                  competition_id: compId,
-                  user_id: actorId,
-                  team_name: payload.teamName || null,
-                })
-                .select("id, registered_at")
-                .single();
-
-              if (!insertErr && compReg) {
-                return {
-                  id: compReg.id,
-                  status: "confirmed",
-                  createdAt: compReg.registered_at || new Date().toISOString(),
-                };
-              }
-            }
-          } catch (fallbackError) {
-            console.error("Direct table insertion fallback failed", fallbackError);
-          }
-        }
+        // Do not bypass the domain RPC with a service-role insert. These RPCs
+        // enforce publication state, ownership, duplicate protection, pricing,
+        // capacity, availability and audit/notification side effects.
       }
 
       if (error && !data) {

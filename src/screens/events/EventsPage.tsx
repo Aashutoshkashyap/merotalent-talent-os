@@ -7,6 +7,7 @@ import { Calendar, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import ModuleSubmissionDialog from "@/components/forms/ModuleSubmissionDialog";
+import { startEsewaCheckout } from "@/lib/payments/browser-checkout";
 
 interface EventItem {
   id: string;
@@ -209,11 +210,17 @@ export default function EventsPage() {
             targetName={selectedEvent.title}
             open={Boolean(selectedEvent)}
             onOpenChange={(open) => { if (!open) setSelectedEvent(null); }}
-            onSubmitted={() => {
+            onSubmitted={async (result) => {
               setRegisteredEventIds((current) => new Set(current).add(selectedEvent.id));
+              if (selectedEvent.event_type === "paid") {
+                if (!session?.access_token) throw new Error("Sign in again before continuing to eSewa.");
+                await startEsewaCheckout(session.access_token, { eventRegistrationId: result.id });
+              }
             }}
             successTitle="Event registration submitted"
-            successDescription={`Your registration for ${selectedEvent.title} is stored in MeroTalent. Any required payment remains pending until it is verified.`}
+            successDescription={selectedEvent.event_type === "free"
+              ? `Your free registration for ${selectedEvent.title} is confirmed.`
+              : `Your registration for ${selectedEvent.title} is stored. Continue through eSewa; the ticket is confirmed only after verified payment.`}
           />
         )}
       </div>

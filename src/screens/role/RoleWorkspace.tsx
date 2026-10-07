@@ -259,7 +259,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
             .order("created_at", { ascending: false }),
           db
             .from("events")
-            .select("id, organizer_type, organizer_id, title, description, event_type, format, location, meeting_url, start_date, end_date, registration_deadline, capacity, ticket_price, currency, status, created_at")
+            .select("id, organizer_type, organizer_id, title, description, event_type, format, location, meeting_url, start_date, end_date, registration_deadline, capacity, ticket_price, currency, status, attachment_path, attachment_name, attachment_mime_type, created_at")
             .eq("organizer_user_id", user.id)
             .eq("organizer_type", "company")
             .is("deleted_at", null)
@@ -392,13 +392,13 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         const [mentorResult, eventsResult, unreadMessagesResult] = await Promise.all([
           db
             .from("mentors")
-            .select("id, headline, description, expertise, hourly_rate, years_experience, is_available, approval_status, rating, total_sessions")
+            .select("id, headline, description, expertise, hourly_rate, years_experience, is_available, availability, approval_status, rating, total_sessions")
             .eq("user_id", user.id)
             .is("deleted_at", null)
             .maybeSingle(),
           db
             .from("events")
-            .select("id, organizer_type, organizer_id, title, description, event_type, format, location, meeting_url, start_date, end_date, registration_deadline, capacity, ticket_price, currency, status, created_at")
+            .select("id, organizer_type, organizer_id, title, description, event_type, format, location, meeting_url, start_date, end_date, registration_deadline, capacity, ticket_price, currency, status, attachment_path, attachment_name, attachment_mime_type, created_at")
             .eq("organizer_user_id", user.id)
             .eq("organizer_type", "mentor")
             .is("deleted_at", null)
@@ -519,6 +519,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
                   hourly_rate: mentor.hourly_rate,
                   years_experience: mentor.years_experience,
                   is_available: mentor.is_available,
+                  availability: mentor.availability,
                   approval_status: mentor.approval_status,
                 }
               : null,

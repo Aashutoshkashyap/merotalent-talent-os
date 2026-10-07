@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   Bell,
   ChevronDown,
@@ -29,7 +29,7 @@ interface AdminHeaderProps {
 const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
   const { profile, signOut } = useAuth();
   const [query, setQuery] = useState("");
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -43,25 +43,6 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
 
     window.addEventListener("keydown", focusCommandSearch);
     return () => window.removeEventListener("keydown", focusCommandSearch);
-  }, []);
-
-  useEffect(() => {
-    const fetchUnreadCounts = async () => {
-      const [{ count: notifCount }, { count: queryCount }] = await Promise.all([
-        supabase
-          .from("notifications")
-          .select("id", { count: "exact", head: true })
-          .eq("is_read", false),
-        supabase
-          .from("contact_queries")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
-      ]);
-
-      setUnreadCount(notifCount || 0);
-    };
-
-    void fetchUnreadCounts();
   }, []);
 
   const runCommand = (event: FormEvent) => {

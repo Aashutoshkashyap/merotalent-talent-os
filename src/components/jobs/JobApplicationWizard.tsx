@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,7 +81,13 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
     setFullName(profile?.full_name || "");
     setEmail(user?.email || profile?.email || "");
     setPhone(profile?.phone || "");
-  }, [isOpen, profile?.email, profile?.full_name, profile?.phone, user?.email]);
+    const savedSkills = Array.isArray(profile?.skills) ? profile.skills.filter(Boolean) : [];
+    if (savedSkills.length) setSkillsText(savedSkills.join(", "));
+    const experience = Array.isArray(profile?.experience_history) ? profile.experience_history : [];
+    if (experience.length) {
+      setExperienceSummary(experience.map((entry) => [entry.role, entry.organization, entry.startDate && entry.endDate ? `${entry.startDate}–${entry.endDate}` : "", entry.description].filter(Boolean).join(" · ")).join("\n"));
+    }
+  }, [isOpen, profile?.email, profile?.experience_history, profile?.full_name, profile?.phone, profile?.skills, user?.email]);
 
   const handleResumeUploaded = (assets: SignedMediaAsset[]) => {
     const asset = assets[0];
@@ -115,50 +120,25 @@ const JobApplicationWizard = ({ isOpen, onClose, onSubmitted, job }: JobApplicat
     setFieldErrors({});
 
     try {
-      try {
-        await submitAuthenticatedModuleForm({
-          accessToken: session.access_token,
-          module: "job_application",
-          values: {
-            jobId: job.id,
-            fullName,
-            email,
-            phone,
-            resumeUrl,
-            coverLetter,
-            portfolioUrl,
-            skills: typedSkills,
-            ...(expectedSalary.trim() ? { expectedSalary: Number(expectedSalary) } : {}),
-            ...(experienceSummary.trim() ? { experienceSummary: experienceSummary.trim() } : {}),
-            ...(experienceLetterUrl ? { experienceLetterUrl } : {}),
-            ...(trainingSummary.trim() ? { trainingSummary: trainingSummary.trim() } : {}),
-            ...(trainingDocumentUrl ? { trainingDocumentUrl } : {}),
-          },
-        });
-      } catch (submitErr) {
-        // Fallback: Direct insert into job_applications table
-        const { error: directErr } = await (supabase as any)
-          .from("job_applications")
-          .insert({
-            job_id: job.id,
-            user_id: user.id,
-            full_name: fullName.trim() || user.email,
-            email: email.trim() || user.email,
-            phone: phone.trim() || null,
-            resume_url: resumeUrl || null,
-            cover_letter: coverLetter.trim() || null,
-            portfolio_url: portfolioUrl.trim() || null,
-            status: "submitted",
-            form_data: {
-              jobId: job.id,
-              fullName,
-              email,
-              phone,
-              skills: typedSkills,
-            },
-          });
-        if (directErr) throw submitErr;
-      }
+      await submitAuthenticatedModuleForm({
+        accessToken: session.access_token,
+        module: "job_application",
+        values: {
+          jobId: job.id,
+          fullName,
+          email,
+          phone,
+          resumeUrl,
+          coverLetter,
+          portfolioUrl,
+          skills: typedSkills,
+          ...(expectedSalary.trim() ? { expectedSalary: Number(expectedSalary) } : {}),
+          ...(experienceSummary.trim() ? { experienceSummary: experienceSummary.trim() } : {}),
+          ...(experienceLetterUrl ? { experienceLetterUrl } : {}),
+          ...(trainingSummary.trim() ? { trainingSummary: trainingSummary.trim() } : {}),
+          ...(trainingDocumentUrl ? { trainingDocumentUrl } : {}),
+        },
+      });
 
       // Log to local activity tracker so it immediately reflects in My Activity & Dashboard counters
       const { logUserActivity } = await import("@/lib/activityLogger");

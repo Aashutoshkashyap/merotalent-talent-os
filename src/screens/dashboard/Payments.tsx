@@ -82,6 +82,7 @@ type Transaction = {
 };
 
 const moduleLabel = (value: string) => ({ college: "College", jobs: "Jobs", mentor: "Mentorship", events: "Events" }[value] ?? value);
+const moduleWorkspacePath = (value: string) => ({ college: "/institute", jobs: "/company", events: "/company", mentor: "/mentor" }[value] ?? "/dashboard");
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat("en-NP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(new Date(value)) : "No expiry";
 const featureLabel = (feature: string) => feature.replaceAll("_", " ").replaceAll(".", " · ");
 
@@ -299,9 +300,13 @@ export default function Payments() {
     }
   };
 
-  const compatibleScopes = useMemo(() => selectedPlan ? overview.scopes.filter((scope) => selectedPlan.module_scope?.includes(scope.module)) : [], [overview.scopes, selectedPlan]);
+  const activeEntitlementKeys = useMemo(() => new Set(overview.entitlements
+    .filter((entitlement) => entitlement.status === "active" && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() > Date.now()))
+    .map((entitlement) => `${entitlement.module_key}:${entitlement.entity_type}:${entitlement.entity_id}`)), [overview.entitlements]);
+  const isScopeActive = useCallback((scope: Scope) => activeEntitlementKeys.has(`${scope.module}:${scope.entityType}:${scope.entityId}`), [activeEntitlementKeys]);
+  const compatibleScopes = useMemo(() => selectedPlan ? overview.scopes.filter((scope) => selectedPlan.module_scope?.includes(scope.module) && !isScopeActive(scope)) : [], [isScopeActive, overview.scopes, selectedPlan]);
   const selectedScope = compatibleScopes.find((scope) => scope.id === selectedScopeId);
-  const openPlan = (plan: Plan) => { setSelectedPlan(plan); setSelectedScopeId(overview.scopes.find((scope) => plan.module_scope?.includes(scope.module))?.id ?? ""); };
+  const openPlan = (plan: Plan) => { setSelectedPlan(plan); setSelectedScopeId(overview.scopes.find((scope) => plan.module_scope?.includes(scope.module) && !isScopeActive(scope))?.id ?? ""); };
 
   const beginCheckout = async () => {
     if (!selectedPlan || !selectedScope) return;
@@ -492,7 +497,10 @@ export default function Payments() {
             {loading ? (
               <p className="text-sm text-slate-500">Loading packages…</p>
             ) : overview.plans.map((plan) => {
-              const available = overview.scopes.some((scope) => plan.module_scope?.includes(scope.module));
+              const matchingScopes = overview.scopes.filter((scope) => plan.module_scope?.includes(scope.module));
+              const available = matchingScopes.some((scope) => !isScopeActive(scope));
+              const activeOnly = matchingScopes.length > 0 && !available;
+              const workspaceModule = matchingScopes[0]?.module || plan.module_scope?.[0] || "";
               return (
                 <Card key={plan.id} className="flex flex-col rounded-3xl border-slate-200/80 shadow-2xs">
                   <CardHeader>
@@ -508,9 +516,15 @@ export default function Payments() {
                         </p>
                       ))}
                     </div>
-                    <Button className="w-full bg-[#071a3d] text-white hover:bg-[#05132d]" disabled={!available} onClick={() => openPlan(plan)}>
-                      {available ? "Review & pay with eSewa" : "No matching assigned entity"}
-                    </Button>
+                    {activeOnly ? (
+                      <Button asChild className="w-full bg-emerald-700 text-white hover:bg-emerald-800">
+                        <Link to={moduleWorkspacePath(workspaceModule)}>Active — open workspace</Link>
+                      </Button>
+                    ) : (
+                      <Button className="w-full bg-[#071a3d] text-white hover:bg-[#05132d]" disabled={!available} onClick={() => openPlan(plan)}>
+                        {available ? "Review & pay with eSewa" : "No matching assigned entity"}
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );

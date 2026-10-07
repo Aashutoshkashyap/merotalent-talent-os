@@ -39,6 +39,7 @@ interface Mentor {
   name: string;
   hourlyRate: number;
   expertise: string[];
+  availability?: { days?: string[]; startTime?: string; endTime?: string; timezone?: string } | null;
 }
 
 interface BookingDialogProps {
@@ -59,17 +60,9 @@ interface MentorService {
   currency: string;
 }
 
-const timeSlots = [
-  "09:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "02:00 PM",
-  "03:00 PM",
-  "04:00 PM",
-  "05:00 PM",
-  "06:00 PM",
-];
+const defaultTimeSlots = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const timeLabel = (value: string) => new Date(`2000-01-01T${value}:00`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) => {
   const form = document.createElement("form");
@@ -149,6 +142,12 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
   }, [isOpen, mentor.id]);
 
   const selectedService = services.find((service) => service.id === selectedServiceId) ?? null;
+  const timeSlots = defaultTimeSlots.filter((time) => {
+    const start = mentor.availability?.startTime;
+    const end = mentor.availability?.endTime;
+    return (!start || time >= start) && (!end || time < end);
+  });
+  const availableDays = mentor.availability?.days ?? [];
   const durationMinutes = selectedService?.duration_minutes ?? Number(duration);
   const estimatedAmount = selectedService?.price ?? mentor.hourlyRate * (durationMinutes / 60);
 
@@ -215,52 +214,23 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
     setIsProcessing(true);
     setFieldErrors({});
     try {
-      let result: { id: string } | null = null;
-      try {
-        result = await submitAuthenticatedModuleForm({
-          accessToken: session.access_token,
-          module: "mentor_booking",
-          values: {
-            mentorId: mentor.id,
-            ...(selectedService ? { mentorServiceId: selectedService.id } : {}),
-            fullName: fullName.trim() || user.email,
-            email: email.trim() || user.email,
-            phone: phone.trim(),
-            scheduledDate: format(selectedDate, "yyyy-MM-dd"),
-            scheduledTime: selectedTime,
-            durationMinutes: String(durationMinutes),
-            topic,
-            notes: [address ? `Location: ${address}` : "", notes].filter(Boolean).join("\n"),
-            paymentMethod: "esewa",
-          },
-        });
-      } catch (submitErr) {
-        // Direct table fallback
-        const scheduledStart = `${format(selectedDate, "yyyy-MM-dd")}T${selectedTime || "10:00"}:00Z`;
-        const startDate = new Date(scheduledStart);
-        const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
-
-        const { data: directBooking, error: directErr } = await (supabase as any)
-          .from("mentor_bookings")
-          .insert({
-            mentor_id: mentor.id,
-            mentor_service_id: selectedService?.id || null,
-            student_id: user.id,
-            scheduled_start: startDate.toISOString(),
-            scheduled_end: endDate.toISOString(),
-            status: "pending",
-            payment_status: "pending",
-            amount: estimatedAmount,
-            currency: "NPR",
-            notes: [topic, address ? `Location: ${address}` : "", notes].filter(Boolean).join("\n"),
-            form_data: { mentorId: mentor.id, fullName, email, phone, topic, notes },
-          })
-          .select("id")
-          .single();
-
-        if (directErr || !directBooking) throw submitErr;
-        result = { id: directBooking.id };
-      }
+      const result = await submitAuthenticatedModuleForm({
+        accessToken: session.access_token,
+        module: "mentor_booking",
+        values: {
+          mentorId: mentor.id,
+          ...(selectedService ? { mentorServiceId: selectedService.id } : {}),
+          fullName: fullName.trim() || user.email,
+          email: email.trim() || user.email,
+          phone: phone.trim(),
+          scheduledDate: format(selectedDate, "yyyy-MM-dd"),
+          scheduledTime: selectedTime,
+          durationMinutes: String(durationMinutes),
+          topic,
+          notes: [address ? `Location: ${address}` : "", notes].filter(Boolean).join("\n"),
+          paymentMethod: "esewa",
+        },
+      });
 
       if (estimatedAmount > 0) {
         toast({
@@ -341,7 +311,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || date.getDay() === 0}
+                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || (availableDays.length > 0 && !availableDays.includes(dayNames[date.getDay()]))}
                 className="rounded-md border"
               />
               {fieldErrors.scheduledDate?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.scheduledDate[0]}</p>}
@@ -359,7 +329,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
                     onClick={() => setSelectedTime(time)}
                     className="text-xs"
                   >
-                    {time}
+                    {timeLabel(time)}
                   </Button>
                 ))}
               </div>
@@ -525,4 +495,3 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
 };
 
 export default BookingDialog;
-

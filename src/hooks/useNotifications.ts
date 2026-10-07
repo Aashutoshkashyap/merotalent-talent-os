@@ -52,13 +52,21 @@ export function useNotifications() {
     // The table keys the recipient as recipient_id and the flag as is_read.
     // This hook used user_id and read, so every query failed with 42703 and the
     // list silently fell back to a fabricated notification.
-    const { data, error } = await (supabase as any)
-      .from("notifications")
-      .select("id, recipient_id, title, message, type, is_read, action_url, created_at")
-      .eq("recipient_id", user.id)
-      .order("created_at", { ascending: false });
+    const [{ data, error }, { count, error: countError }] = await Promise.all([
+      (supabase as any)
+        .from("notifications")
+        .select("id, recipient_id, title, message, type, is_read, action_url, created_at")
+        .eq("recipient_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      (supabase as any)
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", user.id)
+        .eq("is_read", false),
+    ]);
 
-    if (error) {
+    if (error || countError) {
       console.error("Failed to load notifications", error);
       setNotifications([]);
       setUnreadCount(0);
@@ -79,7 +87,9 @@ export function useNotifications() {
     }));
 
     setNotifications(formatted);
-    setUnreadCount(formatted.filter((n) => !n.read).length);
+    // The badge is the exact unread total for this recipient, not merely the
+    // unread rows in the recent-notification window rendered by the menu.
+    setUnreadCount(Math.max(0, count ?? 0));
   }, [user]);
 
   useEffect(() => {
@@ -124,11 +134,12 @@ export function useNotifications() {
   };
 
   const markAsRead = async (id: string) => {
+    const wasUnread = notifications.some((notification) => notification.id === id && !notification.read);
     saveReadNotifId(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
 
     if (user) {
       const { error } = await (supabase as any)

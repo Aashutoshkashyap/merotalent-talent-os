@@ -46,7 +46,7 @@ interface ModuleSubmissionDialogProps {
   targetName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmitted?: (result: { id: string; status: string }) => void;
+  onSubmitted?: (result: { id: string; status: string }) => void | Promise<void>;
   successTitle?: string;
   successDescription?: string;
 }
@@ -177,8 +177,8 @@ export default function ModuleSubmissionDialog({
         module,
         values,
       });
+      if (onSubmitted) await onSubmitted(result);
       setSubmitted(true);
-      onSubmitted?.(result);
     } catch (error) {
       if (error instanceof ModuleFormClientError) {
         setFieldErrors(error.fields);

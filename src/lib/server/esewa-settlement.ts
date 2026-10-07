@@ -242,7 +242,7 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
 
     const bookingUpdate = input.status === "successful"
       ? { payment_status: "success", status: "confirmed", ...(paymentId ? { payment_id: paymentId } : {}) }
-      : { payment_status: "failed", status: "pending" };
+      : { payment_status: "failed", status: "cancelled" };
     const { error: bookingError } = await db.from("mentor_bookings").update(bookingUpdate).eq("id", checkout.entity_id);
     if (bookingError) throw bookingError;
 
@@ -287,7 +287,7 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
 
     const regUpdate = input.status === "successful"
       ? { payment_status: "success", status: "confirmed", ...(paymentId ? { payment_id: paymentId } : {}) }
-      : { payment_status: "failed", status: "pending" };
+      : { payment_status: "failed", status: "cancelled" };
     const { error: regError } = await db.from("event_registrations").update(regUpdate).eq("id", checkout.entity_id);
     if (regError) throw regError;
 

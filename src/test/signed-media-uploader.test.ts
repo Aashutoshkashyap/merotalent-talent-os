@@ -63,6 +63,8 @@ describe("signed college media upload client", () => {
       bucket: "college-media",
       path: objectPath,
       publicUrl: `https://storage.example/college-media/${objectPath}`,
+      fileName: "logo.png",
+      contentType: "image/png",
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -108,7 +110,7 @@ describe("signed college media upload client", () => {
 
     await expect(
       uploadSignedCollegeMedia(file, "job_attachment", resourceId),
-    ).resolves.toEqual({ bucket: "job-files", path: jobPath, publicUrl: "" });
+    ).resolves.toEqual({ bucket: "job-files", path: jobPath, publicUrl: "", fileName: "resume.pdf", contentType: "application/pdf" });
 
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
       module: "job_attachment",

@@ -395,7 +395,7 @@ const resources = {
   events: {
     resource: "events",
     table: "events",
-    select: "id,organizer_user_id,organizer_type,organizer_id,title,slug,description,event_type,format,location,meeting_url,cover_image_url,start_date,end_date,registration_deadline,capacity,ticket_price,currency,status,approval_status,is_active,approved_by,approved_at,rejection_reason,is_featured,created_at,updated_at,deleted_at",
+    select: "id,organizer_user_id,organizer_type,organizer_id,title,slug,description,event_type,format,location,meeting_url,cover_image_url,attachment_path,attachment_name,attachment_mime_type,start_date,end_date,registration_deadline,capacity,ticket_price,currency,status,approval_status,is_active,approved_by,approved_at,rejection_reason,is_featured,created_at,updated_at,deleted_at",
     searchColumn: "title",
     sortColumns: ["title", "start_date", "created_at", "updated_at"],
     defaultSort: "start_date",
@@ -443,6 +443,9 @@ const resources = {
       is_active: { kind: "boolean", create: false, update: false },
       rejection_reason: text({ create: true, update: true, nullable: true, maxLength: 2_000 }),
       cover_image_url: { kind: "url", create: true, update: true, nullable: true },
+      attachment_path: text({ create: true, update: true, nullable: true, maxLength: 512 }),
+      attachment_name: text({ create: true, update: true, nullable: true, maxLength: 180 }),
+      attachment_mime_type: text({ create: true, update: true, nullable: true, maxLength: 160 }),
       is_featured: { kind: "boolean", create: true, update: true },
     },
     softDelete: { mode: "timestamp", column: "deleted_at" },

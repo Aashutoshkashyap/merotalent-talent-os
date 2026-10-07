@@ -25,6 +25,9 @@ interface Profile {
   linkedin_url: string | null;
   education: string | null;
   experience_level: string | null;
+  education_history?: Record<string, string>[] | null;
+  experience_history?: Record<string, string>[] | null;
+  certifications?: Record<string, string>[] | null;
   skills: string[] | null;
   resume_url: string | null;
   onboarding_completed: boolean | null;

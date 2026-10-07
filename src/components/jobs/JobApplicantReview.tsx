@@ -13,7 +13,14 @@ type Application = {
   interview_at: string | null; interview_location: string | null; interview_duration_minutes: number | null;
 };
 const statuses: Record<string, string> = { submitted: "New", screening: "Screening", follow_up: "Yet to follow up", interview: "Interview scheduled", offered: "Selected / offered", confirmed: "Confirmed", rejected: "Rejected", withdrawn: "Withdrawn" };
-const display = (value: unknown) => Array.isArray(value) ? value.map(String).join(", ") : typeof value === "string" || typeof value === "number" ? String(value) : "Not provided";
+const display = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => typeof entry === "object" && entry !== null
+      ? Object.values(entry).filter((part) => typeof part === "string" && part.trim()).join(" · ")
+      : String(entry)).filter(Boolean).join("\n");
+  }
+  return typeof value === "string" || typeof value === "number" ? String(value) : "Not provided";
+};
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 const fields = (a: Application): [string, unknown][] => [
   ["Applicant", a.full_name], ["Email", a.email], ["Phone", a.phone], ["Position", a.job_title],
@@ -21,6 +28,10 @@ const fields = (a: Application): [string, unknown][] => [
   ["Skills", a.form_data.skills], ["Expected salary (NPR)", a.form_data.expectedSalary],
   ["Cover letter", a.cover_letter || a.form_data.coverLetter], ["Portfolio", a.portfolio_url || a.form_data.portfolioUrl],
   ["Available from", a.form_data.availableFrom], ["Experience", a.form_data.experienceSummary], ["Training", a.form_data.trainingSummary],
+  ["Saved profile location", (a.form_data.profileSnapshot as Record<string, unknown> | undefined)?.location],
+  ["Saved education history", (a.form_data.profileSnapshot as Record<string, unknown> | undefined)?.educationHistory],
+  ["Saved experience history", (a.form_data.profileSnapshot as Record<string, unknown> | undefined)?.experienceHistory],
+  ["Saved certifications", (a.form_data.profileSnapshot as Record<string, unknown> | undefined)?.certifications],
   ["Interview", a.interview_at ? new Date(a.interview_at).toLocaleString() : null], ["Interview location / link", a.interview_location],
   ["Duration (minutes)", a.interview_duration_minutes], ["Hiring notes", a.notes],
 ];

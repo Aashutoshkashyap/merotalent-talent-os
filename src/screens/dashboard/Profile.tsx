@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  User, Mail, Phone, MapPin, Loader2, Save, Award, Trophy, 
+  User, Mail, Phone, MapPin, Loader2, Save,
   Linkedin, GraduationCap, Briefcase, FileText, Link2, X, CheckCircle 
 } from "lucide-react";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
@@ -35,6 +35,23 @@ const EXPERIENCE_LEVELS = [
   { value: "5+", label: "5+ years" },
 ];
 
+type EducationEntry = { institution: string; degree: string; field: string; startYear: string; endYear: string };
+type ExperienceEntry = { organization: string; role: string; startDate: string; endDate: string; description: string };
+type CertificationEntry = { name: string; issuer: string; issuedDate: string };
+
+const emptyEducation = (): EducationEntry => ({ institution: "", degree: "", field: "", startYear: "", endYear: "" });
+const emptyExperience = (): ExperienceEntry => ({ organization: "", role: "", startDate: "", endDate: "", description: "" });
+const emptyCertification = (): CertificationEntry => ({ name: "", issuer: "", issuedDate: "" });
+
+const isValidLinkedInProfileUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && /(^|\.)linkedin\.com$/i.test(url.hostname) && /^\/in\/[A-Za-z0-9_%.-]+\/?$/.test(url.pathname);
+  } catch {
+    return false;
+  }
+};
+
 const Profile = () => {
   const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
@@ -44,6 +61,9 @@ const Profile = () => {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [educationHistory, setEducationHistory] = useState<EducationEntry[]>([]);
+  const [experienceHistory, setExperienceHistory] = useState<ExperienceEntry[]>([]);
+  const [certifications, setCertifications] = useState<CertificationEntry[]>([]);
   
   const [formData, setFormData] = useState({
     full_name: "",
@@ -66,6 +86,9 @@ const Profile = () => {
         education: (profile as any).education || "",
         experience_level: (profile as any).experience_level || "",
       });
+      setEducationHistory(Array.isArray(profile.education_history) ? profile.education_history as EducationEntry[] : []);
+      setExperienceHistory(Array.isArray(profile.experience_history) ? profile.experience_history as ExperienceEntry[] : []);
+      setCertifications(Array.isArray(profile.certifications) ? profile.certifications as CertificationEntry[] : []);
     }
     fetchSkills();
     fetchUserSkills();
@@ -104,6 +127,11 @@ const Profile = () => {
         user_id: targetUserId,
         email: user?.email || profile?.email || "",
         ...formData,
+        education: formData.education.trim() || [educationHistory[0]?.degree, educationHistory[0]?.field].filter(Boolean).join(" in ") || null,
+        linkedin_url: formData.linkedin_url.trim() || null,
+        education_history: educationHistory.filter((item) => item.institution.trim() || item.degree.trim()),
+        experience_history: experienceHistory.filter((item) => item.organization.trim() || item.role.trim()),
+        certifications: certifications.filter((item) => item.name.trim() || item.issuer.trim()),
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
 
@@ -261,9 +289,7 @@ const Profile = () => {
       return;
     }
 
-    // Validate LinkedIn URL format
-    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/;
-    if (!linkedinRegex.test(formData.linkedin_url)) {
+    if (!isValidLinkedInProfileUrl(formData.linkedin_url)) {
       toast({
         variant: "destructive",
         title: "Invalid LinkedIn URL",
@@ -335,7 +361,7 @@ const Profile = () => {
               <h3 className="mt-2 font-semibold text-lg">{profile?.full_name || "User"}</h3>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
               
-              {formData.linkedin_url && (
+              {isValidLinkedInProfileUrl(formData.linkedin_url) && (
                 <a 
                   href={formData.linkedin_url} 
                   target="_blank" 
@@ -347,22 +373,6 @@ const Profile = () => {
                 </a>
               )}
               
-              <div className="flex justify-center gap-4 mt-4">
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 mx-auto">
-                    <Trophy className="w-5 h-5 text-primary" />
-                  </div>
-                  <p className="text-sm font-medium mt-1">12</p>
-                  <p className="text-xs text-muted-foreground">Competitions</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary/10 mx-auto">
-                    <Award className="w-5 h-5 text-secondary" />
-                  </div>
-                  <p className="text-sm font-medium mt-1">8</p>
-                  <p className="text-xs text-muted-foreground">Badges</p>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -525,6 +535,45 @@ const Profile = () => {
                       )}
                     </div>
                   </div>
+
+                  <div className="space-y-3 border-t pt-4">
+                    <div className="flex items-center justify-between"><div><Label>Education history</Label><p className="text-xs text-muted-foreground">Add the institutions and programs employers should see.</p></div><Button type="button" variant="outline" size="sm" onClick={() => setEducationHistory((items) => [...items, emptyEducation()])}>Add education</Button></div>
+                    {educationHistory.map((item, index) => (
+                      <div key={`education-${index}`} className="grid gap-3 rounded-xl border p-3 md:grid-cols-2">
+                        <Input aria-label={`Education ${index + 1} institution`} placeholder="Institution" value={item.institution} onChange={(event) => setEducationHistory((items) => items.map((entry, i) => i === index ? { ...entry, institution: event.target.value } : entry))} />
+                        <Input aria-label={`Education ${index + 1} degree`} placeholder="Degree or program" value={item.degree} onChange={(event) => setEducationHistory((items) => items.map((entry, i) => i === index ? { ...entry, degree: event.target.value } : entry))} />
+                        <Input aria-label={`Education ${index + 1} field`} placeholder="Field of study" value={item.field} onChange={(event) => setEducationHistory((items) => items.map((entry, i) => i === index ? { ...entry, field: event.target.value } : entry))} />
+                        <div className="flex gap-2"><Input aria-label={`Education ${index + 1} start year`} inputMode="numeric" placeholder="Start year" value={item.startYear} onChange={(event) => setEducationHistory((items) => items.map((entry, i) => i === index ? { ...entry, startYear: event.target.value } : entry))} /><Input aria-label={`Education ${index + 1} end year`} inputMode="numeric" placeholder="End year" value={item.endYear} onChange={(event) => setEducationHistory((items) => items.map((entry, i) => i === index ? { ...entry, endYear: event.target.value } : entry))} /></div>
+                        <Button type="button" variant="ghost" className="justify-self-start text-destructive md:col-span-2" onClick={() => setEducationHistory((items) => items.filter((_, i) => i !== index))}>Remove</Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3 border-t pt-4">
+                    <div className="flex items-center justify-between"><div><Label>Experience history</Label><p className="text-xs text-muted-foreground">Experience is optional and reused in job applications.</p></div><Button type="button" variant="outline" size="sm" onClick={() => setExperienceHistory((items) => [...items, emptyExperience()])}>Add experience</Button></div>
+                    {experienceHistory.map((item, index) => (
+                      <div key={`experience-${index}`} className="grid gap-3 rounded-xl border p-3 md:grid-cols-2">
+                        <Input aria-label={`Experience ${index + 1} organization`} placeholder="Organization" value={item.organization} onChange={(event) => setExperienceHistory((items) => items.map((entry, i) => i === index ? { ...entry, organization: event.target.value } : entry))} />
+                        <Input aria-label={`Experience ${index + 1} role`} placeholder="Role" value={item.role} onChange={(event) => setExperienceHistory((items) => items.map((entry, i) => i === index ? { ...entry, role: event.target.value } : entry))} />
+                        <Input aria-label={`Experience ${index + 1} start date`} type="month" value={item.startDate} onChange={(event) => setExperienceHistory((items) => items.map((entry, i) => i === index ? { ...entry, startDate: event.target.value } : entry))} />
+                        <Input aria-label={`Experience ${index + 1} end date`} type="month" value={item.endDate} onChange={(event) => setExperienceHistory((items) => items.map((entry, i) => i === index ? { ...entry, endDate: event.target.value } : entry))} />
+                        <Textarea aria-label={`Experience ${index + 1} description`} className="md:col-span-2" placeholder="Responsibilities and achievements" value={item.description} onChange={(event) => setExperienceHistory((items) => items.map((entry, i) => i === index ? { ...entry, description: event.target.value } : entry))} />
+                        <Button type="button" variant="ghost" className="justify-self-start text-destructive md:col-span-2" onClick={() => setExperienceHistory((items) => items.filter((_, i) => i !== index))}>Remove</Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3 border-t pt-4">
+                    <div className="flex items-center justify-between"><div><Label>Certifications</Label><p className="text-xs text-muted-foreground">Add relevant certifications or training awards.</p></div><Button type="button" variant="outline" size="sm" onClick={() => setCertifications((items) => [...items, emptyCertification()])}>Add certification</Button></div>
+                    {certifications.map((item, index) => (
+                      <div key={`certification-${index}`} className="grid gap-3 rounded-xl border p-3 md:grid-cols-3">
+                        <Input aria-label={`Certification ${index + 1} name`} placeholder="Certification name" value={item.name} onChange={(event) => setCertifications((items) => items.map((entry, i) => i === index ? { ...entry, name: event.target.value } : entry))} />
+                        <Input aria-label={`Certification ${index + 1} issuer`} placeholder="Issuer" value={item.issuer} onChange={(event) => setCertifications((items) => items.map((entry, i) => i === index ? { ...entry, issuer: event.target.value } : entry))} />
+                        <Input aria-label={`Certification ${index + 1} issue date`} type="month" value={item.issuedDate} onChange={(event) => setCertifications((items) => items.map((entry, i) => i === index ? { ...entry, issuedDate: event.target.value } : entry))} />
+                        <Button type="button" variant="ghost" className="justify-self-start text-destructive md:col-span-3" onClick={() => setCertifications((items) => items.filter((_, i) => i !== index))}>Remove</Button>
+                      </div>
+                    ))}
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="linkedin" className="space-y-4">
@@ -572,7 +621,7 @@ const Profile = () => {
                     )}
                   </Button>
 
-                  {formData.linkedin_url && (
+                  {isValidLinkedInProfileUrl(formData.linkedin_url) && (
                     <div className="flex items-center gap-2 text-sm text-green-600">
                       <CheckCircle className="w-4 h-4" />
                       LinkedIn profile linked

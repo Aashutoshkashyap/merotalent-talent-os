@@ -35,6 +35,8 @@ export interface SignedMediaAsset {
   bucket: string;
   path: string;
   publicUrl: string;
+  fileName: string;
+  contentType: string;
 }
 
 const signedBucketByModule: Partial<Record<CollegeMediaModule, string>> = {
@@ -275,11 +277,11 @@ export async function uploadSignedCollegeMedia(
     throw new Error(uploadError.message || "The file upload failed.");
   }
 
-  const publicUrl = module === "job_attachment"
+  const publicUrl = module === "job_attachment" || module === "event_attachment"
     ? ""
     : supabase.storage.from(expectedBucket).getPublicUrl(path).data.publicUrl;
 
-  return { bucket: expectedBucket, path, publicUrl };
+  return { bucket: expectedBucket, path, publicUrl, fileName: processedFile.name, contentType: processedFile.type };
 }
 
 export function SignedMediaUploader({
