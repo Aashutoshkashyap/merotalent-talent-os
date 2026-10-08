@@ -11,11 +11,14 @@ node_modules
 dist
 dist-ssr
 .next
+.next-neon-staging
 out
 .vercel
 *.tsbuildinfo
 *.local
 .env
+.env.*
+.migration.env
 .seeds/*.json
 !.seeds/users.example.json
 supabase/.temp/
@@ -35,4 +38,3 @@ Edusanjal - Your Guide to Education in Nepal_files/
 *.njsproj
 *.sln
 *.sw?
-
