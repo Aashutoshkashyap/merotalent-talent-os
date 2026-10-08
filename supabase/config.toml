@@ -9,6 +9,14 @@ enable_confirmations = true
 max_frequency = "1m0s"
 otp_length = 8
 
+[auth.email.smtp]
+admin_email = "noreply@merotalent.com"
+host = "smtp.resend.com"
+port = 587
+user = "resend"
+pass = "env(RESEND_SMTP_PASSWORD)"
+sender_name = "MeroTalent"
+
 [auth.email.template.recovery]
 subject = "Reset your MeroTalent password"
 content_path = "./supabase/templates/recovery.html"
