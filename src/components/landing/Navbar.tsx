@@ -39,13 +39,7 @@ const Navbar = () => {
 
   const targetDashboard = roles.includes("admin") || roles.includes("super_admin")
     ? "/admin"
-    : roles.includes("institution")
-      ? "/institute"
-      : roles.includes("company")
-        ? "/company"
-        : roles.includes("mentor")
-          ? "/mentor"
-          : "/dashboard";
+    : "/dashboard";
 
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#eadfd9] bg-[#fffdfb]/92 backdrop-blur-xl">

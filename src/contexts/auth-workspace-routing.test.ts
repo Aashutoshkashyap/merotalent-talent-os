@@ -7,15 +7,15 @@ describe("resolveWorkspacePath", () => {
     expect(resolveWorkspacePath(["admin"], ["college.manage"])).toBe("/admin");
   });
 
-  it("routes delegated module access without needing a self-assigned role", () => {
-    expect(resolveWorkspacePath(["talent"], ["college.manage"])).toBe("/institute");
-    expect(resolveWorkspacePath(["talent"], ["job.post"])).toBe("/company");
-    expect(resolveWorkspacePath(["talent"], ["mentor.manage"])).toBe("/mentor");
+  it("keeps delegated module access on the shared student dashboard by default", () => {
+    expect(resolveWorkspacePath(["talent"], ["college.manage"])).toBe("/dashboard");
+    expect(resolveWorkspacePath(["talent"], ["job.post"])).toBe("/dashboard");
+    expect(resolveWorkspacePath(["talent"], ["mentor.manage"])).toBe("/dashboard");
   });
 
-  it("routes an approved module capability without a legacy primary role", () => {
-    expect(resolveWorkspacePath(["talent"], [], ["college"])).toBe("/institute");
-    expect(resolveWorkspacePath(["talent"], [], ["jobs"])).toBe("/company");
-    expect(resolveWorkspacePath(["talent"], [], ["mentor"])).toBe("/mentor");
+  it("keeps approved module capabilities as explicit workspace navigation", () => {
+    expect(resolveWorkspacePath(["talent"], [], ["college"])).toBe("/dashboard");
+    expect(resolveWorkspacePath(["talent"], [], ["jobs"])).toBe("/dashboard");
+    expect(resolveWorkspacePath(["talent"], [], ["mentor"])).toBe("/dashboard");
   });
 });

@@ -5,12 +5,15 @@
  */
 export const resolveWorkspacePath = (
   roles: readonly string[],
-  permissions: readonly string[] = [],
-  capabilities: readonly string[] = [],
+  _permissions: readonly string[] = [],
+  _capabilities: readonly string[] = [],
 ) => {
   if (roles.includes("admin") || roles.includes("super_admin")) return "/admin";
-  if (roles.includes("institution") || permissions.includes("college.manage") || capabilities.includes("college")) return "/institute";
-  if (roles.includes("company") || permissions.includes("job.post") || capabilities.includes("jobs")) return "/company";
-  if (roles.includes("mentor") || permissions.includes("mentor.manage") || capabilities.includes("mentor")) return "/mentor";
+
+  // Every non-platform-admin account lands in the shared student dashboard.
+  // Module workspaces remain explicit destinations in dashboard navigation,
+  // where their own entitlement and entity-scope guards can render the
+  // correct locked/renewal state. This prevents an expired module assignment
+  // from replacing the user's normal signed-in landing experience.
   return "/dashboard";
 };
