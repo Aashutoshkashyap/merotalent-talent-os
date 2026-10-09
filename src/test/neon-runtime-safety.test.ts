@@ -74,19 +74,19 @@ describe("Neon staging safety boundary", () => {
     delete process.env.MEROTALENT_BACKEND_MODE;
     try {
       expect((await authRoute()).status).toBe(404);
-      expect((await realtimeRoute()).status).toBe(404);
+      expect((await realtimeRoute(new Request("https://staging.test/api/v1/realtime/stream"))).status).toBe(404);
     } finally {
       if (previous === undefined) delete process.env.MEROTALENT_BACKEND_MODE;
       else process.env.MEROTALENT_BACKEND_MODE = previous;
     }
   });
 
-  it("reports unavailable instead of false success in staging mode", async () => {
+  it("keeps experimental Auth unavailable and fails closed without staging event configuration", async () => {
     const previous = process.env.MEROTALENT_BACKEND_MODE;
     process.env.MEROTALENT_BACKEND_MODE = "neon-staging";
     try {
       expect((await authRoute()).status).toBe(503);
-      expect((await realtimeRoute()).status).toBe(503);
+      expect((await realtimeRoute(new Request("https://staging.test/api/v1/realtime/stream"))).status).toBe(503);
     } finally {
       if (previous === undefined) delete process.env.MEROTALENT_BACKEND_MODE;
       else process.env.MEROTALENT_BACKEND_MODE = previous;

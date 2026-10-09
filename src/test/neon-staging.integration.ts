@@ -12,6 +12,7 @@ import {
 } from "@/lib/server/neon-authorization";
 import { NeonRepositories } from "@/lib/server/neon-repositories";
 import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
+import { appendNotificationEvent, listApplicationEvents, requireConversationMembership } from "@/lib/server/neon-application-events";
 import { getNeonDatabaseConfig, NEON_MIGRATION_STAGING_BRANCH_ID } from "@/lib/neon/neon-config";
 import {
   deleteInstituteMedia, managedInstituteMediaSignedUrl,
@@ -79,6 +80,52 @@ describe("real Neon staging data and authorization policy", () => {
     expect(counts.institutes).toBe(295);
     expect(counts.jobs).toBeGreaterThan(0);
     expect(counts.notifications).toBeGreaterThan(0);
+  });
+
+  it("persists recipient-isolated event cursors and replays missed events after reconnect", async () => {
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
+      const users = (await client.query<{ user_id: string }>(`
+        SELECT user_id FROM public.profiles WHERE account_status='active' AND deleted_at IS NULL
+        ORDER BY user_id LIMIT 2`)).rows;
+      expect(users).toHaveLength(2);
+      const [baseline] = (await client.query<{ id: string }>(`
+        SELECT COALESCE(max(id), 0)::text AS id FROM public.neon_application_events`)).rows;
+      const first = (await client.query<{ id: string }>(`
+        INSERT INTO public.notifications(recipient_id,title,message)
+        VALUES ($1,'Staging event test','Isolated and rolled back') RETURNING id`, [users[0].user_id])).rows[0];
+      const second = (await client.query<{ id: string }>(`
+        INSERT INTO public.notifications(recipient_id,title,message)
+        VALUES ($1,'Staging event test','Isolated and rolled back') RETURNING id`, [users[1].user_id])).rows[0];
+      await appendNotificationEvent(client, users[0].user_id, first.id);
+      await appendNotificationEvent(client, users[1].user_id, second.id);
+      const txReader = { query: async <T extends import("pg").QueryResultRow>(sql: string, params: readonly unknown[]) =>
+        (await client.query<T>(sql, [...params])).rows };
+      const actorOne: NeonActor = {
+        userId: users[0].user_id, neonAuthUserId: "POLICY_ONLY", roles: [], permissions: [], platformAdmin: false,
+      };
+      const actorTwo: NeonActor = { ...actorOne, userId: users[1].user_id };
+      const one = await listApplicationEvents(actorOne, baseline.id, null, txReader);
+      const two = await listApplicationEvents(actorTwo, baseline.id, null, txReader);
+      expect(one.map(event => event.source_id)).toEqual([first.id]);
+      expect(two.map(event => event.source_id)).toEqual([second.id]);
+      expect(await listApplicationEvents(actorOne, one[0].id, null, txReader)).toEqual([]);
+      expect((await listApplicationEvents(actorOne, baseline.id, null, txReader))[0].id).toBe(one[0].id);
+    } finally {
+      await client.query("ROLLBACK").catch(() => undefined);
+      client.release();
+    }
+  });
+
+  it("denies a nonmember subscription to an unknown conversation", async () => {
+    const [profile] = await queryRows<{ user_id: string }>(`
+      SELECT user_id FROM public.profiles WHERE account_status='active' LIMIT 1`);
+    const actor: NeonActor = {
+      userId: profile.user_id, neonAuthUserId: "POLICY_ONLY", roles: [], permissions: [], platformAdmin: false,
+    };
+    await expect(requireConversationMembership(actor, randomUUID()))
+      .rejects.toMatchObject({ status: 403, code: "CONVERSATION_FORBIDDEN" });
   });
 
   it("queries both restored public views and confirms their visibility filters", async () => {
