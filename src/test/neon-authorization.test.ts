@@ -20,7 +20,7 @@ describe("Neon authorization boundary", () => {
     const db: NeonQueryExecutor = { query: async () => { throw new Error("must not query"); } };
     await expect(requireAuthenticatedUser(null, db)).rejects.toMatchObject({ status: 401 });
     await expect(requireAuthenticatedUser({
-      legacyUserId: student.userId, neonAuthUserId: "x", emailVerified: false,
+      legacyUserId: student.userId, neonAuthUserId: "x", linkVerified: false,
     } as never, db)).rejects.toMatchObject({ status: 401 });
   });
 

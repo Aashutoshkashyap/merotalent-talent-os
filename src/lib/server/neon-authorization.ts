@@ -18,7 +18,7 @@ export const neonQueryExecutor: NeonQueryExecutor = { query: queryRows };
 export interface VerifiedApplicationIdentity {
   neonAuthUserId: string;
   legacyUserId: string;
-  emailVerified: true;
+  linkVerified: true;
 }
 
 export interface NeonActor {
@@ -63,7 +63,7 @@ export async function requireAuthenticatedUser(
   identity: VerifiedApplicationIdentity | null,
   db: NeonQueryExecutor = neonQueryExecutor,
 ): Promise<NeonActor> {
-  if (!identity?.neonAuthUserId || !identity.legacyUserId || identity.emailVerified !== true) {
+  if (!identity?.neonAuthUserId || !identity.legacyUserId || identity.linkVerified !== true) {
     throw new NeonAuthorizationError(401, "AUTH_REQUIRED", "A verified session is required.");
   }
   const rows = await db.query<AccessRow>(`

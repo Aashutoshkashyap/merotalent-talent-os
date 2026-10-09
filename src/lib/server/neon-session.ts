@@ -9,7 +9,7 @@ import {
 } from "./neon-authorization";
 
 interface ManagedSession {
-  user: { id: string; emailVerified: boolean };
+  user: { id: string; emailVerified: boolean; banned?: boolean };
   session: { userId: string; expiresAt: string };
 }
 
@@ -69,14 +69,16 @@ export async function getAuthenticatedApplicationUser(
 ): Promise<NeonActor> {
   const session = await verifier.verify(request);
   if (!session) throw new NeonAuthorizationError(401, "AUTH_REQUIRED", "A valid session is required.");
-  if (session.user.emailVerified !== true) {
-    throw new NeonAuthorizationError(403, "EMAIL_NOT_VERIFIED", "Verify your email first.");
+  if (session.user.banned === true) {
+    throw new NeonAuthorizationError(403, "ACCOUNT_INACTIVE", "This account is inactive.");
   }
   let links: IdentityLink[];
   try {
     links = await queryRows<IdentityLink>(`
-      SELECT legacy_user_id FROM public.neon_identity_links
-      WHERE neon_auth_user_id = $1 AND status = 'verified' LIMIT 2`, [session.user.id]);
+      SELECT a.legacy_user_id FROM public.neon_identity_links l
+      JOIN public.neon_application_accounts a ON a.id = l.application_account_id
+      WHERE l.neon_auth_user_id = $1::uuid AND l.status = 'verified'
+        AND a.status = 'active' LIMIT 2`, [session.user.id]);
   } catch {
     // The mapping has not been provisioned. Never improvise a match by email.
     throw new NeonSessionUnavailable("Verified Neon-to-legacy identity mapping is unavailable.");
@@ -87,6 +89,6 @@ export async function getAuthenticatedApplicationUser(
   return requireAuthenticatedUser({
     neonAuthUserId: session.user.id,
     legacyUserId: links[0].legacy_user_id,
-    emailVerified: true,
+    linkVerified: true,
   });
 }

@@ -67,12 +67,15 @@ describe("real Neon staging data and authorization policy", () => {
   afterAll(async () => { await getPool().end(); });
 
   it("reads migrated profiles, institutions, jobs, and notifications", async () => {
-    const [counts] = await queryRows<{ profiles: number; institutes: number; jobs: number; notifications: number }>(`
+    const [counts] = await queryRows<{ profiles: number; synthetic_profiles: number; institutes: number; jobs: number; notifications: number }>(`
       SELECT (SELECT count(*)::int FROM public.profiles) AS profiles,
+             (SELECT count(*)::int FROM public.profiles
+              WHERE email LIKE 'neon-migration-uat-%@example.com') AS synthetic_profiles,
              (SELECT count(*)::int FROM public.institutes) AS institutes,
              (SELECT count(*)::int FROM public.jobs) AS jobs,
              (SELECT count(*)::int FROM public.notifications) AS notifications`);
-    expect(counts.profiles).toBe(103);
+    expect(counts.synthetic_profiles).toBe(1);
+    expect(counts.profiles - counts.synthetic_profiles).toBe(103);
     expect(counts.institutes).toBe(295);
     expect(counts.jobs).toBeGreaterThan(0);
     expect(counts.notifications).toBeGreaterThan(0);
@@ -174,11 +177,11 @@ describe("real Neon staging data and authorization policy", () => {
     }
   });
 
-  it("fails closed when a verified Neon-to-legacy identity link is unavailable", async () => {
+  it("fails closed when a Managed Auth subject has no verified identity link", async () => {
     const [status] = await queryRows<{ mapping_table: string | null }>(
       "SELECT to_regclass('public.neon_identity_links')::text AS mapping_table",
     );
-    expect(status.mapping_table).toBeNull();
+    expect(status.mapping_table).toBe("neon_identity_links");
     const syntheticId = randomUUID();
     const syntheticSessionOnly = { verify: async () => ({
       user: { id: syntheticId, emailVerified: true },
@@ -186,7 +189,7 @@ describe("real Neon staging data and authorization policy", () => {
     }) };
     await expect(getAuthenticatedApplicationUser(
       new Request("https://staging.test/protected"), syntheticSessionOnly,
-    )).rejects.toMatchObject({ name: "NeonSessionUnavailable" });
+    )).rejects.toMatchObject({ status: 403, code: "IDENTITY_NOT_LINKED" });
   });
 
   it("rejects unauthenticated access and a student performing admin operations", async () => {
@@ -202,7 +205,7 @@ describe("real Neon staging data and authorization policy", () => {
     const resolved = await requireAuthenticatedUser({
       legacyUserId: student.user_id,
       neonAuthUserId: "UNVERIFIED_POLICY_TEST_ONLY",
-      emailVerified: true,
+      linkVerified: true,
     });
     expect(resolved.userId).toBe(student.user_id);
     expect(() => requireSuperAdmin(resolved)).toThrow();
@@ -215,7 +218,7 @@ describe("real Neon staging data and authorization policy", () => {
     const resolvedAdmin = await requireAuthenticatedUser({
       legacyUserId: admin.user_id,
       neonAuthUserId: "UNVERIFIED_POLICY_TEST_ONLY",
-      emailVerified: true,
+      linkVerified: true,
     });
     expect(() => requireSuperAdmin(resolvedAdmin)).not.toThrow();
   });
