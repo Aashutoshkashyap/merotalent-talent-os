@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Users, Clock, ArrowRight, Star } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import BookingDialog from "@/components/mentors/BookingDialog";
 
@@ -23,10 +22,9 @@ interface MentorItem {
   sessions: string;
 }
 
-/* ── map a database row to the UI model ── */
+/* ── map a database/API row to the UI model ── */
 function toDisplayItem(row: Record<string, unknown>): MentorItem {
-  const profiles = (row.profiles ?? {}) as Record<string, unknown>;
-  const name = String(profiles.full_name ?? row.full_name ?? "Mentor");
+  const name = String(row.full_name ?? row.name ?? "Mentor");
   const avatarText = name
     .split(/\s+/)
     .filter(Boolean)
@@ -52,7 +50,7 @@ function toDisplayItem(row: Record<string, unknown>): MentorItem {
     expertise: expertise.map(String),
     rating: row.rating == null ? "—" : String(row.rating),
     avatarText,
-    photoUrl: String(row.profile_image_url ?? "/placeholder.svg"),
+    photoUrl: String(row.avatar_url ?? row.profile_image_url ?? "/placeholder.svg"),
     sessions: row.total_sessions ? `${row.total_sessions}+` : "0",
   };
 }
@@ -73,41 +71,18 @@ export default function MentorshipPage() {
 
   const fetchMentors = async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .from("mentors")
-        .select("*")
-        .eq("approval_status", "approved")
-        .eq("is_available", true)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      const userIds = (data || []).map((mentor: Record<string, unknown>) => String(mentor.user_id));
-      const { data: profiles, error: profilesError } = userIds.length > 0
-        ? await (supabase as any)
-            .from("public_profile_directory")
-            .select("user_id, full_name, avatar_url, bio, location")
-            .in("user_id", userIds)
-        : { data: [], error: null };
-      if (profilesError) throw profilesError;
-      const profileByUser = new Map<string, Record<string, unknown>>(
-        (profiles || []).map((profile: Record<string, unknown>) => [String(profile.user_id), profile]),
-      );
-      setMentors((data || []).map((mentor: Record<string, unknown>) => {
-        const profile = profileByUser.get(String(mentor.user_id)) || {};
-        return toDisplayItem({
-          ...mentor,
-          profiles: profile,
-          description: mentor.description || profile.bio,
-          profile_image_url: mentor.profile_image_url || profile.avatar_url,
-        });
-      }));
+      const res = await fetch("/api/v1/mentors");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message || "Failed to load mentors.");
+      const data = json.data || [];
+      setMentors(data.map((row: Record<string, unknown>) => toDisplayItem(row)));
       setLoadError(null);
     } catch (error) {
       setMentors([]);
       setLoadError(error instanceof Error ? error.message : "Mentors could not be loaded.");
     } finally {
       setIsLoading(false);
+
     }
   };
 

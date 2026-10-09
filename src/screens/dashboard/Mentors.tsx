@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,34 +57,33 @@ const Mentors = () => {
   }, []);
 
   const fetchMentors = async () => {
-    const { data, error } = await (supabase as any)
-      .from("mentors")
-      .select("*")
-      .eq("is_available", true)
-      .eq("approval_status", "approved")
-      .is("deleted_at", null);
-
-    if (error) {
-      toast({ variant: "destructive", title: "Unable to load mentors", description: error.message });
-      setMentors([]);
-      setIsLoading(false);
-      return;
-    }
-    
-    if (data) {
-      const userIds = data.map(m => m.user_id);
-      const { data: profiles } = await supabase
-        .from("public_profile_directory")
-        .select("user_id, full_name, avatar_url, bio, location")
-        .in("user_id", userIds);
-      
-      const mentorsWithProfiles = data.map(mentor => ({
-        ...mentor,
-        profile: profiles?.find(p => p.user_id === mentor.user_id) || null
+    try {
+      const res = await fetch("/api/v1/mentors");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message || "Failed to load mentors.");
+      const data = json.data || [];
+      const mentorsWithProfiles = data.map((m: any) => ({
+        ...m,
+        expertise: Array.isArray(m.expertise) ? m.expertise : [],
+        profile: {
+          user_id: m.user_id,
+          full_name: m.full_name || m.profiles?.full_name || "Mentor",
+          avatar_url: m.avatar_url || m.profiles?.avatar_url || null,
+          bio: m.description || m.profiles?.bio || null,
+          location: m.location || m.profiles?.location || null,
+        },
       }));
       setMentors(mentorsWithProfiles as Mentor[]);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to load mentors",
+        description: error instanceof Error ? error.message : "Failed to load mentors.",
+      });
+      setMentors([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const displayMentors = mentors;

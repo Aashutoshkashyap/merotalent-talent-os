@@ -1,7 +1,10 @@
 import { authenticateRequest } from "@/lib/server/auth";
 import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAdminClient } from "@/lib/server/supabase";
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { NeonPaymentsRepository } from "@/lib/server/neon-payments";
+import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,6 +17,17 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
+    if (getBackendMode() === "neon-staging") {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonPaymentsRepository();
+      const payments = await repo.listOwnPayments(actor);
+      return jsonApiResponse({
+        data: { plans: [], scopes: [], entitlements: [], checkouts: [], payments },
+        error: null,
+        meta: { requestId },
+      });
+    }
+
     const authenticated = await authenticateRequest(request);
     const db = getAdminClient() as any;
     const [plans, assignments, entitlements, checkouts] = await Promise.all([

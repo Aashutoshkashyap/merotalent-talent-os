@@ -95,6 +95,25 @@ export class NeonMentorsRepository {
     return rows[0] ?? null;
   }
 
+  async getMentorServices(mentorId: string): Promise<Array<{
+    id: string;
+    mentor_id: string;
+    title: string;
+    description: string | null;
+    session_type: string;
+    duration_minutes: number;
+    capacity: number;
+    price: number;
+    currency: string;
+  }>> {
+    return this.db.query(`
+      SELECT id, mentor_id, title, description, session_type, duration_minutes,
+             capacity, price::float AS price, currency
+      FROM public.mentor_services
+      WHERE mentor_id = $1::uuid AND is_active = true AND deleted_at IS NULL
+      ORDER BY price ASC`, [mentorId]);
+  }
+
   async bookMentorSession(
     actor: NeonActor,
     input: BookSessionInput,
