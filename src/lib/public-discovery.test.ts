@@ -31,8 +31,10 @@ describe("public discovery contract", () => {
     const sectionMigration = read("supabase/migrations/20261005110000_register_home_discovery_sections.sql");
     expect(sectionMigration).toContain("ON CONFLICT (page, section_key) DO NOTHING");
     const featured = read("src/components/landing/FeaturedSection.tsx");
-    expect(featured).toContain('.eq("is_featured", true)');
+    const featuredRoute = read("app/api/v1/featured/route.ts");
+    expect(featuredRoute).toContain('is_featured = true');
     expect(featured).toContain('if (cards.length === 0) return null;');
+    expect(featured).toContain('fetch("/api/v1/featured")');
     const hero = read("src/components/landing/HeroCategorySection.tsx");
     expect(hero).toMatch(/title: "Events",[\s\S]*?path: "\/events"/);
     const detail = read("src/screens/institutes/InstituteDetailPage.tsx");

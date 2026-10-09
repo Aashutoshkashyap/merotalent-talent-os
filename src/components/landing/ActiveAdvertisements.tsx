@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Advertisement {
   id: string;
@@ -26,19 +25,23 @@ export default function ActiveAdvertisements() {
   const [ads, setAds] = useState<Advertisement[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
     const loadAds = async () => {
-      const now = new Date().toISOString();
-      const { data, error } = await (supabase as any)
-        .from("advertisements")
-        .select("id, title, image_url, destination_url, sponsor_name")
-        .eq("is_active", true)
-        .lte("start_date", now)
-        .gte("end_date", now)
-        .order("priority", { ascending: false })
-        .limit(4);
-      if (!error) setAds((data || []).filter((item: Advertisement) => Boolean(item.image_url)));
+      try {
+        const res = await fetch("/api/v1/advertisements");
+        if (!res.ok) return;
+        const body = await res.json();
+        if (isMounted && Array.isArray(body?.data)) {
+          setAds(body.data.filter((item: Advertisement) => Boolean(item.image_url)));
+        }
+      } catch {
+        // Non-blocking for landing page
+      }
     };
     void loadAds();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (ads.length === 0) return null;

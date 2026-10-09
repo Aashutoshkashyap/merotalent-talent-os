@@ -5,9 +5,7 @@ import { PartnerCourseThumbnail } from "@/components/courses/PartnerCourseThumbn
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import {
-  PARTNER_COURSE_SELECT,
   getPartnerCourseRedirect,
   isLivePartnerCourse,
   type PartnerCourse,
@@ -23,24 +21,22 @@ const CourseCatalogue = () => {
     setIsLoading(true);
     setHasError(false);
 
-    const { data, error } = await (supabase as any)
-      .from("courses")
-      .select(PARTNER_COURSE_SELECT)
-      .eq("is_partnered", true)
-      .eq("is_published", true)
-      .eq("status", "published")
-      .is("deleted_at", null)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(6);
-
-    if (error) {
+    try {
+      const res = await fetch("/api/v1/courses?limit=6");
+      if (!res.ok) {
+        setCourses([]);
+        setHasError(true);
+      } else {
+        const body = await res.json();
+        const raw: PartnerCourse[] = Array.isArray(body?.data) ? body.data : [];
+        setCourses(raw.filter(isLivePartnerCourse));
+      }
+    } catch {
       setCourses([]);
       setHasError(true);
-    } else {
-      setCourses(((data || []) as PartnerCourse[]).filter(isLivePartnerCourse));
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
