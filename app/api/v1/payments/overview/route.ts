@@ -3,6 +3,7 @@ import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
 import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAdminClient } from "@/lib/server/supabase";
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { queryRows } from "@/lib/server/db";
 import { NeonPaymentsRepository } from "@/lib/server/neon-payments";
 import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
 
@@ -20,9 +21,24 @@ export async function GET(request: Request) {
     if (getBackendMode() === "neon-staging") {
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonPaymentsRepository();
-      const payments = await repo.listOwnPayments(actor);
+      const [payments, plans, checkouts] = await Promise.all([
+        repo.listOwnPayments(actor),
+        queryRows(`
+          SELECT id, name, description, price::float AS price, currency,
+                 billing_interval, duration_days, module_scope, features, lead_access_mode, sort_order
+          FROM public.packages
+          WHERE is_active = true AND is_publicly_selectable = true AND package_kind = 'paid'
+            AND deleted_at IS NULL
+          ORDER BY sort_order ASC`),
+        queryRows(`
+          SELECT id, package_id, entity_type, entity_id, provider_name, provider_reference,
+                 amount::float AS amount, currency, status, expires_at, completed_at, created_at
+          FROM public.payment_checkout_sessions
+          WHERE user_id = $1::uuid
+          ORDER BY created_at DESC LIMIT 30`, [actor.userId]),
+      ]);
       return jsonApiResponse({
-        data: { plans: [], scopes: [], entitlements: [], checkouts: [], payments },
+        data: { plans, scopes: [], entitlements: [], checkouts, payments },
         error: null,
         meta: { requestId },
       });

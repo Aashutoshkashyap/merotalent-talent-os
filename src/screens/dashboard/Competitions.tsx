@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,25 +62,29 @@ const Competitions = () => {
   }, [user]);
 
   const fetchCompetitions = async () => {
-    const { data } = await supabase
-      .from("competitions")
-      .select("*")
-      .in("status", ["upcoming", "ongoing"])
-      .order("created_at", { ascending: false });
-    
-    if (data) setCompetitions(data);
-    setIsLoading(false);
+    try {
+      const res = await fetch("/api/v1/competitions");
+      const json = await res.json();
+      if (json.data && Array.isArray(json.data)) {
+        setCompetitions(json.data);
+      }
+    } catch {
+      setCompetitions([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchRegistrations = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("competition_registrations")
-      .select("competition_id")
-      .eq("user_id", user.id);
-    
-    if (data) {
-      setRegisteredIds(new Set(data.map(r => r.competition_id)));
+    try {
+      const res = await fetch("/api/v1/competitions/registrations");
+      const json = await res.json();
+      if (json.data && Array.isArray(json.data)) {
+        setRegisteredIds(new Set(json.data));
+      }
+    } catch {
+      setRegisteredIds(new Set());
     }
   };
 
@@ -89,19 +92,18 @@ const Competitions = () => {
     if (!user || !selectedCompetition) return;
     setIsRegistering(true);
 
-    const { error } = await supabase.from("competition_registrations").insert({
-      competition_id: selectedCompetition.id,
-      user_id: user.id,
-      team_name: selectedCompetition.is_team_based ? teamName : null,
-    });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Registration failed",
-        description: error.message,
+    try {
+      const res = await fetch("/api/v1/competitions/registrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          competitionId: selectedCompetition.id,
+          teamName: selectedCompetition.is_team_based ? teamName : null,
+        }),
       });
-    } else {
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message || "Registration failed.");
+
       toast({
         title: "Registered successfully!",
         description: `You're now registered for ${selectedCompetition.title}. Check your email for details.`,
@@ -109,8 +111,15 @@ const Competitions = () => {
       setRegisteredIds(prev => new Set([...prev, selectedCompetition.id]));
       setIsRegisterOpen(false);
       setTeamName("");
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Registration failed",
+        description: err.message || "Failed to register.",
+      });
+    } finally {
+      setIsRegistering(false);
     }
-    setIsRegistering(false);
   };
 
   const filteredCompetitions = competitions.filter((comp) =>

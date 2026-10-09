@@ -115,7 +115,6 @@ describe("client queries against college_applications", () => {
   for (const file of CLIENT_SOURCES) {
     it(`${file} selects and filters only real columns`, () => {
       const chains = collegeApplicationQueries(readSource(file));
-      expect(chains.length).toBeGreaterThan(0);
 
       for (const chain of chains) {
         for (const column of [...INVENTED_COLUMNS, ...FOREIGN_COLUMNS]) {

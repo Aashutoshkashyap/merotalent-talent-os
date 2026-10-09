@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { logUserActivity } from "@/lib/activityLogger";
 import { submitAuthenticatedModuleForm } from "@/lib/forms/module-form-client";
 import { StudentProfileRequirement } from "@/components/forms/StudentProfileRequirement";
@@ -84,20 +83,17 @@ export default function Colleges() {
     if (!user) return;
     const fetchUserApps = async () => {
       try {
-        const { data, error } = await (supabase as any)
-          .from("college_applications")
-          .select("institute_id")
-          .eq("applicant_id", user.id);
-        if (error) throw error;
-        if (data && Array.isArray(data)) {
-          const names = data.map((d: any) => String(d.institute_id || "")).filter(Boolean);
+        const res = await fetch("/api/v1/institutes/applications");
+        const json = await res.json();
+        if (json.data && Array.isArray(json.data)) {
+          const names = json.data.map((id: string) => String(id || "")).filter(Boolean);
           setAppliedCollegeNames(new Set(names));
         }
       } catch (err) {
         console.error("Failed to load user college applications", err);
       }
     };
-    fetchUserApps();
+    void fetchUserApps();
   }, [user]);
 
   useEffect(() => {
