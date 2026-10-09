@@ -18,12 +18,12 @@ describe("public discovery contract", () => {
   it("surfaces only public module records and hides empty homepage sections", () => {
     const home = read("src/screens/Index.tsx");
     expect(home).toContain("fetchPublicInstitutes({");
-    expect(home).toContain('.eq("approval_status", "approved")');
-    expect(home).toContain('.eq("status", "published")');
+    expect(home).toContain('fetch("/api/v1/jobs');
+    expect(home).toContain('fetch("/api/v1/mentors');
+    expect(home).toContain('fetch("/api/v1/events');
+    expect(home).toContain('fetch("/api/v1/courses');
     expect(home).toContain(".filter(isLivePartnerCourse)");
     expect(home).toContain('colleges.length > 0 && isConfiguredSectionVisible("colleges_section")');
-    expect(home).toContain('collegeUpdates.length > 0 && isConfiguredSectionVisible("college_updates_section")');
-    expect(home).toContain('mentorResult.error');
     const editor = read("src/screens/admin/AdminPageEditor.tsx");
     for (const key of ["colleges_section", "mentors_section", "events_section", "courses_section", "college_updates_section"]) {
       expect(editor).toContain(`section_key: "${key}"`);

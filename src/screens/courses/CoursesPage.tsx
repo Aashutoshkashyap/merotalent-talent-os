@@ -8,11 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import {
-  PARTNER_COURSE_SELECT,
   getPartnerCourseRedirect,
-  isLivePartnerCourse,
   type PartnerCourse,
 } from "@/lib/courses/partnered-courses";
 
@@ -27,23 +24,17 @@ const CoursesPage = () => {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const { data, error } = await (supabase as any)
-      .from("courses")
-      .select(PARTNER_COURSE_SELECT)
-      .eq("is_partnered", true)
-      .eq("is_published", true)
-      .eq("status", "published")
-      .is("deleted_at", null)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: false });
-
-    if (error) {
+    try {
+      const res = await fetch("/api/v1/courses?limit=50");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message || "Failed to load courses.");
+      setCourses(json.data || []);
+    } catch (error) {
       setCourses([]);
-      setErrorMessage(error.message || "The partner course directory could not be loaded.");
-    } else {
-      setCourses(((data || []) as PartnerCourse[]).filter(isLivePartnerCourse));
+      setErrorMessage(error instanceof Error ? error.message : "The partner course directory could not be loaded.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {

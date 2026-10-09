@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Trophy, Clock, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface CompetitionItem {
   id: string;
@@ -71,14 +70,11 @@ export default function CompetitionsPage() {
 
   const fetchCompetitions = async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .from("competitions")
-        .select("*")
-        .in("status", ["upcoming", "ongoing"])
-        .order("start_date", { ascending: true });
-
-      if (error) throw error;
-      setCompetitions((data || []).map(toDisplayItem));
+      const res = await fetch("/api/v1/competitions");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message || "Failed to load competitions.");
+      const data = json.data || [];
+      setCompetitions(data.map(toDisplayItem));
       setLoadError(null);
     } catch (error) {
       setCompetitions([]);

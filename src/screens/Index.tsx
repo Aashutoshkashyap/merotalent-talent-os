@@ -18,7 +18,6 @@ import CTA from "@/components/landing/CTA";
 import Footer from "@/components/landing/Footer";
 import type { OpportunityCardData } from "@/components/landing/OpportunityCard";
 import InstituteCard from "@/components/institutes/InstituteCard";
-import { supabase } from "@/integrations/supabase/client";
 import { useSiteCMS, type CmsSnapshot } from "@/hooks/useSiteCMS";
 import { fetchPublicInstitutes, institutePath, type InstituteRecord } from "@/lib/institutes/public-institutes";
 import { getPartnerCourseRedirect, isLivePartnerCourse, PARTNER_COURSE_SELECT, type PartnerCourse } from "@/lib/courses/partnered-courses";
@@ -111,68 +110,21 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
 
   useEffect(() => {
     const loadOpportunities = async () => {
-      const now = new Date().toISOString();
-      const [competitionResult, jobResult, collegeResult, mentorResult, eventResult, courseResult, blogResult, noticeResult] = await Promise.all([
-        (supabase as any)
-          .from("competitions")
-          .select("id, title, organizer_type, prize_pool, format")
-          .in("status", ["upcoming", "ongoing"])
-          .order("created_at", { ascending: false })
-          .limit(12),
-        (supabase as any)
-          .from("jobs")
-          .select("id, title, job_type, salary_min, salary_max, location, companies(name)")
-          .eq("status", "published")
-          .eq("approval_status", "approved")
-          .eq("is_active", true)
-          .is("deleted_at", null)
-          .or(`expires_at.is.null,expires_at.gt.${now}`)
-          .order("created_at", { ascending: false })
-          .limit(18),
+      const [competitionResult, jobResult, collegeResult, mentorResult, eventResult, courseResult] = await Promise.all([
+        fetch("/api/v1/competitions?limit=12").then((r) => r.json()).catch(() => ({ data: [] })),
+        fetch("/api/v1/jobs?limit=18").then((r) => r.json()).catch(() => ({ data: [] })),
         fetchPublicInstitutes({
           search: "", category: "all", location: "", affiliation: "", admissionStatus: "", sort: "recommended", limit: 6,
         }).catch(() => null),
-        (supabase as any)
-          .from("mentors")
-          .select("id,user_id,headline,expertise,profile_image_url")
-          .eq("approval_status", "approved")
-          .eq("is_available", true)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(8),
-        (supabase as any)
-          .from("events")
-          .select("id,title,start_date,end_date,location,format")
-          .in("status", ["approved", "published"])
-          .eq("approval_status", "approved")
-          .eq("is_active", true)
-          .is("deleted_at", null)
-          .gt("end_date", now)
-          .order("start_date", { ascending: true })
-          .limit(8),
-        (supabase as any)
-          .from("courses")
-          .select(PARTNER_COURSE_SELECT)
-          .eq("is_partnered", true)
-          .eq("is_published", true)
-          .eq("status", "published")
-          .is("deleted_at", null)
-          .order("display_order", { ascending: true })
-          .limit(8),
-        (supabase as any).from("college_blogs")
-          .select("id,institute_id,title,slug,published_at")
-          .eq("status", "published").is("deleted_at", null)
-          .order("published_at", { ascending: false }).limit(8),
-        (supabase as any).from("institute_notices")
-          .select("id,institute_id,title,published_at")
-          .lte("published_at", now)
-          .order("published_at", { ascending: false }).limit(8),
+        fetch("/api/v1/mentors?limit=8").then((r) => r.json()).catch(() => ({ data: [] })),
+        fetch("/api/v1/events?limit=8").then((r) => r.json()).catch(() => ({ data: [] })),
+        fetch("/api/v1/courses?limit=8").then((r) => r.json()).catch(() => ({ data: [] })),
       ]);
 
       if (collegeResult) setColleges(collegeResult.institutes);
 
-      if (!competitionResult.error) {
-        setCompetitions((competitionResult.data || []).map((row: Record<string, any>) => {
+      if (Array.isArray(competitionResult?.data)) {
+        setCompetitions(competitionResult.data.map((row: Record<string, any>) => {
           const organizer = String(row.organizer_type || "MeroTalent partner").replace(/_/g, " ");
           return {
             id: String(row.id),
@@ -186,9 +138,9 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
         }));
       }
 
-      if (!jobResult.error) {
-        const mapped = (jobResult.data || []).map((row: Record<string, any>) => {
-          const employer = String(row.companies?.name || "MeroTalent employer");
+      if (Array.isArray(jobResult?.data)) {
+        const mapped = jobResult.data.map((row: Record<string, any>) => {
+          const employer = String(row.company_name || row.companies?.name || "MeroTalent employer");
           return {
             id: String(row.id),
             title: String(row.title),
@@ -205,15 +157,9 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
         setJobs(mapped.filter((row: any) => row.jobType !== "internship").map(asOpportunity));
       }
 
-      if (!mentorResult.error) {
-        const mentorRows = mentorResult.data || [];
-        const userIds = mentorRows.map((row: Record<string, unknown>) => row.user_id).filter(Boolean);
-        const { data: profiles } = userIds.length
-          ? await (supabase as any).from("public_profile_directory").select("user_id,full_name").in("user_id", userIds)
-          : { data: [] };
-        const names = new Map<string, string>((profiles || []).map((profile: { user_id: string; full_name: string }) => [profile.user_id, profile.full_name]));
-        setMentors(mentorRows.map((row: Record<string, any>) => {
-          const name = names.get(String(row.user_id)) || String(row.headline || "Mentor");
+      if (Array.isArray(mentorResult?.data)) {
+        setMentors(mentorResult.data.map((row: Record<string, any>) => {
+          const name = String(row.full_name || row.headline || "Mentor");
           return {
             id: String(row.id),
             title: name,
@@ -225,8 +171,8 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
         }));
       }
 
-      if (!eventResult.error) {
-        setEvents((eventResult.data || []).map((row: Record<string, any>) => ({
+      if (Array.isArray(eventResult?.data)) {
+        setEvents(eventResult.data.map((row: Record<string, any>) => ({
           id: String(row.id),
           title: String(row.title),
           organizer: String(row.format || "Event").replace(/_/g, " "),
@@ -237,8 +183,8 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
         })));
       }
 
-      if (!courseResult.error) {
-        setCourses(((courseResult.data || []) as PartnerCourse[]).filter(isLivePartnerCourse).flatMap((row) => {
+      if (Array.isArray(courseResult?.data)) {
+        setCourses((courseResult.data as PartnerCourse[]).filter(isLivePartnerCourse).flatMap((row) => {
           const externalHref = getPartnerCourseRedirect(row.redirect_url);
           if (!externalHref) return [];
           return [{
@@ -249,34 +195,6 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
             externalHref,
           }];
         }));
-      }
-
-      const updateRows = [
-        ...(!blogResult.error ? (blogResult.data || []).map((row: Record<string, any>) => ({ ...row, kind: "blog" })) : []),
-        ...(!noticeResult.error ? (noticeResult.data || []).map((row: Record<string, any>) => ({ ...row, kind: "notice" })) : []),
-      ].sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || ""))).slice(0, 8);
-      const collegeIds = [...new Set(updateRows.map((row) => row.institute_id).filter(Boolean))];
-      if (collegeIds.length) {
-        const { data: publicColleges, error } = await (supabase as any)
-          .from("institute_directory").select("id,name,slug").in("id", collegeIds);
-        if (!error) {
-          const collegeById = new Map<string, { id: string; name: string; slug: string | null }>(
-            (publicColleges || []).map((college: { id: string; name: string; slug: string | null }) => [college.id, college]),
-          );
-          setCollegeUpdates(updateRows.flatMap((row) => {
-            const college = collegeById.get(String(row.institute_id));
-            if (!college) return [];
-            const basePath = institutePath(college);
-            return [{
-              id: `${row.kind}:${row.id}`,
-              title: String(row.title),
-              organizer: college.name,
-              prizes: formatEventDate(row.published_at),
-              logo: companyMark(college.name),
-              path: row.kind === "blog" ? `${basePath}/blogs/${row.slug}` : `${basePath}#updates`,
-            }];
-          }));
-        }
       }
     };
     void loadOpportunities();

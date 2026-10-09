@@ -16,11 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import {
-  PARTNER_COURSE_SELECT,
   getPartnerCourseRedirect,
-  isLivePartnerCourse,
   type PartnerCourse,
 } from "@/lib/courses/partnered-courses";
 
@@ -41,26 +38,21 @@ const CourseDetailPage = () => {
 
     setIsLoading(true);
     setErrorMessage(null);
-    const { data, error } = await (supabase as any)
-      .from("courses")
-      .select(PARTNER_COURSE_SELECT)
-      .eq("id", id)
-      .eq("is_partnered", true)
-      .eq("is_published", true)
-      .eq("status", "published")
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/v1/courses/${id}`);
+      const json = await res.json();
+      if (!res.ok || !json.data) {
+        setCourse(null);
+        setErrorMessage(json?.error?.message || "The partner course is not available.");
+      } else {
+        setCourse(json.data as PartnerCourse);
+      }
+    } catch (error) {
       setCourse(null);
-      setErrorMessage(error.message || "The partner course could not be loaded.");
-    } else if (!data || !isLivePartnerCourse(data as PartnerCourse)) {
-      setCourse(null);
-      setErrorMessage("This partner course is not available.");
-    } else {
-      setCourse(data as PartnerCourse);
+      setErrorMessage(error instanceof Error ? error.message : "The partner course could not be loaded.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [id]);
 
   useEffect(() => {
@@ -78,16 +70,19 @@ const CourseDetailPage = () => {
     window.open(destination, "_blank", "noopener,noreferrer");
 
     if (user) {
-      void (supabase as any).from("course_referrals").insert({
-        course_id: course.id,
-        user_id: user.id,
-        destination_url: destination,
-        referrer: window.location.href,
-        metadata: {
-          referral_code: course.referral_code,
-          source: "course_detail",
-        },
-      });
+      void fetch(`/api/v1/courses/${course.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          destinationUrl: destination,
+          referrer: window.location.href,
+          metadata: {
+            referral_code: course.referral_code,
+            source: "course_detail",
+          },
+        }),
+      }).catch(() => {});
     }
   };
 
