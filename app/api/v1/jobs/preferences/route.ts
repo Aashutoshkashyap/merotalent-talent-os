@@ -1,6 +1,10 @@
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { authenticateRequest } from "@/lib/server/auth";
 import { getAdminClient } from "@/lib/server/supabase";
+import { getBackendMode } from "@/lib/server/backend-mode";
+import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
+import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
+import { NeonJobsRepository } from "@/lib/server/neon-jobs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,6 +12,19 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
+    const isStaging = getBackendMode() === "neon-staging";
+
+    if (isStaging) {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonJobsRepository();
+      const prefs = await repo.getStudentJobPreferences(actor);
+      return jsonApiResponse({
+        data: prefs,
+        error: null,
+        meta: { requestId },
+      });
+    }
+
     const authenticated = await authenticateRequest(request);
     const db = getAdminClient() as any;
 
@@ -25,6 +42,14 @@ export async function GET(request: Request) {
       meta: { requestId },
     });
   } catch (err: any) {
+    if (getBackendMode() === "neon-staging") {
+      if (err instanceof NeonAuthorizationError) {
+        return jsonApiResponse({ data: null, error: { code: err.code, message: err.message }, meta: { requestId } }, err.status);
+      }
+      if (err instanceof NeonSessionUnavailable) {
+        return jsonApiResponse({ data: null, error: { code: "AUTH_UNAVAILABLE", message: err.message }, meta: { requestId } }, 503);
+      }
+    }
     return jsonApiResponse(
       {
         data: null,
@@ -42,8 +67,21 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const authenticated = await authenticateRequest(request);
+    const isStaging = getBackendMode() === "neon-staging";
     const body = await request.json().catch(() => ({}));
+
+    if (isStaging) {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonJobsRepository();
+      const updated = await repo.updateStudentJobPreferences(actor, body);
+      return jsonApiResponse({
+        data: updated,
+        error: null,
+        meta: { requestId },
+      });
+    }
+
+    const authenticated = await authenticateRequest(request);
     const db = getAdminClient() as any;
 
     const { data: updated, error } = await db
@@ -64,6 +102,14 @@ export async function PUT(request: Request) {
       meta: { requestId },
     });
   } catch (err: any) {
+    if (getBackendMode() === "neon-staging") {
+      if (err instanceof NeonAuthorizationError) {
+        return jsonApiResponse({ data: null, error: { code: err.code, message: err.message }, meta: { requestId } }, err.status);
+      }
+      if (err instanceof NeonSessionUnavailable) {
+        return jsonApiResponse({ data: null, error: { code: "AUTH_UNAVAILABLE", message: err.message }, meta: { requestId } }, 503);
+      }
+    }
     return jsonApiResponse(
       {
         data: null,

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,13 +93,13 @@ const formatPostedAt = (value: unknown) => {
 const mapJob = (row: Record<string, any>): Job => ({
   id: String(row.id),
   title: String(row.title || "Untitled job"),
-  company: String(row.companies?.name || row.company?.name || "MeroTalent Employer"),
+  company: String(row.companies?.name || row.company?.name || row.company_name || "MeroTalent Employer"),
   location: String(row.location || "Nepal"),
   type: String(row.job_type || "Job").replace(/_/g, " "),
   salary: formatSalary(row.salary_min, row.salary_max),
   postedAt: formatPostedAt(row.created_at),
   description: String(row.description || ""),
-  skills: Array.isArray(row.skills_required) ? row.skills_required.map(String) : [],
+  skills: Array.isArray(row.skills_required) ? row.skills_required.map(String) : Array.isArray(row.skills) ? row.skills.map(String) : [],
   requirements: Array.isArray(row.requirements)
     ? row.requirements.map(String)
     : String(row.requirements || "")
@@ -151,16 +150,11 @@ export default function Jobs() {
     setIsLoading(true);
     try {
       // 1. Fetch All Published Jobs
-      const { data: jobsData } = await (supabase as any)
-        .from("jobs")
-        .select("*, companies(name, logo_url)")
-        .in("status", ["published", "approved"])
-        .eq("approval_status", "approved")
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const res = await fetch("/api/v1/jobs");
+      const json = await res.json().catch(() => ({}));
+      const jobsData = Array.isArray(json?.data) ? json.data : [];
 
-      setAllJobs((jobsData || []).map(mapJob));
+      setAllJobs(jobsData.map(mapJob));
 
       if (session?.access_token) {
         const [matchingRes, appsRes, interviewsRes, savedRes, prefsRes] = await Promise.all([

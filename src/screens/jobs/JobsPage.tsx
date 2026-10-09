@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Briefcase, MapPin, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import JobApplicationWizard from "@/components/jobs/JobApplicationWizard";
 
@@ -72,7 +71,7 @@ function toDisplayItem(row: Record<string, unknown>, idx: number): JobItem {
     avatarText,
     logoBg: LOGO_COLORS[idx % LOGO_COLORS.length],
     requirements: Array.isArray(row.requirements) ? row.requirements.map(String) : [],
-    skills: Array.isArray(row.skills) ? row.skills.map(String) : [],
+    skills: Array.isArray(row.skills) ? row.skills.map(String) : Array.isArray(row.skills_required) ? (row.skills_required as string[]).map(String) : [],
     isRemote: row.is_remote === true,
   };
 }
@@ -95,19 +94,11 @@ export default function JobsPage() {
 
   const fetchJobs = async () => {
     try {
-      const now = new Date().toISOString();
-      const { data, error } = await (supabase as any)
-        .from("jobs")
-        .select("*, companies(name)")
-        .eq("status", "published")
-        .eq("approval_status", "approved")
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .or(`expires_at.is.null,expires_at.gt.${now}`)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setJobs((data || []).map(toDisplayItem));
+      const res = await fetch("/api/v1/jobs");
+      if (!res.ok) throw new Error("Failed to load jobs.");
+      const json = await res.json();
+      const raw = Array.isArray(json?.data) ? json.data : [];
+      setJobs(raw.map(toDisplayItem));
       setLoadError(null);
     } catch (error) {
       setJobs([]);

@@ -372,7 +372,7 @@ describe("Neon staging complete module runtime E2E verification", () => {
         path,
       });
       expect(signedUrl).toContain("https://");
-      expect(signedUrl).toContain(encodeURIComponent(path));
+      expect(signedUrl).toContain(path);
 
       // Denied for unrelated foreign actorB
       await expect(

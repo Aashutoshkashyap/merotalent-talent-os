@@ -5,7 +5,11 @@ import path from "node:path";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/test/neon-staging.integration.ts", "src/test/neon-modules-e2e.test.ts"],
+    include: [
+      "src/test/neon-staging.integration.ts",
+      "src/test/neon-modules-e2e.test.ts",
+      "src/test/neon-jobs-staging.test.ts",
+    ],
     fileParallelism: false,
     testTimeout: 30_000,
   },

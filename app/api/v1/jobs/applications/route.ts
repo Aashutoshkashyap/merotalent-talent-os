@@ -3,6 +3,10 @@ import { authenticateRequest } from "@/lib/server/auth";
 import { adminApiErrorResponse, AdminRequestError, readAdminJsonBody, throwDatabaseError } from "@/lib/admin/admin-route-utils";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { getAdminClient } from "@/lib/server/supabase";
+import { getBackendMode } from "@/lib/server/backend-mode";
+import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
+import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
+import { NeonJobsRepository } from "@/lib/server/neon-jobs";
 import { loadProviderSecret } from "@/lib/server/provider-config-service";
 import { getConfiguredTransactionalEmailProvider, getTransactionalEmailProvider } from "@/lib/server/email-provider";
 
@@ -21,6 +25,33 @@ const updateSchema = z.object({
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
+    const isStaging = getBackendMode() === "neon-staging";
+
+    if (isStaging) {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const url = new URL(request.url);
+      const offsetParam = url.searchParams.get("offset");
+      const mode = url.searchParams.get("mode");
+      const jobId = url.searchParams.get("jobId") || undefined;
+      const repo = new NeonJobsRepository();
+
+      if (mode === "review" || offsetParam !== null || jobId) {
+        const offset = Number(offsetParam || 0);
+        if (!Number.isInteger(offset) || offset < 0 || offset > 100000) {
+          return jsonApiResponse({ data: null, error: { code: "INVALID_OFFSET", message: "Invalid page offset." }, meta: { requestId } }, 400);
+        }
+        const applications = await repo.listRecruiterApplications(actor, jobId, offset);
+        return jsonApiResponse({ data: applications, error: null, meta: { requestId, count: applications.length } });
+      }
+
+      const applications = await repo.listOwnApplications(actor);
+      return jsonApiResponse({
+        data: applications,
+        error: null,
+        meta: { requestId, count: applications.length },
+      });
+    }
+
     const authenticated = await authenticateRequest(request);
     const url = new URL(request.url);
     const offsetParam = url.searchParams.get("offset");
@@ -85,6 +116,14 @@ export async function GET(request: Request) {
       meta: { requestId, count: applications?.length || 0 },
     });
   } catch (err: any) {
+    if (getBackendMode() === "neon-staging") {
+      if (err instanceof NeonAuthorizationError) {
+        return jsonApiResponse({ data: null, error: { code: err.code, message: err.message }, meta: { requestId } }, err.status);
+      }
+      if (err instanceof NeonSessionUnavailable) {
+        return jsonApiResponse({ data: null, error: { code: "AUTH_UNAVAILABLE", message: err.message }, meta: { requestId } }, 503);
+      }
+    }
     if (err instanceof AdminRequestError || err.code === "42501" || err.status === 401 || err.status === 403) {
       return adminApiErrorResponse(err, requestId, "load job applications");
     }
@@ -105,12 +144,40 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const { userClient } = await authenticateRequest(request);
-    const parsed = updateSchema.safeParse(await readAdminJsonBody(request));
+    const isStaging = getBackendMode() === "neon-staging";
+    const body = await readAdminJsonBody(request);
+    const parsed = updateSchema.safeParse(body);
     if (!parsed.success) {
       throw new AdminRequestError(422, "INVALID_APPLICATION_UPDATE", "Check the status, notes and interview details.");
     }
     const input = parsed.data;
+
+    if (isStaging) {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonJobsRepository();
+      const updated = await repo.reviewApplication(actor, {
+        id: input.id,
+        status: input.status,
+        notes: input.notes,
+        interviewAt: input.interviewAt,
+        interviewLocation: input.interviewLocation,
+        duration: input.duration,
+      });
+
+      return jsonApiResponse({
+        data: {
+          id: updated.id,
+          status: updated.status,
+          interviewAt: updated.interview_at,
+          interviewLocation: updated.interview_location,
+          emailStatus: "not_required",
+        },
+        error: null,
+        meta: { requestId },
+      });
+    }
+
+    const { userClient } = await authenticateRequest(request);
 
     // Normalizing status for RPC compatibility if necessary
     const normalizedStatus = input.status === "applied" ? "submitted" : input.status === "selected" ? "offered" : input.status;
