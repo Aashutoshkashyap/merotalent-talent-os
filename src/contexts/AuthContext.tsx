@@ -296,20 +296,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (isStaging) {
-      try {
-        const res = await fetch("/api/auth/sign-up/email", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email: normalizedEmail, password, name: fullName }),
-        });
-        if (!res.ok) {
-          const errJson = await res.json().catch(() => null);
-          return { error: new Error(errJson?.message || "Sign up failed in staging mode.") };
-        }
-        return { error: null };
-      } catch (err) {
-        return { error: err instanceof Error ? err : new Error("Sign up failed.") };
-      }
+      // Staging still uses Supabase Auth; neon-staging profile derives the
+      // linked application identity from the active Supabase session cookie.
+      const { error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          emailRedirectTo: getAuthCallbackUrl(),
+          data: { full_name: fullName, account_type: "talent" },
+        },
+      });
+      return { error };
     }
 
     // Check if an account already exists for this email
@@ -346,22 +343,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (isStaging) {
-      try {
-        const res = await fetch("/api/auth/sign-in/email", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email: normalizedEmail, password }),
-        });
-        if (!res.ok) {
-          const errJson = await res.json().catch(() => null);
-          return { error: new Error(errJson?.message || "Invalid email or password.") };
-        }
-        await refreshProfile();
-        const redirectTo = resolveWorkspacePath(roles, permissions, capabilities);
-        return { error: null, redirectTo };
-      } catch (err) {
-        return { error: err instanceof Error ? err : new Error("Sign in failed.") };
-      }
+      // Staging still uses Supabase Auth session; neon-staging profile endpoint
+      // derives the linked application identity from the same cookie.
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      if (error) return { error };
+      if (!data.user) return { error: new Error("Sign in failed. Please check your credentials.") };
+      await refreshProfile();
+      const redirectTo = resolveWorkspacePath(roles, permissions, capabilities);
+      return { error: null, redirectTo };
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -437,7 +429,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       if (isStaging) {
-        await fetch("/api/auth/sign-out", { method: "POST" }).catch(() => undefined);
+        // Sign out from Supabase session and clear state.
+        await supabase.auth.signOut().catch(() => undefined);
         setUser(null);
         setSession(null);
         setProfile(null);
