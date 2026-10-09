@@ -14,7 +14,7 @@ The [read-only per-user reconciliation](neon-managed-auth-identity-reconciliatio
 
 ## College runtime increment
 
-A new staging-only College applications inbox reads a selected college's latest 100 admission leads. The database statement combines active-account, Super Admin or active College capability, exact institute assignment, active module entitlement, and lead-feature predicates in one snapshot. It returns no private lead rows to unrelated or expired actors. Focused tests passed **4/4**, and read-only stage SQL checks confirmed one unentitled actor received no rows while an active platform admin was authorized. This is **partial**: lead submission, status writes, media, claim/add workflows, College UI wiring, and a real signed-in College-admin HTTP UAT remain.
+A new staging-only College applications inbox reads a selected college's latest 100 admission leads. The database statement combines active-account and verified link, Super Admin or active College capability, exact institute assignment, active module entitlement, and lead-feature predicates in one snapshot. It returns no private lead rows to unrelated or expired actors. A signed-in submission route derives applicant identity/contact details from the linked server-side profile; its single SQL statement gates approval, admissions availability, profile completeness, and a live identity link before `INSERT ... RETURNING`. A real isolated staging transaction inserted and read an application, rejected a substituted Managed Auth subject without a second insert, and rolled back all changes. Focused College tests passed **7/7**. This is **partial**: no real signed-in College-admin HTTP UAT, submission UI wiring, claim/add flow, status writes, media attachments, or idempotency yet.
 
 ## Durable event/SSE increment
 
@@ -22,16 +22,22 @@ Applied `neon-staging-application-events.sql` **only** to the guarded isolated N
 
 Unit/security tests passed **5/5**. A real Neon staging transaction test inserted two notification/event pairs, proved each recipient only saw their own cursor and could replay a missed event, then rolled back all source rows. The staging integration suite passed **22/22**, including denial of an unknown conversation. A real staging Managed Auth + localhost HTTP SSE run passed **13/13** checks: unauthenticated/unlinked/unknown-conversation denial, own-recipient delivery, replay using `Last-Event-ID`, and logout denial. An initial attempt timed out on a cold request; the bounded retry passed. Read-only cleanup audit showed zero event-test application profiles, zero persisted event rows, and one original identity link. **Realtime replacement is still partial**, not complete: no browser notification or messaging client has switched off Supabase Realtime; chat write/read migration, producer wiring for live workflows, and production-scale reconnect/load testing remain.
 
-## Other modules and storage
+## Notifications, Jobs, storage, and other modules
 
-Jobs, Mentors, Events, Payments, public College workflows, application storage consumers, and messaging have not completed Neon runtime migration. Partnered-course external redirect is preserved on the legacy path. Previously verified 22/22 object hashes prove a storage snapshot, not runtime upload/download parity. No payment gateway test or live payment was triggered in this sprint.
+A staging-only own-notification API now returns the recipient's latest 50 notifications and exact unread count under a live identity link. Mark-read requires same-origin request and atomically checks recipient, active profile, and verified link in the update statement. Unit tests passed **4/4**; a rollback-only staging transaction proved recipient read, mark-read, and unrelated-user denial. This does not wire live notification producers or replace the browser's Supabase Realtime hook.
+
+A staging-only saved-Jobs GET returns published, nondeleted bookmarks for the verified linked user with bounded pagination. Focused tests passed **6/6** and its SQL executed successfully against the real staging schema; no real signed-in HTTP test or Jobs application/recruiter workflow was exercised.
+
+A staging-only private resume route validates PDF type, magic bytes, size, canonical user-scoped path, and same-origin upload, then uses the existing Neon storage abstraction for upload and short-lived signed read. Mocked authorization/storage tests passed **6/6**; a real authenticated route/S3 UAT remains untested. Previously verified 22/22 object hashes prove an object snapshot, not this route's runtime parity.
+
+Mentors, Events, Payments, public College workflows, other storage consumers, and messaging have not completed Neon runtime migration. Partnered-course external redirect is preserved on the legacy path. No payment gateway test or live payment was triggered in this sprint.
 
 ## Verification run this sprint
 
 - `npm run typecheck`: PASS.
-- `npm run test`: **97 files, 418/418 tests PASS**.
-- `npx vitest run --config vitest.staging.config.ts`: **22/22 PASS** against the isolated Neon branch.
-- Targeted event/runtime/College suite: **18/18 PASS**.
+- `npm run test`: **101 files, 437/437 tests PASS**.
+- `npx vitest run --config vitest.staging.config.ts`: **25/25 PASS** against the isolated Neon branch. One intermediate run failed because a policy-only test used a non-UUID placeholder after an authorization cast was added; it was corrected and the full suite reran green.
+- Targeted event/runtime/College suite: **18/18 PASS** before the later College/Jobs/notification/storage additions; their focused suites also passed as recorded above.
 - `npm run lint`: **0 errors, 53 warnings**.
 - `npm run build`: PASS.
 - Real authenticated SSE HTTP UAT: **13/13 PASS** on the second bounded run. Prior 16/16 College/profile staging smoke remains historical evidence, not proof of the new lead endpoint.
