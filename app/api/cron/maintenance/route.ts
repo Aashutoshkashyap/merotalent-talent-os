@@ -6,6 +6,7 @@ import {
   getAdminClient,
   ServerConfigurationError,
 } from "@/lib/server/supabase";
+import { dispatchQueuedEmails } from "@/lib/server/email-queue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -138,9 +139,26 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  let emailDelivery: Awaited<ReturnType<typeof dispatchQueuedEmails>>;
+  try {
+    emailDelivery = await dispatchQueuedEmails(25);
+  } catch {
+    console.error("[cron:maintenance] Transactional email dispatch failed");
+    return jsonResponse(
+      {
+        data: null,
+        error: {
+          code: "EMAIL_DISPATCH_FAILED",
+          message: "Scheduled email delivery did not complete.",
+        },
+      },
+      500,
+    );
+  }
+
   return jsonResponse(
     {
-      data: { ...(data && typeof data === "object" && !Array.isArray(data) ? data : {}), guestVerification: guestCleanup.data ?? {} },
+      data: { ...(data && typeof data === "object" && !Array.isArray(data) ? data : {}), guestVerification: guestCleanup.data ?? {}, emailDelivery },
       error: null,
       meta: { completedAt: new Date().toISOString() },
     },

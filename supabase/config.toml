@@ -29,6 +29,10 @@ content_path = "./supabase/templates/confirmation.html"
 subject = "You are invited to MeroTalent"
 content_path = "./supabase/templates/invite.html"
 
+[auth.email.template.email_change]
+subject = "Confirm your new MeroTalent email address"
+content_path = "./supabase/templates/email_change.html"
+
 [auth.external.google]
 client_id = "634754884391-4ng4ir5ipurqd4mu5cvto38dpoqgn62s.apps.googleusercontent.com"
 enabled = true

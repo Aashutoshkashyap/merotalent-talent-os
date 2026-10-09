@@ -51,6 +51,7 @@ import Settings from "./screens/dashboard/Settings";
 import Colleges from "./screens/dashboard/Colleges";
 import ActivityTracker from "./screens/dashboard/ActivityTracker";
 import Payments from "./screens/dashboard/Payments";
+import MyTickets from "./screens/dashboard/MyTickets";
 
 // Admin Pages
 import AdminDashboard from "./screens/admin/AdminDashboard";
@@ -153,6 +154,7 @@ const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }
                 <Route path="jobs" element={<Jobs />} />
                 <Route path="activity" element={<ActivityTracker />} />
                   <Route path="payments" element={<Payments />} />
+                  <Route path="tickets" element={<MyTickets />} />
                   <Route path="ai-workspace" element={<ModuleAIWorkspace />} />
                 <Route path="sessions" element={<Sessions />} />
                 <Route path="messages" element={<Navigate to="/dashboard" replace />} />

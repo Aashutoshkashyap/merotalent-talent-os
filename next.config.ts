@@ -40,6 +40,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Allows isolated staging HTTP checks while a legacy dev server is running.
+  ...(process.env.MEROTALENT_STAGING_HTTP_TEST === "1" ? { distDir: ".next-neon-staging" } : {}),
   reactStrictMode: true,
   poweredByHeader: false,
   async headers() {

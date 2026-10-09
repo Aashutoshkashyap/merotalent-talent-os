@@ -12,10 +12,8 @@ import {
   parseMediaUploadIntent,
 } from "@/lib/server/media-policy";
 import { ApiRequestError, readJsonObject } from "@/lib/server/request";
-import {
-  getAdminClient,
-  ServerConfigurationError,
-} from "@/lib/server/supabase";
+import { ServerConfigurationError } from "@/lib/server/supabase";
+import { createPresignedUploadUrl } from "@/lib/server/storage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -98,38 +96,25 @@ export async function POST(request: Request) {
       path,
       intent.sizeBytes,
     );
-    const { data, error } = await getAdminClient()
-      .storage.from(policy.bucket)
-      .createSignedUploadUrl(path, { upsert: false });
 
-    if (error || !data) {
-      console.error("[media:upload-url] Supabase signing failed", {
-        bucket: policy.bucket,
-        code: error?.name,
-        module: intent.module,
-        requestId,
-      });
-      return jsonApiResponse(
-        {
-          data: null,
-          error: {
-            code: "STORAGE_UNAVAILABLE",
-            message: "The upload URL could not be created.",
-          },
-          meta: { requestId },
-        },
-        503,
-      );
-    }
+    // Generate presigned PUT URL via Neon S3 (replaces Supabase storage)
+    const { uploadUrl, expiresIn } = await createPresignedUploadUrl(
+      policy.bucket,
+      path,
+      intent.contentType,
+      7200,
+    );
 
     return jsonApiResponse(
       {
         data: {
           bucket: policy.bucket,
-          path: data.path,
-          signedUrl: data.signedUrl,
-          token: data.token,
-          expiresIn: 7200,
+          path,
+          signedUrl: uploadUrl,
+          // `token` field no longer exists in S3 presigned PUT model.
+          // Clients should PUT directly to `signedUrl`.
+          token: null,
+          expiresIn,
           contentType: intent.contentType,
           maxBytes: policy.maxBytes,
         },

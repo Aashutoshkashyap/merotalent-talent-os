@@ -93,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const hydratedUserIdRef = useRef<string | null>(null);
+  const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
@@ -158,12 +159,93 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshProfile = async () => {
+    if (isStaging) {
+      try {
+        const res = await fetch("/api/v1/neon-staging/profile", {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            setProfile((prev) => ({
+              ...(prev || {
+                id: json.data.user_id,
+                email: "",
+                avatar_url: null,
+                phone: null,
+                bio: null,
+                location: null,
+                linkedin_url: null,
+                education: null,
+                experience_level: null,
+                skills: null,
+                resume_url: null,
+                onboarding_completed: null,
+              }),
+              user_id: json.data.user_id,
+              full_name: json.data.full_name,
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to refresh staging profile", err);
+      }
+      return;
+    }
     if (user) {
       await Promise.all([fetchProfile(user.id), fetchAccessContext(user.id)]);
     }
   };
 
   useEffect(() => {
+    if (isStaging) {
+      void (async () => {
+        try {
+          const res = await fetch("/api/v1/neon-staging/profile", {
+            headers: { accept: "application/json" },
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.data) {
+              const fakeUser: User = {
+                id: json.data.user_id,
+                app_metadata: {},
+                user_metadata: { full_name: json.data.full_name },
+                aud: "authenticated",
+                created_at: new Date().toISOString(),
+                email: "",
+              } as User;
+              setUser(fakeUser);
+              setProfile({
+                id: json.data.user_id,
+                user_id: json.data.user_id,
+                email: "",
+                full_name: json.data.full_name,
+                avatar_url: null,
+                phone: null,
+                bio: null,
+                location: null,
+                linkedin_url: null,
+                education: null,
+                experience_level: null,
+                skills: null,
+                resume_url: null,
+                onboarding_completed: true,
+              });
+              setRoles(["talent"]);
+            }
+          }
+        } catch (err) {
+          console.error("Staging session hydration failed", err);
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+      return;
+    }
+
     // Supabase emits INITIAL_SESSION immediately after subscription. Relying on
     // that single source prevents the same profile/access requests from being
     // fired once by the listener and again by getSession on every page load.
@@ -204,7 +286,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // The Supabase listener must be registered once; its helpers do not depend
     // on mutable inputs and only update provider state from the active session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isStaging]);
 
   const signUp = async (
     email: string,
@@ -212,6 +294,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fullName: string,
   ) => {
     const normalizedEmail = email.trim().toLowerCase();
+
+    if (isStaging) {
+      try {
+        const res = await fetch("/api/auth/sign-up/email", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail, password, name: fullName }),
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => null);
+          return { error: new Error(errJson?.message || "Sign up failed in staging mode.") };
+        }
+        return { error: null };
+      } catch (err) {
+        return { error: err instanceof Error ? err : new Error("Sign up failed.") };
+      }
+    }
 
     // Check if an account already exists for this email
     const { data: existingProfile } = await supabase
@@ -235,8 +334,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: getAuthCallbackUrl(),
         data: {
           full_name: fullName,
-          // Every new account begins as Student/User. Privileged module access
-          // can only be requested after signup and granted by Super Admin.
           account_type: "talent",
         },
       },
@@ -246,8 +343,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (isStaging) {
+      try {
+        const res = await fetch("/api/auth/sign-in/email", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail, password }),
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => null);
+          return { error: new Error(errJson?.message || "Invalid email or password.") };
+        }
+        await refreshProfile();
+        const redirectTo = resolveWorkspacePath(roles, permissions, capabilities);
+        return { error: null, redirectTo };
+      } catch (err) {
+        return { error: err instanceof Error ? err : new Error("Sign in failed.") };
+      }
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       password,
     });
 
@@ -318,6 +436,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      if (isStaging) {
+        await fetch("/api/auth/sign-out", { method: "POST" }).catch(() => undefined);
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setRoles([]);
+        setPermissions([]);
+        setCapabilities([]);
+        window.location.replace("/");
+        return;
+      }
+
       const error = await signOutToPublicHome(
         () => supabase.auth.signOut(),
         () => {

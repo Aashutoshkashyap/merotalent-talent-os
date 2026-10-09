@@ -1,9 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-import {
-  getUserClient,
-  ServerConfigurationError,
-} from "./supabase";
+import { getUserClient, ServerConfigurationError } from "./supabase";
 
 export class ApiAuthError extends Error {
   constructor(
@@ -110,6 +107,7 @@ export function requireAnyPermission(
   }
 }
 
+/** Legacy Supabase remains authoritative until the Neon runtime passes UAT. */
 export async function authenticateRequest(
   request: Request,
 ): Promise<AuthenticatedRequestContext> {
@@ -151,9 +149,7 @@ export async function authenticateRequest(
   }
 
   const rpcClient = userClient as unknown as {
-    rpc: (
-      name: string,
-    ) => Promise<{
+    rpc: (name: string) => Promise<{
       data: unknown;
       error: { code?: string; message?: string } | null;
     }>;
@@ -193,17 +189,8 @@ export async function authenticateRequest(
     );
   }
 
-  const actor: AuthenticatedActor = {
-    user: authData.user,
-    ...access,
-  };
-
-  return {
-    accessToken,
-    actor,
-    user: authData.user,
-    userClient,
-  };
+  const actor: AuthenticatedActor = { user: authData.user, ...access };
+  return { accessToken, actor, user: authData.user, userClient };
 }
 
 export async function authenticateAdminRequest(

@@ -21,6 +21,7 @@ export default defineConfig([
   },
   globalIgnores([
     ".next/**",
+    ".next-neon-staging/**",
     "coverage/**",
     "dist/**",
     "Edusanjal - Your Guide to Education in Nepal_files/**",

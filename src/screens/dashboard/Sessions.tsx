@@ -1,24 +1,41 @@
 "use client";
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
   Calendar,
+  CalendarClock,
   CalendarPlus,
   CheckCircle,
   Clock,
   Loader2,
+  MessageSquare,
   RefreshCw,
+  Star,
   Users,
   XCircle,
 } from "lucide-react";
 
 import { useStudentActivity, type StudentMentorBooking } from "@/hooks/useStudentActivity";
+import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import {
   dashboardInteractiveSurface,
@@ -46,13 +63,15 @@ const durationMinutes = (booking: StudentMentorBooking) => {
 const statusTone = (status: string) => {
   switch (status) {
     case "confirmed":
-      return "bg-primary/10 text-primary border-primary/20";
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
     case "completed":
-      return "bg-success/10 text-success border-success/20";
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    case "rescheduled":
+      return "bg-purple-50 text-purple-700 border-purple-200";
     case "cancelled":
     case "declined":
     case "no_show":
-      return "bg-destructive/10 text-destructive border-destructive/20";
+      return "bg-rose-50 text-rose-700 border-rose-200";
     default:
       return "bg-amber-50 text-amber-700 border-amber-200";
   }
@@ -60,13 +79,24 @@ const statusTone = (status: string) => {
 
 const StatusIcon = ({ status }: { status: string }) => {
   if (status === "completed") return <CheckCircle className="h-3 w-3" />;
+  if (status === "rescheduled") return <CalendarClock className="h-3 w-3" />;
   if (["cancelled", "declined", "no_show"].includes(status)) return <XCircle className="h-3 w-3" />;
   return <Clock className="h-3 w-3" />;
 };
 
-const SessionCard = ({ booking }: { booking: StudentMentorBooking }) => {
+interface SessionCardProps {
+  booking: StudentMentorBooking;
+  onReschedule: (booking: StudentMentorBooking) => void;
+  onCancel: (booking: StudentMentorBooking) => void;
+  onReview: (booking: StudentMentorBooking) => void;
+}
+
+const SessionCard = ({ booking, onReschedule, onCancel, onReview }: SessionCardProps) => {
   const minutes = durationMinutes(booking);
   const isPaid = booking.paymentStatus === "success";
+  const canModify = ["pending", "confirmed", "rescheduled"].includes(booking.status);
+  const isCompleted = booking.status === "completed";
+
   return (
     <Card className={dashboardInteractiveSurface}>
       <CardContent className="p-4">
@@ -120,12 +150,48 @@ const SessionCard = ({ booking }: { booking: StudentMentorBooking }) => {
                 <span className="font-bold text-foreground">
                   {booking.amount > 0 ? `${booking.currency} ${booking.amount.toLocaleString()}` : "Free session"}
                 </span>
-                <span className="text-muted-foreground">to {booking.mentorName}</span>
-                <span className="text-muted-foreground">· {minutes > 0 ? `${minutes} min session` : ""}</span>
+                <span className="text-muted-foreground">with {booking.mentorName}</span>
               </div>
-              <Link to={`/mentorship/${booking.mentorId}`} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10">
-                <ArrowRight className="h-3 w-3" />View Mentor
-              </Link>
+
+              <div className="flex items-center gap-2">
+                {canModify && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs font-semibold"
+                      onClick={() => onReschedule(booking)}
+                    >
+                      <CalendarClock className="h-3.5 w-3.5 mr-1" />
+                      Reschedule
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                      onClick={() => onCancel(booking)}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                )}
+
+                {isCompleted && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs font-bold border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                    onClick={() => onReview(booking)}
+                  >
+                    <Star className="h-3.5 w-3.5 mr-1 fill-amber-500 text-amber-500" />
+                    Review Session
+                  </Button>
+                )}
+
+                <Link to={`/mentorship/${booking.mentorId}`} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10">
+                  <ArrowRight className="h-3 w-3" />Profile
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -135,10 +201,29 @@ const SessionCard = ({ booking }: { booking: StudentMentorBooking }) => {
 };
 
 const Sessions = () => {
+  const { toast } = useToast();
+  const { session } = useAuth();
   const { error, isLoading, mentorBookings, refresh } = useStudentActivity();
+
+  // Action Dialog States
+  const [rescheduleBooking, setRescheduleBooking] = useState<StudentMentorBooking | null>(null);
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+  const [isRescheduling, setIsRescheduling] = useState(false);
+
+  const [cancelBooking, setCancelBooking] = useState<StudentMentorBooking | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const [reviewBooking, setReviewBooking] = useState<StudentMentorBooking | null>(null);
+  const [rating, setRating] = useState(5);
+  const [feedback, setFeedback] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   const now = Date.now();
   const upcomingSessions = mentorBookings
-    .filter((booking) => new Date(booking.scheduledEnd).getTime() >= now && ["pending", "confirmed"].includes(booking.status))
+    .filter((booking) => new Date(booking.scheduledEnd).getTime() >= now && ["pending", "confirmed", "rescheduled"].includes(booking.status))
     .sort((left, right) => new Date(left.scheduledStart).getTime() - new Date(right.scheduledStart).getTime());
   const pastSessions = mentorBookings
     .filter((booking) => !upcomingSessions.some((upcoming) => upcoming.id === booking.id))
@@ -147,6 +232,115 @@ const Sessions = () => {
   const bookedMinutes = mentorBookings.reduce((total, booking) => total + durationMinutes(booking), 0);
   const uniqueMentors = new Set(mentorBookings.map((booking) => booking.mentorId)).size;
   const nextSession = upcomingSessions[0];
+
+  const handleRescheduleSubmit = async () => {
+    if (!rescheduleBooking || !session) return;
+    if (!newDate || !newTime) {
+      toast({ variant: "destructive", title: "Date and Time required", description: "Please choose your new date and time slot." });
+      return;
+    }
+
+    setIsRescheduling(true);
+    try {
+      const res = await fetch("/api/v1/mentors/bookings", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookingId: rescheduleBooking.id,
+          action: "reschedule",
+          newDate,
+          newTime,
+          reason: rescheduleReason,
+        }),
+      });
+
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload.error?.message || "Failed to reschedule session.");
+      }
+
+      toast({ title: "Session Rescheduled", description: "Your mentoring session has been updated and the mentor notified." });
+      setRescheduleBooking(null);
+      setNewDate("");
+      setNewTime("");
+      setRescheduleReason("");
+      void refresh();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Reschedule Failed", description: err instanceof Error ? err.message : "Error rescheduling." });
+    } finally {
+      setIsRescheduling(false);
+    }
+  };
+
+  const handleCancelSubmit = async () => {
+    if (!cancelBooking || !session) return;
+    setIsCancelling(true);
+    try {
+      const res = await fetch("/api/v1/mentors/bookings", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookingId: cancelBooking.id,
+          action: "cancel",
+          reason: cancelReason,
+        }),
+      });
+
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload.error?.message || "Failed to cancel session.");
+      }
+
+      toast({ title: "Session Cancelled", description: "The session has been cancelled and any slot released." });
+      setCancelBooking(null);
+      setCancelReason("");
+      void refresh();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Cancellation Failed", description: err instanceof Error ? err.message : "Error cancelling." });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!reviewBooking || !session) return;
+    setIsSubmittingReview(true);
+    try {
+      const res = await fetch("/api/v1/mentors/reviews", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookingId: reviewBooking.id,
+          rating,
+          feedback,
+        }),
+      });
+
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload.error?.message || "Failed to submit review.");
+      }
+
+      toast({ title: "Review Submitted", description: "Thank you for rating your mentor session!" });
+      setReviewBooking(null);
+      setRating(5);
+      setFeedback("");
+      void refresh();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Review Failed", description: err instanceof Error ? err.message : "Error submitting review." });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -176,7 +370,7 @@ const Sessions = () => {
       <DashboardPageHeader
         eyebrow="Plan the conversation"
         title="Mentorship sessions"
-        description="Review the mentor bookings stored for your account."
+        description="Review the mentor bookings stored for your account, manage upcoming schedules, and provide session feedback."
         action={
           <Button asChild variant="hero" className={dashboardPrimaryButton}>
             <Link to="/dashboard/mentors"><CalendarPlus className="mr-2 h-4 w-4" />Book new session</Link>
@@ -226,17 +420,182 @@ const Sessions = () => {
         </TabsList>
 
         <TabsContent value="upcoming" className="space-y-4">
-          {upcomingSessions.length > 0 ? upcomingSessions.map((booking) => <SessionCard key={booking.id} booking={booking} />) : (
+          {upcomingSessions.length > 0 ? (
+            upcomingSessions.map((booking) => (
+              <SessionCard
+                key={booking.id}
+                booking={booking}
+                onReschedule={(b) => setRescheduleBooking(b)}
+                onCancel={(b) => setCancelBooking(b)}
+                onReview={(b) => setReviewBooking(b)}
+              />
+            ))
+          ) : (
             <div className="py-12 text-center"><Calendar className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" /><p className="text-muted-foreground">No upcoming mentor bookings.</p><Button asChild variant="outline" className="mt-4"><Link to="/dashboard/mentors">Browse mentors <ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
           )}
         </TabsContent>
 
         <TabsContent value="past" className="space-y-4">
-          {pastSessions.length > 0 ? pastSessions.map((booking) => <SessionCard key={booking.id} booking={booking} />) : (
+          {pastSessions.length > 0 ? (
+            pastSessions.map((booking) => (
+              <SessionCard
+                key={booking.id}
+                booking={booking}
+                onReschedule={(b) => setRescheduleBooking(b)}
+                onCancel={(b) => setCancelBooking(b)}
+                onReview={(b) => setReviewBooking(b)}
+              />
+            ))
+          ) : (
             <div className="py-12 text-center text-sm text-muted-foreground">No past mentor bookings.</div>
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Reschedule Modal Dialog */}
+      <Dialog open={rescheduleBooking !== null} onOpenChange={(open) => { if (!open) setRescheduleBooking(null); }}>
+        <DialogContent className="max-w-md rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle>Reschedule Mentoring Session</DialogTitle>
+            <DialogDescription>
+              Choose a new date and time for your session with {rescheduleBooking?.mentorName}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold">New Date</Label>
+              <Input
+                type="date"
+                value={newDate}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setNewDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold">New Time Slot (24-hour)</Label>
+              <Input
+                type="time"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold">Reason for Rescheduling (Optional)</Label>
+              <Textarea
+                placeholder="Let the mentor know why you need to reschedule..."
+                value={rescheduleReason}
+                onChange={(e) => setRescheduleReason(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleBooking(null)}>Cancel</Button>
+            <Button
+              className="bg-[#0073e6] hover:bg-[#0062c4] text-white"
+              onClick={handleRescheduleSubmit}
+              disabled={isRescheduling}
+            >
+              {isRescheduling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CalendarClock className="h-4 w-4 mr-2" />}
+              Confirm Reschedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={cancelBooking !== null} onOpenChange={(open) => { if (!open) setCancelBooking(null); }}>
+        <DialogContent className="max-w-md rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-rose-600">Cancel Mentoring Session</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel your session with {cancelBooking?.mentorName}? This will release the booked time slot.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <Label className="text-xs font-bold">Reason for Cancellation</Label>
+            <Textarea
+              placeholder="Provide a brief explanation..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={2}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelBooking(null)}>Keep Session</Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelSubmit}
+              disabled={isCancelling}
+            >
+              {isCancelling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirm Cancellation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leave Review Dialog */}
+      <Dialog open={reviewBooking !== null} onOpenChange={(open) => { if (!open) setReviewBooking(null); }}>
+        <DialogContent className="max-w-md rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle>Rate & Review Your Session</DialogTitle>
+            <DialogDescription>
+              Share your experience with {reviewBooking?.mentorName} to help other students.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2 text-center">
+              <Label className="text-xs font-bold">Your Rating</Label>
+              <div className="flex justify-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="p-1 rounded-lg transition-transform hover:scale-110 focus:outline-none"
+                  >
+                    <Star
+                      className={`h-7 w-7 ${
+                        star <= rating
+                          ? "fill-amber-400 text-amber-500"
+                          : "fill-slate-100 text-slate-300"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold">Written Feedback</Label>
+              <Textarea
+                placeholder="What did you learn? How helpful was the mentor?"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewBooking(null)}>Cancel</Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              onClick={handleReviewSubmit}
+              disabled={isSubmittingReview}
+            >
+              {isSubmittingReview ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MessageSquare className="h-4 w-4 mr-2" />}
+              Submit Review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

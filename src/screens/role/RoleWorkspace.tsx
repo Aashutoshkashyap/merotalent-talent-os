@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import JobApplicantReview from "@/components/jobs/JobApplicantReview";
+import { MentorSessionPipeline } from "@/components/mentors/MentorSessionPipeline";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
@@ -773,6 +774,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
             </article>
           </section>
           {role === "company" && <JobApplicantReview />}
+          {role === "mentor" && <MentorSessionPipeline />}
         </main>
       </div>
     </div>

@@ -13,7 +13,8 @@ export interface TransactionalEmail {
     | "mentor_booking_received"
     | "event_registration_received"
     | "job_application_received"
-    | "guest_application_verification";
+    | "guest_application_verification"
+    | "platform_notification";
   to: string;
   subject: string;
   text: string;
