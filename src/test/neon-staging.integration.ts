@@ -13,6 +13,9 @@ import {
 import { NeonRepositories } from "@/lib/server/neon-repositories";
 import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
 import { appendNotificationEvent, listApplicationEvents, requireConversationMembership } from "@/lib/server/neon-application-events";
+import { listOwnNotifications, markOwnNotificationsRead } from "@/lib/server/neon-notifications";
+import { submitCollegeAdmission } from "@/lib/server/neon-college-admissions";
+import { listOwnSavedJobs } from "@/lib/server/neon-saved-jobs";
 import { getNeonDatabaseConfig, NEON_MIGRATION_STAGING_BRANCH_ID } from "@/lib/neon/neon-config";
 import {
   deleteInstituteMedia, managedInstituteMediaSignedUrl,
@@ -122,10 +125,101 @@ describe("real Neon staging data and authorization policy", () => {
     const [profile] = await queryRows<{ user_id: string }>(`
       SELECT user_id FROM public.profiles WHERE account_status='active' LIMIT 1`);
     const actor: NeonActor = {
-      userId: profile.user_id, neonAuthUserId: "POLICY_ONLY", roles: [], permissions: [], platformAdmin: false,
+      userId: profile.user_id, neonAuthUserId: randomUUID(), roles: [], permissions: [], platformAdmin: false,
     };
     await expect(requireConversationMembership(actor, randomUUID()))
       .rejects.toMatchObject({ status: 403, code: "CONVERSATION_FORBIDDEN" });
+  });
+
+  it("reads and marks only the linked recipient's notification in one staging transaction", async () => {
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
+      const [identity] = (await client.query<{ legacy_user_id: string; neon_auth_user_id: string }>(`
+        SELECT a.legacy_user_id, l.neon_auth_user_id
+        FROM public.neon_identity_links l
+        JOIN public.neon_application_accounts a ON a.id = l.application_account_id
+        WHERE a.status='active' AND l.status='verified' LIMIT 1`)).rows;
+      expect(identity).toBeDefined();
+      const [notification] = (await client.query<{ id: string }>(`
+        INSERT INTO public.notifications(recipient_id,title,message)
+        VALUES ($1,'Staging notification test','Temporary, rolled back') RETURNING id`, [identity.legacy_user_id])).rows;
+      const actor: NeonActor = {
+        userId: identity.legacy_user_id, neonAuthUserId: identity.neon_auth_user_id,
+        roles: [], permissions: [], platformAdmin: false,
+      };
+      const txReader = { query: async <T extends import("pg").QueryResultRow>(sql: string, params: readonly unknown[]) =>
+        (await client.query<T>(sql, [...params])).rows };
+      const before = await listOwnNotifications(actor, txReader);
+      expect(before.notifications.some(item => item.id === notification.id)).toBe(true);
+      expect(before.unreadCount).toBeGreaterThan(0);
+      expect(await markOwnNotificationsRead(actor, notification.id, txReader)).toBe(1);
+      expect(await markOwnNotificationsRead({ ...actor, userId: randomUUID() }, notification.id, txReader)).toBe(0);
+      const after = await listOwnNotifications(actor, txReader);
+      expect(after.notifications.find(item => item.id === notification.id)?.is_read).toBe(true);
+    } finally {
+      await client.query("ROLLBACK").catch(() => undefined);
+      client.release();
+    }
+  });
+
+  it("executes the saved-jobs query against the actual staging schema", async () => {
+    const [profile] = await queryRows<{ user_id: string }>(`
+      SELECT user_id FROM public.profiles WHERE account_status='active' LIMIT 1`);
+    const actor: NeonActor = {
+      userId: profile.user_id, neonAuthUserId: randomUUID(), roles: [], permissions: [], platformAdmin: false,
+    };
+    const rows = await listOwnSavedJobs(actor, 20, 0);
+    expect(Array.isArray(rows)).toBe(true);
+  });
+
+  it("inserts a college application through the linked profile and rolls back", async () => {
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
+      const [identity] = (await client.query<{ legacy_user_id: string; neon_auth_user_id: string }>(`
+        SELECT a.legacy_user_id, l.neon_auth_user_id
+        FROM public.neon_identity_links l
+        JOIN public.neon_application_accounts a ON a.id = l.application_account_id
+        WHERE a.status='active' AND l.status='verified' LIMIT 1`)).rows;
+      expect(identity).toBeDefined();
+      await client.query(`UPDATE public.profiles
+        SET full_name='Staging College UAT', phone='9800000000', whatsapp_number='9800000000',
+            location='Kathmandu', education='Bachelor'
+        WHERE user_id=$1::uuid`, [identity.legacy_user_id]);
+      const [institute] = (await client.query<{ id: string }>(`
+        SELECT id FROM public.institutes WHERE status='approved' AND deleted_at IS NULL
+        ORDER BY id LIMIT 1`)).rows;
+      expect(institute).toBeDefined();
+      await client.query(`UPDATE public.institutes
+        SET applications_enabled=true, admission_status='open',
+            admission_deadline=now()+interval '1 day'
+        WHERE id=$1::uuid`, [institute.id]);
+      const actor: NeonActor = {
+        userId: identity.legacy_user_id, neonAuthUserId: identity.neon_auth_user_id,
+        roles: ["talent"], permissions: [], platformAdmin: false,
+      };
+      const txReader = { query: async <T extends import("pg").QueryResultRow>(sql: string, params: readonly unknown[]) =>
+        (await client.query<T>(sql, [...params])).rows };
+      const result = await submitCollegeAdmission(actor, institute.id,
+        { programInterest: "Staging integration UAT" }, txReader);
+      expect(result?.id).toBeTruthy();
+      const [saved] = (await client.query<{ applicant_id: string; institute_id: string }>(`
+        SELECT applicant_id, institute_id FROM public.college_applications WHERE id=$1::uuid`, [result?.id])).rows;
+      expect(saved).toEqual({ applicant_id: actor.userId, institute_id: institute.id });
+      await expect(submitCollegeAdmission({ ...actor, neonAuthUserId: randomUUID() },
+        institute.id, { programInterest: "Must not be saved" }, txReader))
+        .rejects.toMatchObject({ status: 403, code: "IDENTITY_NOT_LINKED" });
+      const [count] = (await client.query<{ count: number }>(`
+        SELECT count(*)::int AS count FROM public.college_applications
+        WHERE institute_id=$1::uuid AND applicant_id=$2::uuid
+          AND program_interest IN ('Staging integration UAT','Must not be saved')`,
+        [institute.id, actor.userId])).rows;
+      expect(count.count).toBe(1);
+    } finally {
+      await client.query("ROLLBACK").catch(() => undefined);
+      client.release();
+    }
   });
 
   it("queries both restored public views and confirms their visibility filters", async () => {
