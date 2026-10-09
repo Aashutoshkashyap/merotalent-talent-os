@@ -212,4 +212,169 @@ export class NeonMentorsRepository {
       ORDER BY b.scheduled_start DESC
       LIMIT 100`, [actor.userId]);
   }
+
+  async listOwnBookingsDetailed(actor: NeonActor, mode: "student" | "mentor"): Promise<Array<Record<string, unknown>>> {
+    if (mode === "mentor") {
+      // Find mentor record for this user
+      const mentors = await this.db.query<{ id: string }>(`
+        SELECT id FROM public.mentors WHERE user_id = $1::uuid AND deleted_at IS NULL LIMIT 1`,
+        [actor.userId]);
+      if (mentors.length === 0) return [];
+      return this.db.query<Record<string, unknown>>(`
+        SELECT b.id, b.student_id, b.mentor_service_id, b.scheduled_start, b.scheduled_end,
+               b.status, b.payment_status, b.amount::float AS amount, b.currency,
+               b.notes, b.form_data, b.created_at
+        FROM public.mentor_bookings b
+        WHERE b.mentor_id = $1::uuid AND b.deleted_at IS NULL
+        ORDER BY b.scheduled_start DESC
+        LIMIT 100`, [mentors[0].id]);
+    }
+
+    // Student mode — join with mentor profile data
+    const bookings = await this.db.query<Record<string, unknown>>(`
+      SELECT b.id, b.mentor_id, b.mentor_service_id, b.scheduled_start, b.scheduled_end,
+             b.status, b.payment_status, b.amount::float AS amount, b.currency,
+             b.notes, b.form_data, b.created_at,
+             m.user_id AS mentor_user_id, m.headline AS mentor_headline,
+             p.full_name AS mentor_name, p.avatar_url AS mentor_avatar
+      FROM public.mentor_bookings b
+      LEFT JOIN public.mentors m ON m.id = b.mentor_id
+      LEFT JOIN public.profiles p ON p.user_id = m.user_id
+      WHERE b.student_id = $1::uuid AND b.deleted_at IS NULL
+      ORDER BY b.scheduled_start DESC
+      LIMIT 100`, [actor.userId]);
+
+    return bookings.map((b: Record<string, unknown>) => ({
+      id: b.id,
+      mentorId: b.mentor_id,
+      mentorName: b.mentor_name || b.mentor_headline || "Mentor",
+      mentorAvatar: b.mentor_avatar || null,
+      scheduledStart: b.scheduled_start,
+      scheduledEnd: b.scheduled_end,
+      status: b.status,
+      paymentStatus: b.payment_status,
+      amount: Number(b.amount || 0),
+      currency: b.currency,
+      notes: b.notes,
+      serviceTitle: (b.form_data as any)?.serviceTitle || "Mentorship Session",
+      topic: (b.form_data as any)?.topic || "Career & Academic Guidance",
+      createdAt: b.created_at,
+    }));
+  }
+
+  async rescheduleBooking(
+    actor: NeonActor,
+    bookingId: string,
+    newStart: string,
+    newEnd: string,
+    reason?: string,
+  ): Promise<Record<string, unknown>> {
+    const bookings = await this.db.query<{ id: string; student_id: string; mentor_id: string; status: string }>(`
+      SELECT b.id, b.student_id, m.user_id AS mentor_user_id, b.status
+      FROM public.mentor_bookings b
+      LEFT JOIN public.mentors m ON m.id = b.mentor_id
+      WHERE b.id = $1::uuid AND b.deleted_at IS NULL LIMIT 1`, [bookingId]);
+
+    const booking = bookings[0];
+    if (!booking) throw new NeonAuthorizationError(404, "BOOKING_NOT_FOUND", "Booking not found.");
+    if (booking.student_id !== actor.userId && (booking as any).mentor_user_id !== actor.userId) {
+      throw new NeonAuthorizationError(403, "FORBIDDEN", "You are not part of this booking.");
+    }
+
+    const updated = await this.db.query<Record<string, unknown>>(`
+      UPDATE public.mentor_bookings
+      SET scheduled_start = $2::timestamptz, scheduled_end = $3::timestamptz,
+          status = 'rescheduled', notes = COALESCE($4, notes), updated_at = now()
+      WHERE id = $1::uuid
+      RETURNING id, mentor_id, student_id, scheduled_start, scheduled_end, status, updated_at`,
+      [bookingId, newStart, newEnd, reason ?? null]);
+
+    return updated[0] ?? {};
+  }
+
+  async cancelBooking(
+    actor: NeonActor,
+    bookingId: string,
+    reason?: string,
+  ): Promise<Record<string, unknown>> {
+    const bookings = await this.db.query<{ id: string; student_id: string }>(`
+      SELECT b.id, b.student_id, m.user_id AS mentor_user_id
+      FROM public.mentor_bookings b
+      LEFT JOIN public.mentors m ON m.id = b.mentor_id
+      WHERE b.id = $1::uuid AND b.deleted_at IS NULL LIMIT 1`, [bookingId]);
+
+    const booking = bookings[0];
+    if (!booking) throw new NeonAuthorizationError(404, "BOOKING_NOT_FOUND", "Booking not found.");
+    if (booking.student_id !== actor.userId && (booking as any).mentor_user_id !== actor.userId) {
+      throw new NeonAuthorizationError(403, "FORBIDDEN", "You are not part of this booking.");
+    }
+
+    const updated = await this.db.query<Record<string, unknown>>(`
+      UPDATE public.mentor_bookings
+      SET status = 'cancelled', notes = COALESCE($2, notes), updated_at = now()
+      WHERE id = $1::uuid
+      RETURNING id, status, updated_at`, [bookingId, reason ?? null]);
+
+    return updated[0] ?? {};
+  }
+
+  async completeBooking(
+    actor: NeonActor,
+    bookingId: string,
+  ): Promise<Record<string, unknown>> {
+    const updated = await this.db.query<Record<string, unknown>>(`
+      UPDATE public.mentor_bookings
+      SET status = 'completed', updated_at = now()
+      WHERE id = $1::uuid AND deleted_at IS NULL
+      RETURNING id, status, updated_at`, [bookingId]);
+
+    if (updated.length === 0) throw new NeonAuthorizationError(404, "BOOKING_NOT_FOUND", "Booking not found.");
+    return updated[0];
+  }
+
+  async submitReview(
+    actor: NeonActor,
+    bookingId: string,
+    rating: number,
+    feedback?: string,
+  ): Promise<Record<string, unknown>> {
+    // Verify the booking belongs to this user
+    const bookings = await this.db.query<{ id: string; mentor_id: string; student_id: string; status: string }>(`
+      SELECT id, mentor_id, student_id, status FROM public.mentor_bookings
+      WHERE id = $1::uuid AND deleted_at IS NULL LIMIT 1`, [bookingId]);
+
+    const booking = bookings[0];
+    if (!booking) throw new NeonAuthorizationError(404, "BOOKING_NOT_FOUND", "Booking not found.");
+    if (booking.student_id !== actor.userId) {
+      throw new NeonAuthorizationError(403, "FORBIDDEN", "Only the student who booked can leave a review.");
+    }
+
+    // Check if already reviewed
+    const existing = await this.db.query<{ id: string }>(`
+      SELECT id FROM public.mentor_reviews
+      WHERE booking_id = $1::uuid AND deleted_at IS NULL LIMIT 1`, [bookingId]);
+    if (existing.length > 0) {
+      throw new NeonAuthorizationError(400, "ALREADY_REVIEWED", "You have already reviewed this session.");
+    }
+
+    const reviews = await this.db.query<Record<string, unknown>>(`
+      INSERT INTO public.mentor_reviews (booking_id, mentor_id, student_id, rating, feedback)
+      VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5)
+      RETURNING id, booking_id, mentor_id, student_id, rating, feedback, created_at`,
+      [bookingId, booking.mentor_id, actor.userId, rating, feedback ?? null]);
+
+    // Update mentor aggregate rating
+    await this.db.query(`
+      UPDATE public.mentors
+      SET rating = (
+        SELECT COALESCE(AVG(rating), 0) FROM public.mentor_reviews
+        WHERE mentor_id = $1::uuid AND deleted_at IS NULL
+      ),
+      total_sessions = total_sessions + 1,
+      updated_at = now()
+      WHERE id = $1::uuid`, [booking.mentor_id]);
+
+    return reviews[0];
+  }
 }
+

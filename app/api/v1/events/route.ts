@@ -1,5 +1,11 @@
+/**
+ * Public events discovery endpoint.
+ * Mode-aware: uses NeonEventsRepository in staging, Supabase in legacy.
+ */
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAdminClient } from "@/lib/server/supabase";
+import { NeonEventsRepository } from "@/lib/server/neon-events";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,12 +16,30 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const search = url.searchParams.get("search")?.trim().toLowerCase();
     const categorySlug = url.searchParams.get("category")?.trim();
-    const format = url.searchParams.get("format")?.trim(); // online, offline, hybrid
-    const eventType = url.searchParams.get("type")?.trim(); // free, paid
+    const format = url.searchParams.get("format")?.trim();
+    const eventType = url.searchParams.get("type")?.trim();
     const organizerType = url.searchParams.get("organizer_type")?.trim();
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "50", 10)));
     const offset = Math.max(0, parseInt(url.searchParams.get("offset") || "0", 10));
 
+    if (getBackendMode() === "neon-staging") {
+      const repo = new NeonEventsRepository();
+      const events = await repo.listPublicEvents({
+        search: search || undefined,
+        format: (format && format !== "all") ? format : undefined,
+        eventType: (eventType && eventType !== "all") ? eventType : undefined,
+        limit,
+        offset,
+      });
+
+      return jsonApiResponse({
+        data: events,
+        error: null,
+        meta: { requestId, count: events.length, offset, limit },
+      });
+    }
+
+    // Legacy Supabase path
     const db = getAdminClient() as any;
 
     let query = db

@@ -1,5 +1,11 @@
+/**
+ * Event categories endpoint.
+ * Mode-aware: uses NeonEventsRepository in staging, Supabase in legacy.
+ */
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAdminClient } from "@/lib/server/supabase";
+import { NeonEventsRepository } from "@/lib/server/neon-events";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -7,6 +13,13 @@ export const runtime = "nodejs";
 export async function GET() {
   const requestId = crypto.randomUUID();
   try {
+    if (getBackendMode() === "neon-staging") {
+      const repo = new NeonEventsRepository();
+      const categories = await repo.listCategories();
+      return jsonApiResponse({ data: categories, error: null, meta: { requestId } });
+    }
+
+    // Legacy Supabase path
     const db = getAdminClient() as any;
     const { data, error } = await db
       .from("event_categories")

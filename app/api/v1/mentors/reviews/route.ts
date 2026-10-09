@@ -1,6 +1,13 @@
+/**
+ * Mentor review submission endpoint.
+ * Mode-aware: uses NeonMentorsRepository in staging, legacy mentorship-service otherwise.
+ */
 import { authenticateRequest, ApiAuthError } from "@/lib/server/auth";
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import { submitMentorReview } from "@/lib/server/mentorship-service";
+import { NeonMentorsRepository } from "@/lib/server/neon-mentors";
+import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,7 +15,6 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const auth = await authenticateRequest(request);
     const body = await request.json();
 
     if (!body.bookingId) {
@@ -24,6 +30,16 @@ export async function POST(request: Request) {
         400
       );
     }
+
+    if (getBackendMode() === "neon-staging") {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonMentorsRepository();
+      const review = await repo.submitReview(actor, body.bookingId, body.rating, body.feedback);
+      return jsonApiResponse({ data: review, error: null, meta: { requestId } }, 201);
+    }
+
+    // Legacy path
+    const auth = await authenticateRequest(request);
 
     const review = await submitMentorReview({
       userId: auth.user.id,

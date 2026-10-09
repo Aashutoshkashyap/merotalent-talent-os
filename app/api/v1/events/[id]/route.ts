@@ -1,5 +1,11 @@
+/**
+ * Single event detail endpoint (by UUID or slug).
+ * Mode-aware: uses NeonEventsRepository in staging, Supabase in legacy.
+ */
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAdminClient } from "@/lib/server/supabase";
+import { NeonEventsRepository } from "@/lib/server/neon-events";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,8 +17,21 @@ export async function GET(
   const requestId = crypto.randomUUID();
   try {
     const { id } = await params;
-    const db = getAdminClient() as any;
 
+    if (getBackendMode() === "neon-staging") {
+      const repo = new NeonEventsRepository();
+      const event = await repo.getPublicEventDetail(id);
+      if (!event) {
+        return jsonApiResponse(
+          { data: null, error: { code: "EVENT_NOT_FOUND", message: "The requested event was not found or is no longer available." }, meta: { requestId } },
+          404
+        );
+      }
+      return jsonApiResponse({ data: event, error: null, meta: { requestId } });
+    }
+
+    // Legacy Supabase path
+    const db = getAdminClient() as any;
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
     let query = db

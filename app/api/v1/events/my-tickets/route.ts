@@ -1,6 +1,13 @@
+/**
+ * User's own event tickets/registrations endpoint.
+ * Mode-aware: uses NeonEventsRepository in staging, Supabase in legacy.
+ */
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import { authenticateRequest } from "@/lib/server/auth";
 import { getAdminClient } from "@/lib/server/supabase";
+import { NeonEventsRepository } from "@/lib/server/neon-events";
+import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,6 +15,18 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
+    if (getBackendMode() === "neon-staging") {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonEventsRepository();
+      const registrations = await repo.listOwnRegistrations(actor);
+      return jsonApiResponse({
+        data: registrations,
+        error: null,
+        meta: { requestId, count: registrations.length },
+      });
+    }
+
+    // Legacy Supabase path
     const authenticated = await authenticateRequest(request);
     const db = getAdminClient() as any;
 

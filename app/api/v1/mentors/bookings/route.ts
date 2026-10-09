@@ -1,10 +1,17 @@
+/**
+ * Mentor bookings management endpoint (list, reschedule, cancel, complete).
+ * Mode-aware: uses NeonMentorsRepository in staging, legacy Supabase/mentorship-service otherwise.
+ */
 import { authenticateRequest, ApiAuthError } from "@/lib/server/auth";
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAdminClient } from "@/lib/server/supabase";
 import {
   rescheduleMentorBooking,
   cancelMentorBooking,
 } from "@/lib/server/mentorship-service";
+import { NeonMentorsRepository } from "@/lib/server/neon-mentors";
+import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,10 +19,19 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const auth = await authenticateRequest(request);
-    const db = getAdminClient() as any;
     const url = new URL(request.url);
     const mode = url.searchParams.get("mode"); // "mentor" or "student"
+
+    if (getBackendMode() === "neon-staging") {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonMentorsRepository();
+      const bookings = await repo.listOwnBookingsDetailed(actor, mode === "mentor" ? "mentor" : "student");
+      return jsonApiResponse({ data: bookings, error: null, meta: { requestId } }, 200);
+    }
+
+    // Legacy path
+    const auth = await authenticateRequest(request);
+    const db = getAdminClient() as any;
 
     if (mode === "mentor") {
       // Find mentor record for this user
@@ -128,7 +144,6 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const auth = await authenticateRequest(request);
     const body = await request.json();
 
     if (!body.bookingId) {
@@ -139,6 +154,43 @@ export async function PATCH(request: Request) {
     }
 
     const action = body.action; // "reschedule", "cancel", "complete"
+
+    if (getBackendMode() === "neon-staging") {
+      const actor = await getAuthenticatedApplicationUser(request);
+      const repo = new NeonMentorsRepository();
+
+      if (action === "reschedule") {
+        if (!body.newDate || !body.newTime) {
+          return jsonApiResponse(
+            { data: null, error: { code: "INVALID_SCHEDULE", message: "New date and time are required for rescheduling." }, meta: { requestId } },
+            400
+          );
+        }
+        const newStart = `${body.newDate}T${body.newTime}:00`;
+        const durationMinutes = body.durationMinutes ? Number(body.durationMinutes) : 60;
+        const newEnd = new Date(new Date(newStart).getTime() + durationMinutes * 60000).toISOString();
+        const result = await repo.rescheduleBooking(actor, body.bookingId, newStart, newEnd, body.reason);
+        return jsonApiResponse({ data: result, error: null, meta: { requestId } }, 200);
+      }
+
+      if (action === "cancel") {
+        const result = await repo.cancelBooking(actor, body.bookingId, body.reason);
+        return jsonApiResponse({ data: result, error: null, meta: { requestId } }, 200);
+      }
+
+      if (action === "complete") {
+        const result = await repo.completeBooking(actor, body.bookingId);
+        return jsonApiResponse({ data: result, error: null, meta: { requestId } }, 200);
+      }
+
+      return jsonApiResponse(
+        { data: null, error: { code: "INVALID_ACTION", message: "Supported actions are 'reschedule', 'cancel', or 'complete'." }, meta: { requestId } },
+        400
+      );
+    }
+
+    // Legacy path
+    const auth = await authenticateRequest(request);
 
     if (action === "reschedule") {
       if (!body.newDate || !body.newTime) {
