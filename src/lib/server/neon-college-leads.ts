@@ -50,6 +50,12 @@ export async function listManagedCollegeLeads(
         SELECT 1 FROM public.profiles actor
         WHERE actor.user_id = $1::uuid AND actor.account_status = 'active'
           AND actor.deleted_at IS NULL
+          AND EXISTS (
+            SELECT 1 FROM public.neon_application_accounts account
+            JOIN public.neon_identity_links link ON link.application_account_id = account.id
+            WHERE account.legacy_user_id = actor.user_id AND account.status = 'active'
+              AND link.neon_auth_user_id = $3::uuid AND link.status = 'verified'
+          )
           AND (
             EXISTS (
               SELECT 1 FROM public.user_roles ur
@@ -106,7 +112,7 @@ export async function listManagedCollegeLeads(
     SELECT EXISTS (SELECT 1 FROM target) AS exists,
            COALESCE((SELECT allowed FROM access), false) AS allowed,
            COALESCE((SELECT jsonb_agg(to_jsonb(s) ORDER BY s.submitted_at DESC, s.id DESC)
-                     FROM selected s), '[]'::jsonb) AS applications`, [actor.userId, instituteId]);
+                     FROM selected s), '[]'::jsonb) AS applications`, [actor.userId, instituteId, actor.neonAuthUserId]);
   if (!result?.exists) return null;
   if (!result.allowed) {
     throw new NeonAuthorizationError(403, "ENTITY_ACCESS_REQUIRED", "You cannot view these applications.");
