@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   authenticateAdminRequest: vi.fn(),
   getProviderStatus: vi.fn(),
+  getTransactionalEmailProvider: vi.fn(),
 }));
 
 vi.mock("@/lib/server/auth", () => ({
@@ -12,6 +13,10 @@ vi.mock("@/lib/server/auth", () => ({
 
 vi.mock("@/lib/server/provider-config-service", () => ({
   getProviderStatus: mocks.getProviderStatus,
+}));
+
+vi.mock("@/lib/server/email-provider", () => ({
+  getTransactionalEmailProvider: mocks.getTransactionalEmailProvider,
 }));
 
 import { GET as getProviderStatus } from "../../app/api/v1/admin/provider-status/route";
@@ -39,6 +44,7 @@ describe("provider status route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.authenticateAdminRequest.mockResolvedValue({ user: { id: "11111111-1111-4111-8111-111111111111" } });
+    mocks.getTransactionalEmailProvider.mockReturnValue({ name: "unconfigured" });
   });
 
   it("reports a missing eSewa secret as not configured", async () => {
@@ -65,6 +71,21 @@ describe("provider status route", () => {
   it("reports a configured and enabled eSewa integration as active", async () => {
     const { body } = await readStatus({ configured: true, enabled: true });
     expect(body.data.payment).toMatchObject({
+      status: "configured_active",
+      credentialConfigured: true,
+      integrationEnabled: true,
+      deliveryAvailable: true,
+    });
+  });
+
+  it("reports the server-only Resend environment adapter as active", async () => {
+    mocks.getTransactionalEmailProvider.mockReturnValue({ name: "resend" });
+    mocks.getProviderStatus.mockResolvedValueOnce(provider({ configured: false, enabled: false }));
+    mocks.getProviderStatus.mockResolvedValueOnce(provider({ providerName: null, configured: false, enabled: false }));
+    mocks.getProviderStatus.mockResolvedValueOnce(provider({ providerName: "openai-compatible" }));
+    const response = await getProviderStatus(new Request("https://merotalent.test/api/v1/admin/provider-status"));
+    const body = await response.json();
+    expect(body.data.email).toMatchObject({
       status: "configured_active",
       credentialConfigured: true,
       integrationEnabled: true,

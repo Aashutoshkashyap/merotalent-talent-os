@@ -2,6 +2,7 @@ import { jsonApiResponse } from "@/lib/server/api-response";
 import { authenticateAdminRequest } from "@/lib/server/auth";
 import { getProviderStatus } from "@/lib/server/provider-config-service";
 import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
+import { getTransactionalEmailProvider } from "@/lib/server/email-provider";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,6 +16,7 @@ type ProviderHealthStatus =
 const providerHealth = (
   provider: Awaited<ReturnType<typeof getProviderStatus>>,
   expectedProviderName: string,
+  environmentConfigured = false,
 ): {
   status: ProviderHealthStatus;
   credentialConfigured: boolean;
@@ -22,10 +24,10 @@ const providerHealth = (
   secretStorageReady: boolean;
   deliveryAvailable: boolean;
 } => {
-  const credentialConfigured = provider.configured;
-  const integrationEnabled = provider.enabled;
-  const secretStorageReady = provider.secretStorageReady;
-  const adapterSelected = provider.providerName === expectedProviderName;
+  const credentialConfigured = provider.configured || environmentConfigured;
+  const integrationEnabled = provider.enabled || environmentConfigured;
+  const secretStorageReady = provider.secretStorageReady || environmentConfigured;
+  const adapterSelected = provider.providerName === expectedProviderName || environmentConfigured;
 
   if (!secretStorageReady) {
     return {
@@ -88,7 +90,7 @@ export async function GET(request: Request) {
   return jsonApiResponse({
     data: {
       payment: providerHealth(payment, "esewa"),
-      email: providerHealth(email, "resend"),
+      email: providerHealth(email, "resend", getTransactionalEmailProvider().name === "resend"),
       ai: providerHealth(ai, "openai-compatible"),
     },
     error: null,

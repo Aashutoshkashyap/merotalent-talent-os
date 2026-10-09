@@ -29,6 +29,7 @@ export type EsewaConfiguration = { merchantCode: string; environment: "productio
 
 const base64Hmac = (message: string, secret: string) => createHmac("sha256", secret).update(message).digest("base64");
 const formatAmount = (amount: number) => amount.toFixed(2);
+// eSewa ePay V2 endpoints (official — https://developer.esewa.com.np/pages/Epay)
 const ESEWA_ENDPOINTS = {
   uat: {
     form: "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
@@ -36,7 +37,7 @@ const ESEWA_ENDPOINTS = {
   },
   production: {
     form: "https://epay.esewa.com.np/api/epay/main/v2/form",
-    status: "https://esewa.com.np/api/epay/transaction/status/",
+    status: "https://epay.esewa.com.np/api/epay/transaction/status/",
   },
 } as const;
 const safeEquals = (actual: string, expected: string) => {
@@ -86,14 +87,29 @@ export class EsewaV2PaymentProvider implements PaymentProvider {
     url.searchParams.set("product_code", this.configuration.merchantCode);
     url.searchParams.set("total_amount", formatAmount(input.amount));
     url.searchParams.set("transaction_uuid", input.reference);
-    const response = await (input.fetcher ?? fetch)(url, { headers: { Accept: "application/json" }, cache: "no-store" });
-    if (!response.ok) throw new Error("eSewa transaction verification is unavailable.");
+    const response = await (input.fetcher ?? fetch)(url.toString(), { headers: { Accept: "application/json" }, cache: "no-store" });
+    if (!response.ok) {
+      // eSewa returns 400/404 for unknown transactions — treat as failed, not unavailable
+      if (response.status === 400 || response.status === 404) {
+        return { status: "failed" as const, transactionId: input.reference };
+      }
+      throw new Error(`eSewa transaction verification returned HTTP ${response.status}.`);
+    }
     const body = await response.json() as Record<string, unknown>;
     const status = typeof body.status === "string" ? body.status.toUpperCase() : "";
-    const amount = Number(body.total_amount ?? body.totalAmount);
-    const reference = String(body.transaction_uuid ?? body.pid ?? "");
-    if (reference !== input.reference || amount !== input.amount) throw new Error("eSewa verification did not match the checkout order.");
-    return { status: status === "COMPLETE" ? "successful" as const : status === "CANCELED" ? "cancelled" as const : status === "PENDING" ? "pending" as const : "failed" as const, transactionId: String(body.ref_id ?? body.refId ?? body.transaction_code ?? input.reference) };
+    // eSewa may return the amount as a string or number; compare after parsing both as floats
+    const returnedAmount = Number(body.total_amount ?? body.totalAmount);
+    const returnedReference = String(body.transaction_uuid ?? body.pid ?? "");
+    if (returnedReference !== input.reference) throw new Error("eSewa verification reference did not match the checkout order.");
+    // Allow a tiny float tolerance (eSewa rounds to 2dp)
+    if (Math.abs(returnedAmount - input.amount) > 0.01) throw new Error("eSewa verification amount did not match the checkout order.");
+    return {
+      status: status === "COMPLETE" ? "successful" as const
+        : status === "CANCELED" ? "cancelled" as const
+        : status === "PENDING" ? "pending" as const
+        : "failed" as const,
+      transactionId: String(body.ref_id ?? body.refId ?? body.transaction_code ?? input.reference),
+    };
   }
 }
 

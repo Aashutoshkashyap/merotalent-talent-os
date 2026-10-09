@@ -48,7 +48,7 @@ describe("provider-independent delivery boundaries", () => {
     const production = getPaymentProvider({ providerName: "esewa", secret: "merchant-secret", publicConfig: { merchant_code: "LIVE-CODE", environment: "production" } }) as EsewaV2PaymentProvider;
     await production.lookupStatus({ reference: "mt-order-2", amount: 1500, fetcher: fetcher as typeof fetch });
     expect(seen[0]).toContain("https://rc.esewa.com.np/api/epay/transaction/status/");
-    expect(seen[1]).toContain("https://esewa.com.np/api/epay/transaction/status/");
+    expect(seen[1]).toContain("https://epay.esewa.com.np/api/epay/transaction/status/");
   });
 
   it("does not create an eSewa adapter without a merchant-issued product code", () => {

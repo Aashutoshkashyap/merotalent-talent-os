@@ -459,24 +459,22 @@ export default function AdminPayments() {
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] font-bold capitalize ${
-                        payment.reconciliation_status === "manual_review_required" || payment.reconciliation_status === "disputed"
-                          ? "bg-amber-50 text-amber-800 border-amber-300"
-                          : "bg-slate-50 text-slate-700 border-slate-200"
-                      }`}
+                      className={`text-[10px] font-bold capitalize ${payment.reconciliation_status === "manual_review_required" || payment.reconciliation_status === "disputed"
+                        ? "bg-amber-50 text-amber-800 border-amber-300"
+                        : "bg-slate-50 text-slate-700 border-slate-200"
+                        }`}
                     >
                       {payment.reconciliation_status || "reconciled"}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge
-                      className={`text-[10px] font-bold capitalize ${
-                        payment.status === "success"
-                          ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                          : payment.status === "pending"
+                      className={`text-[10px] font-bold capitalize ${payment.status === "success"
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                        : payment.status === "pending"
                           ? "bg-amber-100 text-amber-800 border-amber-200"
                           : "bg-red-100 text-red-800 border-red-200"
-                      }`}
+                        }`}
                     >
                       {payment.status}
                     </Badge>
@@ -648,9 +646,8 @@ export default function AdminPayments() {
                             <span className="font-semibold text-slate-900">{proof.file_name}</span>
                             <span className="text-slate-400 text-[10px]">({Math.round(proof.file_size / 1024)} KB)</span>
                           </div>
-                          <Badge className={`capitalize font-bold ${
-                            proof.status === "accepted" ? "bg-emerald-100 text-emerald-800" : proof.status === "rejected" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
-                          }`}>
+                          <Badge className={`capitalize font-bold ${proof.status === "accepted" ? "bg-emerald-100 text-emerald-800" : proof.status === "rejected" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
+                            }`}>
                             {proof.status}
                           </Badge>
                         </div>

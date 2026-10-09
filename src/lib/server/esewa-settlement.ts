@@ -291,6 +291,37 @@ export async function settleVerifiedCheckout(input: { provider: "esewa"; referen
     const { error: regError } = await db.from("event_registrations").update(regUpdate).eq("id", checkout.entity_id);
     if (regError) throw regError;
 
+    // Upon verified settlement, authoritatively issue digital QR tickets and notify user
+    if (input.status === "successful") {
+      try {
+        const { generateTicketsForRegistration } = await import("./events-service");
+        const tickets = await generateTicketsForRegistration(checkout.entity_id);
+
+        const { data: regInfo } = await db
+          .from("event_registrations")
+          .select("id, registration_number, events(id, title, start_date, location)")
+          .eq("id", checkout.entity_id)
+          .maybeSingle();
+
+        const { error: notifErr } = await db.from("notifications").insert({
+          recipient_id: checkout.user_id,
+          title: `Payment Verified & Tickets Issued: ${regInfo?.events?.title || "Event"}`,
+          message: `Your payment of NPR ${checkout.amount} was verified. Your digital passes (${tickets.length || 1}) are ready!`,
+          type: "success",
+          category: "event",
+          channel: "dashboard",
+          status: "queued",
+          entity_type: "event_registration",
+          entity_id: checkout.entity_id,
+          action_url: `/events/${regInfo?.events?.id || ""}`,
+          metadata: { payment_id: paymentId, registration_number: regInfo?.registration_number },
+        });
+        if (notifErr) console.error("Settlement notification error:", notifErr);
+      } catch (ticketError) {
+        console.error("Ticket issuance on settlement encountered an error:", ticketError);
+      }
+    }
+
     const { error: checkoutUpdateError } = await db.from("payment_checkout_sessions").update({ status: input.status, completed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", checkout.id);
     if (checkoutUpdateError) throw checkoutUpdateError;
 
