@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { MapPin, Phone, Mail, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -19,15 +20,21 @@ export default function ContactForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("contact_queries").insert({
-        name: formData.name,
-        email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
-        status: "pending",
-      });
-
-      if (error) throw error;
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/contact-queries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        if (!response.ok) throw new Error("The inquiry could not be saved. Please try again.");
+      } else {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { error } = await supabase.from("contact_queries").insert({
+          ...formData,
+          status: "pending",
+        });
+        if (error) throw error;
+      }
 
       toast({
         title: "Message Sent!",

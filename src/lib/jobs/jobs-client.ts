@@ -1,5 +1,9 @@
 import type { JobPreferences } from "./job-matching";
 
+// Legacy sends a Supabase bearer token; isolated Neon staging uses the
+// browser's same-origin HttpOnly Managed Auth cookie.
+const authHeaders = (token?: string) => token ? { Authorization: `Bearer ${token}` } : {};
+
 export interface StudentJobApplication {
   id: string;
   job_id: string;
@@ -59,30 +63,30 @@ export interface ScheduledInterview {
   };
 }
 
-export async function fetchMatchingJobs(token: string) {
+export async function fetchMatchingJobs(token?: string) {
   const res = await fetch("/api/v1/jobs/matching", {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: authHeaders(token),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error?.message || "Failed to load matching jobs.");
   return json.data || [];
 }
 
-export async function fetchJobPreferences(token: string): Promise<JobPreferences> {
+export async function fetchJobPreferences(token?: string): Promise<JobPreferences> {
   const res = await fetch("/api/v1/jobs/preferences", {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: authHeaders(token),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error?.message || "Failed to load job preferences.");
   return json.data || {};
 }
 
-export async function updateJobPreferences(prefs: JobPreferences, token: string) {
+export async function updateJobPreferences(prefs: JobPreferences, token?: string) {
   const res = await fetch("/api/v1/jobs/preferences", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...authHeaders(token),
     },
     body: JSON.stringify(prefs),
   });
@@ -91,39 +95,39 @@ export async function updateJobPreferences(prefs: JobPreferences, token: string)
   return json.data;
 }
 
-export async function fetchStudentApplications(token: string): Promise<StudentJobApplication[]> {
+export async function fetchStudentApplications(token?: string): Promise<StudentJobApplication[]> {
   const res = await fetch("/api/v1/jobs/applications", {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: authHeaders(token),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error?.message || "Failed to load job applications.");
   return json.data || [];
 }
 
-export async function fetchStudentInterviews(token: string): Promise<ScheduledInterview[]> {
+export async function fetchStudentInterviews(token?: string): Promise<ScheduledInterview[]> {
   const res = await fetch("/api/v1/jobs/interviews", {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: authHeaders(token),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error?.message || "Failed to load interview schedule.");
   return json.data || [];
 }
 
-export async function fetchSavedJobsList(token: string) {
+export async function fetchSavedJobsList(token?: string) {
   const res = await fetch("/api/v1/jobs/saved", {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: authHeaders(token),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error?.message || "Failed to load saved jobs.");
   return json.data || [];
 }
 
-export async function saveJobApi(jobId: string, token: string) {
+export async function saveJobApi(jobId: string, token?: string) {
   const res = await fetch("/api/v1/jobs/saved", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...authHeaders(token),
     },
     body: JSON.stringify({ jobId }),
   });
@@ -132,10 +136,10 @@ export async function saveJobApi(jobId: string, token: string) {
   return json.data;
 }
 
-export async function unsaveJobApi(jobId: string, token: string) {
+export async function unsaveJobApi(jobId: string, token?: string) {
   const res = await fetch(`/api/v1/jobs/saved?jobId=${jobId}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: authHeaders(token),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error?.message || "Failed to remove saved job.");
@@ -158,13 +162,13 @@ export async function submitJobApplicationApi(
     experience?: any[];
     certifications?: any[];
   },
-  token: string
+  token?: string
 ) {
   const res = await fetch("/api/v1/jobs/apply", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...authHeaders(token),
     },
     body: JSON.stringify(payload),
   });

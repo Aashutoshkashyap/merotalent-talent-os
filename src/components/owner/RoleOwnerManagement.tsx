@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
   BriefcaseBusiness,
+  Building2,
   CalendarDays,
   Clock3,
   Edit3,
@@ -25,10 +26,16 @@ import OwnerResourceDialog from "@/components/owner/OwnerResourceDialog";
 import OwnerStatusActions from "@/components/owner/OwnerStatusActions";
 import EntityAIControls from "@/components/owner/EntityAIControls";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
+import { saveRoleWorkspaceRecord, useNeonRoleWorkspaces } from "@/lib/neon/role-workspaces-client";
 
 export interface OwnerCompanyRecord {
   id: string;
   name: string;
+  description?: string | null;
+  website?: string | null;
+  location?: string | null;
+  industry?: string | null;
+  logo_url?: string | null;
 }
 
 export interface OwnerJobRecord {
@@ -82,6 +89,8 @@ export interface OwnerMentorRecord {
   is_available: boolean | null;
   availability?: { days?: string[]; startTime?: string; endTime?: string; timezone?: string } | null;
   approval_status: string;
+  profile_image_url?: string | null;
+  cover_image_url?: string | null;
 }
 
 export interface OwnerMentorServiceRecord {
@@ -144,6 +153,7 @@ interface RoleOwnerManagementProps {
   userId: string;
   snapshot: RoleOwnerSnapshot;
   onSaved: () => void;
+  capabilities?: Record<string, boolean>;
 }
 
 const fieldClassName = "rounded-xl border-[#eadfd7] bg-white";
@@ -183,13 +193,13 @@ interface EventEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
-  organizerType: "company" | "mentor";
-  organizerId: string;
+  organizerType: "user" | "college" | "company" | "mentor";
+  organizerId: string | null;
   event: OwnerEventRecord | null;
   onSaved: () => void;
 }
 
-const EventEditor = ({
+export const EventEditor = ({
   open,
   onOpenChange,
   userId,
@@ -271,7 +281,7 @@ const EventEditor = ({
       attachment_mime_type: attachmentMimeType || null,
     };
     const db = supabase as any;
-    const result = event
+    const result = useNeonRoleWorkspaces ? await saveRoleWorkspaceRecord("event", payload, event?.id) : event
       ? await db.from("events").update(payload).eq("id", event.id).eq("organizer_user_id", userId)
       : await db.from("events").insert(payload);
 
@@ -369,7 +379,7 @@ const EventEditor = ({
   );
 };
 
-const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerManagementProps, "role">) => {
+const CompanyOwnerManagement = ({ userId, snapshot, onSaved, capabilities }: Omit<RoleOwnerManagementProps, "role">) => {
   const { toast } = useToast();
   const [jobOpen, setJobOpen] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
@@ -384,6 +394,28 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
   const [isRemote, setIsRemote] = useState(false);
   const [deadline, setDeadline] = useState("");
   const [status, setStatus] = useState<"draft" | "pending_approval">("draft");
+  const [companyProfileOpen, setCompanyProfileOpen] = useState(false);
+  const [companyName, setCompanyName] = useState("");
+  const [companyDescription, setCompanyDescription] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [companyLocation, setCompanyLocation] = useState("");
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  useEffect(() => {
+    if (!companyProfileOpen || !snapshot.company) return;
+    setCompanyName(snapshot.company.name); setCompanyDescription(snapshot.company.description || "");
+    setCompanyWebsite(snapshot.company.website || ""); setCompanyLocation(snapshot.company.location || "");
+    setCompanyLogo(snapshot.company.logo_url || null);
+  }, [companyProfileOpen, snapshot.company]);
+  const saveCompany = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!snapshot.company) return;
+    setIsSubmitting(true);
+    const result = await saveRoleWorkspaceRecord("company", { name: companyName.trim(), description: companyDescription.trim() || null,
+      website: companyWebsite.trim() || null, location: companyLocation.trim() || null, logo_url: companyLogo }, snapshot.company.id);
+    setIsSubmitting(false);
+    if (result.error) { toast({ variant: "destructive", title: "Company was not saved", description: result.error.message }); return; }
+    toast({ title: "Company profile updated" }); setCompanyProfileOpen(false); onSaved();
+  };
 
   useEffect(() => {
     if (!jobOpen) return;
@@ -426,7 +458,7 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
       status,
     };
     const db = supabase as any;
-    const result = selectedJob
+    const result = useNeonRoleWorkspaces ? await saveRoleWorkspaceRecord("job", payload, selectedJob?.id) : selectedJob
       ? await db.from("jobs").update(payload).eq("id", selectedJob.id).eq("owner_user_id", userId)
       : await db.from("jobs").insert(payload);
     setIsSubmitting(false);
@@ -455,8 +487,9 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h2 className="font-display text-xl font-bold">Manage listings</h2><p className="mt-1 text-sm text-[#8d8179]">Draft and submit jobs or events owned by {snapshot.company.name}.</p></div>
         <div className="flex gap-2">
-          <Button variant="outline" className="rounded-xl border-[#eadfd7]" onClick={() => openEvent(null)}><CalendarDays className="mr-2 h-4 w-4" />New event</Button>
-          <Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412]" onClick={() => openJob(null)}><Plus className="mr-2 h-4 w-4" />New job</Button>
+          {useNeonRoleWorkspaces && <Button variant="outline" disabled={capabilities && !capabilities.profile} onClick={() => setCompanyProfileOpen(true)}><Building2 className="mr-2 h-4 w-4" />Edit company</Button>}
+          <Button variant="outline" className="rounded-xl border-[#eadfd7]" disabled={capabilities && !capabilities.events} onClick={() => openEvent(null)}><CalendarDays className="mr-2 h-4 w-4" />New event</Button>
+          <Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412]" disabled={capabilities && !capabilities.profile} onClick={() => openJob(null)}><Plus className="mr-2 h-4 w-4" />New job</Button>
         </div>
       </div>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -474,7 +507,7 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
           <h3 className="mb-2 text-sm font-semibold">Events</h3>
           <div className="space-y-2">
             {snapshot.events.length === 0 ? <p className="rounded-2xl bg-[#fff8f3] p-4 text-sm text-[#8d8179]">No company events created yet.</p> : snapshot.events.slice(0, 5).map((event) => (
-              <button key={event.id} type="button" onClick={() => openEvent(event)} className="flex w-full items-center gap-3 rounded-2xl border border-[#f0e3da] p-3 text-left transition hover:border-[#fdba74]">
+              <button key={event.id} type="button" disabled={capabilities && !capabilities[`event:${event.id}`]} onClick={() => openEvent(event)} className="flex w-full items-center gap-3 rounded-2xl border border-[#f0e3da] p-3 text-left transition hover:border-[#fdba74]">
                 <CalendarDays className="h-4 w-4 shrink-0 text-[#c2410c]" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{event.title}</span><span className="block text-xs capitalize text-[#8d8179]">{prettify(event.status)} · {formatDate(event.start_date)}</span></span><Edit3 className="h-4 w-4 text-[#8d8179]" />
               </button>
             ))}
@@ -518,7 +551,7 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
                       </div>
                       <span className="shrink-0 text-[10px] font-semibold capitalize text-[#8d8179]">{prettify(registration.status)} · {prettify(registration.payment_status)}</span>
                     </div>
-                    <OwnerStatusActions workflow="event_registration" recordId={registration.id} status={registration.status} paymentStatus={registration.payment_status} onSaved={onSaved} />
+                    <OwnerStatusActions workflow="event_registration" recordId={registration.id} status={registration.status} paymentStatus={registration.payment_status} readOnly={capabilities && !capabilities[`registrations:${registration.event_id}`]} onSaved={onSaved} />
                   </div>
                 );
               })}
@@ -542,12 +575,19 @@ const CompanyOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMan
         </div>
         <div className="flex items-center justify-between rounded-2xl border border-[#f0e3da] p-4"><div><Label htmlFor="owner-job-remote">Remote-friendly</Label><p className="mt-1 text-xs text-[#8d8179]">The location can still identify the hiring region.</p></div><Switch id="owner-job-remote" checked={isRemote} onCheckedChange={setIsRemote} /></div>
       </OwnerResourceDialog>
+      <OwnerResourceDialog open={companyProfileOpen} onOpenChange={setCompanyProfileOpen} title="Edit company profile" description="Update public company information for this assigned workspace." submitLabel="Save company" isSubmitting={isSubmitting} onSubmit={saveCompany}>
+        <div className="space-y-2"><Label htmlFor="owner-company-name">Company name</Label><Input id="owner-company-name" required maxLength={240} value={companyName} onChange={event => setCompanyName(event.target.value)} /></div>
+        <div className="space-y-2"><Label htmlFor="owner-company-description">About the company</Label><Textarea id="owner-company-description" value={companyDescription} onChange={event => setCompanyDescription(event.target.value)} /></div>
+        <div className="space-y-2"><Label htmlFor="owner-company-website">Website</Label><Input id="owner-company-website" type="url" value={companyWebsite} onChange={event => setCompanyWebsite(event.target.value)} /></div>
+        <div className="space-y-2"><Label htmlFor="owner-company-location">Location</Label><Input id="owner-company-location" value={companyLocation} onChange={event => setCompanyLocation(event.target.value)} /></div>
+        <SignedMediaUploader label="Company logo" module="company_logo" resourceId={snapshot.company.id} disabled={capabilities && !capabilities.media} onUploaded={([asset]) => { if (asset) setCompanyLogo(asset.path); }} />
+      </OwnerResourceDialog>
       <EventEditor open={eventOpen} onOpenChange={setEventOpen} userId={userId} organizerType="company" organizerId={snapshot.company.id} event={selectedEvent} onSaved={onSaved} />
     </section>
   );
 };
 
-const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerManagementProps, "role">) => {
+const MentorOwnerManagement = ({ userId, snapshot, onSaved, capabilities }: Omit<RoleOwnerManagementProps, "role">) => {
   const { toast } = useToast();
   const [profileOpen, setProfileOpen] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
@@ -561,6 +601,8 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
   const [hourlyRate, setHourlyRate] = useState("0");
   const [yearsExperience, setYearsExperience] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
   const [availableDays, setAvailableDays] = useState<string[]>([]);
   const [availableStartTime, setAvailableStartTime] = useState("09:00");
   const [availableEndTime, setAvailableEndTime] = useState("17:00");
@@ -580,6 +622,8 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
     setHourlyRate(String(snapshot.mentor.hourly_rate ?? 0));
     setYearsExperience(snapshot.mentor.years_experience == null ? "" : String(snapshot.mentor.years_experience));
     setIsAvailable(snapshot.mentor.is_available ?? true);
+    setProfileImage(snapshot.mentor.profile_image_url ?? null);
+    setCoverImage(snapshot.mentor.cover_image_url ?? null);
     setAvailableDays(Array.isArray(snapshot.mentor.availability?.days) ? snapshot.mentor.availability!.days! : []);
     setAvailableStartTime(snapshot.mentor.availability?.startTime || "09:00");
     setAvailableEndTime(snapshot.mentor.availability?.endTime || "17:00");
@@ -600,9 +644,7 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
     event.preventDefault();
     if (!snapshot.mentor) return;
     setIsSubmitting(true);
-    const result = await (supabase as any)
-      .from("mentors")
-      .update({
+    const payload = {
         headline: headline.trim() || null,
         description: description.trim() || null,
         expertise: expertise.split(",").map((item) => item.trim()).filter(Boolean),
@@ -615,7 +657,10 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
           endTime: availableEndTime,
           timezone: "Asia/Kathmandu",
         },
-      })
+        ...(useNeonRoleWorkspaces ? { profile_image_url: profileImage, cover_image_url: coverImage } : {}),
+      };
+    const result = useNeonRoleWorkspaces ? await saveRoleWorkspaceRecord("mentor", payload, snapshot.mentor.id)
+      : await (supabase as any).from("mentors").update(payload)
       .eq("id", snapshot.mentor.id)
       .eq("user_id", userId);
     setIsSubmitting(false);
@@ -650,7 +695,7 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
       is_active: serviceActive,
     };
     const db = supabase as any;
-    const result = selectedService
+    const result = useNeonRoleWorkspaces ? await saveRoleWorkspaceRecord("mentor-service", payload, selectedService?.id) : selectedService
       ? await db.from("mentor_services").update(payload).eq("id", selectedService.id).eq("mentor_id", snapshot.mentor.id)
       : await db.from("mentor_services").insert(payload);
     setIsSubmitting(false);
@@ -684,7 +729,7 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
     <section id="manage" className="scroll-mt-20 rounded-[24px] border border-[#f0e3da] bg-white p-5 shadow-[0_14px_38px_rgba(79,48,30,0.06)] sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h2 className="font-display text-xl font-bold">Manage mentor offering</h2><p className="mt-1 text-sm text-[#8d8179]">Update the same profile, service, and event records used by the public directory.</p></div>
-        <div className="flex flex-wrap gap-2"><Button variant="outline" className="rounded-xl border-[#eadfd7]" onClick={() => openEvent(null)}><CalendarDays className="mr-2 h-4 w-4" />New event</Button><Button variant="outline" className="rounded-xl border-[#eadfd7]" onClick={() => setProfileOpen(true)}><UserRound className="mr-2 h-4 w-4" />Edit profile</Button><Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412]" onClick={() => openService(null)}><Plus className="mr-2 h-4 w-4" />New service</Button></div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" className="rounded-xl border-[#eadfd7]" disabled={capabilities && !capabilities.events} onClick={() => openEvent(null)}><CalendarDays className="mr-2 h-4 w-4" />New event</Button><Button variant="outline" className="rounded-xl border-[#eadfd7]" disabled={capabilities && !capabilities.profile} onClick={() => setProfileOpen(true)}><UserRound className="mr-2 h-4 w-4" />Edit profile</Button><Button className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412]" disabled={capabilities && !capabilities.services} onClick={() => openService(null)}><Plus className="mr-2 h-4 w-4" />New service</Button></div>
       </div>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <div>
@@ -713,7 +758,7 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
                       </div>
                       <span className="shrink-0 text-[10px] font-semibold capitalize text-[#8d8179]">{prettify(booking.status)} · {prettify(booking.payment_status)}</span>
                     </div>
-                    <OwnerStatusActions workflow="mentor_booking" recordId={booking.id} status={booking.status} paymentStatus={booking.payment_status} onSaved={onSaved} />
+                    <OwnerStatusActions workflow="mentor_booking" recordId={booking.id} status={booking.status} paymentStatus={booking.payment_status} readOnly={capabilities && !capabilities.bookingManagement} onSaved={onSaved} />
                   </div>
                 );
               })}
@@ -733,7 +778,7 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
                       </div>
                       <span className="shrink-0 text-[10px] font-semibold capitalize text-[#8d8179]">{prettify(registration.status)} · {prettify(registration.payment_status)}</span>
                     </div>
-                    <OwnerStatusActions workflow="event_registration" recordId={registration.id} status={registration.status} paymentStatus={registration.payment_status} onSaved={onSaved} />
+                    <OwnerStatusActions workflow="event_registration" recordId={registration.id} status={registration.status} paymentStatus={registration.payment_status} readOnly={capabilities && !capabilities[`registrations:${registration.event_id}`]} onSaved={onSaved} />
                   </div>
                 );
               })}
@@ -743,6 +788,10 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
       )}
 
       <OwnerResourceDialog open={profileOpen} onOpenChange={setProfileOpen} title="Edit mentor profile" description="Approval, commission, rating, and featuring remain protected Super Admin fields." submitLabel="Save profile" isSubmitting={isSubmitting} onSubmit={handleProfileSubmit}>
+        {useNeonRoleWorkspaces && <div className="grid gap-4 sm:grid-cols-2">
+          <SignedMediaUploader label="Profile image" module="mentor_profile" resourceId={snapshot.mentor.id} disabled={capabilities && !capabilities.media} onUploaded={([asset]) => { if (asset) setProfileImage(asset.path); }} />
+          <SignedMediaUploader label="Cover image" module="mentor_profile" resourceId={snapshot.mentor.id} disabled={capabilities && !capabilities.media} onUploaded={([asset]) => { if (asset) setCoverImage(asset.path); }} />
+        </div>}
         <div className="space-y-2"><Label htmlFor="mentor-headline">Headline</Label><Input id="mentor-headline" maxLength={160} value={headline} onChange={(e) => setHeadline(e.target.value)} className={fieldClassName} /></div>
         <div className="space-y-2"><Label htmlFor="mentor-description">About</Label><Textarea id="mentor-description" value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClassName} rows={5} /></div>
         <EntityAIControls module="mentor" entityType="mentor" entityId={snapshot.mentor.id} title={headline || "Mentor profile"} context={`Expertise: ${expertise}\nYears of experience: ${yearsExperience}\nCurrent bio: ${description}`} onDraft={setDescription} />
@@ -770,11 +819,11 @@ const MentorOwnerManagement = ({ userId, snapshot, onSaved }: Omit<RoleOwnerMana
   );
 };
 
-const RoleOwnerManagement = ({ role, userId, snapshot, onSaved }: RoleOwnerManagementProps) =>
+const RoleOwnerManagement = ({ role, userId, snapshot, onSaved, capabilities }: RoleOwnerManagementProps) =>
   role === "company" ? (
-    <CompanyOwnerManagement userId={userId} snapshot={snapshot} onSaved={onSaved} />
+    <CompanyOwnerManagement userId={userId} snapshot={snapshot} onSaved={onSaved} capabilities={capabilities} />
   ) : (
-    <MentorOwnerManagement userId={userId} snapshot={snapshot} onSaved={onSaved} />
+    <MentorOwnerManagement userId={userId} snapshot={snapshot} onSaved={onSaved} capabilities={capabilities} />
   );
 
 export default RoleOwnerManagement;

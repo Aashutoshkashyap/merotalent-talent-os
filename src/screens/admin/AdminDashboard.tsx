@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -207,7 +207,8 @@ function ModuleCarouselSection<T>({
 /* ------------------------------------------------------------------ */
 
 const AdminDashboard = () => {
-  const { profile } = useAuth();
+  const { profile,user } = useAuth();
+  const dashboardCacheKey=`admin:dashboard:data:${process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE || "legacy"}:${user?.id || "anonymous"}`;
   const [stats, setStats] = useState(emptyStats);
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoadState, setDataLoadState] = useState<"loading" | "ready" | "partial" | "error">("loading");
@@ -226,10 +227,10 @@ const AdminDashboard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
-  const fetchLiveData = async (forceRefresh: boolean = false) => {
+  const fetchLiveData = useCallback(async (forceRefresh: boolean = false) => {
     if (forceRefresh) {
       setIsSyncing(true);
-      invalidateCache("admin:dashboard:data");
+      invalidateCache(dashboardCacheKey);
     } else {
       setIsLoading(true);
     }
@@ -237,8 +238,14 @@ const AdminDashboard = () => {
 
     try {
       const payload = await getCachedOrFetch(
-        "admin:dashboard:data",
+        dashboardCacheKey,
         async () => {
+          if(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+            const response=await fetch("/api/v1/neon-staging/admin/dashboard",{credentials:"same-origin",cache:"no-store"});
+            const result=await response.json();
+            if(!response.ok)throw new Error(result.error || "Dashboard unavailable.");
+            return result.data;
+          }
           const [
             usersRes,
             competitionsRes,
@@ -366,11 +373,11 @@ const AdminDashboard = () => {
       setIsLoading(false);
       setIsSyncing(false);
     }
-  };
+  },[dashboardCacheKey]);
 
   useEffect(() => {
     void fetchLiveData(false);
-  }, []);
+  }, [fetchLiveData]);
 
   const quickActions = [
     {

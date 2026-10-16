@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,15 @@ import { useToast } from "@/hooks/use-toast";
 import { ShieldAlert, Sparkles, ArrowLeft, Loader2, Send, Clock3, X } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
+import type { RequestProof } from "@/lib/server/neon-module-access";
+
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+async function stagingRequest(url: string, init?: RequestInit) {
+  const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.message || payload?.error || "The request failed.");
+  return payload.data;
+}
 
 interface ModuleOption {
   id: string;
@@ -82,6 +91,7 @@ const errorMessage = (error: unknown) => {
 
 export default function RequestSubAdminAccess() {
   const { user, profile, session } = useAuth();
+  const currentUserId = user?.id;
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -90,6 +100,10 @@ export default function RequestSubAdminAccess() {
   const [selectedCollege, setSelectedCollege] = useState<{ id: string; name: string } | null>(null);
   const [collegeSearchQuery, setCollegeSearchQuery] = useState("");
   const [proofDocs, setProofDocs] = useState<Record<string, string>>({});
+  const [proofFiles, setProofFiles] = useState<Record<string, File>>({});
+  const [uploadedProofs, setUploadedProofs] = useState<Record<string, RequestProof>>({});
+  const [draftId, setDraftId] = useState(() => crypto.randomUUID());
+  const [trustedProfile, setTrustedProfile] = useState<{ full_name: string; email: string; phone: string } | null>(null);
   const [moduleOptions, setModuleOptions] = useState<ModuleOption[]>([]);
   const [accessPlans, setAccessPlans] = useState<AccessPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
@@ -104,10 +118,11 @@ export default function RequestSubAdminAccess() {
   const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile?.phone && !phone) setPhone(profile.phone);
+    if (profile?.phone) setPhone(current => current || profile.phone || "");
   }, [profile?.phone]);
 
   useEffect(() => {
+    if (isNeonStaging) return;
     let active = true;
     void (async () => {
       const { data } = await (supabase as any)
@@ -122,6 +137,7 @@ export default function RequestSubAdminAccess() {
   }, []);
 
   useEffect(() => {
+    if (isNeonStaging) return;
     let active = true;
     void (async () => {
       const { data, error } = await (supabase as any)
@@ -148,13 +164,26 @@ export default function RequestSubAdminAccess() {
     }
   }, [compatiblePlans, selectedPlanId]);
 
-  const loadMyRequests = async () => {
-    if (!user) {
+  const loadMyRequests = useCallback(async () => {
+    if (!currentUserId) {
       setAccessRequests([]);
       setIsLoadingRequests(false);
       return;
     }
     setIsLoadingRequests(true);
+    if (isNeonStaging) {
+      try {
+        const result = await stagingRequest("/api/v1/neon-staging/module-access");
+        setAccessRequests(result.requests);
+        const now = Date.now();
+        setActiveEntitlementModules(new Set<string>(result.entitlements.filter((item: { status: string; start_at: string; expires_at: string | null }) =>
+          item.status === "active" && new Date(item.start_at).getTime() <= now && (!item.expires_at || new Date(item.expires_at).getTime() > now))
+          .map((item: { module_key: string }) => item.module_key)));
+      } catch (error) {
+        toast({ variant: "destructive", title: "Requests unavailable", description: errorMessage(error) });
+      } finally { setIsLoadingRequests(false); }
+      return;
+    }
     const [{ data, error }, { data: entitlements, error: entitlementError }] = await Promise.all([
       (supabase as any).rpc("get_my_module_access_requests"),
       (supabase as any).rpc("get_my_module_entitlements"),
@@ -167,12 +196,21 @@ export default function RequestSubAdminAccess() {
         .map((item: any) => canonicalModuleKey(String(item.module_key)))));
     }
     setIsLoadingRequests(false);
-  };
+  }, [currentUserId, toast]);
 
   useEffect(() => {
     let active = true;
     void (async () => {
       try {
+        if (isNeonStaging) {
+          if (!currentUserId) { if (active) setIsLoadingModules(false); return; }
+          const result = await stagingRequest("/api/v1/neon-staging/module-access?catalog=true");
+          if (active) {
+            setModuleOptions(result.modules); setAccessPlans(result.plans); setCollegesList(result.colleges);
+            setTrustedProfile(result.profile); setPhone(result.profile.phone || "");
+          }
+          return;
+        }
         const { data, error } = await (supabase as any)
           .from("module_capabilities")
           .select("module_key,label,description")
@@ -194,7 +232,7 @@ export default function RequestSubAdminAccess() {
           ]);
         }
       } catch {
-        if (active) {
+        if (active && !isNeonStaging) {
           setModuleOptions([
             { id: "college", label: "College / Institution Admin", desc: "Manage college profile, programs, brochures, and student applications" },
             { id: "job", label: "Job & Recruiter Admin", desc: "Post job openings, manage candidates, and company profile" },
@@ -202,15 +240,14 @@ export default function RequestSubAdminAccess() {
             { id: "mentor", label: "Mentor Module", desc: "Manage mentorship profile, services, hourly rates, and booking requests" },
           ]);
         }
-      }
-      if (active) setIsLoadingModules(false);
+      } finally { if (active) setIsLoadingModules(false); }
     })();
     return () => { active = false; };
-  }, []);
+  }, [currentUserId]);
 
   useEffect(() => {
     void loadMyRequests();
-  }, [user?.id]);
+  }, [loadMyRequests]);
 
   const toggleModule = (id: string) => {
     setSelectedModules((prev) =>
@@ -248,7 +285,7 @@ export default function RequestSubAdminAccess() {
       toast({ variant: "destructive", title: "Choose a plan", description: "Select the Super Admin configured plan that covers these modules." });
       return;
     }
-    if (!session?.access_token) {
+    if (!isNeonStaging && !session?.access_token) {
       toast({ variant: "destructive", title: "Session expired", description: "Sign in again before continuing to eSewa." });
       return;
     }
@@ -256,6 +293,37 @@ export default function RequestSubAdminAccess() {
     setIsSubmitting(true);
 
     try {
+      if (isNeonStaging) {
+        const existing = accessRequests.find(request => request.status === "pending");
+        let requestId = existing?.id;
+        if (!requestId) {
+          if (selectedModules.includes("college") && !selectedCollege) throw new Error("Select an existing college first.");
+          const proofs = { ...uploadedProofs };
+          for (const moduleKey of selectedModules) {
+            if (proofs[moduleKey]) continue;
+            const file = proofFiles[moduleKey];
+            if (!file) throw new Error("Upload supporting documents for every selected module.");
+            const form = new FormData(); form.set("file", file); form.set("module", moduleKey); form.set("draftId", draftId);
+            proofs[moduleKey] = await stagingRequest("/api/v1/neon-staging/module-access/proofs", { method: "POST", body: form });
+            setUploadedProofs(previous => ({ ...previous, [moduleKey]: proofs[moduleKey] }));
+          }
+          const saved = await stagingRequest("/api/v1/neon-staging/module-access", { method: "POST",
+            headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draftId,
+              modules: selectedModules, packageId: selectedPlanId, collegeId: selectedModules.includes("college") ? selectedCollege?.id : undefined,
+              reason: reason.trim(), organization: organization.trim(),
+              proofs: Object.fromEntries(selectedModules.map(module => [module, proofs[module]])) }) });
+          requestId = saved.id;
+        } else if (existing && (existing.package_id !== selectedPlanId ||
+            [...existing.requested_modules].sort().join() !== [...selectedModules].sort().join())) {
+          throw new Error("Complete or cancel your pending request before selecting another plan or module.");
+        }
+        await loadMyRequests();
+        const checkout = await stagingRequest("/api/v1/neon-staging/payments/checkout", { method: "POST",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "module_access_request", targetId: requestId, packageId: selectedPlanId }) });
+        toast({ title: "Request saved", description: "Opening eSewa to complete the required payment…" });
+        postToCheckout(checkout.checkoutUrl, checkout.checkoutFields);
+        return;
+      }
       const proofsSummary = Object.entries(proofDocs)
         .map(([mod, doc]) => `${mod}: ${doc}`)
         .join(", ");
@@ -282,7 +350,7 @@ export default function RequestSubAdminAccess() {
       const checkoutResponse = await fetch("/api/v1/payments/checkout", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ accessRequestId: requestId, packageId: selectedPlanId }),
@@ -320,6 +388,14 @@ export default function RequestSubAdminAccess() {
 
   const cancelRequest = async (requestId: string) => {
     setCancellingRequestId(requestId);
+    if (isNeonStaging) {
+      try {
+        await stagingRequest("/api/v1/neon-staging/module-access", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId }) });
+        setDraftId(crypto.randomUUID()); setUploadedProofs({}); await loadMyRequests(); toast({ title: "Request cancelled" });
+      } catch (error) { toast({ variant: "destructive", title: "Could not cancel request", description: errorMessage(error) }); }
+      finally { setCancellingRequestId(null); }
+      return;
+    }
     const { error } = await (supabase as any).rpc("cancel_module_access_request", {
       p_request_id: requestId,
     });
@@ -330,6 +406,17 @@ export default function RequestSubAdminAccess() {
       toast({ title: "Request cancelled" });
     }
     setCancellingRequestId(null);
+  };
+
+  const continueRequestPayment = async (request: AccessRequestStatus) => {
+    if (!request.package_id) return;
+    setIsSubmitting(true);
+    try {
+      const checkout = await stagingRequest("/api/v1/neon-staging/payments/checkout", { method: "POST",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "module_access_request", targetId: request.id, packageId: request.package_id }) });
+      postToCheckout(checkout.checkoutUrl, checkout.checkoutFields);
+    } catch (error) { toast({ variant: "destructive", title: "Payment could not be started", description: errorMessage(error) }); }
+    finally { setIsSubmitting(false); }
   };
 
   const requestStatusClasses: Record<AccessRequestStatus["status"], string> = {
@@ -411,9 +498,15 @@ export default function RequestSubAdminAccess() {
                                 </div>
                               )}
                               {request.status === "pending" && request.payment_status !== "success" && (
+                                <div className="flex flex-wrap gap-2">
+                                {isNeonStaging && request.package_id && (
+                                  <Button type="button" size="sm" className="mt-1 h-7 px-2 text-xs" disabled={isSubmitting}
+                                    onClick={() => void continueRequestPayment(request)}>Continue to Pay</Button>
+                                )}
                                 <Button type="button" variant="ghost" size="sm" className="mt-1 h-7 px-2 text-xs text-slate-600 hover:text-rose-700" disabled={cancellingRequestId === request.id} onClick={() => void cancelRequest(request.id)}>
                                   {cancellingRequestId === request.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <X className="mr-1 h-3 w-3" />} Cancel request
                                 </Button>
+                                </div>
                               )}
                             </div>
                           ))}
@@ -427,11 +520,11 @@ export default function RequestSubAdminAccess() {
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Your Name</Label>
-                    <Input value={profile?.full_name || ""} disabled className="bg-slate-100" />
+                    <Input value={trustedProfile?.full_name || profile?.full_name || ""} disabled className="bg-slate-100" />
                   </div>
                   <div className="space-y-2">
                     <Label>Your Email</Label>
-                    <Input value={user?.email || ""} disabled className="bg-slate-100" />
+                    <Input value={trustedProfile?.email || user?.email || ""} disabled className="bg-slate-100" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-700">Contact Number (Nepal) *</Label>
@@ -440,6 +533,7 @@ export default function RequestSubAdminAccess() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       required
+                      disabled={isNeonStaging}
                     />
                   </div>
                 </div>
@@ -554,18 +648,18 @@ export default function RequestSubAdminAccess() {
                           <Input
                             type="file"
                             accept=".pdf,.png,.jpg,.jpeg"
-                            onChange={(e) => setProofDocs((prev) => ({ ...prev, college: e.target.files?.[0]?.name || "" }))}
+                            onChange={(e) => { const file = e.target.files?.[0]; if (file) { setProofDocs(prev => ({ ...prev, college: file.name })); setProofFiles(prev => ({ ...prev, college: file })); setUploadedProofs(prev => { const next = { ...prev }; delete next.college; return next; }); } }}
                             className="bg-white text-xs"
                           />
                         </div>
                       )}
-                      {selectedModules.includes("event") && (
+                      {(selectedModules.includes("event") || selectedModules.includes("events")) && (
                         <div className="space-y-1">
                           <Label className="text-xs text-slate-700">Event Proposal Document *</Label>
                           <Input
                             type="file"
                             accept=".pdf,.doc,.docx"
-                            onChange={(e) => setProofDocs((prev) => ({ ...prev, event: e.target.files?.[0]?.name || "" }))}
+                            onChange={(e) => { const file = e.target.files?.[0]; if (file) { setProofDocs(prev => ({ ...prev, event: file.name })); setProofFiles(prev => ({ ...prev, events: file })); setUploadedProofs(prev => { const next = { ...prev }; delete next.events; return next; }); } }}
                             className="bg-white text-xs"
                           />
                         </div>
@@ -576,7 +670,7 @@ export default function RequestSubAdminAccess() {
                           <Input
                             type="file"
                             accept=".pdf,.doc,.docx"
-                            onChange={(e) => setProofDocs((prev) => ({ ...prev, mentor: e.target.files?.[0]?.name || "" }))}
+                            onChange={(e) => { const file = e.target.files?.[0]; if (file) { setProofDocs(prev => ({ ...prev, mentor: file.name })); setProofFiles(prev => ({ ...prev, mentor: file })); setUploadedProofs(prev => { const next = { ...prev }; delete next.mentor; return next; }); } }}
                             className="bg-white text-xs"
                           />
                         </div>
@@ -587,7 +681,7 @@ export default function RequestSubAdminAccess() {
                           <Input
                             type="file"
                             accept=".pdf,.png,.jpg,.jpeg"
-                            onChange={(e) => setProofDocs((prev) => ({ ...prev, job: e.target.files?.[0]?.name || "" }))}
+                            onChange={(e) => { const file = e.target.files?.[0]; if (file) { setProofDocs(prev => ({ ...prev, job: file.name })); setProofFiles(prev => ({ ...prev, jobs: file })); setUploadedProofs(prev => { const next = { ...prev }; delete next.jobs; return next; }); } }}
                             className="bg-white text-xs"
                           />
                         </div>

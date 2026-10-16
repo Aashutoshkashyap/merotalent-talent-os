@@ -21,7 +21,7 @@ import { headers } from "next/headers";
 
 import { getAuth } from "./better-auth";
 import { withUserContext } from "./db";
-import { ServerConfigurationError } from "./supabase";
+import { ServerConfigurationError } from "./server-configuration-error";
 
 // ---------------------------------------------------------------------------
 // Error types — identical to legacy surface

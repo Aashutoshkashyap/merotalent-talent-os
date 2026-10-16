@@ -1,13 +1,27 @@
+import { z } from "zod";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { authenticateRequest } from "@/lib/server/auth";
 import { getAdminClient } from "@/lib/server/supabase";
 import { getBackendMode } from "@/lib/server/backend-mode";
-import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
+import { getAuthenticatedApplicationUser, NeonSessionUnavailable, requireSameOrigin } from "@/lib/server/neon-session";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { NeonJobsRepository } from "@/lib/server/neon-jobs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const preferenceList = z.array(z.string().trim().min(1).max(100)).max(30).optional();
+const jobPreferencesSchema = z.object({
+  preferred_categories: preferenceList,
+  preferred_industries: preferenceList,
+  preferred_job_titles: preferenceList,
+  preferred_locations: preferenceList,
+  preferred_job_levels: preferenceList,
+  preferred_job_types: preferenceList,
+  min_salary: z.number().finite().min(0).max(1_000_000_000).nullable().optional(),
+  max_salary: z.number().finite().min(0).max(1_000_000_000).nullable().optional(),
+  is_salary_negotiable: z.boolean().optional(),
+}).strict();
 
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
@@ -71,9 +85,15 @@ export async function PUT(request: Request) {
     const body = await request.json().catch(() => ({}));
 
     if (isStaging) {
+      requireSameOrigin(request);
+      const parsed = jobPreferencesSchema.safeParse(body);
+      if (!parsed.success || (parsed.data.min_salary != null && parsed.data.max_salary != null &&
+          parsed.data.min_salary > parsed.data.max_salary)) {
+        return jsonApiResponse({ data: null, error: { code: "INVALID_JOB_PREFERENCES", message: "Check your job preferences." }, meta: { requestId } }, 422);
+      }
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonJobsRepository();
-      const updated = await repo.updateStudentJobPreferences(actor, body);
+      const updated = await repo.updateStudentJobPreferences(actor, parsed.data);
       return jsonApiResponse({
         data: updated,
         error: null,

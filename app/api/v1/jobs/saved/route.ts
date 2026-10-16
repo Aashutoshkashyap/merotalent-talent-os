@@ -2,12 +2,13 @@ import { jsonApiResponse } from "@/lib/server/api-response";
 import { authenticateRequest } from "@/lib/server/auth";
 import { getAdminClient } from "@/lib/server/supabase";
 import { getBackendMode } from "@/lib/server/backend-mode";
-import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
+import { getAuthenticatedApplicationUser, NeonSessionUnavailable, requireSameOrigin } from "@/lib/server/neon-session";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { listOwnSavedJobs, saveJob, unsaveJob } from "@/lib/server/neon-saved-jobs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function handleNeonError(err: unknown, requestId: string) {
   if (err instanceof NeonAuthorizationError) {
@@ -38,8 +39,12 @@ export async function GET(request: Request) {
       const url = new URL(request.url);
       const limitParam = url.searchParams.get("limit");
       const offsetParam = url.searchParams.get("offset");
-      const limit = limitParam ? parseInt(limitParam, 10) : 50;
-      const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+      const limit = Number(limitParam ?? 50);
+      const offset = Number(offsetParam ?? 0);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 100 ||
+          !Number.isInteger(offset) || offset < 0 || offset > 100000) {
+        return jsonApiResponse({ data: null, error: { code: "INVALID_PAGINATION", message: "Invalid page." }, meta: { requestId } }, 400);
+      }
 
       const saved = await listOwnSavedJobs(actor, limit, offset);
       return jsonApiResponse({
@@ -119,6 +124,10 @@ export async function POST(request: Request) {
     }
 
     if (isStaging) {
+      requireSameOrigin(request);
+      if (typeof body.jobId !== "string" || !uuid.test(body.jobId)) {
+        return jsonApiResponse({ data: null, error: { code: "INVALID_JOB_ID", message: "A valid job ID is required." }, meta: { requestId } }, 400);
+      }
       const actor = await getAuthenticatedApplicationUser(request);
       const res = await saveJob(actor, body.jobId);
       return jsonApiResponse({
@@ -180,6 +189,10 @@ export async function DELETE(request: Request) {
     }
 
     if (isStaging) {
+      requireSameOrigin(request);
+      if (!uuid.test(jobId)) {
+        return jsonApiResponse({ data: null, error: { code: "INVALID_JOB_ID", message: "A valid job ID is required." }, meta: { requestId } }, 400);
+      }
       const actor = await getAuthenticatedApplicationUser(request);
       const res = await unsaveJob(actor, jobId);
       return jsonApiResponse({

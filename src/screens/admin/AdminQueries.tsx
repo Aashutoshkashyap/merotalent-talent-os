@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,7 +44,19 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 
-type QueryRow = Tables<"contact_queries">;
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+type QueryRow = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: string | null;
+  assigned_to: string | null;
+  response: string | null;
+  responded_at: string | null;
+  created_at: string;
+};
 type ResponseStatus = "resolved" | "in_progress";
 
 const formatDateTime = (value: string) =>
@@ -99,16 +109,24 @@ const AdminQueries = () => {
     setIsLoading(true);
     setLoadError(null);
 
-    const { data, error } = await supabase
-      .from("contact_queries")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      setLoadError(error.message);
+    try {
+      let data: QueryRow[];
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/admin/contact-queries", { cache: "no-store" });
+        if (!response.ok) throw new Error("Contact queries could not be loaded.");
+        const payload = await response.json() as { data: QueryRow[] };
+        data = payload.data;
+      } else {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const result = await supabase.from("contact_queries").select("*")
+          .order("created_at", { ascending: false });
+        if (result.error) throw result.error;
+        data = result.data ?? [];
+      }
+      setQueries(data);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Contact queries could not be loaded.");
       setQueries([]);
-    } else {
-      setQueries(data ?? []);
     }
     setIsLoading(false);
   }, []);
@@ -152,17 +170,26 @@ const AdminQueries = () => {
     if (!selectedQuery || !response) return;
 
     setIsReplying(true);
-    const respondedAt = new Date().toISOString();
-    const { data: updatedQuery, error } = await supabase
-      .from("contact_queries")
-      .update({
-        response,
-        responded_at: respondedAt,
-        status: responseStatus,
-      })
-      .eq("id", selectedQuery.id)
-      .select("*")
-      .maybeSingle();
+    let updatedQuery: QueryRow | null = null;
+    let error: Error | null = null;
+    try {
+      if (isNeonStaging) {
+        const result = await fetch("/api/v1/neon-staging/admin/contact-queries", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: selectedQuery.id, response, status: responseStatus }),
+        });
+        if (!result.ok) throw new Error("The response could not be saved.");
+        updatedQuery = (await result.json() as { data: QueryRow }).data;
+      } else {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const result = await supabase.from("contact_queries")
+          .update({ response, responded_at: new Date().toISOString(), status: responseStatus })
+          .eq("id", selectedQuery.id).select("*").maybeSingle();
+        if (result.error) throw result.error;
+        updatedQuery = result.data;
+      }
+    } catch (caught) { error = caught instanceof Error ? caught : new Error("The response could not be saved."); }
     setIsReplying(false);
 
     if (error || !updatedQuery) {
@@ -200,12 +227,25 @@ const AdminQueries = () => {
     }
 
     setDeletingId(query.id);
-    const { data: deletedRow, error } = await supabase
-      .from("contact_queries")
-      .delete()
-      .eq("id", query.id)
-      .select("id")
-      .maybeSingle();
+    let deletedRow: { id: string } | null = null;
+    let error: Error | null = null;
+    try {
+      if (isNeonStaging) {
+        const result = await fetch("/api/v1/neon-staging/admin/contact-queries", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: query.id }),
+        });
+        if (!result.ok) throw new Error("The query could not be deleted.");
+        deletedRow = (await result.json() as { data: { id: string } }).data;
+      } else {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const result = await supabase.from("contact_queries").delete()
+          .eq("id", query.id).select("id").maybeSingle();
+        if (result.error) throw result.error;
+        deletedRow = result.data;
+      }
+    } catch (caught) { error = caught instanceof Error ? caught : new Error("The query could not be deleted."); }
     setDeletingId(null);
 
     if (error || !deletedRow) {

@@ -77,7 +77,7 @@ function toDisplayItem(row: Record<string, unknown>, idx: number): JobItem {
 }
 
 export default function JobsPage() {
-  const { session } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,7 +131,7 @@ export default function JobsPage() {
     .sort((a, b) => sortBy === "salary" ? b.salary.localeCompare(a.salary, undefined, { numeric: true }) : 0);
 
   const openApplication = (job: JobItem) => {
-    if (!session) {
+    if (!session && !(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && user)) {
       navigate("/login", { state: { from: { pathname: "/jobs" } } });
       return;
     }

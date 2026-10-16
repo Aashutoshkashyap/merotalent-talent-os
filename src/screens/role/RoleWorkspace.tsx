@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { requestRoleWorkspace, useNeonRoleWorkspaces } from "@/lib/neon/role-workspaces-client";
 import RoleOwnerManagement, {
   type RoleOwnerSnapshot,
 } from "@/components/owner/RoleOwnerManagement";
@@ -222,6 +223,10 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const [reloadVersion, setReloadVersion] = useState(0);
   const [ownerSnapshot, setOwnerSnapshot] = useState<RoleOwnerSnapshot>(emptyOwnerSnapshot);
+  const [entityOptions, setEntityOptions] = useState<Array<{ id: string; label: string }>>([]);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [workspaceLocked, setWorkspaceLocked] = useState(false);
+  const [capabilities, setCapabilities] = useState<Record<string, boolean>>({});
   const [liveData, setLiveData] = useState<WorkspaceLiveData>({
     stats: [],
     queue: [],
@@ -240,6 +245,53 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
       setIsLoading(true);
       setFailedSources([]);
       setOwnerSnapshot(emptyOwnerSnapshot);
+      if (useNeonRoleWorkspaces) {
+        try {
+          const result = await requestRoleWorkspace(`/api/v1/neon-staging/role-workspaces?role=${role}${selectedEntityId ? `&entityId=${encodeURIComponent(selectedEntityId)}` : ""}`) as {
+            entityOptions: Array<{ id: string; label: string }>; entityId: string | null;
+            snapshot: RoleOwnerSnapshot; locked: boolean; capabilities: Record<string, boolean>;
+            subscription: { package_name?: string; status: string; source?: string; expires_at?: string | null } | null;
+          };
+          if (!isCurrent) return;
+          setEntityOptions(result.entityOptions);
+          setWorkspaceLocked(result.locked);
+          setCapabilities(result.capabilities);
+          setOwnerSnapshot(result.snapshot);
+          const snapshot = result.snapshot;
+          const applications = snapshot.jobApplications.length;
+          const registrations = snapshot.eventRegistrations.length;
+          const upcoming = snapshot.mentorBookings.filter(booking => new Date(booking.scheduled_start).getTime() >= Date.now() && ["pending", "confirmed"].includes(booking.status));
+          const queue: QueueItem[] = [
+            ...snapshot.jobs.map(job => ({ id: `job-${job.id}`, title: job.title, detail: `${prettify(job.status)} · ${snapshot.jobApplications.filter(a => a.job_id === job.id).length} applications`, action: "View listing", href: `/jobs/${job.id}`, sortAt: new Date(job.created_at).getTime() })),
+            ...snapshot.events.map(event => ({ id: `event-${event.id}`, title: event.title, detail: `${prettify(event.status)} · ${formatDateTime(event.start_date)}`, action: "View event", href: `/events/${event.id}`, sortAt: new Date(event.created_at).getTime() })),
+            ...upcoming.map(booking => ({ id: `booking-${booking.id}`, title: snapshot.services.find(service => service.id === booking.mentor_service_id)?.title || "Mentoring session", detail: `${formatDateTime(booking.scheduled_start)} · ${prettify(booking.status)}`, action: "Upcoming", href: "/mentor#pipeline", sortAt: new Date(booking.scheduled_start).getTime() })),
+          ].sort((a, b) => role === "mentor" ? a.sortAt - b.sortAt : b.sortAt - a.sortAt).slice(0, 5);
+          const subscription = result.subscription;
+          setLiveData({
+            stats: role === "company" ? [
+              { label: "Published jobs", value: String(snapshot.jobs.filter(job => job.status === "published").length), note: `${snapshot.jobs.length} total` },
+              { label: "Applications", value: result.capabilities.jobApplications ? String(applications) : "—", note: "Selected company" },
+              { label: "Owned events", value: String(snapshot.events.length), note: "Assigned events" },
+              { label: "Registrations", value: String(registrations), note: "Assigned events" },
+            ] : [
+              { label: "Upcoming", value: String(upcoming.length), note: `${snapshot.mentorBookings.length} bookings` },
+              { label: "Active services", value: String(snapshot.services.filter(service => service.is_active).length), note: `${snapshot.services.length} total` },
+              { label: "Mentor status", value: prettify(snapshot.mentor?.approval_status), note: "Selected mentor" },
+              { label: "Owned events", value: String(snapshot.events.length), note: "Assigned events" },
+            ], queue,
+            subscription: { packageName: subscription?.package_name || (result.locked ? "Access unavailable" : "Assigned module access"),
+              status: result.locked ? subscription?.status === "active" ? "expired" : subscription?.status || "inactive" : "active",
+              paymentStatus: subscription?.source === "ESEWA_PURCHASE" ? "success" : "not_required", accessMode: result.locked ? "none" : "active",
+              expiryDate: subscription?.expires_at || null, active: !result.locked },
+            activityCount: role === "company" ? applications + registrations : upcoming.length,
+            activityLabel: role === "company" ? "application and registration records" : "upcoming sessions",
+            statusLabel: result.locked ? "Workspace locked" : "Active", profileMissing: !result.entityId,
+          });
+        } catch (error) {
+          if (isCurrent) { setWorkspaceLocked(true); setCapabilities({}); setFailedSources([error instanceof Error ? error.message : "Workspace unavailable"]); }
+        } finally { if (isCurrent) setIsLoading(false); }
+        return;
+      }
       const db = supabase as any;
       const failures = new Set<string>();
       const addFailure = (label: string) => failures.add(label);
@@ -553,7 +605,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
     return () => {
       isCurrent = false;
     };
-  }, [reloadVersion, role, user]);
+  }, [reloadVersion, role, user, selectedEntityId]);
 
   const filteredQueue = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -608,6 +660,21 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         </header>
 
         <main className="space-y-4 p-4 sm:p-6 lg:p-8">
+          {useNeonRoleWorkspaces && entityOptions.length > 1 && (
+            <div className="space-y-2">
+              <label htmlFor="managed-role-entity" className="text-sm font-semibold">Managed {role === "company" ? "company" : "mentor"}</label>
+              <select id="managed-role-entity" className="block w-full max-w-xl rounded-xl border border-[#eadfd7] bg-white p-3" value={selectedEntityId || entityOptions[0]?.id || ""} onChange={event => setSelectedEntityId(event.target.value)}>
+                {entityOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </select>
+            </div>
+          )}
+          {useNeonRoleWorkspaces && workspaceLocked && !isLoading && !failedSources.length && (
+            <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+              <h2 className="font-semibold">{role === "company" ? "Recruiter" : "Mentor"} workspace locked</h2>
+              <p className="mt-2">Your subscription/trial has expired or this workspace is not assigned. Renew or request access to manage this module.</p>
+              <Button asChild variant="outline" className="mt-3"><Link to="/dashboard/payments">View payments and renew</Link></Button>
+            </div>
+          )}
           {(failedSources.length > 0 || liveData.profileMissing) && !isLoading && (
             <div role="alert" className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -702,11 +769,13 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
             })}
           </section>
 
-          {!isLoading && user && (
+          {!isLoading && user && (!useNeonRoleWorkspaces || !workspaceLocked) && (
             <RoleOwnerManagement
+              key={ownerSnapshot.company?.id || ownerSnapshot.mentor?.id || role}
               role={role}
               userId={user.id}
               snapshot={ownerSnapshot}
+              capabilities={useNeonRoleWorkspaces ? capabilities : undefined}
               onSaved={() => setReloadVersion((version) => version + 1)}
             />
           )}
@@ -773,8 +842,8 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
               <div className="absolute -bottom-16 -right-14 h-40 w-40 rounded-full border-[22px] border-white/5" />
             </article>
           </section>
-          {role === "company" && <JobApplicantReview />}
-          {role === "mentor" && <MentorSessionPipeline />}
+          {role === "company" && (!useNeonRoleWorkspaces || (!workspaceLocked && capabilities.jobApplications)) && <JobApplicantReview key={ownerSnapshot.company?.id} companyId={useNeonRoleWorkspaces ? ownerSnapshot.company?.id : undefined} />}
+          {role === "mentor" && (!useNeonRoleWorkspaces || (!workspaceLocked && capabilities.bookings)) && <MentorSessionPipeline key={ownerSnapshot.mentor?.id} mentorId={useNeonRoleWorkspaces ? ownerSnapshot.mentor?.id : undefined} readOnly={useNeonRoleWorkspaces && !capabilities.bookingManagement} />}
         </main>
       </div>
     </div>

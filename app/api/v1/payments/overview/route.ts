@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     if (getBackendMode() === "neon-staging") {
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonPaymentsRepository();
-      const [payments, plans, checkouts] = await Promise.all([
+      const [payments, plans, checkouts, scopes, entitlements, collegeRequests] = await Promise.all([
         repo.listOwnPayments(actor),
         queryRows(`
           SELECT id, name, description, price::float AS price, currency,
@@ -36,9 +36,23 @@ export async function GET(request: Request) {
           FROM public.payment_checkout_sessions
           WHERE user_id = $1::uuid
           ORDER BY created_at DESC LIMIT 30`, [actor.userId]),
+        queryRows(`SELECT a.id,'college' AS module,a.entity_type AS "entityType",a.entity_id AS "entityId"
+          FROM public.entity_admin_assignments a
+          JOIN public.user_module_capabilities umc ON umc.id=a.user_capability_id AND umc.status='active'
+            AND (umc.expires_at IS NULL OR umc.expires_at>now())
+          JOIN public.module_capabilities mc ON mc.id=umc.capability_id AND mc.module_key='college' AND mc.is_active
+          WHERE a.user_id=$1::uuid AND a.entity_type='college' AND a.status='active'`, [actor.userId]),
+        queryRows(`SELECT e.id,e.module_key,e.entity_type,e.entity_id,e.source,e.status,e.expires_at,e.features,
+          p.name AS package_name FROM public.module_entitlements e LEFT JOIN public.packages p ON p.id=e.package_id
+          WHERE e.user_id=$1::uuid AND e.module_key='college' ORDER BY e.created_at DESC LIMIT 100`, [actor.userId]),
+        queryRows(`SELECT r.id,r.status,r.payment_status,r.entity_id,r.request_kind,
+          COALESCE(i.name,r.request_data->>'name','College request') AS college_name
+          FROM public.entity_scope_requests r LEFT JOIN public.institutes i ON i.id=r.entity_id
+          WHERE r.user_id=$1::uuid AND r.module_key='college' AND r.entity_type='college'
+          ORDER BY r.created_at DESC LIMIT 30`, [actor.userId]),
       ]);
       return jsonApiResponse({
-        data: { plans, scopes: [], entitlements: [], checkouts, payments },
+        data: { plans, scopes, entitlements, collegeRequests, checkouts, payments },
         error: null,
         meta: { requestId },
       });

@@ -4,8 +4,8 @@
  */
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { getBackendMode } from "@/lib/server/backend-mode";
-import { queryRows } from "@/lib/server/db";
 import { getAdminClient } from "@/lib/server/supabase";
+import { listPublicCompetitions } from "@/lib/server/neon-competitions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,18 +14,13 @@ export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
     const url = new URL(request.url);
-    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "50", 10)));
-    const offset = Math.max(0, parseInt(url.searchParams.get("offset") || "0", 10));
+    const requestedLimit = parseInt(url.searchParams.get("limit") || "50", 10);
+    const requestedOffset = parseInt(url.searchParams.get("offset") || "0", 10);
+    const limit = Number.isFinite(requestedLimit) ? Math.min(100, Math.max(1, requestedLimit)) : 50;
+    const offset = Number.isFinite(requestedOffset) ? Math.max(0, requestedOffset) : 0;
 
     if (getBackendMode() === "neon-staging") {
-      // Query competitions from Neon
-      const competitions = await queryRows<Record<string, unknown>>(`
-        SELECT id, title, type, organizer_type, prize_pool, format, status,
-               start_date, end_date, description, cover_image_url
-        FROM public.competitions
-        WHERE status IN ('upcoming', 'ongoing')
-        ORDER BY start_date ASC NULLS LAST, created_at DESC
-        LIMIT $1 OFFSET $2`, [limit, offset]);
+      const competitions = await listPublicCompetitions(limit, offset);
 
       return jsonApiResponse({
         data: competitions,

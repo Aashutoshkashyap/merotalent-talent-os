@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { requestRoleWorkspace, useNeonRoleWorkspaces } from "@/lib/neon/role-workspaces-client";
 
 type OwnerWorkflow =
   | "job_application"
@@ -16,6 +17,7 @@ interface OwnerStatusActionsProps {
   status: string;
   paymentStatus?: string | null;
   onSaved: () => void;
+  readOnly?: boolean;
 }
 
 interface StatusAction {
@@ -79,17 +81,25 @@ const OwnerStatusActions = ({
   status,
   paymentStatus,
   onSaved,
+  readOnly = false,
 }: OwnerStatusActionsProps) => {
   const { toast } = useToast();
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
-  const actions = getActions(workflow, status, paymentStatus);
+  const actions = readOnly ? [] : getActions(workflow, status, paymentStatus);
 
   const transition = async (nextStatus: string) => {
     setPendingStatus(nextStatus);
-    const { error } = await (supabase as any)
+    let error: { message: string } | null = null;
+    if (useNeonRoleWorkspaces) {
+      try {
+        if (workflow !== "mentor_booking" && workflow !== "event_registration") throw new Error("Use the module's application review panel to update this record.");
+        await requestRoleWorkspace("/api/v1/neon-staging/role-workspaces", { method: "PATCH",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workflow, id: recordId, status: nextStatus }) });
+      } catch (cause) { error = { message: cause instanceof Error ? cause.message : "The status was not changed." }; }
+    } else ({ error } = await (supabase as any)
       .from(tableByWorkflow[workflow])
       .update({ status: nextStatus })
-      .eq("id", recordId);
+      .eq("id", recordId));
     setPendingStatus(null);
 
     if (error) {

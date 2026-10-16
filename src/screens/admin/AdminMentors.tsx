@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,10 +44,12 @@ import { OperationsPage } from "./OperationsUI";
 import { SystemPagination } from "@/components/ui/SystemPagination";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { generateMentorDetails } from "@/lib/ai/ai-generator";
+import {SignedMediaUploader} from "@/components/media/SignedMediaUploader";
 import {
   createAdminResource,
   deleteAdminResource,
   listAdminResource,
+  listNeonAdminOptions,
   updateAdminResource,
 } from "@/lib/admin/admin-client";
 
@@ -67,6 +69,8 @@ interface Mentor {
   full_name: string | null;
   email: string | null;
   location: string | null;
+  profile_image_url?: string|null;
+  availability?: Record<string,unknown>;
 }
 
 const AdminMentors = () => {
@@ -89,16 +93,11 @@ const AdminMentors = () => {
     is_available: true,
     bio: "",
     avatar_url: "",
-    available_dates: "Mon - Fri, 2:00 PM - 7:00 PM",
+    available_dates: "",
     approval_status: "pending" as Mentor["approval_status"],
   });
 
-  useEffect(() => {
-    fetchMentors();
-    fetchAvailableUsers();
-  }, []);
-
-  const fetchMentors = async () => {
+  const fetchMentors = useCallback(async () => {
     setIsLoading(true);
     try {
       const mentorsData = await listAdminResource<Mentor>("mentors", {
@@ -106,6 +105,10 @@ const AdminMentors = () => {
         sort_by: "created_at",
         sort_direction: "desc",
       });
+      if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+        setMentors(mentorsData.map(mentor=>({...mentor,hourly_rate:Number(mentor.hourly_rate)||0,rating:Number(mentor.rating)||0,expertise:Array.isArray(mentor.expertise)?mentor.expertise:[]})));
+        return;
+      }
       if (mentorsData.length > 0) {
       const userIds = mentorsData.map(m => m.user_id);
       const { data: profiles, error: profileError } = await (supabase as any)
@@ -147,9 +150,14 @@ const AdminMentors = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[toast]);
 
-  const fetchAvailableUsers = async () => {
+  const fetchAvailableUsers = useCallback(async () => {
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      try { setAvailableUsers(await listNeonAdminOptions<{id:string;email:string;full_name:string|null}>("mentors")); }
+      catch(error) {toast({variant:"destructive",title:"Unable to load mentor users",description:error instanceof Error ? error.message : "Try again shortly."});}
+      return;
+    }
     const [{ data: roleRows, error: roleError }, { data: mentorRows, error: mentorError }] =
       await Promise.all([
         (supabase as any).from("user_roles").select("user_id").eq("role", "mentor"),
@@ -186,7 +194,9 @@ const AdminMentors = () => {
       email: profile.email || "",
       full_name: profile.full_name,
     })));
-  };
+  },[toast]);
+
+  useEffect(()=>{void Promise.all([fetchMentors(),fetchAvailableUsers()]);},[fetchMentors,fetchAvailableUsers]);
 
   const handleAIGenerate = async () => {
     // Try to get user full name
@@ -231,8 +241,8 @@ const AdminMentors = () => {
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : 0,
       years_experience: formData.years_experience ? parseInt(formData.years_experience) : 0,
       is_available: formData.is_available,
-      available_dates: formData.available_dates || null,
-      avatar_url: formData.avatar_url || null,
+      availability: {...editingMentor?.availability,public_summary:formData.available_dates||null},
+      profile_image_url: formData.avatar_url || null,
       approval_status: formData.approval_status,
     };
 
@@ -298,8 +308,8 @@ const AdminMentors = () => {
       years_experience: mentor.years_experience.toString(),
       is_available: mentor.is_available,
       bio: mentor.description || "",
-      avatar_url: (mentor as any).avatar_url || "",
-      available_dates: (mentor as any).available_dates || "Mon - Fri, 2:00 PM - 7:00 PM",
+      avatar_url: mentor.profile_image_url || "",
+      available_dates: typeof mentor.availability?.public_summary === "string" ? mentor.availability.public_summary : "",
       approval_status: mentor.approval_status,
     });
     setIsDialogOpen(true);
@@ -315,7 +325,7 @@ const AdminMentors = () => {
       is_available: true,
       bio: "",
       avatar_url: "",
-      available_dates: "Mon - Fri, 2:00 PM - 7:00 PM",
+      available_dates: "",
       approval_status: "pending",
     });
     setEditingMentor(null);
@@ -469,6 +479,10 @@ const AdminMentors = () => {
                   onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
                 />
               </div>
+              {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && (editingMentor
+                ? <SignedMediaUploader label="Upload profile photo" module="mentor_profile" resourceId={editingMentor.id}
+                  disabled={isSubmitting} onUploaded={assets=>{if(assets[0])setFormData(current=>({...current,avatar_url:assets[0].path}));}}/>
+                : <p className="text-xs text-muted-foreground">Save the mentor profile, then edit it to upload a photo.</p>)}
 
               <div className="grid sm:grid-cols-2 gap-4 items-end">
                 <div className="flex items-center gap-2">

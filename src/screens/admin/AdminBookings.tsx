@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,17 +27,26 @@ interface MentorBooking {
 }
 
 export default function AdminBookings() {
+  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const [bookings, setBookings] = useState<MentorBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     setIsLoading(true);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/mentor-bookings", { credentials: "same-origin", cache: "no-store" });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Unable to load bookings");
+        setBookings(body.data as MentorBooking[]);
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to load bookings", description: error instanceof Error ? error.message : "Please retry." });
+        setBookings([]);
+      } finally { setIsLoading(false); }
+      return;
+    }
     let data: any[] = [];
     try {
       data = await listAdminResource<MentorBooking>("mentor-bookings");
@@ -78,9 +87,26 @@ export default function AdminBookings() {
       setBookings((data || []) as MentorBooking[]);
     }
     setIsLoading(false);
-  };
+  }, [isNeonStaging, toast]);
+
+  useEffect(() => { void fetchBookings(); }, [fetchBookings]);
 
   const updateStatus = async (id: string, newStatus: string) => {
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/mentor-bookings", {
+          method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, status: newStatus }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Unable to update booking");
+        toast({ title: `Booking status updated to ${newStatus}` });
+        fetchBookings();
+      } catch (error) {
+        toast({ variant: "destructive", title: "Booking update failed", description: error instanceof Error ? error.message : "Please retry." });
+      }
+      return;
+    }
     const { error } = await (supabase as any).from("mentor_bookings").update({ status: newStatus }).eq("id", id);
     if (!error) {
       toast({ title: `Booking status updated to ${newStatus}` });
@@ -166,8 +192,8 @@ export default function AdminBookings() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="pending" disabled={isNeonStaging}>Pending</SelectItem>
+                      <SelectItem value="confirmed" disabled={isNeonStaging}>Confirmed</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="declined">Declined</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>

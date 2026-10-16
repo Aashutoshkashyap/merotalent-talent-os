@@ -39,16 +39,23 @@ export function useNotifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
   const fetchNotifications = useCallback(async () => {
     if (!user) {
       setNotifications([]);
       setUnreadCount(0);
+      setNextCursor(null);
+      setIsLoading(false);
+      setError(null);
       return;
     }
 
     const readIds = getReadNotifIds();
+    setIsLoading(true);
 
     if (isStaging) {
       try {
@@ -60,20 +67,27 @@ export function useNotifications() {
           const json = await res.json();
           const items: NotificationItem[] = (json.data?.notifications ?? []).map((row: any) => ({
             id: String(row.id),
-            user_id: String(row.recipient_id),
+            user_id: user.id,
             title: String(row.title ?? ""),
             message: String(row.message ?? ""),
             type: String(row.type ?? "info"),
-            read: row.is_read === true || readIds.includes(String(row.id)),
+            read: row.is_read === true,
             created_at: String(row.created_at),
             link: typeof row.action_url === "string" ? row.action_url : undefined,
           }));
           setNotifications(items);
           setUnreadCount(Math.max(0, json.data?.unreadCount ?? 0));
+          setNextCursor(typeof json.data?.nextCursor === "string" ? json.data.nextCursor : null);
+          setError(null);
           return;
         }
+        throw new Error(`Notification request failed (${res.status}).`);
       } catch (err) {
         console.error("Failed to fetch staging notifications", err);
+        setError("Notifications could not be loaded. Please retry.");
+        return;
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -96,6 +110,8 @@ export function useNotifications() {
       console.error("Failed to load notifications", error);
       setNotifications([]);
       setUnreadCount(0);
+      setError("Notifications could not be loaded. Please retry.");
+      setIsLoading(false);
       return;
     }
 
@@ -112,7 +128,32 @@ export function useNotifications() {
 
     setNotifications(formatted);
     setUnreadCount(Math.max(0, count ?? 0));
+    setError(null);
+    setIsLoading(false);
   }, [isStaging, user]);
+
+  const loadMore = async () => {
+    if (!isStaging || !nextCursor) return;
+    try {
+      const response = await fetch(`/api/v1/neon-staging/notifications?before=${encodeURIComponent(nextCursor)}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Notification page failed (${response.status}).`);
+      const json = await response.json();
+      const incoming: NotificationItem[] = (json.data?.notifications ?? []).map((row: any) => ({
+        id: String(row.id), user_id: user?.id ?? "", title: String(row.title ?? ""),
+        message: String(row.message ?? ""), type: String(row.type ?? "info"),
+        read: row.is_read === true, created_at: String(row.created_at),
+        link: typeof row.action_url === "string" ? row.action_url : undefined,
+      }));
+      setNotifications((current) => {
+        const ids = new Set(current.map((item) => item.id));
+        return [...current, ...incoming.filter((item) => !ids.has(item.id))];
+      });
+      setNextCursor(typeof json.data?.nextCursor === "string" ? json.data.nextCursor : null);
+      setError(null);
+    } catch {
+      setError("Could not load more notifications. Please retry.");
+    }
+  };
 
   useEffect(() => {
     void fetchNotifications();
@@ -121,8 +162,13 @@ export function useNotifications() {
     if (isStaging) {
       let eventSource: EventSource | null = null;
       try {
-        eventSource = new EventSource("/api/v1/realtime/stream");
-        eventSource.addEventListener("notification", () => {
+        const cursorKey = `merotalent.notification_cursor.${user.id}`;
+        const cursor = sessionStorage.getItem(cursorKey);
+        const url = cursor && /^(0|[1-9][0-9]{0,18})$/.test(cursor)
+          ? `/api/v1/realtime/stream?cursor=${cursor}` : "/api/v1/realtime/stream";
+        eventSource = new EventSource(url);
+        eventSource.addEventListener("notification", (event) => {
+          if (event.lastEventId) sessionStorage.setItem(cursorKey, event.lastEventId);
           void fetchNotifications();
         });
         eventSource.addEventListener("reconnect", () => {
@@ -163,6 +209,18 @@ export function useNotifications() {
   }, [fetchNotifications, isStaging, user]);
 
   const markAllAsRead = async () => {
+    if (isStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/notifications", {
+          method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ all: true }),
+        });
+        if (!response.ok) throw new Error(`Mark all read failed (${response.status}).`);
+        await fetchNotifications();
+      } catch {
+        setError("Could not mark notifications as read. Please retry.");
+      }
+      return;
+    }
     setNotifications((prev) =>
       prev.map((n) => {
         saveReadNotifId(n.id);
@@ -172,19 +230,6 @@ export function useNotifications() {
     setUnreadCount(0);
 
     if (user) {
-      if (isStaging) {
-        try {
-          await fetch("/api/v1/neon-staging/notifications", {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ all: true }),
-          });
-          return;
-        } catch (err) {
-          console.error("Failed to mark all staging notifications read", err);
-        }
-      }
-
       const { error } = await (supabase as any)
         .from("notifications")
         .update({ is_read: true })
@@ -194,6 +239,18 @@ export function useNotifications() {
   };
 
   const markAsRead = async (id: string) => {
+    if (isStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/notifications", {
+          method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }),
+        });
+        if (!response.ok) throw new Error(`Mark read failed (${response.status}).`);
+        await fetchNotifications();
+      } catch {
+        setError("Could not mark the notification as read. Please retry.");
+      }
+      return;
+    }
     const wasUnread = notifications.some((notification) => notification.id === id && !notification.read);
     saveReadNotifId(id);
     setNotifications((prev) =>
@@ -202,19 +259,6 @@ export function useNotifications() {
     if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
 
     if (user) {
-      if (isStaging) {
-        try {
-          await fetch("/api/v1/neon-staging/notifications", {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ id }),
-          });
-          return;
-        } catch (err) {
-          console.error("Failed to mark staging notification read", err);
-        }
-      }
-
       const { error } = await (supabase as any)
         .from("notifications")
         .update({ is_read: true })
@@ -223,5 +267,18 @@ export function useNotifications() {
     }
   };
 
-  return { notifications, unreadCount, markAsRead, markAllAsRead, refresh: fetchNotifications };
+  const markAsUnread = async (id: string) => {
+    if (!isStaging) return;
+    try {
+      const response = await fetch("/api/v1/neon-staging/notifications", {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id, read: false }),
+      });
+      if (!response.ok) throw new Error(`Mark unread failed (${response.status}).`);
+      await fetchNotifications();
+    } catch { setError("Could not mark the notification unread. Please retry."); }
+  };
+
+  return { notifications, unreadCount, isLoading, error, hasMore: !!nextCursor,
+    loadMore, markAsRead, markAsUnread, markAllAsRead, refresh: fetchNotifications };
 }

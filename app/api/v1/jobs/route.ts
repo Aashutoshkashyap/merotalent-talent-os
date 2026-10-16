@@ -18,6 +18,8 @@ export async function GET(request: Request): Promise<Response> {
     const isStaging = getBackendMode() === "neon-staging";
 
     if (isStaging) {
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (id && !uuid.test(id)) return NextResponse.json({ error: "INVALID_JOB_ID" }, { status: 400 });
       const repo = new NeonJobsRepository();
       if (id) {
         const job = await repo.getPublicJob(id);
@@ -29,10 +31,15 @@ export async function GET(request: Request): Promise<Response> {
       const search = url.searchParams.get("search") ?? undefined;
       const location = url.searchParams.get("location") ?? undefined;
       const jobType = url.searchParams.get("type") ?? undefined;
-      const limit = url.searchParams.get("limit") ? parseInt(url.searchParams.get("limit")!, 10) : 50;
-      const offset = url.searchParams.get("offset") ? parseInt(url.searchParams.get("offset")!, 10) : 0;
+      const category = url.searchParams.get("category") ?? undefined;
+      const limit = Number(url.searchParams.get("limit") ?? 50);
+      const offset = Number(url.searchParams.get("offset") ?? 0);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 100 ||
+          !Number.isInteger(offset) || offset < 0 || offset > 100000) {
+        return NextResponse.json({ error: "INVALID_PAGINATION" }, { status: 400 });
+      }
 
-      const jobs = await repo.listPublicJobs({ search, location, jobType, limit, offset });
+      const jobs = await repo.listPublicJobs({ search, location, jobType, category, limit, offset });
       return NextResponse.json({ data: jobs }, {
         headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" },
       });

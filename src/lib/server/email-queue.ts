@@ -5,6 +5,7 @@ import {
 } from "./email-provider";
 import { loadProviderSecret } from "./provider-config-service";
 import { getAdminClient } from "./supabase";
+import { getBackendMode } from "./backend-mode";
 
 type ClaimedEmail = {
   id: string;
@@ -32,7 +33,11 @@ async function resolveProvider(): Promise<TransactionalEmailProvider> {
  * claim prevents concurrent cron invocations from sending the same row, while
  * the provider idempotency key protects the accepted-but-not-recorded edge.
  */
-export async function dispatchQueuedEmails(limit = 25) {
+export async function dispatchQueuedEmails(limit = 25, authorization: string | null = null) {
+  if (getBackendMode() === "neon-staging") {
+    const { dispatchNeonQueuedEmails } = await import("./neon-email-queue");
+    return dispatchNeonQueuedEmails(authorization, limit);
+  }
   const provider = await resolveProvider();
   if (provider.name === "unconfigured") {
     return { configured: false, claimed: 0, sent: 0, failed: 0, retrying: 0 };

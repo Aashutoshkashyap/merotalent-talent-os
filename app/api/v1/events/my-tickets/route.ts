@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     if (getBackendMode() === "neon-staging") {
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonEventsRepository();
-      const registrations = await repo.listOwnRegistrations(actor);
+      const registrations = await repo.listOwnDigitalTickets(actor);
       return jsonApiResponse({
         data: registrations,
         error: null,

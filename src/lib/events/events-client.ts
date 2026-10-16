@@ -184,13 +184,13 @@ export async function registerForEventApi(
     }>;
     customResponses?: Record<string, unknown>;
   },
-  token: string
+  token?: string
 ) {
   const res = await fetch(`/api/v1/events/${eventId}/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(payload),
   });

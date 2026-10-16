@@ -6,15 +6,15 @@ Source bucket metadata came from a read-only `storage.buckets` query. Target exi
 | --- | --- | ---: | --- | --- | --- |
 | `ad-media` | public | 5 MiB | AVIF/JPEG/PNG/WebP | exists; observed private | `advertisement`; signed public read in Neon |
 | `application-files` | private | 5 MiB | PDF/DOC/DOCX | exists; private | `application_file`; cross-user authorization not yet ported |
-| `chat-attachments` | private | 5 MiB | JPEG/PNG/WebP/PDF | exists; private | legacy chat path; no active Neon media-policy mapping |
+| `chat-attachments` | private | 5 MiB | JPEG/PNG/WebP/PDF | exists; private | Neon participant-only upload/read; real signed-byte and denial matrix verified October 14 |
 | `college-media` | public | 8 MiB | AVIF/JPEG/PNG/WebP | exists; observed public-read | logo/cover/gallery; signed public read and scoped managed upload/delete tested |
 | `course-media` | public | 5 MiB | AVIF/JPEG/PNG/WebP | exists; observed private | `course_thumbnail`; signed public read in Neon |
-| `event-attachments` | private | 10 MiB | PDF/DOC/DOCX | exists; private | `event_attachment`; cross-user authorization not yet ported |
+| `event-attachments` | private | 10 MiB | PDF/DOC/DOCX | exists; private | `event_attachment`; assigned organizer/Super Admin read, upload and safe deletion verified October 14 |
 | `event-media` | public | 8 MiB | AVIF/JPEG/PNG/WebP | exists; observed private | `event_cover`; signed public read in Neon |
-| `job-files` | private | 5 MiB | PDF/DOC/DOCX | exists; private | `job_attachment`; cross-user authorization not yet ported |
+| `job-files` | private | 5 MiB | PDF/DOC/DOCX | exists; private | applicant supporting-file upload; exact recruiter-scope signed read verified October 14 |
 | `mentor-media` | public | 5 MiB | AVIF/JPEG/PNG/WebP | exists; observed private | `mentor_profile`; signed public read in Neon |
 | `Merotalent` | private | 2 MiB | unrestricted | **absent; source empty** | legacy bucket, no runtime bucket mapping or objects; intentionally excluded |
-| `payment-proofs` | private | 5 MiB | JPEG/PNG/WebP/PDF | exists; private | legacy payment-proof path; Neon authorization not yet ported |
+| `payment-proofs` | private | 5 MiB | JPEG/PNG/WebP/PDF | exists; private | owner/Super Admin upload/read; upload does not verify payment; real ACL matrix verified October 14 |
 | `profile-media` | public | 5 MiB | AVIF/JPEG/PNG/WebP | exists; observed private | `profile_avatar`; signed public read, scoped upload tested |
 | `resumes` | private | 5 MiB | PDF/DOC/DOCX | exists; private | `resume`; owner-scoped signed read tested |
 
@@ -24,4 +24,16 @@ All 22 source objects (8,552,263 bytes) exist on staging with matching SHA-256 a
 
 The S3-compatible target does not expose Supabase's bucket MIME/size metadata through `ListBuckets`. `src/lib/server/media-policy.ts` applies per-module MIME and size limits before server writes, but those limits are not a verified storage-provider-level control. Neon bucket access is configured through Neon rather than S3 ACL/bucket-policy calls; `private` buckets can be served by short-lived signed URLs ([Neon Object Storage architecture](https://neon.com/blog/building-neon-object-storage), [Neon private-file example](https://neon.com/blog/building-a-private-searchable-photo-library-on-the-neon-backend)). We did not make currently private buckets anonymously readable just to mirror Supabase flags.
 
-Open questions before storage cutover: complete job/event/mentor/payment/chat document authorization and upload tests, review target access levels in Console again at release time, and decide whether legacy `Merotalent` should remain omitted or be represented by a deliberately named compatibility bucket.
+At the original October 8 checkpoint, job/event/mentor/payment/chat document authorization remained open. Later acceptance evidence follows; release-time access-level review and the legacy `Merotalent` bucket disposition still require explicit treatment.
+
+## October 14 — private authorization and combined recovery evidence
+
+`node scripts/neon-staging-private-storage-http-uat.mjs` passed **155/155** real HTTP/storage checks across resumes, job experience letters, job training documents, payment proofs, chat attachments, and event attachments. Four synthetic identities obtained real Neon Managed Auth sessions. Actual signed downloads returned the exact uploaded bytes; unsigned object reads and manipulated signed paths returned HTTP 403. Missing/foreign application scopes, expired entitlements, suspended account sessions, inactive conversations, nonparticipant Super Admin chat reads, unrelated deletion, and deletion of a still-referenced event attachment were rejected. Profile-resume replacement preserved the resume attached to an earlier submitted application. Cleanup verified deletion of all **4** synthetic Auth/application accounts and **7** synthetic objects.
+
+`node scripts/verify-neon-staging-combined-recovery.mjs` captured a repeatable-read, read-only PostgreSQL snapshot and a stable object set, then restored into an isolated local PostgreSQL 18 instance and a local object archive. The local database listened only on a private Unix socket. SQL reads fingerprinted the exact restored row contents in **99 tables / 2,338 rows** across `public` and `neon_auth`; all fingerprints matched the source recovery point. All **23 objects / 8,552,331 bytes** matched SHA-256 and the restored MIME/size metadata manifest. An interrupted, uncommitted profile write rolled back when the connection closed. An interrupted object write was detected and recovered. Committed divergent database and object writes were detected, and a second restore reproduced the original row/object hashes and media references. Scratch databases, sockets and object archives were removed; staging source writes were **0**.
+
+The stability guard rejected an earlier attempt when simultaneous synthetic ACL uploads changed the object set. Only the subsequent stable, post-cleanup snapshot is accepted as recovery evidence. This restore exercises a local recovery archive, rather than a second live Object Storage provider, and does not prove production cutover or application login against a restored Auth service.
+
+Reference verification preserved **15** canonical media references; **10** resolve to restored objects and **5** point to missing historical job-application resumes. `scripts/classify-neon-missing-media.mjs` compared those references with the encrypted, consistent source snapshot at `2026-10-13T23:08:41.8614Z`: every missing path is already present on the source application, has the applicant's owner prefix, and is absent from source `storage.objects`. There are **0** missing migrated source objects and **0** staging-only missing references. The five application paths/history remain intact. Authorized application-resume requests now return HTTP 404 with “Resume file unavailable; applicant needs to re-upload.” Reviewers outside the job entity scope remain denied before storage lookup. A later profile upload is never substituted into the historical application snapshot.
+
+Focused regression evidence: **34/34** existing storage tests, **7/7** historical application-resume download tests, and **3/3** recovery-integrity helper tests. The complete private `application-files` module-access proof workflow and recovery into a second live provider environment remain separate acceptance items. Existing source objects and missing historical bytes are not fabricated or silently removed.

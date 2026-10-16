@@ -5,9 +5,11 @@
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAdminClient } from "@/lib/server/supabase";
-import { queryRows } from "@/lib/server/db";
 import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
 import { authenticateRequest } from "@/lib/server/auth";
+import { requireSameOrigin, NeonSessionUnavailable } from "@/lib/server/neon-session";
+import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
+import { listMyCompetitionIds, registerNeonCompetition } from "@/lib/server/neon-competitions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,14 +19,8 @@ export async function GET(request: Request) {
   try {
     if (getBackendMode() === "neon-staging") {
       const actor = await getAuthenticatedApplicationUser(request);
-      const rows = await queryRows<{ competition_id: string }>(`
-        SELECT competition_id
-        FROM public.competition_registrations
-        WHERE user_id = $1::uuid
-          AND deleted_at IS NULL`, [actor.userId]);
-
       return jsonApiResponse({
-        data: rows.map((r) => r.competition_id),
+        data: await listMyCompetitionIds(actor),
         error: null,
         meta: { requestId },
       });
@@ -45,6 +41,13 @@ export async function GET(request: Request) {
       meta: { requestId },
     });
   } catch (err) {
+    if (getBackendMode() === "neon-staging") {
+      const status = err instanceof NeonAuthorizationError ? err.status
+        : err instanceof NeonSessionUnavailable ? 503 : 503;
+      const code = err instanceof NeonAuthorizationError ? err.code : "REGISTRATIONS_UNAVAILABLE";
+      return jsonApiResponse({ data: null, error: { code, message: "Registrations could not be loaded." },
+        meta: { requestId } }, status);
+    }
     return jsonApiResponse({ data: [], error: null, meta: { requestId } });
   }
 }
@@ -64,15 +67,10 @@ export async function POST(request: Request) {
     }
 
     if (getBackendMode() === "neon-staging") {
+      requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
-      const rows = await queryRows(`
-        INSERT INTO public.competition_registrations (competition_id, user_id, team_name)
-        VALUES ($1::uuid, $2::uuid, $3)
-        ON CONFLICT DO NOTHING
-        RETURNING id, competition_id, user_id, created_at`,
-        [competitionId, actor.userId, teamName]
-      );
-      return jsonApiResponse({ data: rows[0] ?? { success: true }, error: null, meta: { requestId } }, 201);
+      const result = await registerNeonCompetition(actor, { competitionId, teamName });
+      return jsonApiResponse({ data: result, error: null, meta: { requestId } }, result.alreadyRegistered ? 200 : 201);
     }
 
     const auth = await authenticateRequest(request);
@@ -91,6 +89,13 @@ export async function POST(request: Request) {
 
     return jsonApiResponse({ data: data || { success: true }, error: null, meta: { requestId } }, 201);
   } catch (err) {
+    if (getBackendMode() === "neon-staging" && (err instanceof NeonAuthorizationError ||
+        err instanceof NeonSessionUnavailable)) {
+      return jsonApiResponse({ data: null, error: {
+        code: err instanceof NeonAuthorizationError ? err.code : "AUTH_UNAVAILABLE",
+        message: err.message,
+      }, meta: { requestId } }, err instanceof NeonAuthorizationError ? err.status : 503);
+    }
     return jsonApiResponse(
       {
         data: null,

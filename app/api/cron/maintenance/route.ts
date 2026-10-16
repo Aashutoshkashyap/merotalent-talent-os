@@ -7,6 +7,7 @@ import {
   ServerConfigurationError,
 } from "@/lib/server/supabase";
 import { dispatchQueuedEmails } from "@/lib/server/email-queue";
+import { getBackendMode } from "@/lib/server/backend-mode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,20 @@ export async function GET(request: NextRequest) {
       },
       401,
     );
+  }
+
+  if (getBackendMode() === "neon-staging") {
+    try {
+      const { runNeonMaintenance } = await import("@/lib/server/neon-maintenance");
+      const data = await runNeonMaintenance(request.headers.get("authorization"));
+      const emailDelivery = await dispatchQueuedEmails(25, request.headers.get("authorization"));
+      return jsonResponse({ data: { ...data, emailDelivery }, error: null,
+        meta: { completedAt: new Date().toISOString() } }, 200);
+    } catch {
+      console.error("[cron:maintenance] Neon scheduled maintenance did not complete");
+      return jsonResponse({ data: null, error: { code: "MAINTENANCE_FAILED",
+        message: "Scheduled maintenance did not complete." } }, 500);
+    }
   }
 
   let supabase: ReturnType<typeof getAdminClient>;

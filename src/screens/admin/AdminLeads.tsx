@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Search, Inbox, Eye, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 interface LeadItem {
   id: string;
@@ -22,6 +23,8 @@ interface LeadItem {
   payload: any;
   created_at: string;
   profiles?: { email: string | null; full_name: string | null };
+  applicant_email?: string | null;
+  applicant_name?: string | null;
 }
 
 export default function AdminLeads() {
@@ -30,11 +33,20 @@ export default function AdminLeads() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
-
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/leads", { credentials: "same-origin", cache: "no-store" });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Leads unavailable.");
+        setLeads((payload.data || []).map((lead: LeadItem) => ({ ...lead,
+          profiles: { email: lead.applicant_email || null, full_name: lead.applicant_name || null } })));
+      } catch (error) {
+        setLeads([]);
+        toast({ variant: "destructive", title: "Unable to load leads", description: error instanceof Error ? error.message : "Please retry." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const { data, error } = await (supabase as any)
       .from("leads")
       .select("*")
@@ -54,9 +66,22 @@ export default function AdminLeads() {
       setLeads((data || []) as LeadItem[]);
     }
     setIsLoading(false);
-  };
+  }, [toast]);
+
+  useEffect(() => { void fetchLeads(); }, [fetchLeads]);
 
   const updateLeadStatus = async (id: string, newStatus: string) => {
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/leads", { method: "PATCH", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: newStatus }) });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Lead could not be updated.");
+        toast({ title: `Lead status updated to ${newStatus}` });
+        void fetchLeads();
+      } catch (error) { toast({ variant: "destructive", title: "Lead was not updated", description: error instanceof Error ? error.message : "Please retry." }); }
+      return;
+    }
     const { error } = await (supabase as any).from("leads").update({ status: newStatus }).eq("id", id);
     if (!error) {
       toast({ title: `Lead status updated to ${newStatus}` });

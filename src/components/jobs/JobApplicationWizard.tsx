@@ -77,7 +77,7 @@ export default function JobApplicationWizard({
   onSubmitted,
   job,
 }: JobApplicationWizardProps) {
-  const { profile, session, user } = useAuth();
+  const { profile, session, user, refreshProfile } = useAuth();
   const { toast } = useToast();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -89,6 +89,9 @@ export default function JobApplicationWizard({
   const [coverLetter, setCoverLetter] = useState("");
   const [expectedSalary, setExpectedSalary] = useState("");
   const [skillsText, setSkillsText] = useState("");
+  const [experienceLetterUrl, setExperienceLetterUrl] = useState("");
+  const [trainingDocumentUrl, setTrainingDocumentUrl] = useState("");
+  const [uploadingDocument, setUploadingDocument] = useState<"experience" | "training" | null>(null);
 
   // Reusable Education & Experience lists
   const [educationList, setEducationList] = useState<any[]>([]);
@@ -101,6 +104,7 @@ export default function JobApplicationWizard({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<any>(null);
 
   const progress = (currentStep / steps.length) * 100;
@@ -132,6 +136,34 @@ export default function JobApplicationWizard({
     }
   }, [isOpen, profile, user?.email, job.skills]);
 
+  useEffect(() => {
+    setExperienceLetterUrl("");
+    setTrainingDocumentUrl("");
+  }, [job.id]);
+
+  const uploadDocument = async (kind: "experience" | "training", file: File) => {
+    setUploadingDocument(kind);
+    try {
+      const form = new FormData();
+      form.set("jobId", job.id); form.set("kind", kind); form.set("file", file);
+      const response = await fetch("/api/v1/neon-staging/jobs/documents", {
+        method: "POST", credentials: "same-origin", body: form,
+      });
+      const result = await response.json();
+      if (!response.ok || typeof result?.data?.path !== "string") throw new Error(result?.error || "Document upload failed.");
+      const previous = kind === "experience" ? experienceLetterUrl : trainingDocumentUrl;
+      if (kind === "experience") setExperienceLetterUrl(result.data.path);
+      else setTrainingDocumentUrl(result.data.path);
+      if (previous) void fetch("/api/v1/neon-staging/jobs/documents", {
+        method: "DELETE", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: job.id, path: previous }),
+      });
+      toast({ title: "Document attached", description: file.name });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Upload failed", description: error instanceof Error ? error.message : "Please try again." });
+    } finally { setUploadingDocument(null); }
+  };
+
   const handleResumeUploaded = (assets: SignedMediaAsset[]) => {
     const asset = assets[0];
     if (!asset) return;
@@ -160,7 +192,8 @@ export default function JobApplicationWizard({
   };
 
   const handleSubmit = async () => {
-    if (!user || !session?.access_token) {
+    const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+    if (!user || (!isStaging && !session?.access_token)) {
       toast({ variant: "destructive", title: "Login required", description: "Please sign in to submit your application." });
       return;
     }
@@ -181,9 +214,11 @@ export default function JobApplicationWizard({
         education: educationList,
         experience: experienceList,
         certifications: certificationsList,
+        experienceLetterUrl: experienceLetterUrl || undefined,
+        trainingDocumentUrl: trainingDocumentUrl || undefined,
       };
 
-      const result = await submitJobApplicationApi(payload, session.access_token);
+      const result = await submitJobApplicationApi(payload, isStaging ? undefined : session?.access_token);
       setSubmissionResult(result);
       toast({
         title: "Application Submitted Successfully!",
@@ -314,12 +349,37 @@ export default function JobApplicationWizard({
                 </div>
 
                 <div className="space-y-1.5 border-t border-slate-100 pt-3">
+                  {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="job-resume-upload">CV / Resume PDF</Label>
+                      <Input id="job-resume-upload" type="file" accept=".pdf,application/pdf" disabled={isUploadingResume}
+                        onChange={async (event) => {
+                          const file = event.target.files?.[0];
+                          if (!file) return;
+                          setIsUploadingResume(true);
+                          try {
+                            const form = new FormData(); form.set("file", file);
+                            const response = await fetch("/api/v1/neon-staging/resume", {
+                              method: "POST", credentials: "same-origin", body: form,
+                            });
+                            const result = await response.json();
+                            if (!response.ok || !result?.data?.path) throw new Error("The PDF could not be attached.");
+                            setResumeUrl(result.data.path);
+                            await refreshProfile();
+                            toast({ title: "Resume attached", description: file.name });
+                          } catch (error) {
+                            toast({ variant: "destructive", title: "Resume upload failed", description: error instanceof Error ? error.message : "Please try again." });
+                          } finally { setIsUploadingResume(false); }
+                        }} />
+                    </div>
+                  ) : (
                   <SignedMediaUploader
                     label="CV / Resume Document"
                     module="job_attachment"
                     resourceId={user?.id}
                     onUploaded={handleResumeUploaded}
                   />
+                  )}
                   {resumeUrl && (
                     <p className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
                       <Check className="h-3 w-3" /> Resume attached: {resumeUrl.split("/").pop()}
@@ -386,6 +446,29 @@ export default function JobApplicationWizard({
                     ))
                   )}
                 </div>
+                {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && (
+                  <div className="grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2">
+                    {(["experience", "training"] as const).map((kind) => {
+                      const path = kind === "experience" ? experienceLetterUrl : trainingDocumentUrl;
+                      return <div key={kind} className="space-y-2">
+                        <Label htmlFor={`job-${kind}-document`}>{kind === "experience" ? "Experience letter" : "Training document"} (optional, PDF)</Label>
+                        <Input id={`job-${kind}-document`} type="file" accept=".pdf,application/pdf"
+                          disabled={!!uploadingDocument} onChange={(event) => {
+                            const file = event.target.files?.[0]; if (file) void uploadDocument(kind, file);
+                          }} />
+                        {path && <div className="flex items-center gap-2"><span className="min-w-0 truncate text-emerald-700">Attached: {path.split("/").pop()}</span>
+                          <Button type="button" variant="ghost" size="sm" disabled={!!uploadingDocument} onClick={async () => {
+                            const response = await fetch("/api/v1/neon-staging/jobs/documents", {
+                              method: "DELETE", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ jobId: job.id, path }),
+                            });
+                            if (response.ok) { if (kind === "experience") setExperienceLetterUrl(""); else setTrainingDocumentUrl(""); }
+                            else toast({ variant: "destructive", title: "Could not remove document" });
+                          }}>Remove</Button></div>}
+                      </div>;
+                    })}
+                  </div>
+                )}
 
                 {/* Experience Section */}
                 <div className="space-y-2 border-t border-slate-100 pt-3">
@@ -454,6 +537,7 @@ export default function JobApplicationWizard({
                   <p><span className="text-slate-500">Contact:</span> <span className="font-bold text-slate-900">{email} • {phone}</span></p>
                   <p><span className="text-slate-500">Skills ({typedSkills.length}):</span> <span className="font-bold text-slate-900">{typedSkills.join(", ") || "None"}</span></p>
                   <p><span className="text-slate-500">CV Attached:</span> <span className="font-bold text-slate-900">{resumeUrl ? "Yes" : "No"}</span></p>
+                  {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && <p><span className="text-slate-500">Supporting documents:</span> <span className="font-bold text-slate-900">{[experienceLetterUrl && "Experience letter", trainingDocumentUrl && "Training document"].filter(Boolean).join(", ") || "None"}</span></p>}
                 </div>
 
                 <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-[11px] text-amber-800">

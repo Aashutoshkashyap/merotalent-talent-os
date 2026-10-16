@@ -1,6 +1,5 @@
 /** Mode-aware storage boundary. Existing routes keep using Supabase until migrated. */
 import { getBackendMode } from "./backend-mode";
-import { getAdminClient } from "./supabase";
 import {
   createPresignedDownloadUrl,
   deleteObject,
@@ -15,6 +14,8 @@ import {
   type MediaModule,
 } from "./media-policy";
 import { requireEntityAccess, type NeonActor } from "./neon-authorization";
+import { requireConversationMembership } from "./neon-application-events";
+import { queryRows } from "./db";
 
 const publicModules = new Set<MediaModule>([
   "profile_avatar", "college_logo", "college_cover", "college_gallery",
@@ -54,6 +55,20 @@ async function authorizeObject(
   if (actor.platformAdmin) return;
   if (module === "resume" || module === "profile_avatar") {
     if (ownerId !== actor.userId) throw new ApplicationStorageError(403, "Private object belongs to another user.");
+    return;
+  }
+  if (module === "job_attachment" && resourceId) {
+    if (ownerId !== actor.userId) throw new ApplicationStorageError(403, "Job document belongs to another user.");
+    return;
+  }
+  if (module === "payment_proof" && resourceId) {
+    if (!actor.platformAdmin && ownerId !== actor.userId) {
+      throw new ApplicationStorageError(403, "Payment proof belongs to another user.");
+    }
+    return;
+  }
+  if (module === "chat_attachment" && resourceId) {
+    await requireConversationMembership(actor, resourceId);
     return;
   }
   if (module.startsWith("college_") && resourceId) {
@@ -106,6 +121,8 @@ export async function publicObjectUrl(module: MediaModule, path: string): Promis
   }
   const bucket = mediaPolicies[module].bucket;
   if (getBackendMode() === "legacy") {
+    // Keep the compatibility SDK out of the Neon server module graph.
+    const { getAdminClient } = await import("./supabase");
     return getAdminClient().storage.from(bucket).getPublicUrl(path).data.publicUrl;
   }
   // Neon S3 currently returns 403 for anonymous GET even on imported buckets
@@ -124,9 +141,20 @@ export async function privateDownloadUrl(
     throw new ApplicationStorageError(503, "Legacy private downloads use the existing authorized media route.");
   }
   await authorizeObject(actor, intent.module, intent.resourceId, intent.path);
+  if (intent.module === "chat_attachment") {
+    const bound = await queryRows<{ id: string }>(`
+      SELECT m.id FROM public.messages m
+      JOIN public.conversations c ON c.id=m.conversation_id AND c.is_active=true
+      JOIN public.mentors mentor ON mentor.id=c.mentor_id
+      WHERE m.conversation_id=$1::uuid AND m.attachment_path=$2
+        AND (c.mentee_id=$3::uuid OR mentor.user_id=$3::uuid)
+      LIMIT 1`, [intent.resourceId, intent.path, actor.userId]);
+    if (!bound[0]) throw new ApplicationStorageError(404, "Attachment metadata not found.");
+  }
   const bucket = mediaPolicies[intent.module].bucket;
   if (!await headObject(bucket, intent.path)) throw new ApplicationStorageError(404, "Object not found.");
-  return (await createPresignedDownloadUrl(bucket, intent.path, intent.expiresIn, true)).signedUrl;
+  return (await createPresignedDownloadUrl(bucket, intent.path, intent.expiresIn,
+    intent.module !== "chat_attachment")).signedUrl;
 }
 
 export async function uploadBytes(

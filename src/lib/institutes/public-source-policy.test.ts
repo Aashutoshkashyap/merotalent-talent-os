@@ -3,16 +3,18 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const publicClient = readFileSync(resolve(process.cwd(), "src/lib/institutes/public-institutes.ts"), "utf8");
+const directoryRoute = readFileSync(resolve(process.cwd(), "app/api/v1/institutes/directory/route.ts"), "utf8");
 const detailPage = readFileSync(resolve(process.cwd(), "src/screens/institutes/InstituteDetailPage.tsx"), "utf8");
 const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20260925100000_internalize_college_directory_provenance.sql"), "utf8");
 
 describe("public college source policy", () => {
   it("uses an explicit MeroTalent directory projection with no external-source field", () => {
-    expect(publicClient).toContain("const publicInstituteSelect");
-    expect(publicClient).not.toContain("source_url");
+    expect(directoryRoute).toContain("const columns = [");
+    expect(directoryRoute).not.toContain('"source_url"');
     expect(publicClient).not.toContain("edusanjal.com");
-    expect(publicClient).toContain('.from("institute_directory")');
-    expect(publicClient).not.toContain("fetch(");
+    expect(directoryRoute).toContain("FROM public.institute_directory d");
+    expect(publicClient).toContain("/api/v1/institutes/directory?");
+    expect(publicClient).not.toContain('from("institute_directory")');
   });
 
   it("does not render third-party directory links but retains a safe official website", () => {

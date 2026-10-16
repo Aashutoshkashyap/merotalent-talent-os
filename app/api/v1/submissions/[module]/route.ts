@@ -4,6 +4,7 @@ import { isModuleFormType } from "@/lib/forms/module-form-definitions";
 import { getAdminClient, ServerConfigurationError } from "@/lib/server/supabase";
 import { missingStudentProfileFields, valuesFromStudentProfile } from "@/lib/student/profile-readiness";
 import { GuestVerificationError, normalizeGuestIdentity } from "@/lib/server/guest-college-verification";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import {
   ModuleFormValidationError,
   submitModuleForm,
@@ -97,6 +98,10 @@ export async function POST(request: Request, context: RouteContext) {
   // Only a college enquiry can start before account creation. A malformed
   // bearer token is deliberately not downgraded into anonymous access.
   const isGuestCollegeApplication = module === "college_application" && !getBearerToken(request);
+  if (isGuestCollegeApplication && getBackendMode() === "neon-staging" &&
+      request.headers.get("origin") !== new URL(request.url).origin) {
+    return response(requestId, 403, null, { code: "CROSS_ORIGIN_WRITE_DENIED", message: "Submit applications from this website." });
+  }
   let authenticated: Awaited<ReturnType<typeof authenticateRequest>> | null = null;
   if (!isGuestCollegeApplication) {
     try {
@@ -249,6 +254,10 @@ export async function POST(request: Request, context: RouteContext) {
           invalid.code = "22023";
           throw invalid;
         }
+        if (getBackendMode() === "neon-staging") {
+          const { submitNeonGuestCollegeApplication } = await import("@/lib/server/neon-guest-college-verification");
+          return submitNeonGuestCollegeApplication(payload, guestToken, guestVerificationId!, command.idempotencyKey);
+        }
         try {
           const admin = getAdminClient() as unknown as {
             rpc: (name: string, args: Record<string, unknown>) => Promise<{
@@ -316,6 +325,9 @@ export async function POST(request: Request, context: RouteContext) {
     );
     return response(requestId, 201, result, null);
   } catch (error) {
+    if (error instanceof GuestVerificationError) {
+      return response(requestId, error.status, null, { code: error.code, message: error.message });
+    }
     if (error instanceof ModuleFormValidationError) {
       return response(requestId, 422, null, {
         code: "VALIDATION_FAILED",

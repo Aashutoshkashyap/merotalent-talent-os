@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getBackendMode } from "@/lib/server/backend-mode";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
-import { listOwnNotifications, markOwnNotificationsRead } from "@/lib/server/neon-notifications";
+import { listOwnNotifications, markOwnNotificationUnread, markOwnNotificationsRead } from "@/lib/server/neon-notifications";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -27,7 +27,9 @@ export async function GET(request: Request) {
   if (!stagingOnly()) return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
-    const result = await listOwnNotifications(actor);
+    const beforeId = new URL(request.url).searchParams.get("before");
+    if (beforeId && !uuid.test(beforeId)) return NextResponse.json({ error: "INVALID_CURSOR" }, { status: 400 });
+    const result = await listOwnNotifications(actor, undefined, beforeId);
     return NextResponse.json({ data: result }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return failure(error); }
 }
@@ -45,13 +47,16 @@ export async function PATCH(request: Request) {
   const value = body as Record<string, unknown>;
   const id = typeof value.id === "string" && uuid.test(value.id) ? value.id : null;
   const all = value.all === true;
-  if ((id === null && !all) || (id !== null && all) ||
-      Object.keys(value).length !== 1) {
+  const unread = value.read === false;
+  if ((id === null && !all) || (id !== null && all) || (unread && !id) ||
+      Object.keys(value).some((key) => !["id","all","read"].includes(key)) ||
+      (unread ? Object.keys(value).length !== 2 : Object.keys(value).length !== 1)) {
     return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 400 });
   }
   try {
     const actor = await getAuthenticatedApplicationUser(request);
-    const updated = await markOwnNotificationsRead(actor, all ? null : id);
+    const updated = unread ? await markOwnNotificationUnread(actor, id!)
+      : await markOwnNotificationsRead(actor, all ? null : id);
     return NextResponse.json({ data: { updated } }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return failure(error); }
 }

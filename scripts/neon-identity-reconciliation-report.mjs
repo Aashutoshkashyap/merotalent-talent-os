@@ -10,23 +10,19 @@ import { createHash } from "node:crypto";
 import pg from "pg";
 import dotenv from "dotenv";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import { parseReadOnlySourceConfig, verifyReadOnlySource } from "./require-supabase-source-readonly.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
 
-const sourceUrl = process.env.SUPABASE_DATABASE_URL;
+const sourceUrl = process.env.SUPABASE_SOURCE_READONLY_DATABASE_URL;
 const targetUrl = process.env.NEON_STAGING_DATABASE_URL;
-const expectedSourceHost = "db.dtirpilgzlsfryucanlg.supabase.co";
-
-if (!sourceUrl || !targetUrl) throw new Error("Both source and isolated staging URLs are required.");
-let parsedSource;
-try { parsedSource = new URL(sourceUrl); }
-catch { throw new Error("Invalid Supabase source URL."); }
-if (!["postgres:", "postgresql:"].includes(parsedSource.protocol) || parsedSource.hostname !== expectedSourceHost) {
-  throw new Error("Refusing reconciliation: unexpected Supabase source host.");
-}
+if (!sourceUrl || !targetUrl) throw new Error("Dedicated read-only source and isolated staging URLs are required.");
+const sourceConfig = parseReadOnlySourceConfig(sourceUrl,
+  process.env.SUPABASE_SOURCE_EXPECTED_POOLER_HOST,
+  process.env.SUPABASE_SOURCE_READONLY_ROLE);
 requireNeonMigrationStaging(targetUrl);
 
-const source = new pg.Client({ connectionString: sourceUrl, connectionTimeoutMillis: 10000 });
+const source = new pg.Client(sourceConfig);
 const target = new pg.Client({ connectionString: targetUrl, connectionTimeoutMillis: 10000 });
 
 const fingerprint = (value) => createHash("sha256")
@@ -78,7 +74,7 @@ function classify(user, identities, links, sourceEmailCounts, sourceProviderCoun
     classification: "eligible_for_approved_linking_flow",
     reasons: ["verified_email_recovery_candidate", "requires_live_email_proof_and_explicit_approval"],
   };
-  if (user.encrypted_password) return {
+  if (user.has_password) return {
     classification: "reset_or_reauthentication_required",
     reasons: ["password_hash_import_not_supported_by_verified_managed_auth_path"],
   };
@@ -91,11 +87,14 @@ try {
   await source.connect();
   await source.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
   sourceStarted = true;
+  await source.query("SET LOCAL statement_timeout = '30s'");
+  await verifyReadOnlySource(source, process.env.SUPABASE_SOURCE_READONLY_ROLE);
   await target.connect();
   await target.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
   targetStarted = true;
 
-  const users = (await source.query(`SELECT id, email, email_confirmed_at, encrypted_password
+  const users = (await source.query(`SELECT id, email, email_confirmed_at,
+      encrypted_password IS NOT NULL AS has_password
     FROM auth.users ORDER BY id`)).rows;
   const identities = (await source.query(`SELECT user_id, provider, provider_id
     FROM auth.identities ORDER BY user_id, provider, provider_id`)).rows;

@@ -2,15 +2,15 @@
 import pg from "pg";
 import dotenv from "dotenv";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import { parseReadOnlySourceConfig, verifyReadOnlySource } from "./require-supabase-source-readonly.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
-const sourceUrl = process.env.SUPABASE_DATABASE_URL;
+const sourceConfig = parseReadOnlySourceConfig(process.env.SUPABASE_SOURCE_READONLY_DATABASE_URL,
+  process.env.SUPABASE_SOURCE_EXPECTED_POOLER_HOST,
+  process.env.SUPABASE_SOURCE_READONLY_ROLE);
 const targetUrl = process.env.NEON_STAGING_DATABASE_URL;
-if (new URL(sourceUrl).hostname !== "db.dtirpilgzlsfryucanlg.supabase.co") {
-  throw new Error("Refusing dry run: unexpected Supabase source host.");
-}
 requireNeonMigrationStaging(targetUrl);
-const source = new pg.Client({ connectionString: sourceUrl, connectionTimeoutMillis: 10000 });
+const source = new pg.Client(sourceConfig);
 const target = new pg.Client({ connectionString: targetUrl, connectionTimeoutMillis: 10000 });
 
 function duplicateCount(values) {
@@ -26,9 +26,12 @@ function duplicateCount(values) {
 
 try {
   await source.connect();
-  await source.query("BEGIN READ ONLY");
+  await source.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  await source.query("SET LOCAL statement_timeout = '30s'");
+  await verifyReadOnlySource(source, process.env.SUPABASE_SOURCE_READONLY_ROLE);
   await target.connect();
-  const users = (await source.query(`SELECT id, email, email_confirmed_at, encrypted_password
+  const users = (await source.query(`SELECT id, email, email_confirmed_at,
+      encrypted_password IS NOT NULL AS has_password
     FROM auth.users ORDER BY id`)).rows;
   const identities = (await source.query(`SELECT user_id, provider, provider_id
     FROM auth.identities ORDER BY user_id, provider, provider_id`)).rows;
@@ -51,7 +54,7 @@ try {
       identities: identities.length,
       providers: providerCounts,
       verifiedEmails: users.filter(user => user.email_confirmed_at).length,
-      passwordHashesPresent: users.filter(user => user.encrypted_password).length,
+      passwordHashesPresent: users.filter(user => user.has_password).length,
       dualOrMultiIdentityUsers: [...identityCounts.values()].filter(count => count > 1).length,
       missingIdentities: users.filter(user => !identityCounts.has(user.id)).length,
       orphanIdentities: identities.filter(identity => !userIds.has(identity.user_id)).length,
@@ -76,7 +79,7 @@ try {
   await source.query("ROLLBACK");
 } catch (error) {
   await source.query("ROLLBACK").catch(() => undefined);
-  console.error("Identity reconciliation dry run failed:", error instanceof Error ? error.message : "unknown error");
+  console.error("Identity reconciliation dry run failed:", typeof error?.code === "string" ? error.code : "SOURCE_UNAVAILABLE");
   process.exitCode = 1;
 } finally {
   await source.end().catch(() => undefined);

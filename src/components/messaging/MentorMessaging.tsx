@@ -59,21 +59,35 @@ interface MentorMessagingProps {
   asMentor?: boolean;
 }
 
-const AttachmentPreview = ({ path, mimeType }: { path: string; mimeType?: string | null }) => {
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+
+const AttachmentPreview = ({ path, mimeType, conversationId, messageId }: {
+  path: string; mimeType?: string | null; conversationId: string; messageId: string;
+}) => {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
     void (async () => {
+      if (isNeonStaging) {
+        try {
+          const response = await fetch(`/api/v1/neon-staging/messaging/attachments?conversationId=${encodeURIComponent(conversationId)}&messageId=${encodeURIComponent(messageId)}`, { cache: "no-store" });
+          if (!response.ok) throw new Error("Attachment unavailable");
+          const body = await response.json();
+          if (active) setUrl(body.data?.signedUrl ?? null);
+        } catch { if (active) setFailed(true); }
+        return;
+      }
       const { data, error } = await supabase.storage
         .from("chat-attachments")
         .createSignedUrl(path, 300);
       if (active) setUrl(!error ? data?.signedUrl || null : null);
     })();
     return () => { active = false; };
-  }, [path]);
+  }, [path, conversationId, messageId]);
 
-  if (!url) return <p className="text-xs opacity-80">Attachment unavailable or expired.</p>;
+  if (!url) return <p className="text-xs opacity-80">{failed ? "Attachment unavailable or expired." : "Loading attachment…"}</p>;
   if (mimeType?.startsWith("image/")) {
     return <img src={url} alt="Message attachment" className="max-w-xs rounded-xl border my-1 object-cover" />;
   }
@@ -88,6 +102,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
   const { user } = useAuth();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedIdRef = useRef<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -95,6 +110,9 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [olderCursor, setOlderCursor] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -104,6 +122,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
 
   useEffect(() => {
     if (selectedConversation) {
+      selectedIdRef.current = selectedConversation.id;
       fetchMessages(selectedConversation.id);
       markMessagesAsRead(selectedConversation.id);
     }
@@ -116,6 +135,40 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
   // Realtime subscription for new messages
   useEffect(() => {
     if (!selectedConversation) return;
+
+    if (isNeonStaging) {
+      const cursorKey = `merotalent.message_cursor.${user?.id}`;
+      const cursor = sessionStorage.getItem(cursorKey);
+      const source = new EventSource(cursor && /^(0|[1-9][0-9]{0,18})$/.test(cursor)
+        ? `/api/v1/realtime/stream?cursor=${cursor}` : "/api/v1/realtime/stream");
+      source.addEventListener("message", (event) => {
+        if (event.lastEventId) sessionStorage.setItem(cursorKey, event.lastEventId);
+        try {
+          const payload = JSON.parse(event.data) as { conversationId?: string };
+          if (payload.conversationId === selectedConversation.id) {
+            void fetchMessages(selectedConversation.id);
+            void markMessagesAsRead(selectedConversation.id);
+          }
+          void fetchConversations();
+        } catch { /* Ignore a malformed event; the reconnect snapshot still recovers. */ }
+      });
+      source.addEventListener("reconnect", () => {
+        void fetchConversations();
+        void fetchMessages(selectedConversation.id);
+      });
+      source.addEventListener("open", () => {
+        void fetchConversations();
+        void fetchMessages(selectedConversation.id);
+      });
+      const refresh = () => {
+        if (document.visibilityState === "visible") {
+          void fetchConversations();
+          void fetchMessages(selectedConversation.id);
+        }
+      };
+      document.addEventListener("visibilitychange", refresh);
+      return () => { source.close(); document.removeEventListener("visibilitychange", refresh); };
+    }
 
     const channel = supabase
       .channel(`messages:${selectedConversation.id}`)
@@ -144,6 +197,29 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
 
   const fetchConversations = async () => {
     if (!user) return;
+
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/messaging", { cache: "no-store" });
+        if (!response.ok) throw new Error(`Conversation request failed (${response.status}).`);
+        const json = await response.json();
+        const rows = (json.data ?? []) as Array<{
+          id: string; mentor_id: string; mentee_id: string; is_active: boolean;
+          other_name: string | null; other_avatar: string | null; last_message: string | null; unread_count: number;
+        }>;
+        setConversations(rows.filter((row) => asMentor ? row.mentee_id !== user.id : row.mentee_id === user.id)
+          .map((row) => ({ ...row, mentor: { id: row.mentor_id, user_id: row.mentee_id === user.id ? "" : user.id,
+            profile: { full_name: row.mentee_id === user.id ? row.other_name : null,
+              avatar_url: row.mentee_id === user.id ? row.other_avatar : null } },
+            mentee_profile: row.mentee_id !== user.id ? { full_name: row.other_name, avatar_url: row.other_avatar } : undefined,
+            last_message: row.last_message ?? undefined,
+          })));
+        setError(null);
+      } catch {
+        setError("Conversations could not be loaded. Please retry.");
+      } finally { setIsLoading(false); }
+      return;
+    }
 
     let query = supabase
       .from("conversations")
@@ -226,7 +302,22 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
     setIsLoading(false);
   };
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = async (conversationId: string, before?: string) => {
+    if (isNeonStaging) {
+      try {
+        const url = `/api/v1/neon-staging/messaging?conversationId=${encodeURIComponent(conversationId)}` +
+          (before ? `&before=${encodeURIComponent(before)}` : "");
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Message request failed (${response.status}).`);
+        const json = await response.json();
+        if (selectedIdRef.current !== conversationId) return;
+        const incoming = (json.data?.messages ?? []) as Message[];
+        setMessages((current) => before ? [...incoming.filter((row) => !current.some((existing) => existing.id === row.id)), ...current] : incoming);
+        setOlderCursor(typeof json.data?.nextCursor === "string" ? json.data.nextCursor : null);
+        setError(null);
+      } catch { setError("Messages could not be loaded. Please retry."); }
+      return;
+    }
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -240,6 +331,18 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
 
   const markMessagesAsRead = async (conversationId: string) => {
     if (!user) return;
+
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/messaging", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "mark-read", conversationId }),
+        });
+        if (!response.ok) throw new Error(`Mark read failed (${response.status}).`);
+        void fetchConversations();
+      } catch { setError("Could not update read status. Please retry."); }
+      return;
+    }
 
     const { error } = await supabase
       .from("messages")
@@ -255,6 +358,24 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
     if (!user || !selectedConversation || !newMessage.trim()) return;
 
     setIsSending(true);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/messaging", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ conversationId: selectedConversation.id, content: newMessage.trim() }),
+        });
+        if (!response.ok) throw new Error(`Message send failed (${response.status}).`);
+        const json = await response.json();
+        setMessages((current) => current.some((row) => row.id === json.data.id) ? current : [...current, json.data]);
+        setNewMessage("");
+        setError(null);
+        void fetchConversations();
+      } catch {
+        setError("Message was not sent. Please retry.");
+        toast({ variant: "destructive", title: "Failed to send message" });
+      } finally { setIsSending(false); }
+      return;
+    }
     const receiverId = asMentor
       ? selectedConversation.mentee_id
       : selectedConversation.mentor.user_id;
@@ -311,6 +432,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
 
   return (
     <div className="flex h-[calc(100vh-200px)] gap-4">
+      {error && <div role="alert" className="sr-only">{error}</div>}
       {/* Conversations List */}
       <Card className="w-80 flex-shrink-0 border-border/50">
         <CardHeader className="pb-2">
@@ -330,6 +452,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
         </CardHeader>
         <CardContent className="p-0">
           <ScrollArea className="h-[calc(100vh-340px)]">
+            {error && <button type="button" onClick={() => void fetchConversations()} className="mx-4 my-2 text-sm text-destructive underline">{error} Retry</button>}
             {filteredConversations.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
                 <Lock className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -342,7 +465,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
               filteredConversations.map((conv) => (
                 <button
                   key={conv.id}
-                  onClick={() => setSelectedConversation(conv)}
+                  onClick={() => { selectedIdRef.current = conv.id; setMessages([]); setOlderCursor(null); setSelectedConversation(conv); }}
                   className={`w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors border-b border-border/50 text-left ${
                     selectedConversation?.id === conv.id ? "bg-primary/5" : ""
                   }`}
@@ -404,6 +527,11 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
             <CardContent className="flex-1 p-0 overflow-hidden">
               <ScrollArea className="h-full p-4">
                 <div className="space-y-4">
+                  {isNeonStaging && olderCursor && (
+                    <button type="button" className="mx-auto block text-sm text-primary underline" onClick={() => void fetchMessages(selectedConversation.id, olderCursor)}>
+                      Load older messages
+                    </button>
+                  )}
                   {messages.map((message) => {
                     const isOwn = message.sender_id === user?.id;
                     return (
@@ -419,7 +547,8 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                           }`}
                         >
                           {message.attachment_path ? (
-                            <AttachmentPreview path={message.attachment_path} mimeType={message.attachment_mime_type} />
+                            <AttachmentPreview path={message.attachment_path} mimeType={message.attachment_mime_type}
+                              conversationId={message.conversation_id} messageId={message.id} />
                           ) : message.content.startsWith("[IMAGE]:") ? (
                             <img
                               src={message.content.replace("[IMAGE]:", "")}
@@ -452,7 +581,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
             {/* Message Input */}
             <div className="p-4 border-t space-y-2">
               <div className="flex gap-2 items-center">
-                <label className="cursor-pointer p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900">
+                <label className="cursor-pointer p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900" aria-label="Attach a file">
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -474,6 +603,31 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                       }
                       setIsSending(true);
                       try {
+                        if (isNeonStaging) {
+                          const form = new FormData();
+                          form.set("conversationId", selectedConversation.id);
+                          form.set("file", file);
+                          const sent = await new Promise<Message>((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.open("POST", "/api/v1/neon-staging/messaging/attachments");
+                            xhr.upload.onprogress = (event) => {
+                              if (event.lengthComputable) setUploadProgress(Math.round(event.loaded / event.total * 100));
+                            };
+                            xhr.onload = () => {
+                              try {
+                                const body = JSON.parse(xhr.responseText);
+                                if (xhr.status !== 201 || !body.data) throw new Error(body.error || "Upload failed");
+                                resolve(body.data as Message);
+                              } catch (error) { reject(error); }
+                            };
+                            xhr.onerror = () => reject(new Error("Network error"));
+                            xhr.send(form);
+                          });
+                          setMessages((current) => current.some((row) => row.id === sent.id) ? current : [...current, sent]);
+                          setError(null);
+                          toast({ title: "Attachment sent" });
+                          return;
+                        }
                         const fileExt = file.name.split(".").pop()?.toLowerCase();
                         if (!fileExt) throw new Error("The attachment needs a file extension.");
                         const filePath = `${user.id}/chat_attachment/${selectedConversation.id}/${crypto.randomUUID()}.${fileExt}`;
@@ -503,9 +657,10 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                         await fetchMessages(selectedConversation.id);
                         toast({ title: "Attachment sent!" });
                       } catch {
-                        toast({ variant: "destructive", title: "Image upload failed" });
+                        toast({ variant: "destructive", title: "Attachment was not sent", description: "Your text message is unchanged. Please retry the file." });
                       } finally {
                         setIsSending(false);
+                        setUploadProgress(null);
                         // Reset the file input so the same file can be re-selected
                         e.target.value = "";
                       }
@@ -525,6 +680,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
+              {uploadProgress !== null && <p role="status" className="text-xs text-muted-foreground">Uploading attachment: {uploadProgress}%</p>}
             </div>
           </>
         ) : (

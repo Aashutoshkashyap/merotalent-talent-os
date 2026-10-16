@@ -22,6 +22,17 @@ export class NeonSessionUnavailable extends Error {
   }
 }
 
+/** Cookie-authenticated staging mutations must come from this application origin. */
+export function requireSameOrigin(request: Request): void {
+  const origin = request.headers.get("origin");
+  let allowed = false;
+  try { allowed = !!origin && new URL(origin).origin === new URL(request.url).origin; }
+  catch { allowed = false; }
+  if (!allowed) {
+    throw new NeonAuthorizationError(403, "CROSS_ORIGIN_WRITE_DENIED", "Cross-origin changes are not allowed.");
+  }
+}
+
 export interface ManagedSessionVerifier {
   verify(request: Request): Promise<ManagedSession | null>;
 }
@@ -53,7 +64,8 @@ export const managedSessionVerifier: ManagedSessionVerifier = {
         typeof candidate.session.userId !== "string" ||
         candidate.user.id !== candidate.session.userId ||
         typeof candidate.session.expiresAt !== "string" ||
-        new Date(candidate.session.expiresAt).getTime() <= Date.now()) return null;
+        !Number.isFinite(Date.parse(candidate.session.expiresAt)) ||
+        Date.parse(candidate.session.expiresAt) <= Date.now()) return null;
     return candidate as ManagedSession;
   },
 };

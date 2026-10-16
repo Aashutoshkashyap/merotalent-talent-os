@@ -7,7 +7,7 @@ import { getBackendMode } from "@/lib/server/backend-mode";
 import { authenticateRequest } from "@/lib/server/auth";
 import { validateAndCheckinTicket } from "@/lib/server/events-service";
 import { NeonEventsRepository } from "@/lib/server/neon-events";
-import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
+import { getAuthenticatedApplicationUser, requireSameOrigin } from "@/lib/server/neon-session";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     }
 
     if (getBackendMode() === "neon-staging") {
+      requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonEventsRepository();
       const result = await repo.checkinByQrToken(actor, body.qrToken.trim(), body.location || "Entrance Scanner");

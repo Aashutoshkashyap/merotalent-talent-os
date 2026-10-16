@@ -36,8 +36,9 @@ const fields = (a: Application): [string, unknown][] => [
   ["Duration (minutes)", a.interview_duration_minutes], ["Hiring notes", a.notes],
 ];
 
-export default function JobApplicantReview() {
-  const { session } = useAuth();
+export default function JobApplicantReview({ companyId }: { companyId?: string } = {}) {
+  const { session, user } = useAuth();
+  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const [rows, setRows] = useState<Application[]>([]);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<Application | null>(null);
@@ -50,18 +51,22 @@ export default function JobApplicantReview() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const request = useCallback(async (url: string, init?: RequestInit) => {
-    const response = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` }, cache: "no-store" });
+    const response = await fetch(url, { ...init, headers: { "Content-Type": "application/json",
+      ...(!staging && session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) }, cache: "no-store" });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error?.message || "Request failed.");
     return body.data;
-  }, [session?.access_token]);
+  }, [session, staging]);
   const load = useCallback(async () => {
-    if (!session) return;
+    if (!(staging ? user : session)) return;
     setLoading(true);
-    try { setRows(await request(`/api/v1/jobs/applications?offset=${offset}`)); }
+    try { setRows(await request(staging && companyId
+      ? `/api/v1/neon-staging/role-workspaces?role=company&operation=applicants&entityId=${encodeURIComponent(companyId)}&offset=${offset}`
+      : `/api/v1/jobs/applications?offset=${offset}`)); }
     catch (error) { setRows([]); setMessage(error instanceof Error ? error.message : "Unable to load applicants."); }
     finally { setLoading(false); }
-  }, [request, offset, session]);
+  }, [request, offset, session, staging, user, companyId]);
+  useEffect(() => { setOffset(0); setSelected(null); setRows([]); }, [companyId]);
   useEffect(() => { void load(); }, [load]);
   const open = (a: Application) => {
     setSelected({ ...a, form_data: a.form_data || {} }); setStatus(a.status); setNotes(a.notes || "");
@@ -84,7 +89,20 @@ export default function JobApplicantReview() {
   const download = async (path: unknown) => {
     if (typeof path !== "string" || !selected) return;
     try {
+      if (staging) {
+        const kind = path === selected.resume_url ? "resume"
+          : path === selected.form_data.experienceLetterUrl ? "experience"
+          : path === selected.form_data.trainingDocumentUrl ? "training" : null;
+        if (!kind) throw new Error("This document is not part of the submitted application.");
+        const data = await request(kind === "resume"
+          ? `/api/v1/jobs/applications/${selected.id}/resume`
+          : `/api/v1/jobs/applications/${selected.id}/documents?kind=${kind}`);
+        if (typeof data?.signedUrl !== "string" || !data.signedUrl) throw new Error("The document download is unavailable.");
+        window.location.assign(data.signedUrl);
+        return;
+      }
       const data = await request("/api/v1/media/download-url", { method: "POST", body: JSON.stringify({ module: "job_attachment", resourceId: selected.job_id, path }) });
+      if (typeof data?.signedUrl !== "string" || !data.signedUrl) throw new Error("The document download is unavailable.");
       window.location.assign(data.signedUrl);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to download."); }
   };

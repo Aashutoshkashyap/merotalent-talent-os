@@ -14,6 +14,7 @@ describe("central Super Admin module assignment", () => {
     expect(users).toContain("Subscription starts");
     expect(users).toContain("Subscription ends");
     expect(users).toContain("Amount Received (NPR)");
+    expect(users).toContain("Recorded payment amount (NPR)");
     expect(migration).toContain("Only Super Admin can assign module access");
     expect(migration).toContain("Super Admin already has platform-wide access");
     expect(migration).toContain("INSERT INTO public.payments");

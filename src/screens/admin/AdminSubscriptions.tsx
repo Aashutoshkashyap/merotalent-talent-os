@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Search, Calendar, Loader2, Gift, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
+import { neonBillingRequest } from "@/lib/admin/neon-billing-client";
 
 interface SubscriptionItem {
   id: string;
@@ -55,20 +56,34 @@ const createEmptyFreeTierForm = () => ({
 });
 
 export default function AdminSubscriptions() {
+  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const serverSearch = staging ? searchQuery : "";
   const [isLoading, setIsLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [isFreeTierDialogOpen, setIsFreeTierDialogOpen] = useState(false);
   const [freeTierAction, setFreeTierAction] = useState<FreeTierAction>("grant");
   const [isFreeTierSubmitting, setIsFreeTierSubmitting] = useState(false);
   const [freeTierForm, setFreeTierForm] = useState(createEmptyFreeTierForm);
 
-  useEffect(() => {
-    fetchSubscriptions();
-  }, []);
-
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = useCallback(async (offset = 0) => {
+    setIsLoading(true);
+    if (staging) {
+      try {
+        const params = new URLSearchParams({ offset: String(offset), search: serverSearch });
+        const result = await neonBillingRequest<{ subscriptions: SubscriptionItem[]; total: number; hasMore: boolean }>(
+          `/api/v1/neon-staging/admin/subscriptions?${params}`);
+        setSubscriptions(previous => offset ? [...previous, ...result.subscriptions] : result.subscriptions);
+        setTotal(result.total);
+        setHasMore(result.hasMore);
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to load subscriptions", description: error instanceof Error ? error.message : "Subscription lookup failed." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const { data, error } = await (supabase as any)
       .from("subscriptions")
       .select("*, packages(name, code, package_kind, is_default_free, module_scope)")
@@ -88,7 +103,12 @@ export default function AdminSubscriptions() {
       setSubscriptions((data || []) as SubscriptionItem[]);
     }
     setIsLoading(false);
-  };
+  }, [staging, serverSearch, toast]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => void fetchSubscriptions(), staging ? 250 : 0);
+    return () => clearTimeout(timer);
+  }, [fetchSubscriptions, staging]);
 
   const openFreeTierDialog = (action: FreeTierAction, subscription?: SubscriptionItem) => {
     const metadataModule = typeof subscription?.metadata?.module === "string"
@@ -126,6 +146,24 @@ export default function AdminSubscriptions() {
     }
 
     setIsFreeTierSubmitting(true);
+    if (staging) {
+      try {
+        const result = await neonBillingRequest<{ package_code?: string; revoked_count?: number }>(
+          "/api/v1/neon-staging/admin/subscriptions", { method: freeTierAction === "grant" ? "POST" : "DELETE",
+            body: JSON.stringify({ userId, module: freeTierForm.module, entityType: freeTierForm.entity_type,
+              entityId, reason: freeTierForm.reason.trim() }) });
+        toast({ title: freeTierAction === "grant" ? "Free tier granted" : "Free tier revoked",
+          description: freeTierAction === "grant" ? `Provisioned ${result.package_code || "the matching default package"}.`
+            : `${result.revoked_count ?? 0} active subscription(s) revoked.` });
+        setIsFreeTierDialogOpen(false);
+        setFreeTierForm(createEmptyFreeTierForm());
+        await fetchSubscriptions();
+      } catch (error) {
+        toast({ variant: "destructive", title: freeTierAction === "grant" ? "Free-tier grant failed" : "Free-tier revoke failed",
+          description: error instanceof Error ? error.message : "Subscription update failed." });
+      } finally { setIsFreeTierSubmitting(false); }
+      return;
+    }
     const rpcName = freeTierAction === "grant"
       ? "admin_provision_default_free_tier"
       : "admin_revoke_default_free_tier";
@@ -159,7 +197,7 @@ export default function AdminSubscriptions() {
     setIsFreeTierSubmitting(false);
   };
 
-  const filteredSubscriptions = subscriptions.filter((s) =>
+  const filteredSubscriptions = staging ? subscriptions : subscriptions.filter((s) =>
     (s.profiles?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.packages?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.user_id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -352,6 +390,12 @@ export default function AdminSubscriptions() {
           </TableBody>
         </Table>
       </Card>
+      {staging && <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+        <span>{subscriptions.length} of {total} subscriptions</span>
+        {hasMore && <Button variant="outline" disabled={isLoading} onClick={() => void fetchSubscriptions(subscriptions.length)}>
+          {isLoading ? "Loading…" : "Load more"}
+        </Button>}
+      </div>}
     </OperationsPage>
   );
 }

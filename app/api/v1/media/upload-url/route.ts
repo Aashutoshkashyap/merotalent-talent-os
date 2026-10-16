@@ -14,6 +14,8 @@ import {
 import { ApiRequestError, readJsonObject } from "@/lib/server/request";
 import { ServerConfigurationError } from "@/lib/server/supabase";
 import { createPresignedUploadUrl } from "@/lib/server/storage";
+import {getBackendMode} from "@/lib/server/backend-mode";
+import {handleManagedMediaUpload as uploadNeonMedia} from "@/lib/server/neon-managed-media-route";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -71,12 +73,18 @@ function errorResponse(error: unknown, requestId: string) {
 }
 
 export async function POST(request: Request) {
+  if(getBackendMode()==="neon-staging")return uploadNeonMedia(request);
   const requestId = crypto.randomUUID();
 
   try {
     const context = await authenticateRequest(request);
     const body = await readJsonObject(request, 8 * 1024);
     const intent = parseMediaUploadIntent(body);
+    // Chat objects are message-bound, not generic media intents. Keep this
+    // legacy route closed even though staging shares the validation policy.
+    if (intent.module === "chat_attachment") {
+      throw new MediaPolicyError(403, "MEDIA_ACCESS_DENIED", "Use the authorized chat attachment flow.");
+    }
 
     assertMediaCapability(context.actor, intent.module);
     await authorizeMediaAccess(

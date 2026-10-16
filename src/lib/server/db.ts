@@ -67,9 +67,13 @@ export async function withTransaction<T>(
     return value;
   } catch (cause) {
     await client.query("ROLLBACK");
-    throw cause instanceof NeonDatabaseError
-      ? cause
-      : new NeonDatabaseError("Neon staging transaction failed.", cause);
+    // Authorization errors are application decisions, not database outages.
+    // Avoid importing neon-authorization here: that module uses queryRows.
+    if (cause instanceof Error &&
+        (cause instanceof NeonDatabaseError || cause.name === "NeonAuthorizationError")) {
+      throw cause;
+    }
+    throw new NeonDatabaseError("Neon staging transaction failed.", cause);
   } finally {
     client.release();
   }

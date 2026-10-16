@@ -23,7 +23,7 @@ import EventRegistrationModal from "@/components/events/EventRegistrationModal";
 
 export default function EventDetailPage() {
   const { id } = useParams();
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -52,7 +52,7 @@ export default function EventDetailPage() {
   };
 
   const handleRegisterClick = () => {
-    if (!session) {
+    if (!session && !(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && user)) {
       navigate("/login", { state: { from: { pathname: location.pathname } } });
       return;
     }

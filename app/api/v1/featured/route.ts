@@ -47,7 +47,6 @@ export async function GET(): Promise<Response> {
   try {
     const now = new Date().toISOString();
     const isStaging = getBackendMode() === "neon-staging";
-    const client = getAdminClient() as any;
 
     // Fetch featured items list
     let featuredRows: FeaturedItemRow[] = [];
@@ -81,6 +80,7 @@ export async function GET(): Promise<Response> {
         }
       }
     } else {
+      const client = getAdminClient() as any;
       const { data, error } = await client
         .from("featured_items")
         .select("id, entity_type, entity_id, title, placement, priority")
@@ -148,6 +148,7 @@ export async function GET(): Promise<Response> {
         mentorProfiles = await queryRows<MentorProfileRow>(`SELECT user_id::text, full_name, avatar_url, bio, location FROM public.profiles WHERE user_id = ANY($1::uuid[]) AND deleted_at IS NULL`, [userIds]);
       }
     } else {
+      const client = getAdminClient() as any;
       const emptyResult = { data: [], error: null };
       const [cR, mR, courseR, jR, eR] = await Promise.all([
         collegeIds.length ? client.from("institute_directory").select("id,name,slug,type,description,logo_url,cover_image_url,location").in("id", collegeIds) : emptyResult,
@@ -218,6 +219,10 @@ export async function GET(): Promise<Response> {
     });
   } catch (err) {
     console.error("[featured] Unexpected error:", err);
+    if (getBackendMode() === "neon-staging") {
+      return NextResponse.json({ error: "FEATURED_UNAVAILABLE" }, { status: 503,
+        headers: { "Cache-Control": "no-store" } });
+    }
     return NextResponse.json({ data: [] });
   }
 }

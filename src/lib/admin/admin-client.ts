@@ -36,12 +36,15 @@ const getAccessToken = async () => {
 };
 
 const adminRequest = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-  const accessToken = await getAccessToken();
+  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const accessToken = staging ? null : await getAccessToken();
   const response = await fetch(path, {
     ...init,
+    credentials: "same-origin",
+    cache: "no-store",
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...init.headers,
     },
@@ -75,6 +78,34 @@ export const listAdminResource = <T>(
   const suffix = search.size ? `?${search.toString()}` : "";
   return adminRequest<T[]>(`/api/v1/admin/${resource}${suffix}`);
 };
+
+/** Complete paginated lists where the existing management screen needs all rows. */
+export const listAllAdminResource = async <T>(resource: string, query: Record<string,string|number|boolean>={}) => {
+  const rows: T[]=[];
+  for (let page=1; page<=100; page++) {
+    const batch=await listAdminResource<T>(resource,{...query,page,page_size:100});
+    rows.push(...batch);
+    if (batch.length<100) return rows;
+  }
+  throw new AdminClientError("Narrow the search to manage this large result set.","RESULT_LIMIT",422);
+};
+
+export const listNeonAdminOptions = <T>(kind: "owners"|"companies"|"mentors"|"event-categories") =>
+  adminRequest<T[]>(`/api/v1/neon-staging/admin/resource-options?kind=${kind}`);
+
+export const resolveNeonManagedImage = async (module: "company_logo" | "advertisement", resourceId: string, path: string | null) => {
+  if (!path) return null;
+  if (/^https?:\/\//.test(path) || path.startsWith("/")) return path;
+  const result = await adminRequest<{ signedUrl: string }>("/api/v1/neon-staging/media/download", {
+    method: "POST", body: JSON.stringify({ module, resourceId, path }),
+  });
+  return result.signedUrl;
+};
+
+export const listNeonAdminEventPanel = <T>(id:string,kind:"programs"|"tickets"|"registrations")=>
+  adminRequest<T[]>(`/api/v1/neon-staging/admin/events/${encodeURIComponent(id)}/panels?kind=${kind}`);
+export const createNeonAdminEventPanel = (id:string,kind:"programs"|"tickets",payload:Record<string,unknown>)=>
+  adminRequest(`/api/v1/neon-staging/admin/events/${encodeURIComponent(id)}/panels?kind=${kind}`,{method:"POST",body:JSON.stringify(payload)});
 
 export const createAdminResource = <T>(
   resource: string,

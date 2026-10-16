@@ -17,6 +17,13 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { listAdminResource } from "@/lib/admin/admin-client";
 import { ShieldCheck, Clock, Loader2, UserCheck, Inbox } from "lucide-react";
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+async function stagingRequest(url: string, init?: RequestInit) {
+  const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "The request failed.");
+  return payload.data;
+}
 
 interface AccessRequest {
   id: string;
@@ -27,6 +34,10 @@ interface AccessRequest {
   assigned_capabilities?: string[];
   organization?: string | null;
   decision_note?: string | null;
+  college_name?: string;
+  payment_status?: string;
+  applicant_phone?: string | null;
+  requested_entity_scopes?: Array<{ module_key: string; proof?: { fileName: string } }>;
   reason: string;
   status: "pending" | "approved" | "rejected" | "cancelled";
   created_at: string;
@@ -92,10 +103,23 @@ export default function AdminAccessRequests() {
   const [scopeEntities, setScopeEntities] = useState<Array<{ id: string; label: string }>>([]);
   const [isLoadingScopes, setIsLoadingScopes] = useState(false);
   const [isAssigningScope, setIsAssigningScope] = useState(false);
+  const [assignments, setAssignments] = useState<Array<{ id: string; applicant_name: string; applicant_email: string; college_name: string }>>([]);
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true);
     try {
+      if (isNeonStaging) {
+        const [scopeRows, assignmentRows, moduleRows] = await Promise.all([
+          stagingRequest("/api/v1/neon-staging/college-scopes?admin=true"),
+          stagingRequest("/api/v1/neon-staging/college-scopes/assignments"),
+          stagingRequest("/api/v1/neon-staging/module-access?admin=true"),
+        ]);
+        setRequests(moduleRows.requests);
+        setEntityScopeRequests(scopeRows as EntityScopeRequest[]);
+        setAssignments(assignmentRows);
+        setIsLoading(false);
+        return;
+      }
       const data = await listAdminResource<AccessRequest>("access-requests");
       setRequests(data);
       const { data: scopeRequests, error: scopeError } = await (supabase as any)
@@ -149,6 +173,15 @@ export default function AdminAccessRequests() {
     setScopeEntities([]);
     setIsLoadingScopes(true);
     void (async () => {
+      if (isNeonStaging) {
+        try {
+          const entities = await stagingRequest(`/api/v1/neon-staging/admin/access?mode=entities&module=${encodeURIComponent(canonicalModuleKey(scopeModule))}`) as Array<{ id: string; label: string }>;
+          if (active) setScopeEntities(entities);
+        } catch (error) {
+          if (active) toast({ variant: "destructive", title: "Colleges unavailable", description: errorMessage(error) });
+        } finally { if (active) setIsLoadingScopes(false); }
+        return;
+      }
       const { data, error } = await (supabase as any)
         .from(source.table)
         .select(`id,${source.labelColumn}`)
@@ -164,11 +197,17 @@ export default function AdminAccessRequests() {
       if (active) setIsLoadingScopes(false);
     })();
     return () => { active = false; };
-  }, [scopeModule, scopeRequest]);
+  }, [scopeModule, scopeRequest, toast]);
 
   const handleUpdateStatus = async (request: AccessRequest, newStatus: "approved" | "rejected") => {
     setUpdatingId(request.id);
     try {
+      if (isNeonStaging) {
+        await stagingRequest("/api/v1/neon-staging/module-access", { method: "PATCH",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: request.id, approve: newStatus === "approved" }) });
+        toast({ title: newStatus === "approved" ? "Request approved" : "Request rejected" });
+        await fetchRequests(); return;
+      }
       // The trusted RPC grants only the requested permissions and records the
       // audit event. A rejected delegated-access request must not deactivate
       // the person's regular MeroTalent account.
@@ -197,6 +236,15 @@ export default function AdminAccessRequests() {
   const decideEntityScopeRequest = async (request: EntityScopeRequest, approve: boolean) => {
     setUpdatingId(request.id);
     try {
+      if (isNeonStaging) {
+        await stagingRequest("/api/v1/neon-staging/college-scopes", {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId: request.id, approve }),
+        });
+        toast({ title: approve ? "College scope approved" : "College scope rejected" });
+        await fetchRequests();
+        return;
+      }
       const { error } = await (supabase as any).rpc("admin_decide_entity_scope_request", {
         p_request_id: request.id,
         p_approve: approve,
@@ -212,6 +260,20 @@ export default function AdminAccessRequests() {
     }
   };
 
+  const grantComplimentary = async (request: EntityScopeRequest, kind: "free" | "trial") => {
+    setUpdatingId(request.id);
+    try {
+      const result = await stagingRequest("/api/v1/neon-staging/college-scopes/complimentary", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: request.id, kind }),
+      });
+      toast({ title: result.duplicate ? "College access already active" : `${kind === "trial" ? "Trial" : "Free plan"} activated` });
+      await fetchRequests();
+    } catch (error) {
+      toast({ variant: "destructive", title: "College access was not activated", description: errorMessage(error) });
+    } finally { setUpdatingId(null); }
+  };
+
   const openScopeAssignment = (request: AccessRequest) => {
     const firstModule = canonicalModuleKey(request.assigned_capabilities?.[0] || request.requested_modules[0] || "");
     setScopeRequest(request);
@@ -223,6 +285,15 @@ export default function AdminAccessRequests() {
     if (!scopeRequest || !scopeEntityId || !source) return;
     setIsAssigningScope(true);
     try {
+      if (isNeonStaging) {
+        await stagingRequest("/api/v1/neon-staging/module-access/scopes", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId: scopeRequest.id, module: canonicalModuleKey(scopeModule), entityId: scopeEntityId }),
+        });
+        toast({ title: "Entity scope assigned" });
+        setScopeRequest(null); await fetchRequests();
+        return;
+      }
       const { error } = await (supabase as any).rpc("admin_assign_entity_scope", {
         p_user_id: scopeRequest.user_id,
         p_module_key: scopeModule,
@@ -297,6 +368,7 @@ export default function AdminAccessRequests() {
                         <div>
                           <p className="font-bold text-sm text-[#0f172a]">{req.user_name}</p>
                           <p className="text-xs text-muted-foreground font-mono">{req.user_email}</p>
+                          {req.applicant_phone && <p className="text-xs text-muted-foreground">{req.applicant_phone}</p>}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -318,6 +390,15 @@ export default function AdminAccessRequests() {
                           {req.reason}
                         </p>
                         {req.organization && <p className="mt-1 text-[10px] text-muted-foreground">{req.organization}</p>}
+                        {req.college_name && <p className="mt-1 text-xs font-semibold">College: {req.college_name}</p>}
+                        {isNeonStaging && <p className="mt-1 text-xs">Payment: {req.payment_status?.replaceAll("_", " ") || "not started"}</p>}
+                        {isNeonStaging && req.requested_entity_scopes?.filter(scope => scope.proof).map(scope => (
+                          <button key={scope.module_key} type="button" className="mt-1 block text-xs underline" onClick={() => {
+                            void stagingRequest(`/api/v1/neon-staging/module-access/proofs?requestId=${req.id}&module=${scope.module_key}`)
+                              .then(result => window.open(result.signedUrl, "_blank", "noopener,noreferrer"))
+                              .catch(error => toast({ variant: "destructive", title: "Document unavailable", description: errorMessage(error) }));
+                          }}>View {scope.module_key} proof: {scope.proof?.fileName}</button>
+                        ))}
                         {req.decision_note && <p className="mt-1 text-[10px] text-muted-foreground">Decision: {req.decision_note}</p>}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
@@ -386,6 +467,22 @@ export default function AdminAccessRequests() {
         </CardContent>
       </Card>
 
+      {isNeonStaging && <Card className="border-border/50">
+        <CardHeader><CardTitle className="text-lg">Active College assignments</CardTitle>
+          <CardDescription>One administrator may manage multiple colleges. Removing a scope does not remove their account or payment history.</CardDescription></CardHeader>
+        <CardContent>{assignments.length === 0 ? <p className="text-sm text-muted-foreground">No active College assignments.</p> :
+          <div className="table-responsive"><Table><TableHeader><TableRow><TableHead>Administrator</TableHead><TableHead>College</TableHead><TableHead>Action</TableHead></TableRow></TableHeader><TableBody>
+            {assignments.map(item => <TableRow key={item.id}><TableCell>{item.applicant_name}<p className="text-xs text-muted-foreground">{item.applicant_email}</p></TableCell>
+              <TableCell>{item.college_name}</TableCell><TableCell><Button variant="outline" size="sm" disabled={updatingId === item.id} onClick={async () => {
+                if (!window.confirm(`Remove ${item.applicant_name} from ${item.college_name}?`)) return;
+                setUpdatingId(item.id);
+                try { await stagingRequest("/api/v1/neon-staging/college-scopes/assignments", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignmentId: item.id }) }); await fetchRequests(); }
+                catch (error) { toast({ variant: "destructive", title: "Scope removal failed", description: errorMessage(error) }); }
+                finally { setUpdatingId(null); }
+              }}>Remove scope</Button></TableCell></TableRow>)}
+          </TableBody></Table></div>}</CardContent>
+      </Card>}
+
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">College claim & addition requests</CardTitle>
@@ -422,6 +519,18 @@ export default function AdminAccessRequests() {
                           <Button size="sm" className="h-7 text-[10px] bg-[#071a3d]" disabled={updatingId === request.id} onClick={() => decideEntityScopeRequest(request, true)}>Approve</Button>
                           <Button size="sm" variant="outline" className="h-7 text-[10px] text-destructive" disabled={updatingId === request.id} onClick={() => decideEntityScopeRequest(request, false)}>Reject</Button>
                         </div>}
+                        {isNeonStaging && request.status === "approved" && <div className="flex flex-wrap justify-end gap-2">
+                          <Button size="sm" variant="outline" disabled={updatingId === request.id}
+                            onClick={() => void grantComplimentary(request, "trial")}>Start trial</Button>
+                          <Button size="sm" variant="outline" disabled={updatingId === request.id}
+                            onClick={() => void grantComplimentary(request, "free")}>Activate free plan</Button>
+                          <Button size="sm" variant="outline" onClick={() => {
+                          setScopeRequest({ id: request.id, user_id: request.user_id,
+                            user_name: request.applicant_name || "Administrator", user_email: request.applicant_email || "",
+                            requested_modules: ["college"], assigned_capabilities: ["college"], reason: request.reason,
+                            status: "approved", created_at: request.created_at });
+                          setScopeModule("college");
+                        }}>Assign another college</Button></div>}
                       </TableCell>
                     </TableRow>
                   ))}

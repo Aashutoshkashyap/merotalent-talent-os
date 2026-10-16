@@ -1,16 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { ServerConfigurationError } from "./server-configuration-error";
+export { ServerConfigurationError } from "./server-configuration-error";
 
 if (typeof window !== "undefined" && process.env.NODE_ENV !== "test") {
   throw new Error("Server-side Supabase utilities cannot run in the browser.");
-}
-
-export class ServerConfigurationError extends Error {
-  readonly code = "SERVER_NOT_CONFIGURED";
-
-  constructor(message: string) {
-    super(message);
-    this.name = "ServerConfigurationError";
-  }
 }
 
 interface CachedAdminClient {

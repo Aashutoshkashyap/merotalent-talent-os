@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { createAdminResource, deleteAdminResource, listAllAdminResource, updateAdminResource } from "@/lib/admin/admin-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,11 +100,13 @@ export default function AdminPackages() {
 
   const [formData, setFormData] = useState<PackageFormData>(createEmptyForm);
 
-  useEffect(() => {
-    fetchPackages();
-  }, []);
-
-  const fetchPackages = async () => {
+  const fetchPackages = useCallback(async () => {
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      try {setPackages(await listAllAdminResource<PackageItem>("packages",{sort_by:"sort_order",sort_direction:"asc"}));}
+      catch(error) {toast({variant:"destructive",title:"Unable to load packages",description:error instanceof Error ? error.message : "Try again shortly."});}
+      finally {setIsLoading(false);}
+      return;
+    }
     const { data } = await (supabase as any)
       .from("packages")
       .select("*")
@@ -111,7 +114,9 @@ export default function AdminPackages() {
 
     if (data) setPackages(data as PackageItem[]);
     setIsLoading(false);
-  };
+  },[toast]);
+
+  useEffect(()=>{void fetchPackages();},[fetchPackages]);
 
   const handleSubmit = async () => {
     if (!formData.code.trim() || !formData.name.trim()) {
@@ -168,7 +173,10 @@ export default function AdminPackages() {
     };
 
     let error;
-    if (editingPackage) {
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      try {if(editingPackage) await updateAdminResource("packages",editingPackage.id,payload); else await createAdminResource("packages",payload);}
+      catch(cause) {error=cause instanceof Error ? cause : new Error("Unable to save package.");}
+    } else if (editingPackage) {
       const res = await (supabase as any).from("packages").update(payload).eq("id", editingPackage.id);
       error = res.error;
     } else {
@@ -187,6 +195,11 @@ export default function AdminPackages() {
   };
 
   const handleDelete = async (id: string) => {
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      try {await deleteAdminResource("packages",id);toast({title:"Package deleted"});void fetchPackages();}
+      catch(error) {toast({variant:"destructive",title:"Unable to delete package",description:error instanceof Error ? error.message : "Try again shortly."});}
+      return;
+    }
     const { error } = await (supabase as any).from("packages").delete().eq("id", id);
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });

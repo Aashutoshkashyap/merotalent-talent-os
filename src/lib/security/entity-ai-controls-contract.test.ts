@@ -11,8 +11,8 @@ describe("entity-scoped module-admin AI controls", () => {
 
   it("binds each workspace UI action to a precise module entity", () => {
     expect(controls).toContain("entityType, entityId");
-    expect(controls).toContain('"/api/v1/ai/generate"');
-    expect(controls).toContain('"/api/v1/ai/byok"');
+    expect(controls).toContain('`/api/v1/neon-staging/ai/${operation}`');
+    expect(controls).toContain('`/api/v1/ai/${operation}`');
     expect(controls).toContain("module, entity_type: entityType, entity_id: entityId");
   });
 
@@ -46,5 +46,6 @@ describe("entity-scoped module-admin AI controls", () => {
     expect(workspace).toContain('moduleKey === "mentor"');
     expect(workspace).toContain('moduleKey === "events"');
     expect(app).toContain('path="ai-workspace"');
+    expect(workspace).toContain('/api/v1/neon-staging/ai/scopes');
   });
 });

@@ -3,6 +3,8 @@ import { getBackendMode } from "@/lib/server/backend-mode";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
 import { NeonMentorsRepository, type BookSessionInput } from "@/lib/server/neon-mentors";
+import { requireSameOrigin } from "@/lib/server/neon-session";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,27 +38,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!stagingOnly()) return new Response(null, { status: 404 });
   try {
+    requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);
     const body: unknown = await request.json().catch(() => null);
-    if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return NextResponse.json({ error: "INVALID_BODY" }, { status: 400 });
-    }
-
-    const payload = body as Partial<BookSessionInput>;
-    if (!payload.mentorId || !payload.scheduledStart || !payload.scheduledEnd || !payload.topic) {
-      return NextResponse.json({ error: "MISSING_REQUIRED_FIELDS" }, { status: 400 });
-    }
+    const parsed = z.object({ mentorId: z.string().uuid(), mentorServiceId: z.string().uuid(),
+      scheduledStart: z.string().datetime(), scheduledEnd: z.string().datetime(),
+      topic: z.string().trim().min(1).max(300), notes: z.string().max(2000).optional() }).strict().safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: "INVALID_BOOKING" }, { status: 422 });
 
     const repo = new NeonMentorsRepository();
-    const result = await repo.bookMentorSession(actor, {
-      mentorId: payload.mentorId,
-      scheduledStart: payload.scheduledStart,
-      scheduledEnd: payload.scheduledEnd,
-      topic: payload.topic,
-      notes: payload.notes,
-      amount: payload.amount,
-      currency: payload.currency,
-    });
+    const result = await repo.bookMentorSession(actor, parsed.data as BookSessionInput);
 
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {

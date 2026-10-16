@@ -9,7 +9,7 @@ import { fetchPublicEvents, fetchEventCategories, type EventDetail, type EventCa
 import EventRegistrationModal from "@/components/events/EventRegistrationModal";
 
 export default function EventsPage() {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventDetail[]>([]);
   const [categories, setCategories] = useState<EventCategory[]>([]);
@@ -64,7 +64,7 @@ export default function EventsPage() {
   const handleOpenRegistration = (e: React.MouseEvent, eventItem: EventDetail) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!session) {
+    if (!session && !(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && user)) {
       navigate("/login", { state: { from: { pathname: `/events/${eventItem.id}` } } });
       return;
     }

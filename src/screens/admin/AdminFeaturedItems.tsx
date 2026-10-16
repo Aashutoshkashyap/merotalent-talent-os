@@ -29,6 +29,20 @@ interface FeaturedItem {
   created_at: string;
 }
 
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+
+async function stagingFeaturedRequest(method: "GET" | "POST" | "DELETE", path = "", body?: unknown) {
+  const response = await fetch(`/api/v1/neon-staging/admin/featured${path}`, {
+    method, cache: "no-store", credentials: "same-origin",
+    ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload || (method === "GET" && !Array.isArray(payload.data))) {
+    throw new Error(typeof payload?.error === "string" ? payload.error : "Featured content is unavailable.");
+  }
+  return payload.data;
+}
+
 export default function AdminFeaturedItems() {
   const { toast } = useToast();
   const [featured, setFeatured] = useState<FeaturedItem[]>([]);
@@ -61,7 +75,9 @@ export default function AdminFeaturedItems() {
       let options: EntityOption[] = [];
 
       try {
-        if (formData.entity_type === "college") {
+        if (isNeonStaging) {
+          options = await stagingFeaturedRequest("GET", `?options=${encodeURIComponent(formData.entity_type)}`);
+        } else if (formData.entity_type === "college") {
           const { data } = await supabase.from("institute_directory").select("id, name, location").order("name").limit(100);
           if (data) {
             options = data.map((item) => ({
@@ -163,7 +179,9 @@ export default function AdminFeaturedItems() {
   const fetchFeatured = async () => {
     setIsLoading(true);
     try {
-      const data = await listAdminResource<FeaturedItem>("featured-items", {
+      const data = isNeonStaging
+        ? await stagingFeaturedRequest("GET") as FeaturedItem[]
+        : await listAdminResource<FeaturedItem>("featured-items", {
         page_size: 100,
         sort_by: "priority",
         sort_direction: "desc",
@@ -203,7 +221,8 @@ export default function AdminFeaturedItems() {
     };
 
     try {
-      await createAdminResource<FeaturedItem>("featured-items", payload);
+      if (isNeonStaging) await stagingFeaturedRequest("POST", "", payload);
+      else await createAdminResource<FeaturedItem>("featured-items", payload);
       toast({ title: "Featured item added" });
       setIsDialogOpen(false);
       resetForm();
@@ -221,7 +240,8 @@ export default function AdminFeaturedItems() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteAdminResource("featured-items", id);
+      if (isNeonStaging) await stagingFeaturedRequest("DELETE", `?id=${encodeURIComponent(id)}`);
+      else await deleteAdminResource("featured-items", id);
       toast({ title: "Featured item removed" });
       await fetchFeatured();
     } catch (error) {

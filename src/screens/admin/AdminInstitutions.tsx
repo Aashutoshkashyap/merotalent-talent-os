@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { createAdminResource, deleteAdminResource, listAllAdminResource, updateAdminResource } from "@/lib/admin/admin-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +68,7 @@ import {
 
 type InstituteRow = Database["public"]["Tables"]["institutes"]["Row"];
 type Institute = InstituteRow & { payment_verified: boolean };
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 interface InstituteFormData {
   name: string;
@@ -224,6 +226,12 @@ const AdminInstitutions = () => {
   };
 
   const fetchInstitutes = useCallback(async () => {
+    if (isNeonStaging) {
+      try { setInstitutes(await listAllAdminResource<Institute>("colleges",{sort_by:"created_at",sort_direction:"desc"})); }
+      catch (error) { toast({variant:"destructive",title:"Unable to load institutes",description:error instanceof Error ? error.message : "Try again shortly."}); }
+      finally {setIsLoading(false);}
+      return;
+    }
     const [instituteResult, directoryResult] = await Promise.all([
       supabase
         .from("institutes")
@@ -310,7 +318,12 @@ const AdminInstitutions = () => {
     };
 
     let error;
-    if (editingInstitute) {
+    if (isNeonStaging) {
+      try {
+        if (editingInstitute) await updateAdminResource("colleges",editingInstitute.id,instituteData);
+        else await createAdminResource("colleges",instituteData);
+      } catch (cause) { error=cause instanceof Error ? cause : new Error("Unable to save institute."); }
+    } else if (editingInstitute) {
       const result = await supabase
         .from("institutes")
         .update(instituteData)
@@ -340,6 +353,11 @@ const AdminInstitutions = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (isNeonStaging) {
+      try { await deleteAdminResource("colleges",id); invalidatePublicInstituteCache(); toast({title:"Institute deleted"}); void fetchInstitutes(); }
+      catch (error) {toast({variant:"destructive",title:"Error deleting institute",description:error instanceof Error ? error.message : "Try again shortly."});}
+      return;
+    }
     const { error } = await supabase.from("institutes").delete().eq("id", id);
     if (error) {
       toast({
@@ -358,6 +376,11 @@ const AdminInstitutions = () => {
   };
 
   const handlePublish = async (institute: Institute) => {
+    if (isNeonStaging) {
+      try { await updateAdminResource("colleges",institute.id,{status:"approved"}); invalidatePublicInstituteCache(); toast({title:`${institute.name} published`}); void fetchInstitutes(); }
+      catch (error) {toast({variant:"destructive",title:"Publish failed",description:error instanceof Error ? error.message : "Try again shortly."});}
+      return;
+    }
     const { error } = await supabase.from("institutes").update({ status: "approved" }).eq("id", institute.id);
     if (error) {
       toast({ variant: "destructive", title: "Publish failed", description: error.message });

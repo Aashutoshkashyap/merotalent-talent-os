@@ -54,6 +54,8 @@ export default function CollegeApplicationDialog({
   onOpenChange,
 }: CollegeApplicationDialogProps) {
   const { session, user, profile, refreshProfile } = useAuth();
+  const isNeon = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const signedIn = Boolean(session || (isNeon && user));
   const [definition, setDefinition] = useState<ModuleFormDefinition | null>(null);
   const [values, setValues] = useState<FormValues>({ collegeId: instituteId });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -65,6 +67,7 @@ export default function CollegeApplicationDialog({
   const [emailVerification, setEmailVerification] = useState<VerificationState>(emptyVerification);
   const [whatsappVerification, setWhatsappVerification] = useState<VerificationState>(emptyVerification);
   const identityRevision = useRef(0);
+  const guestSubmissionKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -95,7 +98,7 @@ export default function CollegeApplicationDialog({
           return {
             ...defaults,
             ...current,
-            ...(session ? { fullName: defaults.fullName, email: defaults.email, phone: defaults.phone } : {}),
+            ...(signedIn ? { fullName: defaults.fullName, email: defaults.email, phone: defaults.phone } : {}),
             ...(!current.currentQualification ? { currentQualification: defaults.currentQualification } : {}),
           };
         });
@@ -107,7 +110,7 @@ export default function CollegeApplicationDialog({
       .finally(() => setIsLoading(false));
 
     return () => controller.abort();
-  }, [instituteId, open, profile?.email, profile?.full_name, profile?.phone, profile?.education, session, user?.email]);
+  }, [instituteId, open, profile?.email, profile?.full_name, profile?.phone, profile?.education, signedIn, user?.email]);
 
   useEffect(() => {
     if (!open) {
@@ -117,6 +120,7 @@ export default function CollegeApplicationDialog({
       setDefinition(null);
       setValues({ collegeId: instituteId });
       identityRevision.current += 1;
+      guestSubmissionKey.current = null;
       setVerificationId(null);
       setEmailVerification(emptyVerification());
       setWhatsappVerification(emptyVerification());
@@ -132,7 +136,8 @@ export default function CollegeApplicationDialog({
       ? Number(rawValue)
       : rawValue;
     setValues((current) => ({ ...current, [field.key]: value }));
-    if (!session && (field.key === "email" || field.key === "phone")) {
+    guestSubmissionKey.current = null;
+    if (!signedIn && (field.key === "email" || field.key === "phone")) {
       identityRevision.current += 1;
       setVerificationId(null);
       setEmailVerification(emptyVerification());
@@ -194,11 +199,11 @@ export default function CollegeApplicationDialog({
     if (!definition) {
       return;
     }
-    if (session && missingStudentProfileFields("college_application", profile, user?.email).length) {
+    if (signedIn && missingStudentProfileFields("college_application", profile, user?.email).length) {
       setFormError("Complete your student profile before submitting this application.");
       return;
     }
-    if (!session && (!verificationId || !emailVerification.verified || !whatsappVerification.verified)) {
+    if (!signedIn && (!verificationId || !emailVerification.verified || !whatsappVerification.verified)) {
       setFormError("Verify both your email and WhatsApp number before submitting.");
       return;
     }
@@ -208,7 +213,20 @@ export default function CollegeApplicationDialog({
     setFieldErrors({});
 
     try {
-      if (session) {
+      if (isNeon && signedIn) {
+        const response = await fetch(`/api/v1/neon-staging/institutes/${instituteId}/applications`, {
+          method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ programInterest: values.intendedCourse,
+            intake: values.preferredIntake || undefined, message: values.message || undefined }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.data?.id) {
+          throw Object.assign(new Error(typeof result?.error === "string" && result.error === "PROFILE_INCOMPLETE"
+            ? "Complete your student profile before submitting this application." : "Your application could not be submitted. Check the course of interest and try again."),
+          { code: result?.error });
+        }
+        if (user) invalidateStudentActivityCache(user.id);
+      } else if (session) {
         await submitAuthenticatedModuleForm({
           accessToken: session.access_token,
           module: "college_application",
@@ -216,9 +234,11 @@ export default function CollegeApplicationDialog({
         });
         if (user) invalidateStudentActivityCache(user.id);
       } else {
+        guestSubmissionKey.current ??= crypto.randomUUID();
         await submitGuestCollegeApplication({
           guestToken: getGuestCollegeApplicationToken(),
           verificationId: verificationId!,
+          idempotencyKey: guestSubmissionKey.current,
           values,
         });
       }
@@ -267,7 +287,7 @@ export default function CollegeApplicationDialog({
               </div>
             ) : definition ? (
               <form onSubmit={handleSubmit} className="space-y-4">
-                {session && <StudentProfileRequirement module="college_application" profile={profile} email={user?.email} onRefresh={refreshProfile} />}
+                {signedIn && <StudentProfileRequirement module="college_application" profile={profile} email={user?.email} onRefresh={refreshProfile} />}
                 <div className="grid gap-4 sm:grid-cols-2">
                   {definition.fields.map((field) => {
                     if (field.type === "hidden") {
@@ -279,15 +299,15 @@ export default function CollegeApplicationDialog({
                     return (
                       <div key={field.key} className={`space-y-1.5 ${fullWidth ? "sm:col-span-2" : ""}`}>
                         <Label htmlFor={`college-application-${field.key}`} className="text-xs font-extrabold text-slate-700">
-                          {!session && field.key === "phone" ? "WhatsApp number" : field.label}{field.required || (!session && field.key === "phone") ? " *" : ""}
+                          {!signedIn && field.key === "phone" ? "WhatsApp number" : field.label}{field.required || (!signedIn && field.key === "phone") || (isNeon && signedIn && field.key === "intendedCourse") ? " *" : ""}
                         </Label>
                         {field.type === "textarea" ? (
                           <Textarea
                             id={`college-application-${field.key}`}
                             value={String(values[field.key] ?? "")}
                             onChange={(event) => updateValue(field, event.target.value)}
-                            placeholder={!session && field.key === "phone" ? "e.g., 9800000000" : field.placeholder}
-                            required={field.required}
+                            placeholder={!signedIn && field.key === "phone" ? "e.g., 9800000000" : field.placeholder}
+                            required={field.required || (isNeon && signedIn && field.key === "intendedCourse")}
                             minLength={field.minLength}
                             maxLength={field.maxLength}
                             rows={4}
@@ -301,27 +321,27 @@ export default function CollegeApplicationDialog({
                             value={String(values[field.key] ?? "")}
                             onChange={(event) => updateValue(field, event.target.value)}
                             placeholder={field.placeholder}
-                            required={field.required}
-                            minLength={field.minLength}
+                            required={field.required || (isNeon && signedIn && field.key === "intendedCourse")}
+                            minLength={isNeon && signedIn && field.key === "intendedCourse" ? 2 : field.minLength}
                             maxLength={field.maxLength}
                             min={field.min}
                             max={field.max}
                             step={field.step}
                             autoComplete={field.autocomplete}
-                            readOnly={Boolean(session) && ["fullName", "email", "phone"].includes(field.key)}
+                            readOnly={signedIn && ["fullName", "email", "phone"].includes(field.key)}
                             aria-invalid={Boolean(error)}
                             className="h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
                           />
                         )}
                         {field.helpText && field.key !== "phone" && <p className="text-[11px] text-slate-500">{field.helpText}</p>}
-                        {!session && field.key === "phone" && <p className="text-xs text-slate-500">A WhatsApp-enabled number is required. A separate contact number is not needed.</p>}
+                        {!signedIn && field.key === "phone" && <p className="text-xs text-slate-500">A WhatsApp-enabled number is required. A separate contact number is not needed.</p>}
                         {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
                       </div>
                     );
                   })}
                 </div>
 
-                {!session && (
+                {!signedIn && (
                   <section aria-label="Verify your contact details" className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
                     <div>
                       <h3 className="font-bold text-slate-900">Verify your contact details</h3>
@@ -368,7 +388,7 @@ export default function CollegeApplicationDialog({
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-slate-200">
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || Boolean(session && missingStudentProfileFields("college_application", profile, user?.email).length) || Boolean(!session && (!verificationId || !emailVerification.verified || !whatsappVerification.verified))} className="rounded-xl bg-[#0073e6] hover:bg-[#0062c4]">
+                  <Button type="submit" disabled={isSubmitting || Boolean(signedIn && missingStudentProfileFields("college_application", profile, user?.email).length) || Boolean(!signedIn && (!verificationId || !emailVerification.verified || !whatsappVerification.verified))} className="rounded-xl bg-[#0073e6] hover:bg-[#0062c4]">
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                     {definition.submitLabel}
                   </Button>

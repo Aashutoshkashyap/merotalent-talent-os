@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 
 type AIScope = { id: string; module: "jobs" | "mentor" | "events"; entityType: "company" | "job" | "mentor" | "event"; entityId: string };
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 const label = (scope: AIScope) => `${({ jobs: "Jobs", mentor: "Mentor", events: "Events" }[scope.module])} · ${scope.entityType} · ${scope.entityId.slice(0, 8)}`;
 
 /** A focused dashboard workspace for assigned module entities, not a global AI settings page. */
@@ -26,6 +27,20 @@ export default function ModuleAIWorkspace() {
     let mounted = true;
     const load = async () => {
       setLoading(true);
+      if (isNeonStaging) {
+        try {
+          const response = await fetch("/api/v1/neon-staging/ai/scopes", { credentials: "same-origin", cache: "no-store" });
+          const payload = await response.json();
+          if (!response.ok || !Array.isArray(payload.data)) throw new Error("Assigned entities unavailable.");
+          if (mounted) {
+            const next = payload.data as AIScope[];
+            setScopes(next);
+            setScopeId(current => current && next.some(item => item.id === current) ? current : next[0]?.id || "");
+          }
+        } catch { if (mounted) setScopes([]); }
+        finally { if (mounted) setLoading(false); }
+        return;
+      }
       const { data, error } = await (supabase as any).from("entity_admin_assignments")
         .select("id,entity_type,entity_id,status,user_module_capabilities!inner(status,module_capabilities!inner(module_key,is_active))")
         .eq("user_id", user.id).eq("status", "active");

@@ -1,4 +1,6 @@
 import { authenticateAdminRequest } from "@/lib/server/auth";
+import { getBackendMode } from "@/lib/server/backend-mode";
+import { handleNeonAdminResource } from "@/lib/server/neon-admin-resource-route";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import {
   getAdminResource,
@@ -24,10 +26,11 @@ interface RouteContext {
 
 const resolveResource = async (context: RouteContext) => {
   const { resource } = await context.params;
-  return isAdminResourceName(resource) ? getAdminResource(resource) : null;
+  return resource !== "companies" && isAdminResourceName(resource) ? getAdminResource(resource) : null;
 };
 
 export async function GET(request: Request, context: RouteContext) {
+  if (getBackendMode() === "neon-staging") return handleNeonAdminResource(request,(await context.params).resource);
   const requestId = crypto.randomUUID();
   let authenticated;
   try {
@@ -97,6 +100,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  if (getBackendMode() === "neon-staging") return handleNeonAdminResource(request,(await context.params).resource);
   const requestId = crypto.randomUUID();
   let authenticated;
   try {

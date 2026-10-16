@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,9 @@ import {
   createAdminResource,
   deleteAdminResource,
   listAdminResource,
+  listNeonAdminOptions,
+  listNeonAdminEventPanel,
+  createNeonAdminEventPanel,
   updateAdminResource,
 } from "@/lib/admin/admin-client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -54,6 +57,7 @@ import { checkinTicket } from "@/lib/events/events-client";
 
 type EventStatus = "pending_approval" | "approved" | "published" | "rejected" | "completed" | "cancelled" | "postponed";
 type LifecycleStatus = "draft" | "published" | "registration_open" | "registration_closed" | "ongoing" | "completed" | "cancelled" | "postponed";
+const isNeonStaging=process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 interface EventCategory {
   id: string;
@@ -180,16 +184,17 @@ export default function AdminEvents() {
     rejection_reason: "",
   });
 
-  useEffect(() => {
-    void Promise.all([fetchEvents(), fetchOrganizers(), fetchCategories()]);
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
+    if(isNeonStaging) {
+      try {setCategories(await listNeonAdminOptions<EventCategory>("event-categories"));}
+      catch(error) {toast({variant:"destructive",title:"Unable to load categories",description:error instanceof Error?error.message:"Try again shortly."});}
+      return;
+    }
     const { data } = await (supabase as any).from("event_categories").select("id, name, slug").order("display_order");
     if (data) setCategories(data);
-  };
+  },[toast]);
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await listAdminResource<EventItem>("events", {
@@ -208,9 +213,14 @@ export default function AdminEvents() {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[toast]);
 
-  const fetchOrganizers = async () => {
+  const fetchOrganizers = useCallback(async () => {
+    if(isNeonStaging) {
+      try {setOrganizers(await listNeonAdminOptions<OrganizerOption>("owners"));}
+      catch(error) {toast({variant:"destructive",title:"Unable to load organizers",description:error instanceof Error?error.message:"Try again shortly."});}
+      return;
+    }
     const { data } = await (supabase as any)
       .from("profiles")
       .select("id,user_id,full_name,email")
@@ -227,7 +237,9 @@ export default function AdminEvents() {
         }))
       );
     }
-  };
+  },[toast]);
+
+  useEffect(()=>{void Promise.all([fetchEvents(),fetchOrganizers(),fetchCategories()]);},[fetchEvents,fetchOrganizers,fetchCategories]);
 
   const handleAIGenerate = async () => {
     if (!formData.title.trim()) {
@@ -353,8 +365,7 @@ export default function AdminEvents() {
         is_featured: formData.is_featured,
         status: formData.status,
         lifecycle_status: formData.lifecycle_status,
-        approval_status: formData.status === "approved" || formData.status === "published" ? "approved" : "pending",
-        is_active: formData.status === "approved" || formData.status === "published",
+        rejection_reason:formData.status === "rejected" ? formData.rejection_reason || null : null,
       };
 
       if (editingEvent) {
@@ -387,13 +398,18 @@ export default function AdminEvents() {
   // Program Management Handlers
   const handleOpenPrograms = async (eventItem: EventItem) => {
     setManagingProgramsEvent(eventItem);
-    const { data } = await (supabase as any)
+    if(isNeonStaging) {
+      try {setProgramsList(await listNeonAdminEventPanel(eventItem.id,"programs"));}
+      catch(error) {toast({variant:"destructive",title:"Unable to load sessions",description:error instanceof Error?error.message:"Try again shortly."});setProgramsList([]);}
+    } else {
+      const { data } = await (supabase as any)
       .from("event_programs")
       .select("*")
       .eq("event_id", eventItem.id)
       .is("deleted_at", null)
       .order("start_time");
     setProgramsList(data || []);
+    }
     setNewProgram({
       title: "",
       start_time: eventItem.start_date ? new Date(eventItem.start_date).toISOString().slice(0, 16) : "",
@@ -407,16 +423,16 @@ export default function AdminEvents() {
   const handleAddProgram = async () => {
     if (!managingProgramsEvent || !newProgram.title.trim()) return;
     try {
-      const { error } = await (supabase as any).from("event_programs").insert({
-        event_id: managingProgramsEvent.id,
+      const payload={
         title: newProgram.title.trim(),
         start_time: new Date(newProgram.start_time).toISOString(),
         end_time: new Date(newProgram.end_time).toISOString(),
         venue: newProgram.venue || null,
         capacity: newProgram.capacity ? parseInt(newProgram.capacity, 10) : null,
         speaker_or_organizer: newProgram.speaker || null,
-      });
-      if (error) throw error;
+      };
+      if(isNeonStaging) await createNeonAdminEventPanel(managingProgramsEvent.id,"programs",payload);
+      else {const {error}=await (supabase as any).from("event_programs").insert({event_id:managingProgramsEvent.id,...payload});if(error) throw error;}
       toast({ title: "Program Session Added" });
       handleOpenPrograms(managingProgramsEvent);
     } catch (err: any) {
@@ -427,6 +443,10 @@ export default function AdminEvents() {
   // Ticket Types Management Handlers
   const handleOpenTicketTypes = async (eventItem: EventItem) => {
     setManagingTicketsEvent(eventItem);
+    if(isNeonStaging) {
+      try {setTicketTypesList(await listNeonAdminEventPanel(eventItem.id,"tickets"));}
+      catch(error) {toast({variant:"destructive",title:"Unable to load ticket tiers",description:error instanceof Error?error.message:"Try again shortly."});setTicketTypesList([]);}
+    } else {
     const { data } = await (supabase as any)
       .from("event_ticket_types")
       .select("*")
@@ -434,6 +454,7 @@ export default function AdminEvents() {
       .is("deleted_at", null)
       .order("price");
     setTicketTypesList(data || []);
+    }
     setNewTicketType({
       name: "",
       ticket_kind: "individual",
@@ -449,8 +470,7 @@ export default function AdminEvents() {
   const handleAddTicketType = async () => {
     if (!managingTicketsEvent || !newTicketType.name.trim()) return;
     try {
-      const { error } = await (supabase as any).from("event_ticket_types").insert({
-        event_id: managingTicketsEvent.id,
+      const payload={
         name: newTicketType.name.trim(),
         ticket_kind: newTicketType.ticket_kind,
         price: parseFloat(newTicketType.price) || 0,
@@ -461,8 +481,9 @@ export default function AdminEvents() {
         min_per_order: parseInt(newTicketType.min_per_order, 10) || 1,
         max_per_order: parseInt(newTicketType.max_per_order, 10) || 10,
         is_active: true,
-      });
-      if (error) throw error;
+      };
+      if(isNeonStaging) await createNeonAdminEventPanel(managingTicketsEvent.id,"tickets",payload);
+      else {const {error}=await (supabase as any).from("event_ticket_types").insert({event_id:managingTicketsEvent.id,...payload});if(error) throw error;}
       toast({ title: "Ticket Tier Added" });
       handleOpenTicketTypes(managingTicketsEvent);
     } catch (err: any) {
@@ -475,6 +496,7 @@ export default function AdminEvents() {
     setManagingRegistrationsEvent(eventItem);
     setRegLoading(true);
     try {
+      if(isNeonStaging) {setRegistrationsList(await listNeonAdminEventPanel(eventItem.id,"registrations"));return;}
       const { data } = await (supabase as any)
         .from("event_registrations")
         .select(`
@@ -930,6 +952,16 @@ export default function AdminEvents() {
                 placeholder="https://..."
               />
             </div>
+            {isNeonStaging && (editingEvent ? <div className="space-y-3 rounded-xl border p-3">
+              <SignedMediaUploader label="Upload cover image" module="event_cover" resourceId={editingEvent.id}
+                disabled={isSubmitting} onUploaded={(assets:SignedMediaAsset[])=>{if(assets[0])setFormData(current=>({...current,cover_image_url:assets[0].path}));}}/>
+              <SignedMediaUploader label="Event document" module="event_attachment" resourceId={editingEvent.id}
+                disabled={isSubmitting} onUploaded={(assets:SignedMediaAsset[])=>{if(assets[0])setFormData(current=>({...current,attachment_path:assets[0].path,attachment_name:assets[0].fileName,attachment_mime_type:assets[0].contentType}));}}/>
+              {formData.attachment_path && <div className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-xs">{formData.attachment_name||"Attached document"}</span>
+                <Button type="button" variant="ghost" size="sm" onClick={()=>setFormData(current=>({...current,attachment_path:"",attachment_name:"",attachment_mime_type:""}))}>Remove document</Button>
+              </div>}
+            </div> : <p className="text-xs text-muted-foreground">Save the event, then edit it to upload a cover image or document.</p>)}
 
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-slate-700">Short Summary</Label>

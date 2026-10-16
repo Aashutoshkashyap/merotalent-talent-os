@@ -106,7 +106,7 @@ const Competitions = () => {
 
       toast({
         title: "Registered successfully!",
-        description: `You're now registered for ${selectedCompetition.title}. Check your email for details.`,
+        description: `You're now registered for ${selectedCompetition.title}. You can track it in your dashboard.`,
       });
       setRegisteredIds(prev => new Set([...prev, selectedCompetition.id]));
       setIsRegisterOpen(false);

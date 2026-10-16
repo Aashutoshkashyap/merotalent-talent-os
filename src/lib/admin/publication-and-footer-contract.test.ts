@@ -25,9 +25,10 @@ describe("college publication and discovery", () => {
 
   it("uses numbered placement after editorial ordering and includes featured colleges in the student dashboard", () => {
     const directory = read("src/lib/institutes/public-institutes.ts");
-    expect(directory).toContain('.order("is_featured"');
+    const directoryRoute = read("app/api/v1/institutes/directory/route.ts");
+    expect(directoryRoute).toContain("is_featured DESC NULLS LAST");
     expect(directory).toContain('placeInstitutes(');
-    expect(directory).toContain('.eq("admission_status", "open")');
+    expect(directoryRoute).toContain("admission_status = 'open' AND ranking IS NOT NULL");
     expect(read("src/screens/Index.tsx")).toContain('sort: "recommended", limit: 6');
     expect(read("src/screens/dashboard/Dashboard.tsx")).toContain('<FeaturedSection title="Featured opportunities" />');
     expect(read("src/screens/dashboard/Colleges.tsx")).toContain("college.is_featured");

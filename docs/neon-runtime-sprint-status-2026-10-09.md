@@ -2,6 +2,13 @@
 
 This follow-up supersedes the dated status in `neon-migration-final-status-2026-10-08.md` where facts changed. **Production cutover remains NO-GO.** Supabase production data, Auth, storage, OAuth, and Vercel backend settings were not switched. The pre-existing dirty application worktree was preserved.
 
+**Current phase-closure status (2026-10-12): PRE-CUTOVER / STAGING FOUNDATION.**
+The final closure checklist at the end of this document supersedes older
+"next task" notes; those notes remain as historical implementation evidence.
+The subsequent active-migration continuation below supersedes the closure's
+suggestion that ordinary Supabase development is the long-term direction:
+Neon remains the target; legacy Supabase is temporary production compatibility.
+
 ## Checkpoint and source inventory
 
 The prior isolated staging checkpoint `8245bbad40d3eb9d4f9679bdba627bf415282cab` was reviewed as a fast-forward of `origin/main` at `027586960d2810cba503c1e7649ca01074b783f1`, scanned for credentials, and pushed to `main` without force. It contains no `.migration.env`, dump, export, or credential file. This push may trigger the repository's ordinary deployment automation, but it does not turn on Neon production mode; `neon-staging` remains prohibited in Vercel production.
@@ -53,3 +60,1450 @@ Mentors, Events, Payments, public College workflows, other storage consumers, an
 5. Rehearse cutover and rollback, obtain explicit production-switch approval, and retain Supabase standby.
 
 No production cutover or full migration claim is authorized by this report.
+
+## Jobs module follow-up — 2026-10-09 (uncommitted)
+
+**Status: PARTIAL.** The existing mode-aware Jobs routes now validate input and use the isolated Neon path for public search/category/pagination/detail, own preferences and bookmarks, application submission, and scoped recruiter application review/status writes. Application submission derives contact and resume information from the server-side linked profile, checks published/unexpired job eligibility, and prevents duplicate applications. Private writes require a current linked identity and same-origin browser request. Recruiter reads and status writes require current role, active Jobs capability and entitlement, and exact company/job assignment; state transitions and interview timestamps are validated server-side. A transaction error-boundary bug that had converted an authorization denial into HTTP 500 is fixed.
+
+Evidence: 5/5 real isolated-Neon transaction tests passed. A separate authenticated localhost HTTP run passed 29/29 checks, including public reads, invalid/unlinked session denial, save/unsave, apply and database effect, recruiter company isolation, unauthorized-write denial, status update and database effect, same-origin protection, private PDF upload/authorized read/cross-user denial, and logout denial. That HTTP run removed its application database and S3 object fixtures. It left 12 unlinked synthetic Managed Auth test subjects in isolated staging across retries; these are not production users and must be excluded from identity parity accounting. No raw Managed Auth table deletion was attempted.
+
+Final verification for this follow-up: `npm run typecheck` passed; `npm run test` passed 441/441 across 102 files; `npm run lint` returned 0 errors and 53 warnings; `npm run build` passed; `git diff --check` passed. The full isolated-staging suite passed 12/12 across 2 files after its older Jobs fixture was corrected to use a verified synthetic identity and rollback-only profile completion. The first staging attempt could not resolve Neon from the sandbox, and two subsequent attempts exposed the stale fixture; those attempts failed and are not counted as passing runs. The new HTTP harness references runtime environment variable names only; no credential value was added to source control.
+
+Still unverified/incomplete: student employment-profile update through authenticated HTTP; browser UI/session replacement for Jobs and saved jobs; client-side resume/attachment handoff; interview scheduling and email/event production path; safe object deletion; fully exercised student-to-student application isolation through HTTP; and live browser UAT. Existing untracked `app/api/v1/profile/` work was not modified or counted as completed here. Legacy Supabase routes remain active in production. No commit, push, deployment, production cutover, provider payment, or production identity/storage import occurred in this follow-up.
+
+## Jobs browser and employment-profile continuation — 2026-10-09 (uncommitted)
+
+**Status: PARTIAL, staging-only.** The Jobs browser path now has a same-origin Managed Auth session bridge, linked employment-profile GET/PATCH, saved jobs and preferences, profile-backed application submission, own PDF resume upload/replacement/deletion, and recruiter application inbox/status review. Recruiter resume download is bound to an actual application and the recruiter's current Jobs capability, exact company/job assignment, active entitlement and application feature. The legacy Supabase production branches remain unchanged. Staging browser signup/OAuth deliberately return an unavailable state rather than creating an unlinked account or implying migration of the 103 source users.
+
+Evidence: 47/47 authenticated local HTTP checks passed against synthetic identities, isolated Neon staging, and private staging object storage. They include profile persistence and identity spoof denial, application database effect, recruiter exact-scope read/write and job title, scoped applicant resume URL, unauthorized student denial, resume replacement/deletion, and logout invalidation. The harness removed its synthetic application/profile/company/job data and uploaded objects. Synthetic test subjects remain in Managed Auth because its internal tables were not modified. A local browser displayed the public Jobs listing, but a signed-in graphical student/recruiter UAT was **not** performed. The `agent-browser` service was unavailable due to an expired tool session; local browser control was used only for the public-page smoke check.
+
+Current verification: typecheck passed; unit tests **442/442 across 102 files** passed; isolated staging integration **12/12 across 2 files** passed; lint passed with **0 errors and 53 existing warnings** after correcting one new hook dependency error; production build, script syntax check, and `git diff --check` passed. No production cutover, payment, deployment, commit, or push was performed.
+
+Still incomplete: browser-level signed-in workflow validation, supporting-document upload/download parity beyond the PDF resume, automatic interview email delivery in staging, complete recruiter UI navigation outside the review component, migrated avatar media and remaining Supabase-backed modules, and production identity linkage. Do not equate the synthetic HTTP checks with those unexercised journeys.
+
+## Mentors + Events staging continuation — 2026-10-09 (uncommitted)
+
+**Status: PARTIAL, staging-only. Production remains on Supabase.** The mode-aware public Mentor and Event listing/detail endpoints now serve the isolated Neon branch. The staging booking browser uses the same-origin linked session and a published Mentor service rather than a direct Supabase read. Booking price, currency, duration, future time, mentor availability, and overlap are checked server-side under a mentor row lock. Paid bookings remain pending; free bookings can be confirmed. Mentor-owned booking reads can span multiple explicitly assigned entities. Reschedule/cancel/complete transitions are constrained, and completion is restricted to the mentor owner or platform admin after the session ends.
+
+Event registration now derives price from an active ticket tier, enforces sales dates, tier quantity and event capacity, prevents duplicate registration, and issues digital tickets only for confirmed free registrations. Paid registrations remain pending without a ticket. Event detail excludes unpublished records; check-in requires exact event scope and is single-use. A forward-only, isolated-staging event-ticketing schema (`scripts/sql/neon-staging-events-ticketing.sql`) was applied with a staging-host guard; historical migrations and production schemas were untouched. The staging browser registration and ticket views use these same-origin APIs.
+
+**Payment security:** the earlier staging endpoint accepted a signed-in actor's claimed `completed` status. That path now fails closed with `VERIFIED_CHECKOUT_REQUIRED`/`VERIFIED_PROVIDER_REQUIRED`; neither browser return nor a fabricated callback can activate a paid booking/registration. This is a security correction, **not** a completed eSewa checkout integration. A mocked eSewa adapter fixture was exercised without contacting the gateway. No live charge or real email was sent.
+
+**Evidence:** targeted Mentor/Event guards **5/5**, full unit suite **447/447 across 103 files**, isolated Neon integration **12/12 across 2 files**, and authenticated local staging HTTP **25/25** (including anonymous/unlinked/logout denial, public reads, private-email exclusion, same-origin denial, server price, overlap, paid pending, fake-payment denial, free tickets, and duplicate-registration denial). The HTTP harness removed its application fixtures. Two synthetic Managed Auth subjects from the successful 24-check and 25-check runs remain unlinked because raw Managed Auth tables were not edited; unsuccessful setup retries may have left additional synthetic subjects and should be audited before identity parity. Typecheck and production build passed. Lint returned **0 errors and 53 warnings**; `git diff --check` passed. No signed-in graphical browser UAT was performed.
+
+**Not complete:** Mentor profile/service/availability creation and editing through a staging admin UI, Event creation/editing and organizer registration workspace, paid eSewa checkout and provider-verified callback/activation, manual payment-proof storage/review, private Event attachment handling, email delivery, calendar integration, and signed-in browser UAT. These are actual remaining code/integration tasks, not merely release configuration. Do not infer a full Mentors/Events migration or a production cutover from the tested student flows.
+
+## Payments and storage continuation — 2026-10-10 (uncommitted)
+
+**Status: PARTIAL, isolated Neon staging only.** The staging Mentor-booking and Event-registration clients now request a server-priced eSewa UAT checkout after a paid pending record is created. The staging checkout service derives NPR amount and ownership from the persisted booking/service or registration/ticket tier, writes pending payment and checkout-session rows, and reuses an unexpired matching session. It does not accept browser-supplied prices or success flags. The return handler checks the signed payload when present, reads the server-owned checkout, and uses eSewa's status API in strict mode before changing payment, booking/registration, or ticket state. A verified success is transactionally fulfilled once; failure/cancellation/expiry do not issue tickets; pending, ambiguous, refunded, and provider-unavailable states do not falsely activate paid access. The older production Supabase callback remains unchanged.
+
+The UAT provider requires `NEON_STAGING_ESEWA_SECRET` and `NEON_STAGING_ESEWA_MERCHANT_CODE` in the **isolated local staging runtime**. Neither is present in the migration environment, so the real sandbox redirect/status round-trip was **not** exercised. The staging API returns `SANDBOX_UNAVAILABLE` rather than using production credentials or faking payment. A mocked provider result verified rollback-only paid Event fulfillment and two tickets exactly once, including a duplicate verification attempt. Real eSewa transaction, disputed/late settlement operations, and a paid Mentor-booking settlement still need provider-backed staging UAT. Manual proof acceptance deliberately flags payment for reconciliation and does not itself mark it paid.
+
+The new staging-only private proof API validates PDF/JPEG/PNG/WebP size, extension/type, and magic bytes, stores a user-scoped object through Neon S3, records a `payment_proofs` row, and provides an owner- or Super-Admin-scoped short-lived read URL. Super Admin can review a pending proof without activating the underlying service. A real authenticated staging HTTP run passed **31/31** checks, including private PDF proof upload/download, unauthorized access denial, and cleanup of the S3/database fixture. Previously implemented resume lifecycle and Jobs private document access remain. Event private attachments and a browser proof-review interface are **not complete**; no new event-attachment metadata schema was applied.
+
+Verification for this continuation: `npm run typecheck` passed; focused unit tests **14/14 across 2 files** passed; isolated Neon transaction tests **13/13 across 2 files** passed after rerunning with network access; `npm run test` passed **449/449 across 103 files**; `npm run lint` passed with **0 errors and 53 warnings**; `npm run build` passed; `git diff --check` passed. The first staging suite attempt could not resolve the isolated Neon hostname in the sandbox (`ENOTFOUND`); the permitted-network rerun passed. No signed-in graphical browser UAT or real eSewa sandbox payment was performed. The successful HTTP harness cleaned its application/payment/proof records and S3 object; synthetic unlinked Managed Auth subjects from current and previous staging UAT runs remain and must be excluded from production-identity reconciliation. No live payment, production data/auth/storage/configuration change, commit, push, or deployment occurred. Production remains on Supabase.
+
+## Notifications and Messaging browser continuation — 2026-10-10 (uncommitted)
+
+**Status: PARTIAL, isolated Neon staging only.** `next.config.ts` now exposes the same explicit backend-mode flag to the local browser bundle; without this, staging server routes could be active while browser components silently stayed on Supabase. The production build still selects legacy mode unless its server environment explicitly selects otherwise, and the server continues to prohibit staging mode in production.
+
+`useNotifications` now stays on the Neon API in staging even when it fails, instead of falling through to Supabase. The own-recipient API adds cursor pagination and an atomic mark-unread operation alongside mark-one/all-read. The dashboard notification menu displays loading/error/retry/empty states, loads older records, and navigates only to an internal action URL. The staging hook stores a per-user SSE cursor in session storage and refreshes the server snapshot on notification/reconnect/visibility changes; repeated events do not append duplicate notification rows in the UI. Durable event producers already exist for the staged Jobs, Mentors, and Events writes, but other legacy producers and admin notification screens still depend on Supabase.
+
+`MentorMessaging` now has a staging browser branch for conversation list, 50-message cursor pages, text send, incoming-message SSE refresh, unread count/read state, and retryable errors. The API rejects unknown JSON fields and unverified attachment paths, enforces same-origin writes, and checks active conversation membership in repository queries/writes. The old Supabase branch remains intact for production. **Private chat attachments are not migrated:** the staging upload control is disabled rather than reusing an unsafe Supabase upload or accepting a guessed S3 key. Conversation creation and module-admin browser navigation still require a separate end-to-end pass.
+
+Authenticated localhost HTTP UAT passed **50/50** checks against synthetic linked staging identity and isolated Neon/S3, including notification read/unread persistence, own-recipient SSE, conversation list/history/send, guessed-conversation and stream denial, message read state, rejected attachment paths, and post-logout denial. Application DB/payment/proof/S3 fixtures were removed. The run created another unlinked synthetic Managed Auth subject, retained because raw Managed Auth table deletion is prohibited. The isolated transaction suite passed **13/13 across 2 files**. The agent-browser CLI could not run because its service login had expired; the in-app browser rendered the local sign-in page but no retained linked staging session was available for a signed-in graphical test. **Graphical browser UAT remains unverified.**
+
+The updated direct-import scan finds **114 non-test `app`/`src` files** still importing Supabase: 37 `app`, 41 screens, 22 libraries, 9 components, 3 hooks, 1 context, and 1 integration factory. This is a path-category inventory, not proof all callers are still exercised in staging. Both changed browser components retain their legacy import intentionally, so this sprint's changes do not artificially reduce the count. Remaining major categories are Auth/account linking, admin CRUD/privileged operations, direct browser database writes, storage/media, and legacy notification/realtime consumers. The source-user identity migration, eSewa sandbox verification, private Event/chat attachments, and full browser/module UAT remain blockers to cutover. No production configuration, data, Auth, OAuth, or deployment was changed; production remains on Supabase. No commit or push was made.
+
+Verification for this continuation: `npm run typecheck` passed; targeted notification/realtime/messaging unit tests passed after a test fixture expectation was corrected; `npm run test` passed **454/454 across 104 files**; `npm run lint` passed with **0 errors and 53 warnings**; isolated staging integration passed **13/13 across 2 files**; authenticated staging HTTP passed **50/50**; `npm run build` passed on the permitted-network retry after a sandbox-only Google Fonts DNS failure. `git diff --check` and the final generated-file cleanup are recorded with the handoff. A passing build does not replace signed-in graphical browser evidence.
+
+## Private chat attachments + own-profile avatar continuation — 2026-10-10 (uncommitted)
+
+**Status: PARTIAL, isolated Neon staging only. Production remains on Supabase.** The private chat attachment route now requires the verified linked Managed Auth actor, same-origin upload, active conversation membership, exact conversation/message binding for download, generated canonical user/conversation object key, size/type/extension/magic-byte validation, and a persisted attachment message with recipient event. A failed database write attempts deletion of only the newly uploaded object. The UI re-enables file selection in staging with upload progress, loading/error feedback and a short-lived authorized read; text-only messaging remains independent. Message or object deletion/replacement is not offered because the product does not currently support message editing. The shared policy addition is explicitly blocked from the generic legacy media signing routes; existing Supabase chat storage behavior remains the production path.
+
+The selected next runtime group is the student's own profile photo. `Profile.tsx` now uploads through a staging-only, same-origin API instead of the nonexistent-in-inventory `avatars` bucket. The route stores to `profile-media`, validates image bytes and type, updates only the verified linked profile transactionally, cleans the new object on failed update, and deletes an earlier object only when it is a canonical path owned by that same user. The staging profile GET resolves the stored path to a signed browser URL. This completes only the own-profile photo path, not every public avatar consumer or general media management.
+
+Focused chat/messaging tests passed **12/12 across 2 files**; focused avatar tests passed **6/6**. Full unit suite passed **468/468 across 106 files**; isolated staging transactions passed **13/13 across 2 files**. The authenticated localhost harness passed **60/60** synthetic checks, including actual `chat-attachments` PDF upload/download and `profile-media` avatar upload against isolated Neon S3, cross-conversation/raw-path/logged-out denial, and existing notification/SSE/Mentor/Event/payment-proof regressions. Its application database records and all three new/old S3 fixture objects were cleaned in the harness. The synthetic Managed Auth subject remains unlinked after application cleanup, as raw Managed Auth-table deletion is prohibited. No live eSewa transaction occurred; sandbox credentials remain absent.
+
+`npm run typecheck` passed. `npm run lint` passed with **0 errors, 53 warnings**. `npm run build` passed and included both new staging routes. `git diff --check` and `node --check scripts/neon-staging-mentor-events-http-uat.mjs` passed; the generated `next-env.d.ts` dev-mode change was returned to its original content. The agent-browser service failed DNS resolution for `api.inference.sh`; there was no retained linked staging browser session. **Signed-in graphical UAT remains unverified.** Direct Supabase import count remains **114 non-test files**, with both touched browser files keeping production-only legacy branches; lower import count is not a success metric. Existing-account identity migration, module-wide browser UAT, real eSewa sandbox settlement, Event/admin media, full storage parity, and rollback rehearsal still block cutover. No production data/config/Auth/storage was changed and no commit, push, or deployment occurred.
+
+## Job supporting documents and identity-link readiness — 2026-10-11 (uncommitted)
+
+**Status: PARTIAL, isolated Neon staging only. Production remains on Supabase.** The selected bounded media/admin group is job-application supporting PDFs: the staging applicant wizard now uploads optional experience letters and training documents to private `job-files`, allows pre-submission replacement/removal, sends canonical paths with the application, and the Neon Jobs repository verifies applicant ownership, exact job scope and object existence before saving those paths in the immutable application snapshot. The recruiter review panel resolves only the exact submitted path through an application-ID endpoint guarded by current Jobs capability, exact entity assignment, active entitlement and application feature. Files are MIME/size/PDF-magic checked, stored under generated canonical keys, and returned only through short-lived scoped download URLs. The server blocks deletion of an already submitted object. Legacy production Supabase branches remain intact. The staging draft upload can leave a private orphan if a browser is abandoned before submission; eventual orphan cleanup is still needed. This does not migrate the broader Job admin editor or all media workflows.
+
+Identity readiness advanced through a **staging-only dual-session application-ledger link POC**, not a Managed Auth bulk import. It requires a current verified Neon Managed Auth session plus a live, verified Supabase Auth session for the exact old UUID, offers a non-writing dry run, returns conflicts rather than reassigning existing links, inserts an auditable unique ledger link transactionally, and treats exact retries idempotently. An explicit `NEON_STAGING_IDENTITY_ALLOWED_SOURCE_ID` synthetic-account allowlist is required and is currently absent, so the route cannot link a production account by default. No email-only match, password-hash import, provider-subject import, session transfer or production migration is claimed. Current official Neon documentation has not established an import contract for those legacy credentials/Google identities; see the separate reconciliation document.
+
+**Verification:** typecheck passed; targeted route/storage/repository/identity tests passed **16/16 across 5 files**; full unit suite passed **484/484 across 111 files**; lint passed with **0 errors and 53 warnings** (the final added test file also passed targeted lint); production build passed with the new staging routes; `git diff --check` passed. The read-only identity-count refresh failed on DNS `ENOTFOUND` for the existing Supabase DB host, including a permitted-network retry, so the old 103-user count is historical rather than verified current. Isolated Neon transaction tests likewise could not resolve the staging pooler host and did not run. No authenticated staging HTTP or S3 round-trip was completed this turn. The browser-testing skill was inspected, but no retained linked staging session and no reachable staging backend existed, so signed-in graphical UAT was not attempted or claimed.
+
+Fresh direct-import count remains **114 non-test `app`/`src` files**; test references (9 files) and migration/tooling references (19 scripts) are tracked separately in the dependency ledger. No production account, provider/payment configuration, database, deployment, commit, or push was changed. Remaining cutover gates include a provider-supported or user-action identity recovery plan validated with synthetic dual sessions, live staging storage and authorization checks, browser UAT, full remaining Supabase dependency parity, real eSewa sandbox verification, and rollback rehearsal. Do not cut over production.
+
+## Safe staging execution update — 2026-10-11 (uncommitted)
+
+The current worktree now includes a fail-closed source inventory gate. Identity,
+schema, table-hash, and storage reconciliation scripts require a dedicated
+read-only Supabase Session Pooler credential, exact project host and role, TLS,
+and read-only privilege verification. They no longer accept the existing
+`postgres` owner URL for those inventory operations. No source connection or
+fresh source comparison was possible because that credential/host is absent.
+
+The isolated Neon staging branch received a forward-only
+`neon_job_document_drafts` ledger. The job upload, application submission and
+explicit deletion paths now lock the same draft row, and submission marks the
+file submitted in the application transaction. The 72-hour orphan cleanup
+script is dry-run by default and considers only registered drafts, never an
+S3-listing guess. Staging dry-run and explicit apply each found zero aged
+candidates and deleted zero objects. Its actual deletion path has **not** yet
+been exercised with an aged synthetic fixture.
+
+A separate idempotent staging operation materialized the 103 missing stable
+application-account anchors: 104 profiles, 104 application accounts, zero
+missing account rows, **only one verified Auth link**, 103 still unlinked.
+The repeat apply inserted zero rows. No Managed Auth identities were imported
+or linked by email and no access was granted by these anchor rows.
+
+Verification in this continuation: 496/496 unit tests across 113 files;
+13/13 live Neon integration tests across two files (the first rerun had two
+five-second network timeouts; a rerun with a 20-second timeout passed);
+authenticated synthetic
+Jobs HTTP suite passed including private PDF upload/read and submitted-file
+protection; typecheck and production build passed; lint returned zero errors
+and 53 warnings; `git diff --check` passed. A real private staging signed GET
+returned HTTP 200 before its 60-second TTL and HTTP 403 after 68 seconds; its
+synthetic object was deleted. This is not proof of complete storage parity.
+The AST inventory finds **112 non-test `app`/`src` files** with Supabase
+references: 110 with static imports and two with dynamic compatibility imports.
+This is a more precise metric than the earlier text scan. Production still
+runs on Supabase; no release or cutover occurred.
+
+## Persistent migration completion checklist — updated 2026-10-12
+
+This is the resumable checklist for subsequent work; earlier sections are
+historical evidence, not the current acceptance result.
+
+- [x] Close the present staging implementation phase with explicit A–F evidence levels, current import disposition, external gates and a safe product-development boundary (see the final phase-closure section below).
+- [ ] Complete authenticated graphical staging UAT and real eSewa sandbox settlement; existing unit, synthetic HTTP and isolated database checks do not satisfy these gates.
+- [ ] Reconcile fresh production source data and all reported unlinked identities with verified ownership before proposing a production cutover.
+
+- [x] Pin the isolated Neon staging database and object-store endpoints for new writes.
+- [x] Verify the actual Supabase shared-pooler host through read-only project configuration and IPv4 reachability. The host is known; no source-data connection was made.
+- [ ] Obtain a dedicated source read-only role/credential through an approved secret channel; run the fail-closed source gate and current source/target reconciliation. The existing `postgres` credential is not acceptable.
+- [x] Materialize stable staging application-account anchors for all 104 profiles without assigning access.
+- [ ] Resolve 103 unlinked application accounts through verified, supported migration or recovery; never link by email alone.
+- [x] Protect and live-test private Job PDF upload, recruiter-only read, signed expiry, and submitted-document exclusion.
+- [x] Live-test actual 73-hour synthetic draft cleanup: targeted dry-run and apply deleted its object and marked the ledger row deleted; an equally old submitted document remained in the ledger and S3. The authenticated Jobs staging HTTP suite passed all reported checks after one transient 503 on the first attempt.
+- [x] Rehearse a synthetic Neon staging `pg_dump` custom archive and restore into isolated local PostgreSQL 18, twice, with cleanup. This is not a full-data backup/rollback proof.
+- [x] Move the college detail update summary to a same-origin endpoint; its Neon branch reads only approved public colleges and published/due content. Focused tests and a live staging HTTP 200 passed. Legacy production remains unchanged.
+- [x] Move public college blog list/detail reads to a same-origin endpoint; the Neon branch gates approved colleges and published/due blogs. Seven focused public-college tests passed across updates/blogs, and the isolated staging API returned HTTP 200 for the list and a missing slug. A real published-blog browser journey remains untested.
+- [x] Move the shared public college listing/detail helper to a same-origin directory API. The Neon branch reads the approved-only `institute_directory` view, preserves filters/count/priority placement, and excludes internal provenance; legacy production keeps its existing view-backed behavior. Isolated staging listing and exact detail returned HTTP 200, with candidate rows bounded by requested page size plus actual priority positions. A signed public college-media redirect reached the pinned Neon Object Storage endpoint and the object returned HTTP 200 (`image/png`); staging CSP permits that exact origin.
+- [x] Move the public contact form, early-access form, and Super Admin contact-query inbox to Neon staging endpoints. Anonymous submission validates input and confirms the database insert; reply/delete require a current linked platform-admin session, same-origin writes, and database-side active-role guards. A synthetic staging HTTP submission returned 201 and its exact row was removed. Unauthenticated inbox HTTP access returned 401. A signed-in Super Admin browser journey remains untested.
+- [x] Move the claim-existing-college typeahead to the same approved public directory endpoint with a name-only filter and eight-result bound. Isolated staging HTTP returned one matching college with no unrelated names. The component no longer imports Supabase.
+- [ ] Migrate the remaining application runtime Supabase callers, including the rest of module administration; rerun the AST inventory after each group. Latest inventory is 109 non-test files (101 static, 8 dynamic) after the AI secret-store import was decoupled; older checkpoint counts are historical. The dynamic imports are legacy compatibility paths and must not be mistaken for eliminated production dependencies. The migrated college/contact browser paths do not call Supabase in Neon staging.
+- [ ] Reconcile all production storage objects, metadata, ownership and private/public access against the target.
+- [ ] Verify real eSewa test settlement, all critical authenticated module journeys, and granular cross-entity denial in staging.
+- [ ] Exercise a full-data target restore, source backup/restore, delta synchronization and rollback after divergent writes.
+- [ ] Complete final regression, production environment inventory, and explicit cutover authorization before any commit, push, deploy, DNS or production routing change.
+
+Latest local verification for this batch: 503/503 unit tests across 115 files,
+13/13 isolated Neon staging integration tests across two files, typecheck,
+production build, and `git diff --check` passed. Lint returned zero errors and
+53 warnings. The first typecheck was run concurrently with `next build` and
+failed because generated `.next/types` files were being replaced; the serial
+post-build typecheck passed. An initial staging-test invocation used the default
+config, which excludes those tests; the explicit staging config then passed.
+No production authenticated or payment journey was exercised in this batch.
+
+### 2026-10-12 runtime continuation
+
+The shared public-college directory helper now requests the same-origin
+`/api/v1/institutes/directory` endpoint for filtered listing and exact detail.
+Its Neon branch uses the approved public directory view with explicit fields,
+AND-matched search tokens, count, and placement candidates; the legacy branch
+retains its existing view query. Canonical college-media paths now use a
+same-origin redirect backed by the public `college-media` bucket and a
+short-lived staging S3 signature. Staging-only CSP allows the exact isolated
+storage origin for image, media, and upload connections. Public contact and
+early-access forms use a validated Neon insert endpoint in staging, while the
+Super Admin contact-query inbox uses a linked-session, role-guarded Neon API.
+The legacy branches are retained for production until cutover.
+
+Focused tests: 15/15 directory/blog/update/discovery tests and 10/10
+directory/contact tests passed. Consolidated verification: 513/513 unit tests
+across 117 files, typecheck, production build, and `git diff --check` passed;
+lint returned zero errors and 53 warnings. Three tests initially asserted
+the prior client-side directory query and were updated to verify the moved
+server-side policy; the final full rerun passed. Live isolated-staging HTTP:
+directory search/detail returned 200, the bounded candidate query returned
+four records for a three-record page plus one priority position, canonical
+college media redirected to the pinned S3 origin and the signed object
+returned 200 (`image/png`), synthetic contact submission returned 201 with
+its exact row subsequently deleted, and unauthenticated Admin inbox returned
+401. The authenticated Admin inbox UI was not exercised.
+
+Runtime inventory after the directory/contact work was **111 non-test files**
+with Supabase references (**103 static**, **8 dynamic**). The subsequent claim
+typeahead migration reduced it to **110 files** (**102 static**, **8 dynamic**).
+The dynamic references are legacy-production compatibility imports, not Neon
+staging calls. The remaining static imports require further migration;
+reduced inventory is not by itself proof of workflow parity.
+Identity/source/storage/payment/cutover gates above remain open.
+
+Claim typeahead follow-up: 27/27 focused tests across four files, typecheck,
+targeted lint, and `git diff --check` passed. The full 513-test run and build
+above preceded this narrow follow-up, so they are not claimed as a post-change
+full-suite result.
+
+### 2026-10-12 College-admin claim/add and assignment continuation
+
+Isolated Neon staging now has a transactional College scope service
+(`src/lib/server/neon-college-scopes.ts`) and same-origin endpoints for own/Admin
+request history and submission/review (`app/api/v1/neon-staging/college-scopes/route.ts`),
+plus Super Admin assignment listing/catalog/grant/revoke
+(`app/api/v1/neon-staging/college-scopes/assignments/route.ts`). The existing
+College and Admin access-request screens use these endpoints in staging while
+retaining legacy production behavior. Submission requires a verified linked
+active account and active College capability. Review and scope mutations
+re-check a live linked Super Admin role inside the transaction. Existing
+claims do not overwrite the college owner; new approvals create a pending,
+non-public institute, save its ID on the request, and create an exact entity
+assignment. Another administrator can be assigned without replacing earlier
+scopes. Duplicate pending claims and repeat assignments are idempotent;
+concurrent approvals of identically named new colleges serialize on a
+transaction-scoped advisory lock before duplicate-name validation;
+deciding an already decided request returns a conflict. The staging-only
+forward schema adjustment `scripts/sql/neon-staging-audit-id-sequence.sql`
+restores the copied audit table's missing bigint sequence and permits an
+approved create request to store its created entity ID. Applied to the pinned
+isolated migration-staging branch with
+`scripts/apply-neon-staging-audit-sequence.mjs`; historical Supabase migrations
+and production were not changed.
+
+The next related College runtime dependency started: the College dashboard
+reads its multi-college workspace selector, entitlement status, and own claim
+history from `app/api/v1/neon-staging/college-workspaces/route.ts` in staging.
+The text-profile editor saves via an atomically scoped Neon PATCH at
+`app/api/v1/neon-staging/college-workspaces/[id]/profile/route.ts`; its legacy
+branch is unchanged. `src/test/neon-college-scopes-staging.test.ts` exercises
+real isolated-staging SQL in a rollback-only transaction: invalid identity,
+missing college, claim idempotency, unauthorized approval/assignment, approved
+claim, repeat-decision conflict, two-college assignment, repeated assignment,
+invalid entity, revoke/repeat revoke, approved unpublished addition, duplicate
+institution, and rejection. Focused test: 1/1 passed; targeted lint: zero
+errors/warnings. The first standard-suite run exposed two stale claim
+typeahead tests that still mocked the retired Supabase query; they now mock
+the same-origin directory response. The staging SQL test was excluded from
+the default jsdom suite and included in the isolated Node staging suite.
+After the final edits: standard tests **514/514 across 117 files**, staging
+tests **14/14 across 3 files**, typecheck passed, production build passed,
+`git diff --check` passed, and lint had **0 errors / 52 existing warnings**.
+The first parallel staging suite hit three 5-second timeouts under shared
+database/storage contention; the serial staging rerun passed. No new/relevant
+lint warning was introduced.
+
+This is **not complete College-admin parity**. The profile editor's media
+uploader still uses a Supabase session and legacy signing contract; notices,
+blogs, lead status mutations, featured requests, module-access requests,
+subscription checkout/verified activation, and parts of the Admin assignment
+UI remain legacy-dependent. In staging, the dashboard currently marks active
+notice/lead summaries unavailable rather than fabricating counts. The new
+profile PATCH has not yet had an authenticated browser/UAT test. Approval
+does not itself activate an unpaid subscription. Verified payment activation
+for scope requests is not yet ported to Neon. The 103 historical identities
+remain unlinked: the existing dual-session proof endpoint is intentionally
+synthetic-ID allowlisted, and no email-based linking or silent capability grant
+was introduced. The source read-only credential gate remains unchanged and
+closed; never substitute the administrator credential.
+
+Runtime AST inventory after this batch: **110 non-test files** reference
+Supabase (**102 static, 8 dynamic**). The new staging branches do not reduce
+this file-level count because production compatibility imports remain in the
+same screens. Next concrete task: migrate College profile media upload/signing
+and protected lead/notice dashboard reads and mutations, then implement
+verified College scope-payment settlement; separately design a controlled
+user-facing dual-proof recovery flow before enabling links for real accounts.
+
+### 2026-10-12 College media, workspace panels, and paid scope activation
+
+The isolated College workspace now has a scoped media route at
+`app/api/v1/neon-staging/college-workspaces/[id]/media/route.ts` and the
+existing profile editor/uploader use it in staging. The route checks the
+linked actor, exact College assignment, active entitlement and media feature;
+validates image bytes/type/size; stores an owned canonical object path; saves
+the DB reference atomically; and handles replacement/removal without deleting
+unowned or still-referenced objects. The public signed-image route continues
+to read the approved public bucket. Unit media policy tests and a real
+isolated-staging object round trip passed. Historical media parity is not
+claimed.
+
+The dashboard's active notice/lead summaries, lead-status mutation, notices
+editor and blog editor now use same-origin Neon routes in staging. The routes
+recheck College scope and current entitlement on each request; applications
+use the `college_applications` feature and blogs use `profile_editing`.
+The existing Supabase paths remain for production compatibility. Main files:
+`app/api/v1/neon-staging/institutes/[id]/applications/route.ts`,
+`app/api/v1/neon-staging/college-workspaces/[id]/notices/route.ts`,
+`app/api/v1/neon-staging/college-workspaces/[id]/blogs/route.ts`,
+`src/screens/institute/InstituteDashboard.tsx`, `InstituteNotices.tsx`,
+`InstituteBlogs.tsx`, and `src/test/neon-college-workspace-panels.test.ts`.
+An authenticated browser pass is still needed; unit tests verify route
+authorization, not visual panel behavior.
+
+The College scope request has a staging eSewa checkout path through
+`src/lib/server/neon-checkout.ts`; checkout only records a pending payment.
+`src/lib/server/neon-college-scope-activation.ts` activates a paid entitlement
+and subscription only after server-side provider status verification, exact
+request/payment/plan/price/currency matching, approval, active user and exact
+assignment. Payment-before-approval activates on later approval; repeated
+return is idempotent. Failed and pending payments do not activate. The
+staging-only forward SQL
+`scripts/sql/neon-staging-college-subscription-scope-validation.sql` was
+applied only to the pinned isolated branch to preserve matching entity-scope
+validation for College subscriptions; historical migrations and production
+were not modified. `src/screens/dashboard/Payments.tsx` now exposes the
+staging request checkout and proof upload path, and the staging overview
+returns real request/payment/entitlement rows. Approved free/trial grants and
+generic scope renewal remain unfinished; no live provider credential or real
+charge flow was exercised.
+
+Verification on this code revision: typecheck passed; standard tests
+**525/525 across 119 files** passed; focused isolated media/payment tests
+**2/2** passed; full isolated staging suite **16/16 across 5 files** passed;
+production build and `git diff --check` passed; lint returned **0 errors and
+52 existing warnings**. Runtime AST inventory remains **110
+non-test Supabase-reference files (102 static, 8 dynamic)** because the
+production compatibility paths are retained. The linked-account recovery
+endpoint remains synthetic-ID allowlisted; all 103 historical identities
+remain unlinked. The source read-only credential gate is still closed.
+Next task: complete approved free/trial entitlement and renewal paths, migrate
+remaining College AI and Admin assignment surfaces, then a controlled
+dual-proof identity recovery UX; never link by email alone or enable real-user
+links without verified ownership and release approval.
+
+### 2026-10-12 College billing continuation and shared Admin leads
+
+`src/lib/server/neon-college-scopes.ts` now has a transactional Super
+Admin-only free/trial grant for an approved and exactly assigned College
+request. It rechecks the live linked Admin role, active target profile,
+capability, assignment, configured free College plan, and enabled trial
+setting. It records a `not_required` subscription and a distinct `FREE` or
+`TRIAL` entitlement without fabricating a payment. An active matching grant
+is idempotent; a used trial cannot be repeated, and an active paid or other
+subscription cannot be silently downgraded. The secure staging endpoint is
+`app/api/v1/neon-staging/college-scopes/complimentary/route.ts`; the existing
+`src/screens/admin/AdminAccessRequests.tsx` presents the free/trial actions
+after scope approval. The isolated SQL test checks an unauthorized identity,
+trial and free grants, duplicate grants, one-trial rule, no payment row,
+approved-public badge appearance, and expiry removing both the badge and
+protected entity access.
+
+`src/lib/server/neon-checkout.ts` and its existing staging checkout route
+now accept an explicit renewal for an approved, previously paid College
+request. Checkout validates live capability and, once approved, exact active
+assignment before redirecting to eSewa. The existing verified settlement
+extends the current subscription and adds a new payment-linked entitlement;
+it preserves earlier payment and entitlement history. The payments screen
+offers renewal from the approved request. The isolated payment test checks
+renewal pending state, rejected renewal without the explicit flag, verified
+extension, two payment-linked entitlement records, duplicate provider return,
+and refusal when assignment is revoked. No browser redirect alone activates
+access. A live eSewa sandbox checkout was not exercised because the isolated
+staging provider credentials are not configured.
+
+The next shared Admin dependency was the private lead inbox. The existing
+`src/screens/admin/AdminLeads.tsx` now uses
+`app/api/v1/neon-staging/admin/leads/route.ts` in staging for a bounded read
+and audited status update; both require linked Super Admin access and the
+write rechecks a live active Admin role. The route does not expose leads to
+College or student users. Focused tests cover anonymous/ordinary-user denial,
+foreign-origin mutation denial, field validation and authorized update.
+Identity recovery tests now additionally assert that dual verified sessions
+link to the original application ID without moving roles, scopes or
+entitlements, even when the two verified emails differ. This is only the
+synthetic-ID proof of concept; it does not enable recovery for 103 real
+unlinked people.
+
+Authenticated browser UAT remains unexercised: the available agent-browser
+tool creates an isolated session, and no approved staging login/session is
+configured in this workspace. The source-read-only credential gate remains
+closed. Remaining runtime work includes College AI controls, broader Admin
+surfaces, additional shared auth/session/storage callers, full identity
+recovery and source/storage reconciliation before any cutover. This batch
+does not change production or imply migration completion.
+
+Final-revision verification for this continuation: **528/528 standard tests
+across 120 files**, **16/16 isolated staging tests across 5 files** (with a
+60-second setup hook allowance for the remote database), typecheck, production
+build and `git diff --check` passed. Lint reported **0 errors / 52 existing
+warnings**. One initial isolated-suite run hit the default 10-second
+connection-setup hook timeout; the complete rerun passed with the larger
+allowance. Runtime inventory remains **110 non-test Supabase-reference files
+(102 static, 8 dynamic)**. This is not an authenticated browser UAT or a
+live eSewa charge.
+
+## Phase closure and product-development handoff — 2026-10-12
+
+This closes the current *implementation phase*, not the production migration.
+The checkout remains on `main` at `993572f` plus a substantial, uncommitted
+working tree. This closure changed documentation only; it did not create an
+immutable code revision, commit, push, deploy, source export or cutover.
+
+### Evidence levels for the current checkpoint
+
+| Level | Status | Boundary of the evidence |
+|---|---|---|
+| A — implemented in code | Partial | Isolated Neon branches exist for public College discovery/details, claim/add and scoped administration, media, leads, notices/blogs, free/trial and paid College billing/renewal; guarded Super Admin leads and selected Jobs, Mentor, Event, payment, storage, notification and messaging paths. Other reachable surfaces remain legacy or incomplete. |
+| B — unit-tested | Yes for tested slices | The last full standard run reported **528/528 tests in 120 files** on this uncommitted code checkpoint, before this documentation-only closure. Tests do not establish a complete workflow or production parity. |
+| C — isolated Neon staging | Yes for tested slices | The last isolated run reported **16/16 tests in 5 files**, with a 60-second remote setup-hook allowance. Earlier synthetic authenticated HTTP/object-storage checks in this document prove only their named paths. No real eSewa sandbox settlement was exercised. |
+| D — authenticated end-to-end staging | Not complete | No approved signed-in graphical College/Super Admin browser UAT session was available for the latest journeys. Synthetic HTTP checks and unit tests are not a substitute. |
+| E — actual production source data | Not verified | The dedicated read-only Supabase source gate remains closed; current source identities, deltas and storage parity cannot be reconciled from the historical snapshot. |
+| F — production after authorized cutover | Not started | Production remains on Supabase; no Neon production deployment, identity switch, data cutover or rollback exercise is claimed. |
+
+The last reported code-checkpoint verification also passed typecheck,
+production build and `git diff --check`; lint had **0 errors / 52 existing
+warnings**. `git diff --check` was rerun for this closure. These results do
+not belong to clean commit `993572f` alone: they cover the then-current
+uncommitted code. No code changed in this closure, and the full suites were
+not rerun merely to generate another count. Reverify any materially changed
+future working tree before treating the numbers as current.
+
+### Supabase reference disposition and remaining runtime work
+
+The existing AST inventory script, `scripts/inventory-supabase-runtime.mjs`,
+still reports **110 non-test `app`/`src` files** with a Supabase import:
+**102 static**, **8 dynamic**. This count is unchanged from the preceding
+checkpoint. Its groups are 39 `app/api`, 38 `src/screens`, 19 `src/lib`, 8
+`src/components`, 3 `src/hooks`, and one each in `app/[[...slug]]`,
+`src/contexts`, and `src/integrations`. It counts files containing imports,
+not exclusively executed Neon calls; mixed-mode files can retain an import
+solely for the production-compatible branch. Conversely, an import count
+cannot prove that all server-side Supabase calls have been removed.
+
+| Disposition | Current boundary |
+|---|---|
+| Application runtime | Reachable legacy production APIs/screens still use Supabase for AuthContext/OAuth/reset and Super Admin user controls, other Admin/College management, AI/provider settings, modules and CMS; public pages, payments and media also contain legacy paths. The current staged College and selected shared routes are narrow replacements, not whole-file migration. The [file ledger](neon-runtime-dependency-ledger-2026-10-09.md) is the per-file continuation index. |
+| Intentionally retained compatibility | The eight dynamic-import files include College directory/blog/update routes and the contact form with explicit legacy branches, plus AI/storage and Admin/Coming Soon callers. Static imports in many dual-mode screens/routes are likewise retained because production is still Supabase. Do not remove them solely to reduce the count. |
+| Migration/reconciliation utilities | `scripts/reconcile-neon-staging*.mjs`, source-gate, inventory and storage/identity scripts are operator tooling, not application runtime. They are excluded from the 110-file `app`/`src` count. Preserve their fail-closed guards. |
+| Tests/fixtures | `*.test.*`, `*.spec.*`, `src/test` and fixtures may deliberately exercise legacy compatibility or synthetic staging; the AST inventory excludes test files. Passing tests do not imply production has switched. |
+| Generated/shared types | Generated Supabase database types under `src/integrations/supabase/types.ts` are retained for legacy typing. The inventory's single `src/integrations` entry is the active client factory, **not** evidence that generated types are an active service call. |
+| Historical/non-runtime | Prior dated status prose, migration SQL/history and superseded counts are not active application callers. The old 117/114 counts used earlier checkpoints/methods; they must not override the current 110-file AST result. |
+
+The next actual runtime dependencies are the remaining College AI and Admin
+assignment/management operations, then coherent shared Auth/session,
+authorization, storage and provider callers that unblock multiple modules.
+Each replacement needs server-side scope, entitlement and transaction tests,
+plus authenticated staging workflow proof before its ledger row is promoted.
+Do not equate a staging API with production cutover or remove Supabase while
+its reachable production branch remains in use.
+
+### External gates and operator actions
+
+1. **Source access — Supabase project administrator:** provision a dedicated,
+   least-privilege, read-only PostgreSQL login and exact session-pooler host
+   through an approved secret channel as
+   `SUPABASE_SOURCE_READONLY_DATABASE_URL`,
+   `SUPABASE_SOURCE_EXPECTED_POOLER_HOST`, and
+   `SUPABASE_SOURCE_READONLY_ROLE`. The existing source gate must verify host,
+   role, TLS and privileges before a read-only reconciliation. Do not use the
+   available administrator URL, infer a host, rotate production credentials or
+   put secrets in this repository. Current source reconciliation remains
+   blocked until that credential is actually supplied and validated.
+2. **Identity — Auth/release owners:** the **103 unlinked accounts are a
+   historical reported count**, not a fresh source-to-target confirmation.
+   For each account, establish verified source and target ownership through
+   an approved supported import or dual-proof recovery, retain the original
+   application UUID and grants, audit conflicts/rejections, and reconcile
+   against a fresh source snapshot. Matching email or fabricated OAuth
+   provider IDs never suffice. The synthetic-only identity-link proof must
+   not be enabled for the real 103 by inference.
+3. **Payments and UAT — staging operator/provider owner:** provide approved
+   eSewa **sandbox** merchant code and secret to the isolated staging server
+   (`NEON_STAGING_ESEWA_MERCHANT_CODE`, `NEON_STAGING_ESEWA_SECRET`), configure
+   and verify the server-side return/callback/status check, and furnish an
+   approved authenticated staging session for the College and Super Admin
+   browser flows. Record an actual sandbox settlement and duplicate/failed
+   cases before claiming payment E2E. Do not enable live charges or infer
+   success from a browser redirect.
+
+### Safe development boundary and migration re-entry
+
+Normal product work may resume against the **existing legacy/Supabase
+development workflow** (default `MEROTALENT_BACKEND_MODE=legacy`), with the
+current production Supabase Auth, DB, storage, OAuth, payment and routing
+behavior preserved. The separate, guarded local `neon-staging` mode uses
+`scripts/run-neon-staging-local.mjs` and the pinned `.migration.env` staging
+configuration; `getBackendMode()` rejects it on Vercel Production. Do not
+copy staging credentials into normal development or production, disable
+Supabase, delete its resources, or silently point new production features at
+Neon. Preserve the current uncommitted migration files and forward-only
+staging SQL. For new product features, keep service contracts and data models
+explicit, use scoped server APIs, add legacy production tests and—when the
+feature touches a migrated area—Neon staging coverage so divergence does not
+grow unnoticed. This boundary permits product development; it is not cutover
+approval.
+
+**Updated direction:** the paragraph above describes the safe compatibility
+boundary at phase closure, not a change in target architecture. The migration
+is active again under the continuation directive below; new work should move
+the staged runtime toward Neon rather than deepen Supabase-only dependencies.
+
+To resume migration later, start with this closure section, the existing
+[dependency ledger](neon-runtime-dependency-ledger-2026-10-09.md), and the
+[cutover gate](neon-cutover-readiness-gate-2026-10-11.md). Verify the then-current
+working tree and rerun `scripts/inventory-supabase-runtime.mjs`; choose one
+coherent remaining workflow, obtain the missing external proofs above, and
+advance A–F only with new evidence. Production acceptance still requires
+source/target data and storage reconciliation, secure disposition of every
+identity, authenticated module UAT, payment verification, backup/final-delta
+and rollback rehearsals, followed by explicit release authorization.
+
+## Active migration continuation — 2026-10-12
+
+The first open checklist item is the dedicated source read-only credential.
+Current local configuration still lacks `SUPABASE_SOURCE_READONLY_DATABASE_URL`
+and `SUPABASE_SOURCE_READONLY_ROLE`; the known project-specific pooler host
+alone cannot satisfy the fail-closed gate. An authenticated browser inspection
+of the available Supabase dashboard account showed only the unrelated CTMS
+project, not the MeroTalent project. The source `postgres` administrator URL
+was **not** used for inventory or to bypass the gate. Exact operator action:
+give the migration operator access to the MeroTalent Supabase project with
+permission to provision a dedicated least-privilege read-only database role,
+or provision that role through the project owner; deliver its session-pooler
+URL and role name through the approved secret channel. The code can then run
+the existing privilege/host/TLS check before any source query. This is an
+external access blocker, not a completed reconciliation.
+
+Independent runtime implementation continued with an entity-scoped Neon AI
+slice. `src/lib/server/neon-ai.ts` and
+`app/api/v1/neon-staging/ai/{byok,generate,scopes}` implement own-assignment
+scope listing, entitlement-gated BYOK status and encrypted save, provider
+selection (own authorized key before enabled platform provider), editable
+draft generation and metadata-only usage/audit logging. The write checks
+exact entity entitlement inside the transaction; cross-origin writes and
+malformed scopes are denied. `EntityAIControls`, `InstituteProfileEditor` and
+`ModuleAIWorkspace` now use those cookie-authenticated, same-origin routes in
+Neon staging while retaining existing legacy production behavior.
+`secret-store.ts` now imports the provider-neutral configuration error instead
+of loading the Supabase server client transitively. No raw key, ciphertext or
+private application record is sent to the browser or usage log.
+
+**Evidence level:** code implemented; 11/11 focused tests passed. A
+rollback-only test against the pinned isolated Neon branch passed 1/1,
+exercising an active College entitlement, foreign-entity denial, encrypted
+BYOK upsert, status read and audit row. The full standard suite passed
+**534/534 across 121 files** and the full isolated staging suite passed
+**17/17 across 6 files**. Production build, post-build typecheck and
+`git diff --check` passed; lint returned **0 errors / 52 existing warnings**.
+An initial standard test run accidentally included the new Node-only staging
+test under jsdom (534 passed, one environment failure); the separate test
+configurations were corrected and both full suites reran green. These are
+working-tree results on `main` at `993572f` plus uncommitted changes, not a
+new commit or production release.
+
+The AI provider is **not configured** in the isolated staging database, so
+no real provider generation or signed-in graphical AI journey is claimed.
+The AST inventory is now **109 non-test files (101 static, 8 dynamic)**;
+removing the transitive secret-store import is a real shared-boundary cleanup,
+but the many legacy production and remaining staging callers still require
+work. Continue with the existing dependency ledger's next coherent Admin/Auth
+or module group while source access, identity recovery, eSewa sandbox
+settlement and browser UAT are pursued separately. Production remains on
+Supabase. No commit, push, deploy, production data change or cutover occurred.
+
+### Subsequent shared Provider Center batch
+
+`src/lib/server/neon-provider-config.ts` and
+`app/api/v1/neon-staging/admin/{providers/[kind],provider-status}` now provide
+Neon-backed, cookie-authenticated Super Admin status and configuration for
+payment, AI and email providers. The save operation rechecks active Admin
+membership inside the transaction, encrypts a replacement secret server-side,
+preserves the existing encrypted credential when no replacement is supplied,
+rejects enabling without a stored credential, and commits an audit row with
+the configuration. The response contains only allowlisted public settings and
+configuration flags, never ciphertext or plaintext. Cross-origin writes are
+denied. `ProviderConfigurationPanel` and the Provider Center health summary in
+`AdminSettings` use these staging endpoints; legacy production behavior is
+unchanged. The rest of `AdminSettings` still has direct Supabase site-settings
+reads/writes and remains a separate CMS migration task.
+
+**Evidence level:** code implemented and verified against isolated Neon
+staging, not source-reconciled or production-ready. Four standard unit tests
+cover validation, status states, non-admin denial and secret-free responses;
+one rollback-only staging test covers a disabled→enabled transition, encrypted
+storage, secret preservation, audit persistence and ordinary-user denial.
+The staging transaction was rolled back; no live provider configuration was
+changed. Final combined verification after this batch: **538/538 standard
+tests across 122 files**, **18/18 isolated staging tests across 7 files**,
+typecheck, production build and `git diff --check` passed. Lint has **0 errors
+and the same 52 existing warnings**. The AST import inventory remains **109
+non-test files (101 static, 8 dynamic)**. There is still no configured AI
+provider in staging and no authenticated browser/provider call proof.
+
+Next coherent runtime dependency: migrate the Super Admin site/CMS settings
+and public CMS reads together, then remaining shared Admin access/user flows.
+External gates remain the dedicated MeroTalent Supabase read-only source role,
+safe reconciliation of the 103 unlinked identities, actual eSewa sandbox
+settlement/duplicate and failed-return proof, authenticated browser UAT,
+backup/restore and rollback rehearsal, and explicit production cutover approval.
+
+### 2026-10-12 continuation — Neon CMS and recovery preparation
+
+The next shared runtime batch is implemented in `src/lib/server/neon-cms.ts`
+and `app/api/v1/neon-staging/{cms,admin/cms,admin/site-settings}`. The public
+route returns only visible sections (including no children of hidden parents),
+top-level visibility flags needed by the homepage, and allowlisted site
+settings. Admin section create/edit/delete and settings writes recheck active
+Super Admin membership inside an audited transaction; section parents must
+belong to the same page. Server validation rejects unsupported pages, unsafe
+URLs, arbitrary settings keys and malformed section data. `useSiteCMS`, the
+homepage server snapshot, `AdminPageEditor`, and `AdminSettings` now use the
+Neon paths in staging and retain their legacy production behavior. The CMS
+editor's standard-home-section seeding, nested items, visibility toggles and
+branding writes are included. Public detail-record SEO metadata and other
+legacy CMS consumers still need Neon runtime replacement; this batch is not
+the whole Admin migration.
+
+**Evidence:** 4/4 focused CMS unit tests and a rollback-only isolated Neon
+staging test passed. The staging test created hidden/visible parent and child
+sections, proved the public boundary, changed a site title, checked audit
+rows, deleted the parent and confirmed child cascade, then rolled back. The
+final standard suite passed **542/542 across 123 files**. Typecheck,
+production build, `git diff --check`, and lint (**0 errors/52 existing
+warnings**) passed. The first full isolated staging suite had two Jobs tests
+time out at the remote database connection under the 30-second test limit.
+Those Jobs tests passed **5/5** when rerun alone with a 60-second limit. A
+second full isolated suite with that limit had a connection timeout and
+unexpected connection termination in the unrelated modules E2E file:
+**11 passed, 8 skipped, 1 failed**. Thus the full isolated staging suite is
+**not green on this revision**; do not present the focused CMS pass as a full
+suite pass. No source or production data was changed.
+
+Independent recovery work: `node scripts/verify-neon-staging-backup-restore.mjs`
+passed using a synthetic staging schema and an isolated local PostgreSQL 18
+restore (2 unique rows); it copied no production data. This proves the
+synthetic dump/restore method, not a whole-database backup or cutover rollback.
+`scripts/reconcile-neon-staging-storage.mjs` now enumerates every S3 object
+page and counts missing/extra object identities, using
+`scripts/storage-reconciliation-utils.mjs`. Three pure pagination/drift tests
+passed via `node --test`. Actual source/target object hashes cannot be
+reconciled until the dedicated read-only Supabase source role is provisioned;
+the script's existing source gate remains unchanged.
+
+**External action required for source access:** the MeroTalent Supabase project
+owner must grant the migration operator dashboard/project access capable of
+creating a dedicated least-privilege read-only database role, or create that
+role themselves. Deliver the role name, approved session-pooler host and URL
+through the secret channel as `SUPABASE_SOURCE_READONLY_ROLE`,
+`SUPABASE_SOURCE_EXPECTED_POOLER_HOST` and
+`SUPABASE_SOURCE_READONLY_DATABASE_URL`. The existing role/host/TLS/privilege
+gate must pass before source reconciliation. Do not use the available
+administrator URL. The currently available dashboard account does not show
+the MeroTalent project. The 103 historical identity records still lack a
+verified, approved recovery path; no production identity was linked. No
+authenticated staging browser session or enabled eSewa sandbox provider was
+available for a real browser settlement test. Continue code-only work on
+Admin/Auth and metadata while these exact external prerequisites are resolved.
+
+No commit, push, deployment, production change or cutover occurred.
+
+### Additional runtime dependency found by local Neon browser smoke
+
+The local staging homepage rendered with the Neon public CMS response
+(`GET /api/v1/neon-staging/cms?page=home` returned HTTP 200 with 15 visible
+sections, 17 top-level visibility flags and 10 settings; the unauthenticated
+Admin CMS endpoint returned HTTP 401). There was no authenticated staging
+browser session, so no Admin graphical write/UAT is claimed. The browser
+automation CLI itself was not logged in; the available local in-app browser
+showed only a public `Login` state. Its smoke run exposed HTTP 500 from the
+competitions discovery endpoint.
+
+`src/lib/server/neon-competitions.ts` now maps the real staging
+`competitions.cover_image` column to the public `cover_image_url` contract and
+queries only upcoming/ongoing, non-expired rows. The Neon branch of
+`app/api/v1/competitions/registrations/route.ts` now uses actual
+`competition_registrations.registered_at` and no nonexistent `deleted_at` or
+`created_at` columns. A student can read only their own registration IDs.
+Registration validates the competition ID and optional team name, checks the
+current competition under a row lock, denies closed/deadline-expired/full
+competitions, returns an existing registration idempotently, and reports
+success only after an inserted row is returned. The stage POST requires
+same-origin. The dashboard no longer promises a confirmation email that this
+flow has not actually sent. Legacy production database behavior is unchanged.
+
+**Evidence:** 5/5 focused unit tests and one rollback-only real Neon staging
+test passed, covering public image mapping, own registration reads, invalid
+input, closed/full denial, successful persisted registration and idempotent
+retry. Local isolated staging HTTP checks returned **200** for public
+`/api/v1/competitions?limit=12` and **401** for an unauthenticated
+`/api/v1/competitions/registrations` read. No authenticated browser
+registration or email delivery was exercised.
+
+### 2026-10-12 final continuation — public detail metadata and verification
+
+The public detail page now uses `src/lib/server/neon-public-metadata.ts` in
+Neon staging for College, Job, Mentor and Event server-rendered metadata and
+structured data. It reads only approved/public records using parameterized
+queries, excludes expired Jobs/Events, uses the existing College public-media
+URL contract, and omits unknown/private fields from schema.org output. The
+legacy production detail-metadata path is untouched. Four focused unit tests
+passed for malformed routes, college canonical/media fields, private-field
+exclusion, and unpublished/missing records. This path is **implemented in
+code**, but its actual public detail pages still need authenticated/visual
+staging UAT; no live record-specific browser claim is made.
+
+Final integrated verification on this working tree: **551/551 standard tests
+across 125 files**, **20/20 isolated Neon staging tests across 9 files**,
+typecheck, and production build passed. Lint returned **0 errors and 52
+existing warnings**. The earlier remote-database staging timeouts noted above
+were transient; the final full isolated run completed. The source import
+inventory is still **109 non-test Supabase-referencing files (101 static,
+8 dynamic)** because production branches and untouched workflows remain.
+`node --test scripts/storage-reconciliation-utils.test.mjs` passed **3/3**;
+the synthetic staging dump/local restore rehearsal and final
+`git diff --check` passed.
+
+**Next concrete runtime batch:** migrate shared Super Admin user/access
+management, publication/featured discovery and any remaining public CMS
+consumers using the existing Neon actor and transaction boundaries. Replace
+actual Supabase operations one workflow at a time and add denial/transition
+tests. Continue independent identity recovery and storage reconciliation
+tooling, but do not run source reconciliation or link the 103 unresolved
+accounts without the dedicated verified read-only source role and ownership
+proof. The owner must supply the exact approved role, pooler host and URL via
+the three `SUPABASE_SOURCE_*` secret-channel variables described above.
+Authenticated staging browser UAT, live eSewa sandbox settlement, full
+backup/rollback rehearsal and authorized production cutover remain open.
+
+Production remains unchanged. No commit, push, deployment or cutover occurred.
+
+### 2026-10-13 continuation — Super Admin People read/status and featured boundary
+
+The staging People user list now reads `public.profiles` and `public.user_roles`
+through `src/lib/server/neon-admin-users.ts` and
+`app/api/v1/neon-staging/admin/users/route.ts`, with bounded pagination/search,
+verified Managed Auth link, an active Super Admin recheck in the SQL statement,
+and private no-store responses. Unlinked legacy profiles are labeled
+"Recovery needed" rather than silently appearing as sign-in-ready accounts.
+The staging People screen uses this route rather
+than Supabase Auth for listing. Suspend/reactivate uses a same-origin request,
+an audited Neon transaction, active linked-admin recheck, exact target profile,
+and self-suspension denial. This is **implemented in code and unit-tested**;
+the staging People screen's invitation, password reset, delete, entity options,
+and manual module/payment assignment still use legacy Supabase and must be
+migrated before the whole screen is accepted. Their staging UI actions are
+temporarily hidden and handler-guarded so a staging session cannot mutate the
+production Supabase backend; the production UI remains unchanged. This is a
+fail-closed migration boundary, not completed functionality. No authenticated People browser
+UAT was performed. Added focused tests in `src/test/neon-admin-users.test.ts`
+and `src/test/neon-admin-users-route.test.ts` (6/6 passed).
+
+Public featured discovery in `app/api/v1/featured/route.ts` now constructs
+the Supabase admin client only in legacy branches. A Neon failure returns a
+503 instead of an apparently successful empty feature list. The existing
+Neon-approved-public-record hydration remains. Added focused route tests in
+`src/test/neon-featured-route.test.ts` (3/3 passed).
+
+The next connected batch also moved the Super Admin Featured Content Manager
+to `app/api/v1/neon-staging/admin/featured/route.ts` and
+`src/lib/server/neon-featured-admin.ts`. Its list and public-target picker are
+guarded by an active verified linked-admin SQL predicate; create/reactivate
+and soft removal use same-origin writes, exact published-target validation,
+an active linked-admin predicate in the mutation itself, and audit entries.
+The existing screen uses these endpoints in Neon staging, preserving the
+legacy production path. Target checks reject unpublished Colleges, Mentors,
+Courses, Jobs and Events. Added focused service/route tests in
+`src/test/neon-featured-admin.test.ts` and
+`src/test/neon-featured-admin-route.test.ts` (6/6 passed). Actual signed-in
+Super Admin browser authoring and target-side SQL execution for these new
+statements still need staging acceptance; unit/route mocks do not prove them.
+
+Source-access operational checkpoint: the CLI's existing authorized project
+session identified the linked Supabase project and exact session-pooler host.
+A dedicated `merotalent_migration_ro` login was created on the production
+source with no superuser/role-creation/replication/RLS-bypass attributes, and
+its connection URL was placed only in macOS Keychain service
+`MeroTalent Supabase Source Readonly URL` (never in the repository or console).
+Strict TLS with the Supabase CA succeeded. **The fail-closed source gate remains
+unmet:** the role can authenticate and read public/storage tables but cannot
+read `auth.users` because `auth` schema USAGE is unavailable to it. The
+`postgres` role does not own `auth` and lacks grant authority for that schema;
+no administrator credential was substituted into reconciliation. Supabase's
+Management API read-only query endpoint did return an `auth.users` count of
+104 as `supabase_read_only_user`, but that API result is not a verified
+dedicated-login export and no source reconciliation/import was run. The
+required external action is for the project owner/Supabase support to grant
+schema `auth` USAGE safely to the dedicated read-only role, or approve an
+equivalent officially read-only source-export mechanism and adapt the gate
+without weakening it. The Chrome dashboard session available here belongs to
+a different organization and cannot manage this project's permissions.
+Production application data, routing and deployment were not changed; only
+the dedicated source read-only role/password was provisioned. No commit, push,
+deployment, production data migration or cutover occurred.
+
+Final integrated verification on this batch: **566/566 standard tests across
+130 files**, **21/21 isolated Neon staging tests across 10 files**, typecheck,
+production build and `git diff --check` passed. Lint reported **0 errors /
+52 existing warnings**. The new People tests are unit/route mocks; the
+featured authoring lifecycle additionally passed a rollback-only real Neon
+staging test. Authenticated browser People/Featured UAT is not claimed.
+
+**Next concrete task:** finish the staging People invitation, deletion,
+password recovery and audited module/entity/payment assignment workflows on
+Managed Auth + Neon, then authenticated browser acceptance for People and
+featured authoring. Continue
+identity ownership-proof recovery and storage/UAT/rollback work independently
+while source Auth access is resolved.
+
+### 2026-10-13 continuation — People retirement and staging Auth recovery
+
+`src/lib/server/neon-admin-users.ts`, `app/api/v1/neon-staging/admin/users/route.ts`
+and `src/screens/admin/AdminUsers.tsx` now support reversible **deactivation**
+and explicit reactivation of an ordinary user through the existing linked
+Super Admin transaction. The transaction rechecks the actor's active verified
+identity, locks the target profile, rejects self-deactivation and Super Admin
+retirement, updates `account_status`, and records an audit entry. It does not
+delete Auth identities or historical business records. Existing Neon session
+resolution rejects non-active profiles on subsequent protected requests. The
+staging People UI labels deactivated accounts and exposes the operation; the
+legacy production branch is unchanged. This passed unit/route tests and a
+rollback-only real Neon staging transition test. It is **not** evidence of an
+authenticated browser journey or immediate provider-session revocation.
+
+`app/api/v1/neon-staging/auth/[...action]/route.ts` now forwards Better Auth's
+token-based `request-password-reset` and `reset-password` actions only in
+Neon staging. It enforces same-origin POST requests, validates input, fixes the
+redirect to this application's `/reset-password` (no user-supplied redirect),
+and keeps responses private/no-store. `src/screens/ResetPassword.tsx` uses the
+staging link/token flow instead of Supabase OTP calls; the People reset action
+is enabled only for a linked identity and truthfully says recovery was
+*requested*, not delivered. The production Supabase reset experience remains
+unchanged. Three bridge regression tests cover redirect injection, malformed
+and cross-origin requests, and upstream failure propagation. **Actual email
+delivery, link completion, and staging Auth-provider configuration still need
+authenticated UAT**; an HTTP/route test cannot prove delivery.
+
+Source access remains fail-closed. A fresh read-only privilege inspection
+confirmed `merotalent_migration_ro` can log in and has `auth.users` table
+SELECT but **does not have `auth` schema USAGE**. The current `postgres` admin
+is not a member or grant administrator of `supabase_admin`, the schema owner,
+and is not a member/grant administrator of `supabase_read_only_user`. No
+administrator credential was used for source reconciliation. Supabase's
+official Management API does offer a read-only query endpoint as
+`supabase_read_only_user` with a project-scoped token carrying only
+`database_read`, but the current CLI token is broader; it has not been
+substituted for the approved source gate. The concrete operator action is
+either (a) obtain an owner/Supabase-supported grant of `auth` schema USAGE to
+the dedicated migration role, or (b) create a project-scoped **database-read
+only** PAT in the owning Supabase account and explicitly approve an equivalent
+read-only API source adapter and revised gate. No source import/reconciliation
+or production data mutation occurred.
+
+Final-revision checks for this batch: **573/573 standard tests across 131
+files**, **22/22 isolated Neon staging tests across 11 files** (including the
+new People retirement test), typecheck and
+production build passed, lint returned **0 errors / 52 existing warnings**.
+The first full isolated staging run passed **21/22** but the unrelated College
+scopes test hit its 60-second timeout; rerunning that test alone passed **1/1**
+in 16 seconds; the subsequent clean full staging run passed **22/22**.
+`git diff --check` passed on the final revision. No commit,
+push, deployment or cutover occurred.
+
+**Next concrete runtime batch:** implement the single Super Admin People
+module/entity/manual-payment assignment workflow on Neon with exact linked
+actor checks, scoped target validation, entitlement/payment ledger and
+idempotent audit transaction. Keep invitation and Auth-provider recovery
+delivery blocked until a supported Managed Auth mechanism and staging email
+configuration are verified. Continue source-gate resolution, recovery of
+unlinked identities, authenticated browser UAT, eSewa sandbox confirmation,
+and backup/rollback rehearsal independently. Production remains Supabase.
+
+### 2026-10-13 continuation — Neon People assignment and manual payment review
+
+The existing People surface in `src/screens/admin/AdminUsers.tsx` now uses
+`app/api/v1/neon-staging/admin/access/route.ts` and
+`app/api/v1/neon-staging/admin/manual-payments/route.ts` in Neon staging.
+`src/lib/server/neon-admin-access.ts` implements linked active Super Admin
+checks, exact entity lookup, multi-module/multi-entity grants, subscription
+dates, complimentary entitlements, pending manual-payment entries, separate
+confirmation/rejection, revocation and audit metadata in database transactions.
+The People assignment picker uses server-side entity search so the first 100
+records do not silently cap the colleges an admin can select.
+Positive amounts do **not** activate paid access until a Super Admin confirms
+the payment on the separate review action. Confirmation locks the target and
+assignment, creates the entitlement once, and duplicate confirmation is
+idempotent. Revocation removes active entitlement and fails any pending manual
+payments for the revoked scope/capability; financial history is retained.
+Production's existing Supabase flow remains unchanged.
+
+`src/test/neon-admin-access-route.test.ts` covers the session, same-origin,
+private-cache and strict-body HTTP boundary. The rollback-only
+`src/test/neon-admin-access-staging.test.ts` exercises paid pending state,
+duplicate assignment key, conflicting retry, confirmed payment, duplicate
+confirmation, revocation, cancelled pending payment, complimentary access and
+cross-entity denial on actual isolated Neon staging tables. It also resolves
+assignable entities for College, Jobs, Mentor and Events. The staging test
+identified the partial payment-reference unique index and the SQL conflict
+target was corrected to match it. These tests do not constitute an
+authenticated browser or real payment-provider acceptance test.
+
+Final local code checks for this batch: **575/575 standard tests across 132
+files**, **23/23 isolated staging tests across 12 files**, typecheck,
+production build and `git diff --check` passed. Lint has **0 errors / 52
+existing warnings**. The first full isolated staging run was interrupted by
+intermittent Neon pooler DNS resolution (`ENOTFOUND`) and related timeouts;
+DNS subsequently resolved and a clean full rerun passed 23/23. These
+rollback-only tests made no durable staging changes.
+
+Remaining work is not downgraded by this slice: resolve the approved
+read-only source Auth schema access, reconcile actual production data and
+storage, prove ownership-based recovery for unresolved identities, complete
+remaining Supabase runtime replacements, authenticated browser UAT, eSewa
+sandbox verification, and backup/restore plus rollback rehearsal. The next
+concrete implementation task is the remaining People invitation/Managed Auth
+delivery boundary and cross-module access display. Production was not
+changed; no commit, push, deployment or cutover occurred.
+
+## 2026-10-13 source identity and row-delta execution checkpoint
+
+The existing Supabase CLI Management API credential was located in macOS
+Keychain without printing it. `scripts/supabase-readonly-management-api.mjs`
+uses only Supabase's `database/query/read-only` endpoint for bounded `SELECT`
+inventory. This is a safe source read for investigation, **not** the dedicated
+PostgreSQL read-only credential or a consistent export; the full-source gate
+remains closed. Production data, Auth, Vercel, and traffic were not changed.
+
+`scripts/supabase-readonly-auth-inventory.mjs` found **104** current source
+Auth users and **105** Auth identities. Five source QA users (`qa.admin`,
+`qa.college`, `qa.company`, `qa.mentor`, `qa.student`) exist; no QA Events
+Organizer Auth user exists. Neon staging has 104 application profiles but one
+source user is absent and one synthetic staging profile is extra. Exactly one
+source identity has a verified Neon link (in fact zero source users match the
+single synthetic verified link). Six non-QA accounts have administrative
+roles/capabilities/scopes. Thus the prior “103 unlinked” figure is an
+application-link count, **not** 103 safely disposable Auth identities; deleting
+it blindly would include QA and legitimate administrators. The requested
+source-user deletion was not performed pending a verified identity disposition
+that preserves business ownership and access.
+
+On isolated Neon migration-staging only, a guarded dry run identified 36
+unlinked, auth-only `neon-*@example.com` synthetic users. A no-compute backup
+child branch (`br-withered-star-azkvampt`) was confirmed
+ready before deletion because Neon rejected a snapshot of the non-root
+staging branch. `scripts/cleanup-neon-staging-synthetic-auth.mjs
+--apply-staging` removed exactly 36 through the supported Neon Managed Auth
+CLI: **37 → 1** Managed Auth users. Rerun found zero candidates and made zero
+deletions. The one remaining linked synthetic user, all copied application
+profiles, QA records and business records were preserved. The child branch is
+not yet proof of a tested restore or long-term backup.
+
+`scripts/reconcile-neon-via-readonly-api.mjs` compared the current source
+public schema/row digests against isolated staging: **80 source tables, 90
+staging tables, 34 matches, 46 differences**. Four schema differences are
+target-side additions in `event_registrations`, `events`, `jobs`, and
+`profiles`; they require explicit mapping rather than a naive byte comparison.
+`scripts/reconcile-neon-source-key-deltas.mjs` narrowed seven count drifts:
+`audit_logs` 4 source-only, `leads` 40 staging-only,
+`media_upload_intents` 1 staging-only, `notifications` 1 source-only/2
+staging-only, `saved_jobs` 1 source-only, `sub_admin_requests` 1 source-only,
+and `user_roles` 1 source-only. These are real identifier-set differences;
+their ownership and contents have not yet been safely migrated. API queries
+are separate source snapshots, so this is a drift inventory, not final parity.
+
+**Next concrete execution:** classify and safely replay source-only business
+rows into isolated staging after FK/ownership checks; investigate staging-only
+rows without deleting legitimate data; obtain a dedicated read-only
+PostgreSQL source role for consistent full export/final-delta reconciliation;
+then continue the remaining People invitation/Managed Auth boundary and
+cross-module runtime replacement. Do not cut over or delete production Auth
+users based on the stale 103 count. Browser UAT, real eSewa sandbox settlement,
+storage parity, full-data restore/rollback and production authorization remain
+open gates.
+
+The first bounded replay is now complete in **isolated staging only**.
+`scripts/replay-neon-source-only-rows.mjs` first passed a full transaction
+rollback probe. A second no-compute backup child branch
+(`br-fancy-math-azietri1`) was confirmed ready before
+the staging apply. The apply inserted **1 profile, 1 application-account
+mapping, 1 role assignment, 1 saved job, 1 sub-admin request, 1 notification,
+and 4 audit records**. Exact primary-key conflict targets were used because
+generic `ON CONFLICT DO NOTHING` was rejected by a deferrable unique
+constraint during the rollback probe. The first failed probe rolled back.
+The successful apply committed atomically; a second apply inserted **zero**
+rows. The subsequent read-only key comparison found **zero source-only keys**
+for the eight checked tables, and every staging profile had an
+application-account mapping. Source Auth remained 104/105 users/identities;
+staging now has 105 profiles (104 matching source plus one isolated synthetic
+profile). The new copied account has no verified Neon Auth link and cannot
+claim access by email alone. Staging-only leads (40), upload intents (1),
+notifications (2), and synthetic profile (1) remain to classify. This is
+not row-content, object-storage, or transactional full-source parity.
+
+Current-revision verification after these script/docs changes: `node --check`
+for the reconciliation and cleanup scripts and `git diff --check` passed;
+**575/575** standard tests across 132 files, the first isolated staging run
+passed **23/23** tests across 12 files, typecheck and production build passed. Lint reports
+**0 errors / 52 warnings**. The source-only replay was verified by a rollback
+probe, one staging commit, a zero-write rerun and a follow-up key inventory.
+No production write, commit, push, deploy or traffic cutover occurred.
+
+After the staging replay, two full isolated-suite reruns were **not clean**:
+one reported 22/23 with a College payment test timeout; a second reported
+21/23 with Neon pooler connection timeouts on the College payment and People
+access tests. `pg_stat_activity` showed no lingering transaction/lock, DNS
+resolved, and those two files reran together successfully **2/2**. The
+staging suite remains operationally flaky under full-suite connection load;
+do not turn the focused rerun into a full-suite pass claim. The new
+`scripts/read-only-query-policy.test.mjs` passed 2/2 cases.
+
+The AST runtime scan (`node scripts/inventory-supabase-runtime.mjs`) still
+finds **109 non-test `app`/`src` files** importing Supabase (101 static, 8
+dynamic), including 39 API files and 38 screens. These are not all harmless
+historical references; the runtime-removal gate is **FAIL**. The staging
+payment provider row has an encrypted eSewa secret but is **disabled** and
+its public environment is **production**, not sandbox. It was not enabled or
+used for a sandbox charge. An approved sandbox provider configuration and
+test identity are required before a real settlement test. The source
+read-only API can inventory `storage.objects` (22 objects observed) but cannot
+provide a consistent database export or prove private object bytes; the
+dedicated source database role and storage reconciliation remain required.
+
+`scripts/verify-neon-staging-full-restore.mjs` now performs a full
+`pg_dump` custom archive of staging `public` and `neon_auth`, restores into
+disposable local PostgreSQL 18, installs the three source extensions between
+pre-data and data/post-data restore, checks representative table counts and
+application-account ownership, then stops and removes the temporary server
+and archive. The actual isolated restore **passed**: profiles 105,
+application accounts 105, identity links 1, payments 1, Managed Auth users 1,
+and orphaned application accounts 0. The first two attempts exposed and fixed
+the local `public` schema collision and missing `pg_trgm` extension.
+This is a **staging database restore**, not source-production backup, object
+storage restore, full row-content integrity proof, or rollback after divergent
+writes. Those acceptance gates remain open.
+
+`npm run check:migrations` passed with three new migrations and no historical
+migration edits. The legacy `npm run check:drift` command still probes
+Supabase PostgREST table/column endpoints, not Neon; it emitted no result
+after 90 seconds and was interrupted. It is **not** a Neon schema-drift pass.
+
+## 2026-10-13 reconciliation, backup, and credential-containment continuation
+
+The source read-only API reconciliation now runs all 80 table digests in one
+read-only SQL statement, so the source side represents one MVCC statement
+snapshot rather than 80 independently timed reads. The target is still a
+separate transaction and this is not a consistent source export or final
+cutover delta. Current result: 80 source tables, 90 target tables, 35 exact
+matches and 45 differences (38 row-content, four schema, three row-count).
+The 40 staging-only leads group into six mentor bookings, 12 event
+registrations, 21 job applications, and one contact query from October 9–11.
+They are not treated as disposable without ownership and workflow review.
+
+`scripts/classify-neon-source-identities.mjs` makes read-only,
+pseudonymous classifications without granting access or matching on email:
+104 current source users comprise five required QA accounts, six other
+administrative accounts and 93 unresolved accounts to preserve. All 104 have
+an Auth identity and an application-account mapping in staging; **zero source
+users have a verified Neon identity link**. The remaining synthetic linked
+staging account is not a substitute for source ownership proof. Password,
+OAuth and session migration remain unproven; the earlier 103 figure must not
+be used as a deletion list.
+
+`scripts/reconcile-neon-storage-via-readonly-api.mjs` listed source storage
+metadata and staging Neon Object Storage without downloading private bytes:
+22/22 source objects exist in staging, with matching object sizes and
+content types. One source bucket named `Merotalent` is absent in staging and
+contains no source objects; one staging-only resume object remains, reported
+by a key fingerprint rather than a private filename. This is not byte-hash,
+ACL, signed-access, or consistent-snapshot parity. The staging-only object is
+preserved pending classification.
+
+Both pre-change Neon backup branches (`br-withered-star-azkvampt` and
+`br-fancy-math-azietri1`) are ready and contain the expected pre-cleanup and
+pre-replay counts. Their parent branches have no expiration; their two
+temporary probe children expire October 20. Full staging database restore
+passed separately, but object-storage restore and divergent-write rollback
+remain untested. Temporary verification compute endpoints were removed.
+
+A Neon database connection URI was exposed in a local tool-error output.
+Treating it as compromised, the `neondb_owner` role passwords were rotated
+on migration-staging, the two backup parents, their probe children, and,
+after explicit user authorization, the Neon production branch. The local
+ignored `.migration.env` staging and Neon production URLs were updated
+without printing values and the rotated production connection passed a
+read-only connection test. Vercel Production lists only Supabase connection
+variables, no Neon database URL, so this containment did not change live
+application traffic. Recheck any separate, unmanaged consumers of the old
+Neon role password before relying on them; no credential is recorded here.
+
+No production data migration, commit, push, deployment, or traffic cutover
+occurred. The explicit production credential rotation above was the only
+production-branch mutation authorized for containment. Remaining gates:
+dedicated source PostgreSQL read-only export, verified account linking and
+recovery, storage bytes/ACL parity and empty-bucket disposition, remaining
+Supabase runtime replacements, authenticated cross-module UAT, eSewa sandbox
+settlement, and storage-inclusive restore/rollback rehearsal.
+
+Verification on this continuation: both source classification and batched
+table-digest reconciliation completed read-only; storage metadata inventory
+completed read-only; `node --check` passed for all three new/changed scripts;
+the read-only-query and storage utility tests passed **5/5**; the full
+standard suite passed **575/575** across 132 files; the isolated staging
+suite passed **23/23** across 12 files after credential rotation; typecheck
+and production build passed; lint completed with **0 errors / 52 existing
+warnings**; `git diff --check` passed. These checks do not prove the open
+identity, payment, storage-byte or cutover gates.
+
+## 2026-10-13 four-workstream execution continuation
+
+**Source/data:** `scripts/reconcile-neon-all-row-deltas.mjs` now checks the
+primary-key identity and per-row digest for all **80/80** shared source tables
+in one read-only source statement and one separate staging repeatable-read
+snapshot. No table lacked a comparable primary key. Exact comparison flags
+45 tables, chiefly because imported timestamps lost sub-millisecond
+precision. A safe column-hash diagnostic found a sampled badge differs only
+in `created_at` by about 0.00078 seconds; sampled institute/payment rows
+also differ in timestamp fields. After UTC millisecond normalization, five
+tables retain actual row/key differences: `audit_logs` (25 shared rows),
+`leads` (five shared rows plus 40 staging-only), `media_upload_intents`
+(one staging-only), `notifications` (two staging-only), and `profiles` (one
+shared row plus one staging-only). Target-only columns remain in events,
+event registrations, jobs and profiles. These exceptions require field and
+ownership classification before replay. Millisecond normalization is a
+diagnostic, **not** a claim that lost microseconds were restored. Source and
+staging snapshots are taken at different times, so final-delta reconciliation
+remains open. The dedicated source role still lacks safe `auth` schema USAGE;
+the project owner/Supabase support must grant that privilege to the existing
+read-only role or approve a project-scoped database-read-only API export with
+a documented consistency protocol. No administrator credential was used as
+a substitute for the gated full export.
+
+**Storage:** `scripts/reconcile-neon-storage-via-readonly-api.mjs
+--hash-bytes` used read-only source metadata and GET-only object downloads.
+All **22/22** source objects matched their Neon staging copy in actual byte
+length and SHA-256. The path-redacted, object-level manifest is
+`docs/neon-storage-byte-manifest-2026-10-13.json`. One empty source bucket
+(`Merotalent`) is absent in Neon, and one staging-only resume object remains
+preserved for classification. Source metadata and GETs are not atomic;
+private authorization, signed-download policy, post-restore integrity and
+new changes after extraction still require verification. No source object
+was changed.
+
+**Runtime:** `src/lib/server/neon-student-activity.ts` and
+`app/api/v1/neon-staging/student-activity/route.ts` now supply the existing
+student activity view from server-side, verified-session-scoped Neon queries
+across College, Jobs, Events and Mentorship. The browser hook uses that
+endpoint only in Neon staging; production retains its current Supabase path.
+The route exposes no user-ID selector, uses the linked actor ID for all four
+queries, and returns private/no-store data. Three route tests and one
+read-only real staging database test passed. The AST inventory still finds
+**109** non-test Supabase-importing files; dual-runtime production imports
+cannot be removed before an authorized cutover, and many active staging
+surfaces remain to migrate. This slice does not satisfy runtime elimination.
+
+**eSewa/UAT:** The official [ePay UAT documentation](https://developer.esewa.com.np/pages/Test-credentials)
+provides a public test merchant configuration. Before altering isolated
+staging, backup branch `br-wild-star-azyi8zeg` was created and verified
+ready (expires October 20). `scripts/configure-neon-staging-esewa-uat.mjs`
+then changed **only Neon migration-staging** from disabled/production-marked
+to enabled/UAT with an encrypted test secret; it audited the operator
+bootstrap and a second apply returned `NO_CHANGE`. The documented UAT status
+endpoint was reachable and returned `NOT_FOUND` for a no-charge probe.
+No checkout, signed return, actual sandbox settlement, fee/commission,
+callback, or subscription activation was exercised, so the payment acceptance
+gate remains **NOT TESTED** beyond configuration and connectivity.
+
+**Browser/recovery:** The agent-browser skill CLI is installed but has no
+active login; the available local in-app browser opened the isolated staging
+app and confirmed an unauthenticated `/dashboard` redirects to `/login`.
+The 104 source identities still have no verified Neon link, and designated
+QA staging credentials/session are unavailable. Authenticated QA role journeys
+were **NOT TESTED**; no email-only link or fabricated QA account was made.
+The earlier full staging database restore passed, but object-storage restore,
+private ACL verification and divergent-write rollback remain **NOT TESTED**.
+Production traffic and data were unchanged; no commit, push or deployment.
+
+Final verification for this batch: standard tests **578/578** across 133
+files; isolated staging tests **24/24** across 13 files, including the
+student-activity staging query; final typecheck and production build passed;
+lint completed with **0 errors and 52 existing warnings**; migration
+immutability check found three new migrations and no historical edits;
+`git diff --check` passed. The initial typecheck overlapped with Next.js
+regenerating `.next/types` and failed on missing generated files; it passed
+when rerun after the build. No authenticated QA browser or actual eSewa
+sandbox settlement was inferred from these checks.
+
+A further isolated `job-files` private-object probe passed: a 60-second
+signed download returned the expected synthetic bytes with HTTP 200 before
+expiry and HTTP 403 after 68 seconds; the probe object was deleted. This
+verifies one signed-URL expiry path, not the complete migrated-file ACL matrix
+or object-storage restore.
+
+## 2026-10-13 student account workflow continuation
+
+The staging onboarding wizard now uses the existing Neon own-profile PATCH
+and private PDF résumé upload/delete paths instead of browser Supabase writes.
+Profile completion is guarded by a nonblank full name, the verified-session
+linked profile, and strict server fields; the browser cannot submit a résumé
+object path. Student Settings now uses the same Neon profile path, a new
+linked-account preferences GET/PUT route, and the existing same-origin Managed
+Auth bridge for current-password-verified password changes. Legacy production
+branches remain untouched. Onboarding, preferences and password-bridge unit
+tests passed **8/8**; résumé/avatar focused tests passed **14/14**. This is
+code and mocked-route verification, not designated-QA browser acceptance.
+
+`scripts/classify-neon-five-row-deltas.mjs` performed a read-only field-hash
+classification. There are no source-only primary keys in the five tables.
+Staging-only keys: one audit log, 40 leads, one upload intent, two
+notifications and one profile. Shared-row semantic differences beyond the
+known imported timestamp precision: audit logs have 24 `new_data` and 11
+`old_data` differences; leads have five `payload` differences; notifications
+have four `deleted_at` differences; one profile has differing phone and
+location. The extra target-only `job_preferences` profile column is excluded
+from this comparison. Exact row IDs and private values were not printed.
+These could be legitimate staging actions, transformations or later source
+updates; no row was overwritten or deleted pending owner-level classification
+and a consistent final source snapshot. Timestamp microseconds remain lossy.
+
+Final revision checks for this continuation: standard suite **586/586**
+across 136 files; isolated staging suite **24/24** across 13 files; typecheck,
+production build, migration immutability and `git diff --check` passed.
+Lint: **0 errors / 52 pre-existing warnings**. The real staging database
+accepted a read-only query of the new preferences route's columns. The
+Supabase direct-import inventory remains **109 non-test files** (101 static,
+eight dynamic): these are retained legacy production branches and unresolved
+active paths, not evidence of runtime elimination. Authenticated designated-QA
+onboarding/settings/browser UAT, complete eSewa sandbox settlement, source
+Auth export/linking, private-file category matrix, storage restore and
+divergent-write rollback remain **NOT TESTED**. Production and deployment
+configuration were not changed; no commit, push or cutover occurred.
+
+The next complete staging runtime group is Super Admin notifications:
+`app/api/v1/neon-staging/admin/notifications/route.ts` now resolves recipients
+server-side, authorizes platform administrators, persists sends atomically,
+lists records and members, marks records read, and soft-removes records.
+`src/screens/admin/AdminNotifications.tsx` uses this route in Neon staging;
+the recipient inbox repository excludes soft-removed rows from lists, counts,
+cursors and read-state mutations. Legacy production behavior remains separate.
+Nine focused admin/recipient notification tests passed; a read-only real
+staging schema probe confirmed the required notification and role columns.
+Actual authenticated Super Admin browser sending and delivery are **NOT
+TESTED** pending verified QA identity/session access.
+
+`scripts/verify-neon-staging-object-restore.mjs --apply-staging` also passed
+an isolated storage rehearsal: it backed up all **23** current staging objects
+(including the preserved staging-only résumé), restored **8,552,331 bytes**
+into a fresh temporary staging bucket, verified each restored object's bytes,
+SHA-256, length and content type, then removed the temporary bucket. This
+proves same-service object restore mechanics, not cross-environment disaster
+recovery or private application ACLs. The source-to-staging **22/22** byte
+parity evidence remains separate.
+
+Final revision verification after both runtime groups: standard suite
+**590/590** across 137 files, isolated Neon staging suite **24/24** across
+13 files, typecheck, production build, migration immutability and
+`git diff --check` all passed. Lint stayed at **0 errors / 52 existing
+warnings**. No new migration was added in this continuation. Neither these
+checks nor the schema probes establish authenticated graphical UAT or remove
+the 109 remaining direct Supabase-import files.
+
+## 2026-10-13 Super Admin application and booking supervision continuation
+
+The College-applications and Mentor-bookings Super Admin screens now use
+isolated Neon staging API routes for their complete list/status operations:
+`app/api/v1/neon-staging/admin/college-applications/route.ts`,
+`app/api/v1/neon-staging/admin/mentor-bookings/route.ts`,
+`src/screens/admin/AdminApplications.tsx` and
+`src/screens/admin/AdminBookings.tsx`. The existing Supabase production
+branches remain unchanged. Both staging routes require a linked active
+Super Admin, recheck that role inside the SQL operation, reject cross-origin
+mutations, restrict update bodies to ID/status, and record status changes in
+the same transaction as an audit entry. College listings include the actual
+college name. Mentor-booking status supervision cannot manually confirm an
+unpaid booking; completion/no-show requires a confirmed paid or no-charge
+booking after its scheduled end, while paid cancellation is denied pending a
+verified refund path. Five focused tests cover authorization, malformed and
+cross-origin requests, payment-safe transitions and audit behavior. Both GET
+and PATCH SQL statements passed read-only `EXPLAIN` on isolated Neon staging,
+and their referenced columns were verified there. No write was executed by
+those probes. Authenticated QA browser operation
+and real status mutations were not exercised.
+
+`scripts/classify-neon-five-record-provenance.mjs` added a read-only,
+redacted owner/time/category classification. The one target-only audit row is
+the staging eSewa UAT configuration action (2026-10-13). The 40 target-only
+leads date from October 9–11: 21 job, 12 event, six mentor and one contact;
+39 owners are not in the 104-user source Auth inventory, while one is. The
+one target-only media intent is a `college_logo` action tied to a source Auth
+user (October 5). The two target-only queued contact notifications are tied
+to source Auth recipients (October 11). The one target-only profile is tied
+to an identity absent from source Auth (October 8). This evidence supports
+staging-specific activity, **not** automatic disposal: ownership and business
+intent for the one source-owned lead/media intent and notifications still need
+review. No records were deleted or overwritten. Shared audit JSON, five lead
+payloads, four notification deletion states, one profile phone/location and
+timestamp precision differences remain unresolved; separate source statements
+do not constitute a consistent source snapshot.
+
+Final checks after this implementation: standard suite **595/595** across
+139 files; isolated staging suite **24/24** across 13 files; typecheck and
+production build passed; lint **0 errors / 52 warnings**; migration
+immutability check found three new migrations with no historical edits;
+`git diff --check` passed. The direct-import inventory remains **109
+non-test files** (101 static, eight dynamic), including intentional legacy
+production branches and other unmigrated runtime groups. No migration was
+added in this batch. Source Auth remains **104 users / zero verified Neon
+links**, and designated QA sign-in is **not tested**. The dedicated source
+read-only PostgreSQL role still needs `USAGE` on `auth` and read-only `SELECT`
+on required Auth tables, or an owner-approved consistent export mechanism;
+the separate Management read-only API inventories users but cannot give a
+single transactionally consistent full export. Do not replace this with an
+administrator write credential. Next implementation target: other active
+Super Admin resource screens and the module-access request/payment lifecycle;
+then repeat full regression. eSewa sandbox settlement, complete private-file
+ACL matrix, cross-environment DB+storage restore, divergent-write rollback and
+authenticated browser UAT remain open. Production was not changed, and no
+commit, push, deployment or cutover occurred.
+
+## 2026-10-14 completion execution — integrated work in progress
+
+The read-only Management API provides an owner-authorized alternative to the
+missing dedicated source PostgreSQL connection. One PostgreSQL SELECT returned
+all **80 public tables / 2,173 rows**, **104 Auth users / 105 identities**, and
+**13 bucket / 22 object metadata records** from one MVCC statement snapshot at
+2026-10-13T23:08:41.8614Z. The connection reported
+`current_user=supabase_read_only_user` and `transaction_read_only=on`.
+`scripts/source-snapshot-artifact.mjs` retains the authenticated encrypted
+artifact under the local MeroTalent migration-artifacts directory (0700/0600);
+its key is in macOS Keychain. Neither hashes/passwords nor live tokens are
+exported as authentication credentials. This establishes a consistent DATA
+comparison point, not a schema backup or a final production write-freeze/delta.
+The dedicated PostgreSQL gate remains unchanged. Current Neon documentation
+requires users to reauthenticate/create a Managed account; Supabase password
+hash import is not a supported Managed Auth operation.
+
+Semantic comparison against that snapshot showed the former audit JSON and
+five lead payload differences are JSON representation differences, and four
+notification deletion timestamps have the same millisecond value. The only
+business change was one source-newer profile phone/location. Its two-field
+staging replay preserved unrelated columns, audited the source artifact, and
+an apply rerun changed **zero** profiles. The five compared tables now have
+zero unresolved source-shared business deltas and no source-only IDs; historical
+timestamp microseconds remain lossy. Staging-only fixture/activity records are
+preserved and remain explicitly outside source parity.
+
+Substantial runtime batches added secure Neon generic Super Admin CRUD for
+the existing resource registry and wired College/Job/Mentor/Event/Package
+forms, event auxiliary panels, platform AI drafts and common managed media.
+The source event schema additions were applied only to isolated staging using
+the existing parity script. Private media now checks real bytes, MIME/size,
+exact entity scope, intent ownership, persisted references and deletion rules.
+The module-access request lifecycle also now uses Neon: database-derived
+profile/contact, compatible package, actual private supporting documents,
+request history/cancellation/retry, authoritative Super Admin decision and
+explicit entity assignment. Its eSewa checkout kind is
+`module_access_request`; a provider-verified payment alone remains awaiting
+approval and cannot create scopes. New notification writes append durable
+events atomically. The root's updated real Neon/S3 rollback test uses a
+deterministic provider fixture through the actual callback/ledger, rather than
+manually marking the database payment successful. That test is application
+logic evidence, not external eSewa settlement.
+
+Checkout now reads the encrypted enabled UAT Provider Center configuration;
+the old separate staging-secret environment path was disconnected from the
+saved configuration. It also locks the verified identity/profile during
+initiation and expires overdue pending checkout rows before retry, preserving
+the partial unique index. Genuine mentor and event sandbox checkout forms
+were accepted by the official eSewa UAT site and displayed NPR 10/EPAYTEST.
+The site then showed **“This site is exceeding reCAPTCHA Enterprise free
+quota”**, with LOGIN disabled. Both provider cancellations returned to the
+application, persisted failed payments and cancelled/unconfirmed services,
+and duplicate returns did not change them. Forged success signatures were
+rejected with HTTP 400 and unchanged ledger states. No real charge or genuine
+sandbox successful settlement occurred. The one disposable browser-UAT
+fixture set was individually identified and removed using the staging guard
+and supported Neon Auth deletion CLI. The harness is
+`scripts/neon-staging-esewa-browser-uat.mjs`; interrupted cleanup is supported
+by `scripts/cleanup-neon-staging-esewa-uat.mjs`.
+
+Storage HTTP acceptance passed **155/155** real-session assertions over
+résumés, experience/training documents, payment proofs, chat and private event
+attachments. Actual signed bytes, anonymous/tampered reads, wrong actors,
+expired scopes/suspended access, referenced deletion and historical résumé
+preservation were tested; four synthetic Auth subjects and seven objects were
+cleaned. Combined recovery restored **99 tables / 2,338 rows / 23 objects /
+8,552,331 bytes** into disposable local PostgreSQL and an object archive with
+matching row/object fingerprints and MIME metadata. Interrupted and committed
+divergent writes were detected/restored; cleanup passed. Five historical job
+résumé paths are missing from source storage too (**zero source objects missed
+by migration**); records remain intact, authorized downloads return a truthful
+404 and do not substitute the applicant's current résumé. This is combined
+local recovery evidence; a second live Object Storage environment remains
+untested.
+
+Verified-source dual-session account recovery is implemented at
+`/account-recovery` and requires independently authenticated source and verified
+Managed sessions. Ban/deletion/inactive-profile/session-expiry/identity conflict
+checks preserve original application IDs and grants. Local ignored staging
+configuration now enables this explicit mode. **104 source users still require
+live ownership proof; zero verified source links and zero designated-QA target
+sign-ins**. No QA credential is configured locally, and none was changed or
+invented. The source-user recovery browser journeys remain untested.
+
+Super Admin dashboard metrics now use an identity-bound Neon snapshot and
+account/backend-specific browser cache; six report exports use the existing
+CSV/XLSX schemas with server-side Neon authorization, database date filters and
+human applicant/college/job fields. Focused root checks passed **11/11**;
+all six report queries ran on staging, and dashboard SQL passed read-only
+EXPLAIN. Module callback/approval/scope integration and College lifecycle
+focused staging tests passed. **Final full-suite/typecheck/build/lint/import
+inventory results will be recorded after the concurrent Companies/Advertisements,
+payment-supervision and remaining module-workspace batches finish.** No final
+regression result is claimed for this in-progress revision. Production, source
+writes, commit/push/deployment and cutover remain unchanged.
+
+### 2026-10-14 integrated runtime verification and browser follow-through
+
+The integrated tree now includes Neon billing supervision (`neon-admin-payments.ts`,
+AdminPayments/AdminSubscriptions and their staging endpoints), role workspaces
+(`neon-role-workspaces.ts`, RoleOwnerManagement and `/event-admin`), administrator
+directory/profile hydration (`neon-admin-directory.ts`), maintenance and leased
+email delivery (`neon-maintenance.ts`, `neon-email-queue.ts`), and guest College
+verification/admission/verified-session claiming (`neon-guest-college-verification.ts`).
+Events-only users have a dedicated scoped workspace; application-management feature
+aliases preserve authorized historical document downloads. Guest admission requires
+both independently verified contact channels, bound proofs and idempotent consumption;
+claiming requires a verified Managed email plus the guest token and current identity
+link, and does not create capabilities. Staging message delivery remains gated by
+explicit test-recipient allowlists. No real delivery is claimed from injected senders.
+
+The copied guest verification send table lacked its generated ID default. The guarded
+staging-only repair is `scripts/sql/neon-staging-guest-verification-send-identity.sql`.
+Its rollback integration test now exercises real persisted challenges, attempts,
+admission submission and claiming. This is not a production schema change.
+
+`lossless-snapshot-json.mjs` and `compare-source-snapshot-table.mjs` preserve exact
+large integers/decimals for all-table reconciliation. The consistent October 13
+snapshot comparison covered all 80 public tables: 79 shared business matches, one
+explicitly audited staging eSewa UAT configuration difference, zero unresolved shared
+business differences, zero source-only rows, and 49 preserved staging-only rows at
+that checkpoint. Historical microsecond loss remains documented. A second encrypted
+read-only source snapshot on October 14 also preserves catalog definitions: 367
+constraints, 177 indexes, 153 functions, 87 triggers, 390 policies, two views, two
+sequences, seven extensions and six enum labels. It contains the same 2,173 public
+rows, 104 users, 105 identities and 22 objects. This is an encrypted logical snapshot,
+not a physical backup, password-hash import, or final cutover delta.
+
+Fresh integrated checks: 168 standard test files / 733 tests passed after correcting
+one outdated résumé authorization adapter assertion; 21 isolated staging files / 33
+tests passed; typecheck and production build passed; lint had zero errors and 37
+warnings; migration immutability passed (three new migrations, no historical edits).
+The import inventory remains 110 files (102 static, eight dynamic), including retained
+legacy production branches. This count does not establish completed runtime parity.
+
+Authenticated local browser testing found the auth bridge removed Secure from
+__Secure-/__Host- cookies, which browsers can reject even when API cookie replay
+succeeds. The bridge now preserves their required Secure attribute and strips only
+provider Domain; regression cases cover localhost and HTTPS. Tailwind's animation
+plugin now uses an ESM import so Node 24 can load the local app. Final checks after
+the browser-discovered cookie change are pending below; prior results above must
+not be treated as final-revision evidence. Synthetic UAT identities remain separate
+from the 104 real source users. Their recovery ownership proofs, designated QA
+sign-ins, genuine successful eSewa settlement, second live object-store recovery,
+final source delta and authorized production cutover remain open.

@@ -48,6 +48,7 @@ const signedBucketByModule: Partial<Record<CollegeMediaModule, string>> = {
   event_attachment: "event-attachments",
   course_thumbnail: "course-media",
   advertisement: "ad-media",
+  company_logo: "profile-media",
   job_attachment: "job-files",
 };
 
@@ -216,6 +217,32 @@ export async function uploadSignedCollegeMedia(
   resourceId?: string | null,
 ): Promise<SignedMediaAsset> {
   const processedFile = await compressImage(file, module);
+  if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" &&
+      (module === "college_logo" || module === "college_cover") && resourceId) {
+    const form = new FormData();
+    form.set("kind", module === "college_logo" ? "logo" : "cover");
+    form.set("file", processedFile);
+    const response = await fetch(`/api/v1/neon-staging/college-workspaces/${encodeURIComponent(resourceId)}/media`, {
+      method: "POST", credentials: "same-origin", body: form,
+    });
+    const payload = await response.json().catch(() => ({})) as {
+      data?: { bucket?: string; path?: string; publicUrl?: string }; error?: string;
+    };
+    if (!response.ok || !payload.data?.path || !payload.data?.publicUrl) {
+      throw new Error(payload.error || "College image could not be uploaded.");
+    }
+    return { bucket: payload.data.bucket || "college-media", path: payload.data.path,
+      publicUrl: payload.data.publicUrl, fileName: processedFile.name, contentType: processedFile.type };
+  }
+  if(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging"){
+    if(!resourceId)throw new Error("Save the listing before uploading its media.");
+    const form=new FormData();form.set("module",module);form.set("resourceId",resourceId);form.set("file",processedFile);
+    const response=await fetch("/api/v1/neon-staging/media",{method:"POST",credentials:"same-origin",body:form});
+    const payload=await response.json().catch(()=>({})) as {data?:SignedMediaAsset;error?:{message?:string}};
+    if(!response.ok||!payload.data?.path||payload.data.bucket!==signedBucketByModule[module])
+      throw new Error(payload.error?.message||"The file upload failed.");
+    return payload.data;
+  }
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
 

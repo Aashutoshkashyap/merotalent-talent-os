@@ -130,6 +130,7 @@ const APP_STATUS_TABS: readonly AppStatusTab[] = [
  * request, not just that filter.
  */
 const UNCLAIMED_WORKSPACE_ID = "unclaimed-workspace";
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -272,6 +273,30 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsSubmittingClaim(true);
     try {
+      if (isNeonStaging) {
+        if (claimType === "claim" && (!selectedClaimCollege || selectedClaimCollege.name !== claimCollegeName)) {
+          throw new Error("Choose a college from the matching directory list before submitting a claim.");
+        }
+        const response = await fetch("/api/v1/neon-staging/college-scopes", {
+          method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: claimType === "claim" ? "claim" : "create",
+            collegeId: claimType === "claim" ? selectedClaimCollege?.id : undefined,
+            name: claimType === "list_new" ? claimCollegeName : undefined,
+            phone: claimPhone, email: claimEmail, description: claimNotes,
+            reason: claimType === "claim"
+              ? `Claim request for ${claimCollegeName}. Phone: ${claimPhone}. Email: ${claimEmail}. Notes: ${claimNotes}`
+              : `Request to add ${claimCollegeName} to the directory. ${claimNotes}`,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "College request could not be saved.");
+        toast({ title: "Request submitted", description: "Super Admin can now review your college request." });
+        setIsClaimModalOpen(false); setClaimCollegeName(""); setSelectedClaimCollege(null);
+        setClaimPhone(""); setClaimEmail(""); setClaimNotes("");
+        void fetchInstituteData();
+        return;
+      }
       let requestError: any = null;
       if (claimType === "claim") {
         if (!selectedClaimCollege || selectedClaimCollege.name !== claimCollegeName) {
@@ -403,6 +428,54 @@ const InstituteDashboard = () => {
     if (!user) return;
     setIsLoading(true);
     setFailedSources([]);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/college-workspaces", { credentials: "same-origin", cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "College workspace could not load.");
+        const workspaces = payload.data.workspaces as Array<InstituteData & {
+          subscription_active: boolean; subscription_status: string | null; payment_status: string | null;
+          package_name: string | null; lead_access_mode: string | null; expiry_date: string | null;
+          effectively_verified: boolean;
+        }>;
+        const requests = payload.data.requests as CollegeScopeRequest[];
+        setScopeRequests(requests);
+        setManagedInstitutes(workspaces.map(row => ({ ...row, is_verified: row.effectively_verified })));
+        const selected = workspaces.find(row => row.id === selectedInstituteId) || workspaces[0];
+        setInstitute(selected ? { ...selected, is_verified: selected.effectively_verified } : null);
+        setAccess(selected ? { can_edit_profile: selected.subscription_active,
+          can_manage_courses: selected.subscription_active, can_post_notices: selected.subscription_active } : null);
+        setSubscription(selected ? {
+          packageName: selected.package_name || "No package", status: selected.subscription_status || "expired",
+          paymentStatus: selected.payment_status || "pending", leadAccessMode: selected.lead_access_mode || "none",
+          expiryDate: selected.expiry_date, active: selected.subscription_active,
+        } : emptySubscription);
+        setAccessStatus(payload.data.capability ? "approved"
+          : requests.some(row => row.status === "pending") ? "pending" : "none");
+        if (selected?.subscription_active) {
+          const [noticesResult, leadsResult] = await Promise.allSettled([
+            fetch(`/api/v1/neon-staging/college-workspaces/${selected.id}/notices`, { credentials: "same-origin", cache: "no-store" })
+              .then(async response => { if (!response.ok) throw new Error("Notices unavailable"); return (await response.json()).data as NoticePreview[]; }),
+            fetch(`/api/v1/neon-staging/institutes/${selected.id}/applications`, { credentials: "same-origin", cache: "no-store" })
+              .then(async response => { if (!response.ok) throw new Error("Applications unavailable"); return (await response.json()).data as ApplicationPreview[]; }),
+          ]);
+          const notices = noticesResult.status === "fulfilled" ? noticesResult.value : [];
+          const leads = leadsResult.status === "fulfilled" ? leadsResult.value : [];
+          setRecentNotices(notices.slice(0, 4)); setRecentApplications(leads);
+          setStats({ notices: notices.length, courses: countCourses(selected.courses_offered), applications: leads.length });
+          setFailedSources([noticesResult.status === "rejected" ? "notices" : "",
+            leadsResult.status === "rejected" ? "college applications" : ""].filter(Boolean));
+        } else {
+          setRecentNotices([]); setRecentApplications([]);
+          setStats({ notices: 0, courses: selected ? countCourses(selected.courses_offered) : 0, applications: 0 });
+          setFailedSources([]);
+        }
+      } catch (error) {
+        setFailedSources(["college workspace"]);
+        toast({ variant: "destructive", title: "College workspace unavailable", description: error instanceof Error ? error.message : "Please retry." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const db = supabase as any;
     const failures = new Set<string>();
 
@@ -556,6 +629,18 @@ const InstituteDashboard = () => {
   const handleUpdateAppStatus = async (appId: string, newStatus: CollegeApplicationStatus) => {
     setUpdatingAppId(appId);
     try {
+      if (isNeonStaging) {
+        if (!institute) throw new Error("Select a college first.");
+        const response = await fetch(`/api/v1/neon-staging/institutes/${institute.id}/applications`, {
+          method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: appId, status: newStatus }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Could not update status.");
+        toast({ title: "Status Updated", description: `Application marked as "${collegeApplicationStatusLabel(newStatus)}".` });
+        void fetchInstituteData();
+        return;
+      }
       // supabase-js resolves with an `error` field instead of throwing, so this
       // must be inspected explicitly or failed writes report success.
       const { error } = await (supabase as any)
@@ -1132,7 +1217,7 @@ const InstituteDashboard = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle>Recent Notices</CardTitle>
                   <Button asChild variant="ghost" size="sm">
-                    <Link to="/institute/notices">View All</Link>
+                    <Link to={`/institute/notices?college=${encodeURIComponent(activeInstitute.id)}`}>View All</Link>
                   </Button>
                 </div>
               </CardHeader>
@@ -1143,7 +1228,7 @@ const InstituteDashboard = () => {
                     <p>No notices posted yet</p>
                     {access?.can_post_notices && (
                       <Button asChild variant="link">
-                        <Link to="/institute/notices?new=1">Post your first notice</Link>
+                        <Link to={`/institute/notices?college=${encodeURIComponent(activeInstitute.id)}&new=1`}>Post your first notice</Link>
                       </Button>
                     )}
                   </div>
@@ -1152,7 +1237,7 @@ const InstituteDashboard = () => {
                     {recentNotices.map((notice) => (
                       <Link
                         key={notice.id}
-                        to="/institute/notices"
+                        to={`/institute/notices?college=${encodeURIComponent(activeInstitute.id)}`}
                         className="flex items-start justify-between gap-3 rounded-xl bg-[#fff8f3] p-3 transition-colors hover:bg-[#fff1e8]"
                       >
                         <span className="min-w-0">

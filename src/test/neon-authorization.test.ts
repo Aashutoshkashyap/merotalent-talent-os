@@ -24,6 +24,14 @@ describe("Neon authorization boundary", () => {
     } as never, db)).rejects.toMatchObject({ status: 401 });
   });
 
+  it("denies deactivated application profiles even when their Managed Auth session is still valid", async () => {
+    const db: NeonQueryExecutor = { query: async () => [{ account_status: "deactivated",
+      deleted_at: null, roles: ["talent"], permissions: [] }] as never };
+    await expect(requireAuthenticatedUser({ legacyUserId: student.userId,
+      neonAuthUserId: "20000000-0000-4000-8000-000000000002", linkVerified: true }, db))
+      .rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
+  });
+
   it("does not elevate students to platform administrators", () => {
     expect(() => requireSuperAdmin(student)).toThrow();
     expect(() => requirePermission(student, "user.manage")).toThrow();

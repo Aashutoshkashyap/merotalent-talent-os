@@ -72,6 +72,7 @@ const emptyData: StudentActivityData = {
   eventRegistrations: [],
   mentorBookings: [],
 };
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -149,6 +150,23 @@ export const useStudentActivity = () => {
 
     setError(null);
     try {
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/student-activity", {
+          credentials: "same-origin", cache: "no-store",
+        });
+        if (!response.ok) throw new Error("Student activity could not be loaded.");
+        const payload = await response.json() as { data?: StudentActivityData };
+        const nextData = payload.data;
+        if (!nextData || !Array.isArray(nextData.collegeApplications)
+          || !Array.isArray(nextData.jobApplications)
+          || !Array.isArray(nextData.eventRegistrations)
+          || !Array.isArray(nextData.mentorBookings)) {
+          throw new Error("Student activity response was invalid.");
+        }
+        setData(nextData);
+        setCachedActivityData(user.id, nextData);
+        return;
+      }
       const [collegeResult, jobResult, eventResult, bookingResult] = await Promise.all([
         (supabase as any)
           .from("college_applications")

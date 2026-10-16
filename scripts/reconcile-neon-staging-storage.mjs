@@ -4,22 +4,28 @@ import fs from "node:fs";
 import dotenv from "dotenv";
 import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
-import { S3Client, GetObjectCommand, HeadObjectCommand, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, HeadObjectCommand, ListBucketsCommand } from "@aws-sdk/client-s3";
+import { parseReadOnlySourceConfig, verifyReadOnlySource } from "./require-supabase-source-readonly.mjs";
+import { compareStorageObjectInventory, listAllBucketObjects } from "./storage-reconciliation-utils.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
-const sourceUrl = new URL(process.env.SUPABASE_DATABASE_URL || "postgresql://invalid@invalid");
+const sourceConfig = parseReadOnlySourceConfig(process.env.SUPABASE_SOURCE_READONLY_DATABASE_URL,
+  process.env.SUPABASE_SOURCE_EXPECTED_POOLER_HOST,
+  process.env.SUPABASE_SOURCE_READONLY_ROLE);
 const endpoint = process.env.AWS_ENDPOINT_URL_S3;
-if (sourceUrl.hostname !== "db.dtirpilgzlsfryucanlg.supabase.co" ||
-    endpoint !== "https://br-frosty-haze-azsnybmr.storage.c-3.ap-southeast-1.aws.neon.tech") {
-  throw new Error("Source or storage endpoint is not the approved branch.");
+if (endpoint !== "https://br-frosty-haze-azsnybmr.storage.c-3.ap-southeast-1.aws.neon.tech") {
+  throw new Error("Storage endpoint is not the approved staging branch.");
 }
-const source = new pg.Client({ connectionString: sourceUrl.toString(), options: "-c default_transaction_read_only=on" });
+const source = new pg.Client(sourceConfig);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY,
   { auth: { persistSession: false, autoRefreshToken: false } });
 const s3 = new S3Client({ endpoint, region: process.env.AWS_REGION || "ap-southeast-1", forcePathStyle: true,
   credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY } });
 try {
   await source.connect();
+  await source.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  await source.query("SET LOCAL statement_timeout = '30s'");
+  await verifyReadOnlySource(source, process.env.SUPABASE_SOURCE_READONLY_ROLE);
   const [buckets, objects] = await Promise.all([
     source.query("SELECT id, public FROM storage.buckets ORDER BY id"),
     source.query(`SELECT bucket_id,name,(metadata->>'size')::bigint AS size,
@@ -53,16 +59,18 @@ try {
       byteAndHashMatch: sourceBytes.length === targetBytes.length && sourceSha256 === targetSha256,
       contentTypeMatch: object.content_type === head.ContentType });
   }
-  let targetObjectCount = 0, targetTotalBytes = 0;
+  const targetObjects = [];
   for (const bucket of targetBuckets) {
-    const list = await s3.send(new ListObjectsV2Command({ Bucket: bucket }));
-    targetObjectCount += list.Contents?.length ?? 0;
-    targetTotalBytes += list.Contents?.reduce((n, object) => n + (object.Size || 0), 0) ?? 0;
+    targetObjects.push(...await listAllBucketObjects(s3, bucket));
   }
+  const inventory = compareStorageObjectInventory(objects.rows, targetObjects);
+  const targetTotalBytes = targetObjects.reduce((sum, object) => sum + object.size, 0);
   const report = {
-    at: new Date().toISOString(), sourceHost: sourceUrl.hostname, stageEndpoint: endpoint,
+    at: new Date().toISOString(), sourceHost: sourceConfig.host, stageEndpoint: endpoint,
     sourceBuckets: buckets.rows, targetBuckets,
-    sourceObjects: objects.rows.length, targetObjects: targetObjectCount,
+    sourceObjects: objects.rows.length, targetObjects: targetObjects.length,
+    missingTargetObjects: inventory.missingTargetObjects,
+    extraTargetObjects: inventory.extraTargetObjects,
     sourceBytes: checks.reduce((n,o) => n+o.sourceBytes,0), targetBytes:targetTotalBytes,
     matchingObjects: checks.filter(c => c.byteAndHashMatch).length,
     matchingContentTypes: checks.filter(c => c.contentTypeMatch).length,
@@ -72,6 +80,10 @@ try {
   console.log(JSON.stringify({sourceBuckets:report.sourceBuckets.length,targetBuckets:report.targetBuckets.length,
     missingBuckets:report.sourceBuckets.map(b=>b.id).filter(id=>!targetBuckets.includes(id)),
     sourceObjects:report.sourceObjects,targetObjects:report.targetObjects,
+    missingTargetObjects:report.missingTargetObjects,extraTargetObjects:report.extraTargetObjects,
     sourceBytes:report.sourceBytes,targetBytes:report.targetBytes,
     matchingObjects:report.matchingObjects,matchingContentTypes:report.matchingContentTypes},null,2));
-} finally { await source.end().catch(()=>{}); }
+} finally {
+  await source.query("ROLLBACK").catch(() => {});
+  await source.end().catch(() => {});
+}

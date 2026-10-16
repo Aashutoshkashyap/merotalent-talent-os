@@ -36,26 +36,32 @@ const ownActiveLink = `
 export async function listOwnNotifications(
   actor: NeonActor,
   db: NeonQueryExecutor = neonQueryExecutor,
-): Promise<{ notifications: NeonNotification[]; unreadCount: number }> {
+  beforeId: string | null = null,
+): Promise<{ notifications: NeonNotification[]; unreadCount: number; nextCursor: string | null }> {
   const [result] = await db.query<NotificationResult>(`
     WITH access AS (SELECT ${ownActiveLink} AS allowed),
     recent AS (
       SELECT n.id, n.title, n.message, n.type, n.category, n.is_read,
              n.action_url, n.created_at
       FROM public.notifications n, access a
-      WHERE a.allowed AND n.recipient_id = $1::uuid
-      ORDER BY n.created_at DESC, n.id DESC LIMIT 50
+      WHERE a.allowed AND n.recipient_id = $1::uuid AND n.deleted_at IS NULL
+        AND ($3::uuid IS NULL OR (n.created_at,n.id) < (
+          SELECT cursor.created_at,cursor.id FROM public.notifications cursor
+          WHERE cursor.id=$3::uuid AND cursor.recipient_id=$1::uuid AND cursor.deleted_at IS NULL))
+      ORDER BY n.created_at DESC, n.id DESC LIMIT 51
     )
     SELECT access.allowed,
       COALESCE((SELECT jsonb_agg(to_jsonb(r) ORDER BY r.created_at DESC, r.id DESC)
                 FROM recent r), '[]'::jsonb) AS notifications,
       (SELECT count(*)::int FROM public.notifications n
-       WHERE access.allowed AND n.recipient_id = $1::uuid AND n.is_read = false) AS unread_count
-    FROM access`, [actor.userId, actor.neonAuthUserId]);
+       WHERE access.allowed AND n.recipient_id = $1::uuid AND n.is_read = false AND n.deleted_at IS NULL) AS unread_count
+    FROM access`, [actor.userId, actor.neonAuthUserId, beforeId]);
   if (!result?.allowed) {
     throw new NeonAuthorizationError(403, "IDENTITY_NOT_LINKED", "The identity link is inactive.");
   }
-  return { notifications: result.notifications, unreadCount: result.unread_count };
+  const notifications = result.notifications.slice(0, 50);
+  return { notifications, unreadCount: result.unread_count,
+    nextCursor: result.notifications.length > 50 ? notifications[notifications.length - 1].id : null };
 }
 
 /** Atomic recipient/link check and mutation, including a revoked-link race. */
@@ -66,8 +72,22 @@ export async function markOwnNotificationsRead(
 ): Promise<number> {
   const rows = await db.query<{ id: string }>(`
     UPDATE public.notifications n SET is_read = true
-    WHERE n.recipient_id = $1::uuid AND n.is_read = false
+    WHERE n.recipient_id = $1::uuid AND n.is_read = false AND n.deleted_at IS NULL
       AND ($3::uuid IS NULL OR n.id = $3::uuid)
+      AND ${ownActiveLink}
+    RETURNING n.id`, [actor.userId, actor.neonAuthUserId, notificationId]);
+  return rows.length;
+}
+
+/** One recipient can restore an individual notification to unread. */
+export async function markOwnNotificationUnread(
+  actor: NeonActor,
+  notificationId: string,
+  db: NeonQueryExecutor = neonQueryExecutor,
+): Promise<number> {
+  const rows = await db.query<{ id: string }>(`
+    UPDATE public.notifications n SET is_read = false
+    WHERE n.recipient_id = $1::uuid AND n.id = $3::uuid AND n.is_read = true AND n.deleted_at IS NULL
       AND ${ownActiveLink}
     RETURNING n.id`, [actor.userId, actor.neonAuthUserId, notificationId]);
   return rows.length;

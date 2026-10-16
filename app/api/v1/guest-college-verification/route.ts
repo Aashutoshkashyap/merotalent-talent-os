@@ -1,4 +1,5 @@
 import { jsonApiResponse } from "@/lib/server/api-response";
+import { getBackendMode } from "@/lib/server/backend-mode";
 import {
   checkGuestVerification,
   GuestVerificationError,
@@ -14,6 +15,10 @@ export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   const respond = (status: number, data: unknown, code?: string, message?: string) =>
     jsonApiResponse({ data, error: code ? { code, message: message || "Verification failed." } : null, meta: { requestId } }, status);
+
+  if (getBackendMode() === "neon-staging" && request.headers.get("origin") !== new URL(request.url).origin) {
+    return respond(403, null, "CROSS_ORIGIN_WRITE_DENIED", "Submit verification from this website.");
+  }
 
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
     return respond(415, null, "UNSUPPORTED_MEDIA_TYPE", "Send verification requests as JSON.");

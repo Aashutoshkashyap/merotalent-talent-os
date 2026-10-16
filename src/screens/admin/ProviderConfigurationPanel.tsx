@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 type ProviderKind = "payment" | "ai" | "email";
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 type Status = { providerName: string | null; enabled: boolean; configured: boolean; secretStorageReady: boolean; publicConfig: Record<string, unknown> };
 type ProviderConfigurationPanelProps = {
   kind: ProviderKind;
@@ -32,8 +33,9 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
   const token = async () => (await supabase.auth.getSession()).data.session?.access_token;
   useEffect(() => {
     const load = async () => {
-      const accessToken = await token(); if (!accessToken) return;
-      const response = await fetch(`/api/v1/admin/providers/${kind}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+      const accessToken = isNeonStaging ? null : await token(); if (!isNeonStaging && !accessToken) return;
+      const response = await fetch(`${isNeonStaging ? "/api/v1/neon-staging" : "/api/v1"}/admin/providers/${kind}`,
+        { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}, credentials: "same-origin", cache: "no-store" });
       if (!response.ok) return;
       const payload = await response.json() as { data?: Status };
       if (!payload.data) return;
@@ -46,8 +48,8 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
   }, [kind, defaultProvider]);
 
   const save = async () => {
-    const accessToken = await token();
-    if (!accessToken) {
+    const accessToken = isNeonStaging ? null : await token();
+    if (!isNeonStaging && !accessToken) {
       toast({ variant: "destructive", title: `${title} not saved`, description: "Sign in again before saving provider settings." });
       return;
     }
@@ -74,8 +76,9 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
     setSaving(true);
     try {
       const publicConfig = kind === "ai" ? { model: modelOrIdentifier } : kind === "payment" ? { merchant_code: merchantCode, environment } : { from_address: modelOrIdentifier };
-      const response = await fetch(`/api/v1/admin/providers/${kind}`, {
-        method: "PUT", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      const response = await fetch(`${isNeonStaging ? "/api/v1/neon-staging" : "/api/v1"}/admin/providers/${kind}`, {
+        method: "PUT", credentials: "same-origin",
+        headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), "Content-Type": "application/json" },
         body: JSON.stringify({ providerName, enabled, publicConfig, ...(trimmedSecret ? { secret: trimmedSecret } : {}) }),
       });
       const payload = await response.json() as { data?: Status; error?: { message?: string } };

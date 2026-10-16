@@ -14,69 +14,48 @@ function localStagingConfig(): Record<string, string> {
 describe("Neon staging Jobs module end-to-end integration suite", () => {
   let studentA: NeonActor;
   let studentB: NeonActor;
-  let recruiterActor: NeonActor;
-  let isConfigured = false;
 
   beforeAll(async () => {
     const config = localStagingConfig();
     if (!config.NEON_STAGING_DATABASE_URL) {
-      console.warn("Skipping Neon staging test: NEON_STAGING_DATABASE_URL not configured.");
-      return;
+      throw new Error("NEON_STAGING_DATABASE_URL is required for staging Jobs tests.");
     }
     process.env.MEROTALENT_BACKEND_MODE = "neon-staging";
     process.env.NEON_STAGING_DATABASE_URL = config.NEON_STAGING_DATABASE_URL;
     process.env.NEON_STAGING_BRANCH_ID = NEON_MIGRATION_STAGING_BRANCH_ID;
     getNeonDatabaseConfig();
 
-    try {
-      const users = await queryRows<{ user_id: string }>(`
-        SELECT user_id FROM public.profiles
-        WHERE account_status = 'active' AND deleted_at IS NULL
-        ORDER BY user_id LIMIT 2`);
+    const linked = await queryRows<{ legacy_user_id: string; neon_auth_user_id: string }>(`
+      SELECT a.legacy_user_id, l.neon_auth_user_id
+      FROM public.neon_identity_links l
+      JOIN public.neon_application_accounts a ON a.id = l.application_account_id
+      JOIN public.profiles p ON p.user_id = a.legacy_user_id
+      WHERE l.status = 'verified' AND a.status = 'active'
+        AND p.account_status = 'active' AND p.deleted_at IS NULL
+      LIMIT 1`);
+    if (!linked[0]) throw new Error("A verified synthetic staging identity is required.");
+    const other = await queryRows<{ user_id: string }>(`
+      SELECT user_id FROM public.profiles WHERE user_id <> $1::uuid
+        AND account_status = 'active' AND deleted_at IS NULL LIMIT 1`, [linked[0].legacy_user_id]);
+    if (!other[0]) throw new Error("A separate staging profile is required for isolation tests.");
 
-      const admins = await queryRows<{ user_id: string }>(`
-        SELECT ur.user_id FROM public.user_roles ur
-        JOIN public.profiles p ON p.user_id = ur.user_id
-        WHERE ur.role IN ('admin', 'super_admin') AND p.account_status = 'active'
-        LIMIT 1`);
-
-      if (users.length >= 2) {
-        studentA = {
-          userId: users[0].user_id,
-          neonAuthUserId: "MOCK_NEON_AUTH_STUDENT_A",
-          roles: ["talent"],
-          permissions: [],
-          platformAdmin: false,
-        };
-        studentB = {
-          userId: users[1].user_id,
-          neonAuthUserId: "MOCK_NEON_AUTH_STUDENT_B",
-          roles: ["talent"],
-          permissions: [],
-          platformAdmin: false,
-        };
-        recruiterActor = {
-          userId: admins[0]?.user_id ?? users[0].user_id,
-          neonAuthUserId: "MOCK_NEON_AUTH_RECRUITER",
-          roles: ["admin", "super_admin"],
-          permissions: ["*"],
-          platformAdmin: true,
-        };
-        isConfigured = true;
-      }
-    } catch (err) {
-      console.warn("Neon staging database unavailable for test:", err);
-    }
+    studentA = {
+      userId: linked[0].legacy_user_id,
+      neonAuthUserId: linked[0].neon_auth_user_id,
+      roles: ["talent"], permissions: [], platformAdmin: false,
+    };
+    studentB = {
+      userId: other[0].user_id,
+      neonAuthUserId: "00000000-0000-4000-8000-000000000001",
+      roles: ["talent"], permissions: [], platformAdmin: false,
+    };
   });
 
   afterAll(async () => {
-    if (isConfigured) {
-      await getPool().end();
-    }
+    await getPool().end();
   });
 
   it("1. Public job discovery: searches and lists published jobs with company details", async () => {
-    if (!isConfigured) return;
     const client = await getPool().connect();
     try {
       await client.query("BEGIN");
@@ -109,7 +88,6 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
   });
 
   it("2. Student employment profile & preferences: reads, updates, and matches jobs", async () => {
-    if (!isConfigured) return;
     const client = await getPool().connect();
     try {
       await client.query("BEGIN");
@@ -141,7 +119,6 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
   });
 
   it("3. Saved jobs: saves, reads own bookmarks, and unsaves", async () => {
-    if (!isConfigured) return;
     const client = await getPool().connect();
     try {
       await client.query("BEGIN");
@@ -159,6 +136,12 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
       // Save job
       const saveRes = await saveJob(studentA, jobId, db);
       expect(saveRes.saved).toBe(true);
+      await expect(saveJob(studentB, jobId, db))
+        .rejects.toMatchObject({ code: "JOB_SAVE_DENIED" });
+      const foreignBookmarks = await client.query<{ count: number }>(`
+        SELECT count(*)::int AS count FROM public.saved_jobs
+        WHERE user_id=$1::uuid AND job_id=$2::uuid`, [studentB.userId, jobId]);
+      expect(foreignBookmarks.rows[0].count).toBe(0);
 
       // Unsave job
       const unsaveRes = await unsaveJob(studentA, jobId, db);
@@ -170,10 +153,12 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
   });
 
   it("4. Applications, review, and timeline: submits application, computes match, updates status, records events", async () => {
-    if (!isConfigured) return;
     const client = await getPool().connect();
     try {
       await client.query("BEGIN");
+      await client.query(`UPDATE public.profiles SET full_name='Staging Jobs Candidate',
+        email='neon-jobs-candidate@example.com', phone='9800000000'
+        WHERE user_id=$1::uuid`, [studentA.userId]);
       const repo = new NeonJobsRepository({ query: (sql, p) => client.query(sql, [...p]).then((r) => r.rows) });
 
       const seed = await client.query<{ id: string; title: string }>(`
@@ -207,6 +192,20 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
       expect(app.status).toBe("submitted");
       expect(app.skills_match_score).toBeGreaterThanOrEqual(40);
 
+      await expect(repo.submitJobApplication(studentB, {
+        jobId: testJob.id, fullName: "Forged", email: "forged@example.com", phone: "9800000000",
+      }, client)).rejects.toMatchObject({ code: "IDENTITY_NOT_LINKED" });
+      const applicationCount = await client.query<{ count: number }>(`
+        SELECT count(*)::int AS count FROM public.job_applications WHERE job_id=$1::uuid`, [testJob.id]);
+      expect(applicationCount.rows[0].count).toBe(1);
+
+      await expect(repo.reviewApplication(studentB, {
+        id: app.id, status: "offered", notes: "Unauthorized change",
+      }, client)).rejects.toMatchObject({ status: 403 });
+      const unchanged = await client.query<{ status: string }>(`
+        SELECT status FROM public.job_applications WHERE id=$1::uuid`, [app.id]);
+      expect(unchanged.rows[0].status).toBe("submitted");
+
       // Duplicate submission rejected
       await expect(
         repo.submitJobApplication(
@@ -230,8 +229,12 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
       expect(otherApps.some((a) => a.id === app.id)).toBe(false);
 
       // Recruiter reviews and schedules interview
+      await client.query(`INSERT INTO public.user_roles(user_id,role)
+        SELECT $1::uuid,'super_admin' WHERE NOT EXISTS (
+          SELECT 1 FROM public.user_roles WHERE user_id=$1::uuid AND role='super_admin')`, [studentA.userId]);
+      const temporaryAdmin: NeonActor = { ...studentA, roles: ["super_admin"], platformAdmin: true };
       const reviewed = await repo.reviewApplication(
-        recruiterActor,
+        temporaryAdmin,
         {
           id: app.id,
           status: "interview_scheduled",
@@ -246,6 +249,12 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
 
       expect(reviewed.status).toBe("interview_scheduled");
       expect(reviewed.interview_location).toBe("Google Meet");
+      await expect(repo.reviewApplication(temporaryAdmin, {
+        id: app.id, status: "submitted",
+      }, client)).rejects.toMatchObject({ code: "INVALID_APPLICATION_TRANSITION" });
+      const [stillScheduled] = (await client.query<{ status: string }>(`
+        SELECT status FROM public.job_applications WHERE id=$1::uuid`, [app.id])).rows;
+      expect(stillScheduled.status).toBe("interview_scheduled");
 
       // Candidate sees scheduled interview in calendar
       const interviews = await repo.getStudentInterviews(studentA);
@@ -256,6 +265,72 @@ describe("Neon staging Jobs module end-to-end integration suite", () => {
         query: (sql, p) => client.query(sql, [...p]).then((r) => r.rows),
       });
       expect(events.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      await client.query("ROLLBACK");
+      client.release();
+    }
+  });
+
+  it("5. A scoped recruiter sees and changes only the assigned company's applications", async () => {
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
+      const [existingCompany] = (await client.query<{ id: string }>(`
+        SELECT id FROM public.companies ORDER BY id LIMIT 1`)).rows;
+      expect(existingCompany).toBeDefined();
+      const [otherOwner] = (await client.query<{ user_id: string }>(`
+        SELECT p.user_id FROM public.profiles p
+        WHERE p.user_id <> $1::uuid
+          AND NOT EXISTS (SELECT 1 FROM public.companies c WHERE c.user_id=p.user_id)
+        LIMIT 1`, [studentA.userId])).rows;
+      expect(otherOwner).toBeDefined();
+      const [otherCompany] = (await client.query<{ id: string }>(`
+        INSERT INTO public.companies(user_id,name)
+        VALUES ($1::uuid,'Neon Jobs Isolation Company') RETURNING id`, [otherOwner.user_id])).rows;
+      const [ownJob] = (await client.query<{ id: string }>(`
+        INSERT INTO public.jobs(company_id,title,status,approval_status,is_active)
+        VALUES ($1::uuid,'Scoped Jobs UAT','published','approved',true) RETURNING id`, [existingCompany.id])).rows;
+      const [foreignJob] = (await client.query<{ id: string }>(`
+        INSERT INTO public.jobs(company_id,title,status,approval_status,is_active)
+        VALUES ($1::uuid,'Foreign Jobs UAT','published','approved',true) RETURNING id`, [otherCompany.id])).rows;
+      const [ownApplication] = (await client.query<{ id: string }>(`
+        INSERT INTO public.job_applications(job_id,user_id,status,full_name,email)
+        VALUES ($1::uuid,$2::uuid,'submitted','Staging Candidate','candidate@example.com') RETURNING id`,
+        [ownJob.id, studentB.userId])).rows;
+      const [foreignApplication] = (await client.query<{ id: string }>(`
+        INSERT INTO public.job_applications(job_id,user_id,status,full_name,email)
+        VALUES ($1::uuid,$2::uuid,'submitted','Staging Candidate','candidate@example.com') RETURNING id`,
+        [foreignJob.id, studentB.userId])).rows;
+      const [capability] = (await client.query<{ id: string }>(`
+        INSERT INTO public.user_module_capabilities(user_id,capability_id,status)
+        SELECT $1::uuid,id,'active' FROM public.module_capabilities WHERE module_key='jobs'
+        ON CONFLICT (user_id,capability_id) DO UPDATE SET status='active'
+        RETURNING id`, [studentA.userId])).rows;
+      await client.query(`INSERT INTO public.entity_admin_assignments
+        (user_id,user_capability_id,entity_type,entity_id,status)
+        VALUES ($1::uuid,$2::uuid,'company',$3::uuid,'active')
+        ON CONFLICT (user_capability_id,entity_type,entity_id) DO UPDATE SET status='active'`,
+        [studentA.userId, capability.id, existingCompany.id]);
+      await client.query(`INSERT INTO public.module_entitlements
+        (user_id,module_key,entity_type,entity_id,source,status,features)
+        VALUES ($1::uuid,'jobs','company',$2::uuid,'ADMIN_MANUAL','active',
+                '{"job_applications":true}'::jsonb)`, [studentA.userId, existingCompany.id]);
+      const repo = new NeonJobsRepository({ query: (sql, p) => client.query(sql, [...p]).then(r => r.rows) });
+      const own = await repo.listRecruiterApplications(studentA, ownJob.id);
+      expect(own.some(item => item.id === ownApplication.id)).toBe(true);
+      expect(own.some(item => item.id === foreignApplication.id)).toBe(false);
+      await expect(repo.listRecruiterApplications(studentA, foreignJob.id))
+        .rejects.toMatchObject({ status: 403 });
+      await expect(repo.reviewApplication(studentA, {
+        id: foreignApplication.id, status: 'screening',
+      }, client)).rejects.toMatchObject({ status: 403 });
+      const [unchanged] = (await client.query<{ status: string }>(`
+        SELECT status FROM public.job_applications WHERE id=$1::uuid`, [foreignApplication.id])).rows;
+      expect(unchanged.status).toBe('submitted');
+      const reviewed = await repo.reviewApplication(studentA, {
+        id: ownApplication.id, status: 'screening',
+      }, client);
+      expect(reviewed.status).toBe('screening');
     } finally {
       await client.query("ROLLBACK");
       client.release();

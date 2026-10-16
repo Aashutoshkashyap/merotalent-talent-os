@@ -6,7 +6,9 @@ export default defineConfig({
     environment: "node",
     globals: true,
     setupFiles: [],
-    include: ["src/test/neon-jobs-staging.test.ts", "src/test/neon-modules-e2e.test.ts"],
+    fileParallelism: false,
+    testTimeout: 30_000,
+    include: ["src/test/neon-*-staging.test.ts", "src/test/neon-modules-e2e.test.ts"],
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },

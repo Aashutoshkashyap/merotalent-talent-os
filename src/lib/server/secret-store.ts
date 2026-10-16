@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-import { ServerConfigurationError } from "./supabase";
+import { ServerConfigurationError } from "./server-configuration-error";
 
 export interface EncryptedSecret {
   ciphertext: string;

@@ -82,7 +82,13 @@ export class EsewaV2PaymentProvider implements PaymentProvider {
     return { status: "failed", provider: this.name, message: "Use the eSewa signed return verification flow." };
   }
 
-  async lookupStatus(input: { reference: string; amount: number; fetcher?: typeof fetch }) {
+  async lookupStatus(input: { reference: string; amount: number; fetcher?: typeof fetch; strict: true }): Promise<{
+    status: "successful" | "failed" | "cancelled" | "pending" | "refunded" | "expired"; transactionId: string;
+  }>;
+  async lookupStatus(input: { reference: string; amount: number; fetcher?: typeof fetch }): Promise<{
+    status: "successful" | "failed" | "cancelled" | "pending"; transactionId: string;
+  }>;
+  async lookupStatus(input: { reference: string; amount: number; fetcher?: typeof fetch; strict?: boolean }) {
     const url = new URL(ESEWA_ENDPOINTS[this.configuration.environment].status);
     url.searchParams.set("product_code", this.configuration.merchantCode);
     url.searchParams.set("total_amount", formatAmount(input.amount));
@@ -97,6 +103,7 @@ export class EsewaV2PaymentProvider implements PaymentProvider {
     }
     const body = await response.json() as Record<string, unknown>;
     const status = typeof body.status === "string" ? body.status.toUpperCase() : "";
+    if (input.strict && body.product_code !== this.configuration.merchantCode) throw new Error("eSewa verification merchant code did not match checkout.");
     // eSewa may return the amount as a string or number; compare after parsing both as floats
     const returnedAmount = Number(body.total_amount ?? body.totalAmount);
     const returnedReference = String(body.transaction_uuid ?? body.pid ?? "");
@@ -104,10 +111,15 @@ export class EsewaV2PaymentProvider implements PaymentProvider {
     // Allow a tiny float tolerance (eSewa rounds to 2dp)
     if (Math.abs(returnedAmount - input.amount) > 0.01) throw new Error("eSewa verification amount did not match the checkout order.");
     return {
-      status: status === "COMPLETE" ? "successful" as const
+      status: !input.strict ? (status === "COMPLETE" ? "successful" as const
         : status === "CANCELED" ? "cancelled" as const
         : status === "PENDING" ? "pending" as const
-        : "failed" as const,
+        : "failed" as const)
+        : status === "COMPLETE" ? "successful" as const
+        : status === "CANCELED" ? "cancelled" as const
+        : status === "NOT_FOUND" ? "expired" as const
+        : status === "FULL_REFUND" || status === "PARTIAL_REFUND" ? "refunded" as const
+        : "pending" as const,
       transactionId: String(body.ref_id ?? body.refId ?? body.transaction_code ?? input.reference),
     };
   }

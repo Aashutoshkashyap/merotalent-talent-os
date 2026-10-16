@@ -54,12 +54,14 @@ const isValidLinkedInProfileUrl = (value: string) => {
 
 const Profile = () => {
   const { user, profile, refreshProfile } = useAuth();
+  const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [userSkills, setUserSkills] = useState<string[]>([]);
+  const [skillsText, setSkillsText] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [educationHistory, setEducationHistory] = useState<EducationEntry[]>([]);
   const [experienceHistory, setExperienceHistory] = useState<ExperienceEntry[]>([]);
@@ -89,17 +91,20 @@ const Profile = () => {
       setEducationHistory(Array.isArray(profile.education_history) ? profile.education_history as EducationEntry[] : []);
       setExperienceHistory(Array.isArray(profile.experience_history) ? profile.experience_history as ExperienceEntry[] : []);
       setCertifications(Array.isArray(profile.certifications) ? profile.certifications as CertificationEntry[] : []);
+      if (isStaging) setSkillsText(Array.isArray(profile.skills) ? profile.skills.join(", ") : "");
     }
     fetchSkills();
     fetchUserSkills();
   }, [profile]);
 
   const fetchSkills = async () => {
+    if (isStaging) return;
     const { data } = await supabase.from("skills").select("*");
     if (data) setSkills(data);
   };
 
   const fetchUserSkills = async () => {
+    if (isStaging) return;
     if (!profile?.user_id) return;
     const { data } = await supabase
       .from("user_skills")
@@ -121,6 +126,29 @@ const Profile = () => {
     }
 
     setIsLoading(true);
+    if (isStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/profile", {
+          method: "PATCH", credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            linkedin_url: formData.linkedin_url.trim() || null,
+            education: formData.education.trim() || [educationHistory[0]?.degree, educationHistory[0]?.field].filter(Boolean).join(" in ") || null,
+            education_history: educationHistory.filter((item) => item.institution.trim() || item.degree.trim()),
+            experience_history: experienceHistory.filter((item) => item.organization.trim() || item.role.trim()),
+            certifications: certifications.filter((item) => item.name.trim() || item.issuer.trim()),
+            skills: [...new Set(skillsText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean))],
+          }),
+        });
+        if (!response.ok) throw new Error(`Profile save failed (${response.status}).`);
+        await refreshProfile();
+        toast({ title: "Profile updated!" });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Update failed", description: error instanceof Error ? error.message : "Please try again." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const { error } = await (supabase as any)
       .from("profiles")
       .upsert({
@@ -167,6 +195,16 @@ const Profile = () => {
 
     setIsUploading(true);
     try {
+      if (isStaging) {
+        const form = new FormData(); form.set("file", file);
+        const response = await fetch("/api/v1/neon-staging/profile/avatar", {
+          method: "POST", credentials: "same-origin", body: form,
+        });
+        if (!response.ok) throw new Error(`Photo upload failed (${response.status}). Use an AVIF, JPG, PNG or WebP image up to 5 MB.`);
+        await refreshProfile();
+        toast({ title: "Photo updated!" });
+        return;
+      }
       const fileExt = file.name.split('.').pop();
       const filePath = `${targetUserId}/avatar_${Date.now()}.${fileExt}`;
 
@@ -230,6 +268,23 @@ const Profile = () => {
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
+    if (isStaging) {
+      setIsUploading(true);
+      try {
+        const form = new FormData(); form.set("file", file);
+        const response = await fetch("/api/v1/neon-staging/resume", {
+          method: "POST", credentials: "same-origin", body: form,
+        });
+        if (!response.ok) throw new Error(`Resume upload failed (${response.status}). Use a PDF up to 5 MB.`);
+        setResumeFile(file);
+        await refreshProfile();
+        toast({ title: "Resume uploaded!" });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Upload failed", description: error instanceof Error ? error.message : "Please try again." });
+      } finally { setIsUploading(false); }
+      return;
+    }
 
     if (file.size > 5 * 1024 * 1024) {
       toast({
@@ -308,6 +363,20 @@ const Profile = () => {
     }
 
     setIsImporting(true);
+    if (isStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/profile", {
+          method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ linkedin_url: formData.linkedin_url }),
+        });
+        if (!response.ok) throw new Error(`Could not save URL (${response.status}).`);
+        await refreshProfile();
+        toast({ title: "LinkedIn profile linked!" });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Could not link LinkedIn", description: error instanceof Error ? error.message : "Please try again." });
+      } finally { setIsImporting(false); }
+      return;
+    }
     const { error } = await supabase
       .from("profiles")
       .update({ linkedin_url: formData.linkedin_url })
@@ -507,11 +576,41 @@ const Profile = () => {
                           <span className="text-sm">
                             {resumeFile?.name || "Resume uploaded"}
                           </span>
+                          {isStaging && (
+                            <>
+                              <Button type="button" variant="outline" size="sm" onClick={async () => {
+                                const path = profile?.resume_url;
+                                if (!path) return;
+                                try {
+                                  const response = await fetch(`/api/v1/neon-staging/resume?path=${encodeURIComponent(path)}`, { credentials: "same-origin" });
+                                  const result = await response.json();
+                                  if (!response.ok || !result?.data?.signedUrl) throw new Error("Resume could not be opened.");
+                                  window.open(result.data.signedUrl, "_blank", "noopener,noreferrer");
+                                } catch (error) {
+                                  toast({ variant: "destructive", title: "Download failed", description: error instanceof Error ? error.message : "Please try again." });
+                                }
+                              }}>View PDF</Button>
+                              <label className="cursor-pointer text-xs font-semibold text-primary">
+                                Replace PDF
+                                <input type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleResumeUpload} disabled={isUploading} />
+                              </label>
+                            </>
+                          )}
                           <Button 
                             type="button"
                             variant="ghost" 
                             size="sm"
-                            onClick={() => setResumeFile(null)}
+                            onClick={async () => {
+                              if (!isStaging) { setResumeFile(null); return; }
+                              try {
+                                const response = await fetch("/api/v1/neon-staging/resume", { method: "DELETE", credentials: "same-origin" });
+                                if (!response.ok) throw new Error(`Could not delete resume (${response.status}).`);
+                                setResumeFile(null); await refreshProfile();
+                                toast({ title: "Resume removed" });
+                              } catch (error) {
+                                toast({ variant: "destructive", title: "Delete failed", description: error instanceof Error ? error.message : "Please try again." });
+                              }
+                            }}
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -520,7 +619,7 @@ const Profile = () => {
                         <label className="cursor-pointer">
                           <input
                             type="file"
-                            accept=".pdf,.doc,.docx"
+                            accept={isStaging ? ".pdf" : ".pdf,.doc,.docx"}
                             onChange={handleResumeUpload}
                             className="hidden"
                             disabled={isUploading}
@@ -528,7 +627,7 @@ const Profile = () => {
                           <div className="space-y-2">
                             <FileText className="w-8 h-8 text-muted-foreground mx-auto" />
                             <p className="text-sm text-muted-foreground">
-                              {isUploading ? "Uploading..." : "Click to upload PDF, DOC (max 5MB)"}
+                              {isUploading ? "Uploading..." : isStaging ? "Click to upload PDF (max 5MB)" : "Click to upload PDF, DOC (max 5MB)"}
                             </p>
                           </div>
                         </label>
@@ -655,6 +754,13 @@ const Profile = () => {
             <CardDescription>Select your skills and expertise</CardDescription>
           </CardHeader>
           <CardContent>
+            {isStaging ? (
+              <div className="space-y-2">
+                <Label htmlFor="employment-skills">Skills (comma-separated)</Label>
+                <Textarea id="employment-skills" value={skillsText} onChange={(event) => setSkillsText(event.target.value)} placeholder="e.g. React, project management" />
+                <p className="text-xs text-muted-foreground">Use Save Changes above to update your employment skills.</p>
+              </div>
+            ) : (
             <div className="flex flex-wrap gap-2">
               {skills.map((skill) => (
                 <Badge
@@ -672,6 +778,7 @@ const Profile = () => {
                 </p>
               )}
             </div>
+            )}
           </CardContent>
         </Card>
       </div>

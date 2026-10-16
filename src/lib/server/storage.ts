@@ -23,7 +23,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { requireNeonStaging } from "./backend-mode";
 import { getNeonConfig } from "@/lib/neon/neon-config";
 
-import { ServerConfigurationError } from "./supabase";
+import { ServerConfigurationError } from "./server-configuration-error";
 
 // ---------------------------------------------------------------------------
 // Client singleton

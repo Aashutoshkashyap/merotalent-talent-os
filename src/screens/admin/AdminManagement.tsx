@@ -94,6 +94,17 @@ const AdminManagement = () => {
     setIsLoading(true);
     setError(null);
 
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/administrators", { credentials: "same-origin", cache: "no-store" });
+        const body = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(body?.data)) throw new Error(body?.error || "Administrators could not be loaded.");
+        setAdmins(body.data as AdminRecord[]);
+      } catch (error) { setAdmins([]); setError(error instanceof Error ? error.message : "Administrators unavailable."); }
+      finally { setIsLoading(false); }
+      return;
+    }
+
     const { data: roleRows, error: rolesError } = await supabase
       .from("user_roles")
       .select("id, user_id, role, created_at")
@@ -195,15 +206,16 @@ const AdminManagement = () => {
               </div>
               <DialogTitle>Owner-side provisioning required</DialogTitle>
               <DialogDescription className="text-left leading-6">
-                This client application does not have a secure server-side
-                administrator invite endpoint, so it cannot safely create an
-                Auth user or claim that an invitation was sent.
+                Full administrator access must be provisioned through the trusted owner workflow.
+                Ordinary module assignments cannot grant platform-wide authority.
               </DialogDescription>
             </DialogHeader>
 
             <ol className="space-y-3 pt-2" aria-label="Administrator provisioning steps">
               {[
-                "Create or invite the identity from the owning Supabase project or another trusted server-side admin workflow.",
+                process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging"
+                  ? "Authenticate the Neon Managed Auth identity and complete verified ownership linking before assigning authority."
+                  : "Create or invite the identity from the owning Supabase project or another trusted server-side admin workflow.",
                 "Confirm that the Auth identity has a matching profile row with the correct user ID.",
                 "Assign the admin role in user_roles through an audited, authorized workflow, then refresh this page.",
               ].map((step, index) => (

@@ -3,23 +3,29 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import dotenv from "dotenv";
 import pg from "pg";
+import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import { parseReadOnlySourceConfig, verifyReadOnlySource } from "./require-supabase-source-readonly.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
-const sourceUrl = new URL(process.env.SUPABASE_DATABASE_URL || "postgresql://invalid@invalid");
-const stageUrl = new URL(process.env.NEON_STAGING_DATABASE_URL || "postgresql://invalid@invalid");
-if (sourceUrl.hostname !== "db.dtirpilgzlsfryucanlg.supabase.co" ||
-    stageUrl.hostname !== "ep-wispy-credit-azt6tgwj-pooler.c-3.ap-southeast-1.aws.neon.tech") {
-  throw new Error("Reconciliation targets are not the approved source and isolated staging database.");
-}
-const source = new pg.Client({ connectionString: sourceUrl.toString(), options: "-c default_transaction_read_only=on" });
-const stage = new pg.Client({ connectionString: stageUrl.toString(), options: "-c default_transaction_read_only=on" });
+const sourceConfig = parseReadOnlySourceConfig(process.env.SUPABASE_SOURCE_READONLY_DATABASE_URL,
+  process.env.SUPABASE_SOURCE_EXPECTED_POOLER_HOST,
+  process.env.SUPABASE_SOURCE_READONLY_ROLE);
+const stageDatabaseUrl = process.env.NEON_STAGING_DATABASE_URL;
+requireNeonMigrationStaging(stageDatabaseUrl);
+const source = new pg.Client(sourceConfig);
+const stage = new pg.Client({ connectionString: stageDatabaseUrl, connectionTimeoutMillis: 10000 });
 const canonicalHash = rows => crypto.createHash("sha256").update(rows.map(row => {
   const sorted = {};
   for (const key of Object.keys(row).sort()) sorted[key] = row[key] instanceof Date ? row[key].toISOString() : row[key];
   return JSON.stringify(sorted);
 }).join("\n")).digest("hex");
 try {
-  await Promise.all([source.connect(), stage.connect()]);
+  await source.connect();
+  await source.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  await source.query("SET LOCAL statement_timeout = '30s'");
+  await verifyReadOnlySource(source, process.env.SUPABASE_SOURCE_READONLY_ROLE);
+  await stage.connect();
+  await stage.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
   const tables = (await source.query(`SELECT table_name FROM information_schema.tables
     WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name`)).rows.map(r => r.table_name);
   const stageTables = (await stage.query(`SELECT table_name FROM information_schema.tables
@@ -46,7 +52,7 @@ try {
     (SELECT count(*)::int FROM pg_policies WHERE schemaname='public') AS policies,
     (SELECT count(*)::int FROM pg_views WHERE schemaname='public') AS views`;
   const report = {
-    at: new Date().toISOString(), sourceHost: sourceUrl.hostname, stageHost: stageUrl.hostname,
+    at: new Date().toISOString(), sourceHost: sourceConfig.host, stageHost: new URL(stageDatabaseUrl).hostname,
     sourceTables: tables.length, stageTables: stageTables.length,
     sourceRows: reconciliation.reduce((n,r) => n+r.sourceRows,0),
     stageRows: reconciliation.reduce((n,r) => n+r.stageRows,0),
@@ -61,4 +67,8 @@ try {
     matchedTables:report.matchedTables,sourceSchemaObjects:report.sourceSchemaObjects,
     stageSchemaObjects:report.stageSchemaObjects,
     mismatchedTables:reconciliation.filter(r=>!r.match).map(r=>r.table)},null,2));
-} finally { await Promise.all([source.end().catch(()=>{}),stage.end().catch(()=>{})]); }
+} finally {
+  await source.query("ROLLBACK").catch(() => undefined);
+  await stage.query("ROLLBACK").catch(() => undefined);
+  await Promise.all([source.end().catch(()=>{}), stage.end().catch(()=>{})]);
+}

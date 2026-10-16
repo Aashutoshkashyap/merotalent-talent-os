@@ -20,7 +20,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
-import { supabase } from "@/integrations/supabase/client";
+
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 interface FeatureConfig {
   title: string;
@@ -136,18 +137,24 @@ export default function ComingSoonPage({ moduleKey }: ComingSoonPageProps) {
 
     setIsSubmitting(true);
     try {
-      // contact_queries is the only table an anonymous visitor may insert into
-      // ("Anyone can submit contact queries", WITH CHECK (true)). notifications
-      // requires a NOT NULL recipient_id and admits admins only, so every
-      // signup written there was silently rejected.
-      const { error } = await (supabase as any).from("contact_queries").insert({
+      const query = {
         name: email.trim().split("@")[0],
         email: email.trim().toLowerCase(),
         subject: `Early access request — ${config.badge}`,
         message: `Requested early access to ${config.badge} from the coming-soon page.`,
-      });
-
-      if (error) throw error;
+      };
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/contact-queries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(query),
+        });
+        if (!response.ok) throw new Error("The request could not be saved. Please try again.");
+      } else {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { error } = await supabase.from("contact_queries").insert(query);
+        if (error) throw error;
+      }
 
       setIsSubscribed(true);
       toast({

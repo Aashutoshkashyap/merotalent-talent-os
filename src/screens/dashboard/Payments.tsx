@@ -47,7 +47,9 @@ type Plan = {
 type Scope = { id: string; module: string; entityType: string; entityId: string };
 type Entitlement = { id: string; module_key: string; entity_type: string; entity_id: string; package_name: string | null; source: string; status: string; expires_at: string | null; features: Record<string, boolean> | null };
 type Checkout = { id: string; package_id: string; provider_name: string; status: string; expires_at: string | null; created_at: string };
-type Overview = { plans: Plan[]; scopes: Scope[]; entitlements: Entitlement[]; checkouts: Checkout[] };
+type CollegeRequest = { id: string; status: string; payment_status: string; entity_id: string | null; college_name: string; request_kind: string };
+type Overview = { plans: Plan[]; scopes: Scope[]; entitlements: Entitlement[]; checkouts: Checkout[];
+  collegeRequests?: CollegeRequest[]; payments?: Transaction[] };
 
 type PaymentProofRecord = {
   id: string;
@@ -82,9 +84,10 @@ type Transaction = {
 };
 
 const moduleLabel = (value: string) => ({ college: "College", jobs: "Jobs", mentor: "Mentorship", events: "Events" }[value] ?? value);
-const moduleWorkspacePath = (value: string) => ({ college: "/institute", jobs: "/company", events: "/company", mentor: "/mentor" }[value] ?? "/dashboard");
+const moduleWorkspacePath = (value: string) => ({ college: "/institute", jobs: "/company", events: "/event-admin", mentor: "/mentor" }[value] ?? "/dashboard");
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat("en-NP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(new Date(value)) : "No expiry";
 const featureLabel = (feature: string) => feature.replaceAll("_", " ").replaceAll(".", " · ");
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 const txnStatusColor = (status: string) => {
   switch (status) {
@@ -130,6 +133,7 @@ export default function Payments() {
   const [processing, setProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedScopeId, setSelectedScopeId] = useState("");
+  const [requestPlanIds, setRequestPlanIds] = useState<Record<string, string>>({});
 
   // Exception / Payment Proof Modal State
   const [proofTxn, setProofTxn] = useState<Transaction | null>(null);
@@ -139,23 +143,37 @@ export default function Payments() {
   const [isSubmittingProof, setIsSubmittingProof] = useState<boolean>(false);
 
   // Determine if user is a student (no admin scopes/plans)
-  const isStudentView = overview.scopes.length === 0 && overview.plans.length === 0;
+  const isStudentView = overview.scopes.length === 0 && !(overview.collegeRequests?.some(row => row.status === "pending" || row.status === "approved"));
 
   const load = useCallback(async () => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    if (!token) return;
+    const token = isNeonStaging ? null : (await supabase.auth.getSession()).data.session?.access_token;
+    if (!isNeonStaging && !token) return;
     setLoading(true);
     try {
-      const response = await fetch("/api/v1/payments/overview", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+      const response = await fetch("/api/v1/payments/overview", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}, credentials: "same-origin", cache: "no-store",
+      });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error?.message || "Billing details could not be loaded.");
       setOverview(payload.data);
+      if (isNeonStaging) {
+        setTransactions(payload.data.payments || []);
+        const proofResponse = await fetch("/api/v1/neon-staging/payments/proofs", {
+          credentials: "same-origin", cache: "no-store",
+        });
+        const proofBody = await proofResponse.json();
+        if (!proofResponse.ok) throw new Error(proofBody.error || "Payment proofs could not load.");
+        const proofMap = new Map<string, PaymentProofRecord>();
+        for (const proof of proofBody.data as PaymentProofRecord[]) proofMap.set(proof.payment_id, proof);
+        setProofs(proofMap);
+      }
     } catch (error) {
       toast({ variant: "destructive", title: "Billing is unavailable", description: error instanceof Error ? error.message : "Please try again." });
     } finally { setLoading(false); }
   }, [toast]);
 
   const loadTransactions = useCallback(async () => {
+    if (isNeonStaging) { setTxnLoading(false); return; }
     if (!user) return;
     setTxnLoading(true);
     try {
@@ -260,6 +278,22 @@ export default function Payments() {
 
     setIsSubmittingProof(true);
     try {
+      if (isNeonStaging) {
+        const form = new FormData();
+        form.set("paymentId", proofTxn.id);
+        form.set("file", proofFile);
+        form.set("proofType", proofType);
+        form.set("note", proofNote.trim());
+        const response = await fetch("/api/v1/neon-staging/payments/proofs", {
+          method: "POST", credentials: "same-origin", body: form,
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Payment proof was not saved.");
+        toast({ title: "Payment evidence submitted", description: "Super Admin review does not itself confirm payment." });
+        setProofTxn(null); setProofFile(null); setProofNote("");
+        void load();
+        return;
+      }
       const fileExt = proofFile.name.split(".").pop()?.toLowerCase() || "png";
       const cleanFileName = proofFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const storagePath = `${user.id}/${Date.now()}_${cleanFileName}`;
@@ -310,6 +344,11 @@ export default function Payments() {
 
   const beginCheckout = async () => {
     if (!selectedPlan || !selectedScope) return;
+    if (isNeonStaging) {
+      toast({ variant: "destructive", title: "Renewal checkout unavailable",
+        description: "Use a College access request below. Existing-scope renewal is not yet migrated to Neon staging." });
+      return;
+    }
     const token = (await supabase.auth.getSession()).data.session?.access_token;
     if (!token) return;
     setProcessing(true);
@@ -325,6 +364,28 @@ export default function Payments() {
       postToCheckout(checkout.checkoutUrl, checkout.checkoutFields);
     } catch (error) {
       toast({ variant: "destructive", title: "Checkout was not started", description: error instanceof Error ? error.message : "No subscription was activated." });
+      setProcessing(false);
+    }
+  };
+
+  const beginCollegeRequestCheckout = async (request: CollegeRequest) => {
+    const planId = requestPlanIds[request.id];
+    if (!planId) return;
+    setProcessing(true);
+    try {
+      const response = await fetch("/api/v1/neon-staging/payments/checkout", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "college_scope_request", targetId: request.id, packageId: planId,
+          renewal: request.status === "approved" && request.payment_status === "success" }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Checkout could not be created.");
+      const checkout = payload.data as { checkoutUrl?: string; checkoutFields?: Record<string, string> };
+      if (!checkout.checkoutUrl || !checkout.checkoutFields) throw new Error("eSewa checkout is unavailable.");
+      postToCheckout(checkout.checkoutUrl, checkout.checkoutFields);
+    } catch (cause) {
+      toast({ variant: "destructive", title: "Checkout was not started",
+        description: cause instanceof Error ? cause.message : "No access was activated." });
       setProcessing(false);
     }
   };
@@ -460,6 +521,33 @@ export default function Payments() {
       </Card>
 
       {/* Module access (entitlements) — shown for all users */}
+      {isNeonStaging && !!overview.collegeRequests?.length && (
+        <Card className="rounded-3xl border-slate-200/80 shadow-2xs">
+          <CardHeader><CardTitle>College access requests</CardTitle>
+            <CardDescription>Payment alone does not grant access. Super Admin approval and verified eSewa settlement are both required.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {overview.collegeRequests.map(request => (
+              <div key={request.id} className="rounded-2xl border border-slate-200 p-4">
+                <p className="font-semibold text-slate-900">{request.college_name}</p>
+                <p className="mt-1 text-xs text-slate-500">{request.request_kind === "claim" ? "Claim" : "Add College"} · Review: {request.status} · Payment: {request.payment_status}</p>
+                {["pending", "approved"].includes(request.status) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Select value={requestPlanIds[request.id] || ""} onValueChange={value => setRequestPlanIds(current => ({ ...current, [request.id]: value }))}>
+                      <SelectTrigger className="max-w-xs"><SelectValue placeholder="Choose a College plan" /></SelectTrigger>
+                      <SelectContent>{overview.plans.filter(plan => plan.module_scope?.includes("college") && Number(plan.price) > 0).map(plan =>
+                        <SelectItem key={plan.id} value={plan.id}>{plan.name} · {plan.currency} {Number(plan.price).toLocaleString("en-NP")}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Button disabled={!requestPlanIds[request.id] || processing} onClick={() => void beginCollegeRequestCheckout(request)}>
+                      {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}{request.payment_status === "success" ? "Renew with eSewa" : "Continue to eSewa"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
       <Card className="rounded-3xl border-slate-200/80 shadow-2xs">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg"><Receipt className="h-5 w-5 text-[#0073e6]" />Your effective module access</CardTitle>
@@ -487,7 +575,7 @@ export default function Payments() {
       </Card>
 
       {/* Available packages — only show for admin/entity-scoped users, not students */}
-      {!isStudentView && (
+      {!isStudentView && !isNeonStaging && (
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-black tracking-tight text-slate-900">Available service packages</h2>

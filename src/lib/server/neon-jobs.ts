@@ -3,7 +3,7 @@
  * Enforces active profiles, verified identity links, entity scope, and atomic state transitions.
  */
 import type { PoolClient, QueryResultRow } from "pg";
-import { queryRows, withTransaction } from "./db";
+import { withTransaction } from "./db";
 import {
   NeonAuthorizationError,
   neonQueryExecutor,
@@ -13,6 +13,26 @@ import {
 } from "./neon-authorization";
 import { appendNotificationEvent } from "./neon-application-events";
 import { calculateJobMatch, type JobPreferences } from "../jobs/job-matching";
+import { assertMediaObjectPath } from "./media-policy";
+import { headObject } from "./storage";
+import { requireRoleWorkspaceAccess } from "./neon-role-workspaces";
+
+export async function requireApplicationRead(actor: NeonActor, type: "company" | "job", id: string, db: NeonQueryExecutor = neonQueryExecutor) {
+  for (const feature of ["job_applications", "application_management", "lead_viewing"]) {
+    try { await requireEntityAccess(actor, "jobs", type, id, feature, db); return; }
+    catch (error) { if (!(error instanceof NeonAuthorizationError && error.code === "ENTITY_ACCESS_REQUIRED")) throw error; }
+  }
+  throw new NeonAuthorizationError(403, "ENTITY_ACCESS_REQUIRED", "Active application access is required.");
+}
+
+const currentLinkedProfile = `EXISTS (
+  SELECT 1 FROM public.profiles p
+  JOIN public.neon_application_accounts account ON account.legacy_user_id = p.user_id
+    AND account.status = 'active'
+  JOIN public.neon_identity_links link ON link.application_account_id = account.id
+    AND link.neon_auth_user_id = $2::uuid AND link.status = 'verified'
+  WHERE p.user_id = $1::uuid AND p.account_status = 'active' AND p.deleted_at IS NULL
+)`;
 
 export interface PublicJobRow extends QueryResultRow {
   id: string;
@@ -97,6 +117,8 @@ export interface SubmitApplicationInput {
   education?: Array<Record<string, unknown>>;
   experience?: Array<Record<string, unknown>>;
   certifications?: Array<Record<string, unknown>>;
+  experienceLetterUrl?: string;
+  trainingDocumentUrl?: string;
 }
 
 export interface ReviewApplicationInput {
@@ -109,6 +131,21 @@ export interface ReviewApplicationInput {
   interviewType?: "in_person" | "online" | "phone" | "other";
 }
 
+const allowedJobTransitions: Record<string, readonly string[]> = {
+  submitted: ["screening", "follow_up", "shortlisted", "interview", "interview_scheduled", "offered", "rejected", "withdrawn"],
+  screening: ["follow_up", "shortlisted", "interview", "interview_scheduled", "offered", "rejected"],
+  follow_up: ["screening", "shortlisted", "interview", "interview_scheduled", "offered", "rejected"],
+  shortlisted: ["follow_up", "interview", "interview_scheduled", "offered", "rejected"],
+  interview: ["interview_scheduled", "offered", "rejected", "follow_up"],
+  interview_scheduled: ["interview", "offered", "rejected", "follow_up"],
+  offered: ["confirmed", "rejected"],
+  confirmed: [], rejected: [], withdrawn: [],
+};
+
+export function canTransitionJobApplication(current: string, next: string): boolean {
+  return current === next || !!allowedJobTransitions[current]?.includes(next);
+}
+
 export class NeonJobsRepository {
   constructor(private readonly db: NeonQueryExecutor = neonQueryExecutor) {}
 
@@ -116,6 +153,7 @@ export class NeonJobsRepository {
     search?: string;
     location?: string;
     jobType?: string;
+    category?: string;
     limit?: number;
     offset?: number;
   } = {}): Promise<PublicJobRow[]> {
@@ -124,6 +162,7 @@ export class NeonJobsRepository {
     const searchFilter = params.search?.trim() ? `%${params.search.trim().toLowerCase()}%` : null;
     const locationFilter = params.location?.trim() ? `%${params.location.trim().toLowerCase()}%` : null;
     const typeFilter = params.jobType?.trim() || null;
+    const categoryFilter = params.category?.trim() || null;
 
     const rows = await this.db.query<PublicJobRow>(`
       SELECT j.id, j.company_id, j.title, j.description, j.status, j.approval_status,
@@ -138,8 +177,9 @@ export class NeonJobsRepository {
         AND ($1::text IS NULL OR lower(j.title) LIKE $1 OR lower(coalesce(j.description, '')) LIKE $1)
         AND ($2::text IS NULL OR lower(coalesce(j.location, '')) LIKE $2)
         AND ($3::text IS NULL OR j.job_type = $3)
+        AND ($6::text IS NULL OR j.category = $6)
       ORDER BY j.created_at DESC
-      LIMIT $4 OFFSET $5`, [searchFilter, locationFilter, typeFilter, limit, offset]);
+      LIMIT $4 OFFSET $5`, [searchFilter, locationFilter, typeFilter, limit, offset, categoryFilter]);
 
     return rows.map((row) => ({
       ...row,
@@ -195,10 +235,11 @@ export class NeonJobsRepository {
         approval_status: string;
         is_active: boolean;
         application_deadline: Date | null;
+        expires_at: Date | null;
       }>(`
         SELECT id, title, company_id, location, job_type, experience_level,
                category, industry, skills_required, is_remote,
-               status, approval_status, is_active, application_deadline
+               status, approval_status, is_active, application_deadline, expires_at
         FROM public.jobs
         WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`, [input.jobId]);
 
@@ -208,6 +249,9 @@ export class NeonJobsRepository {
       }
       if (job.application_deadline && new Date(job.application_deadline).getTime() < Date.now()) {
         throw new NeonAuthorizationError(403, "DEADLINE_PASSED", "The deadline for this job has passed.");
+      }
+      if (job.expires_at && new Date(job.expires_at).getTime() <= Date.now()) {
+        throw new NeonAuthorizationError(403, "JOB_EXPIRED", "This job has expired.");
       }
 
       // 2. Check for existing active application
@@ -236,14 +280,24 @@ export class NeonJobsRepository {
         certifications: unknown;
         resume_url: string | null;
       }>(`
-        SELECT id, full_name, email, phone, location, bio, skills,
-               experience_level, job_preferences, education_history,
-               experience_history, certifications, resume_url
-        FROM public.profiles
-        WHERE user_id = $1::uuid AND account_status = 'active' AND deleted_at IS NULL
-        LIMIT 1`, [actor.userId]);
+        SELECT p.id, p.full_name, p.email, p.phone, p.location, p.bio, p.skills,
+               p.experience_level, p.job_preferences, p.education_history,
+               p.experience_history, p.certifications, p.resume_url
+        FROM public.profiles p
+        JOIN public.neon_application_accounts account ON account.legacy_user_id = p.user_id
+          AND account.status = 'active'
+        JOIN public.neon_identity_links link ON link.application_account_id = account.id
+          AND link.neon_auth_user_id = $2::uuid AND link.status = 'verified'
+        WHERE p.user_id = $1::uuid AND p.account_status = 'active' AND p.deleted_at IS NULL
+        LIMIT 1 FOR SHARE OF p, account, link`, [actor.userId, actor.neonAuthUserId]);
 
       const profile = profileRows.rows[0];
+      if (!profile) {
+        throw new NeonAuthorizationError(403, "IDENTITY_NOT_LINKED", "A current verified profile is required to apply.");
+      }
+      if (!profile.full_name?.trim() || !profile.email?.trim() || !profile.phone?.trim()) {
+        throw new NeonAuthorizationError(403, "PROFILE_INCOMPLETE", "Complete your profile before applying.");
+      }
 
       const skillsSnapshot = input.skills && input.skills.length > 0
         ? input.skills
@@ -261,7 +315,30 @@ export class NeonJobsRepository {
         ? input.certifications
         : (Array.isArray(profile?.certifications) ? profile.certifications : []);
 
-      const resumeUrlSnapshot = input.resumeUrl || profile?.resume_url || null;
+      // A browser-supplied URL could point at another applicant's private CV.
+      const resumeUrlSnapshot = profile.resume_url || null;
+      const submittedDocuments = [
+        { path: input.experienceLetterUrl, kind: "experience" },
+        { path: input.trainingDocumentUrl, kind: "training" },
+      ].filter((item): item is { path: string; kind: string } => Boolean(item.path));
+      if (new Set(submittedDocuments.map(item => item.path)).size !== submittedDocuments.length) {
+        throw new NeonAuthorizationError(400, "APPLICATION_DOCUMENT_DUPLICATE", "Upload each document separately.");
+      }
+      for (const { path, kind } of submittedDocuments) {
+        if (!path) continue;
+        assertMediaObjectPath({ module: "job_attachment", resourceId: job.id, path }, actor.userId);
+        // This lock serializes submission with explicit deletion and aged-draft
+        // cleanup. An object key alone is never proof of an authorized draft.
+        const draft = await client.query<{ path: string }>(`SELECT path FROM public.neon_job_document_drafts
+          WHERE path=$1 AND job_id=$2::uuid AND user_id=$3::uuid
+            AND kind=$4 AND state='draft' FOR UPDATE`, [path, job.id, actor.userId, kind]);
+        if (!draft.rows[0]) {
+          throw new NeonAuthorizationError(400, "APPLICATION_DOCUMENT_NOT_DRAFT", "Upload the document again.");
+        }
+        if (!await headObject("job-files", path)) {
+          throw new NeonAuthorizationError(400, "APPLICATION_DOCUMENT_MISSING", "An application document is missing. Upload it again.");
+        }
+      }
 
       // Calculate deterministic skills match score
       const matchResult = calculateJobMatch(
@@ -283,12 +360,14 @@ export class NeonJobsRepository {
       ];
 
       const formData = {
-        fullName: input.fullName.trim() || profile?.full_name || "Applicant",
-        email: input.email.trim() || profile?.email || "",
-        phone: input.phone.trim() || profile?.phone || "",
+        fullName: profile.full_name.trim(),
+        email: profile.email.trim(),
+        phone: profile.phone.trim(),
         coverLetter: input.coverLetter?.trim() ?? null,
         portfolioUrl: input.portfolioUrl?.trim() ?? null,
         resumeUrl: resumeUrlSnapshot,
+        experienceLetterUrl: input.experienceLetterUrl ?? null,
+        trainingDocumentUrl: input.trainingDocumentUrl ?? null,
         expectedSalary: input.expectedSalary ?? null,
         answers: input.answers ?? {},
         skills: skillsSnapshot,
@@ -360,6 +439,12 @@ export class NeonJobsRepository {
         appRow = inserted.rows[0];
       }
 
+      for (const { path } of submittedDocuments) {
+        await client.query(`UPDATE public.neon_job_document_drafts
+          SET state='submitted', application_id=$2::uuid WHERE path=$1 AND state='draft'`,
+        [path, appRow.id]);
+      }
+
       // 4. Create in-app notification & durable event for candidate
       const notif = await client.query<{ id: string }>(`
         INSERT INTO public.notifications (recipient_id, title, message, type, is_read, entity_type, entity_id, action_url)
@@ -395,8 +480,9 @@ export class NeonJobsRepository {
       JOIN public.jobs j ON j.id = a.job_id
       LEFT JOIN public.companies c ON c.id = j.company_id
       WHERE a.user_id = $1::uuid AND a.deleted_at IS NULL
+        AND ${currentLinkedProfile}
       ORDER BY a.applied_at DESC
-      LIMIT 100`, [actor.userId]);
+      LIMIT 100`, [actor.userId, actor.neonAuthUserId]);
 
     return rows.map((row) => {
       const formData = typeof row.form_data === "object" && row.form_data !== null ? row.form_data : {};
@@ -452,36 +538,64 @@ export class NeonJobsRepository {
       if (!job) throw new NeonAuthorizationError(404, "JOB_NOT_FOUND", "Job not found.");
 
       if (job.company_id) {
-        await requireEntityAccess(actor, "jobs", "company", job.company_id, "job_applications", this.db);
+        await requireApplicationRead(actor, "company", job.company_id, this.db);
       } else {
-        await requireEntityAccess(actor, "jobs", "job", jobId, "job_applications", this.db);
+        await requireApplicationRead(actor, "job", jobId, this.db);
       }
 
       return this.db.query<JobApplicationDetailRow>(`
-        SELECT a.id, a.job_id, a.user_id, a.status, a.full_name, a.email, a.phone,
+        SELECT a.id, a.job_id, j.title AS job_title, a.user_id, a.status, a.full_name, a.email, a.phone,
                a.cover_letter, a.portfolio_url, a.resume_url, a.skills_match_score,
                a.form_data, a.notes, a.applied_at, a.updated_at, a.interview_at, a.interview_location,
                a.interview_duration_minutes
         FROM public.job_applications a
-        WHERE a.job_id = $1::uuid AND a.deleted_at IS NULL
+        JOIN public.jobs j ON j.id=a.job_id AND j.deleted_at IS NULL
+        WHERE a.job_id = $3::uuid AND a.deleted_at IS NULL
+          AND ${currentLinkedProfile}
         ORDER BY a.applied_at DESC
-        LIMIT 100 OFFSET $2::integer`, [jobId, offset]);
-    }
-
-    // Platform admin listing across jobs
-    if (!actor.platformAdmin && !actor.roles.includes("admin") && !actor.roles.includes("super_admin")) {
-      throw new NeonAuthorizationError(403, "FORBIDDEN", "Insufficient privileges to list all candidate applications.");
+        LIMIT 100 OFFSET $4::integer`, [actor.userId, actor.neonAuthUserId, jobId, offset]);
     }
 
     return this.db.query<JobApplicationDetailRow>(`
-      SELECT a.id, a.job_id, a.user_id, a.status, a.full_name, a.email, a.phone,
+      SELECT a.id, a.job_id, j.title AS job_title, a.user_id, a.status, a.full_name, a.email, a.phone,
              a.cover_letter, a.portfolio_url, a.resume_url, a.skills_match_score,
              a.form_data, a.notes, a.applied_at, a.updated_at, a.interview_at, a.interview_location,
              a.interview_duration_minutes
       FROM public.job_applications a
-      WHERE a.deleted_at IS NULL
+      JOIN public.jobs j ON j.id=a.job_id AND j.deleted_at IS NULL
+      WHERE a.deleted_at IS NULL AND ${currentLinkedProfile}
+        AND (
+          EXISTS (SELECT 1 FROM public.user_roles ur
+                  WHERE ur.user_id=$1::uuid AND ur.role IN ('admin','super_admin'))
+          OR (
+            EXISTS (
+              SELECT 1 FROM public.entity_admin_assignments ea
+              JOIN public.user_module_capabilities umc ON umc.id=ea.user_capability_id
+              JOIN public.module_capabilities mc ON mc.id=umc.capability_id
+              WHERE ea.user_id=$1::uuid AND ea.status='active'
+                AND umc.status='active' AND mc.is_active AND mc.module_key='jobs'
+                AND (umc.expires_at IS NULL OR umc.expires_at>now())
+                AND ((j.company_id IS NOT NULL AND ea.entity_type='company' AND ea.entity_id=j.company_id)
+                  OR (j.company_id IS NULL AND ea.entity_type='job' AND ea.entity_id=j.id))
+            )
+            AND EXISTS (
+              SELECT 1 FROM public.module_entitlements e
+              LEFT JOIN public.packages p ON p.id=e.package_id
+              WHERE e.user_id=$1::uuid AND e.module_key='jobs' AND e.status='active'
+                AND e.start_at<=now() AND (e.expires_at IS NULL OR e.expires_at>now())
+                AND ((j.company_id IS NOT NULL AND e.entity_type='company' AND e.entity_id=j.company_id)
+                  OR (j.company_id IS NULL AND e.entity_type='job' AND e.entity_id=j.id))
+                AND (e.features->>'job_applications'='true' OR p.features->>'job_applications'='true'
+                  OR e.features->>'application_management'='true' OR p.features->>'application_management'='true'
+                  OR e.features->>'lead_viewing'='true' OR p.features->>'lead_viewing'='true'
+                  OR EXISTS (SELECT 1 FROM public.entity_feature_grants g
+                    WHERE g.user_id=$1::uuid AND g.module_key='jobs' AND g.feature_key IN ('job_applications','application_management','lead_viewing')
+                      AND g.status='active' AND g.entity_type=e.entity_type AND g.entity_id=e.entity_id))
+            )
+          )
+        )
       ORDER BY a.applied_at DESC
-      LIMIT 100 OFFSET $1::integer`, [offset]);
+      LIMIT 100 OFFSET $3::integer`, [actor.userId, actor.neonAuthUserId, offset]);
   }
 
   async reviewApplication(
@@ -490,6 +604,22 @@ export class NeonJobsRepository {
     transactionClient?: Pick<PoolClient, "query">,
   ): Promise<JobApplicationDetailRow> {
     const runWith = async (client: Pick<PoolClient, "query">) => {
+      const liveActor = await client.query<{ is_admin: boolean }>(`
+        SELECT EXISTS (SELECT 1 FROM public.user_roles ur
+                       WHERE ur.user_id = p.user_id AND ur.role IN ('admin','super_admin')) AS is_admin
+        FROM public.profiles p
+        JOIN public.neon_application_accounts account ON account.legacy_user_id = p.user_id
+          AND account.status = 'active'
+        JOIN public.neon_identity_links link ON link.application_account_id = account.id
+          AND link.neon_auth_user_id = $2::uuid AND link.status = 'verified'
+        WHERE p.user_id = $1::uuid AND p.account_status = 'active' AND p.deleted_at IS NULL
+        LIMIT 1 FOR SHARE OF p, account, link`, [actor.userId, actor.neonAuthUserId]);
+      if (!liveActor.rows[0]) {
+        throw new NeonAuthorizationError(403, "IDENTITY_NOT_LINKED", "A current verified account is required.");
+      }
+      if (actor.platformAdmin && !liveActor.rows[0].is_admin) {
+        throw new NeonAuthorizationError(403, "ADMIN_ACCESS_REVOKED", "Administrative access is no longer active.");
+      }
       const appRows = await client.query<{
         id: string;
         job_id: string;
@@ -510,17 +640,19 @@ export class NeonJobsRepository {
       const app = appRows.rows[0];
       if (!app) throw new NeonAuthorizationError(404, "APPLICATION_NOT_FOUND", "Application not found.");
 
-      if (app.company_id) {
-        await requireEntityAccess(actor, "jobs", "company", app.company_id, "job_applications", {
-          query: (sql, p) => client.query(sql, [...p]).then((r) => r.rows),
-        });
-      } else {
-        await requireEntityAccess(actor, "jobs", "job", app.job_id, "job_applications", {
-          query: (sql, p) => client.query(sql, [...p]).then((r) => r.rows),
-        });
-      }
+      await requireRoleWorkspaceAccess(client, actor, "jobs", app.company_id ? "company" : "job",
+        app.company_id || app.job_id, "application_management");
 
       const normalizedStatus = input.status === "applied" ? "submitted" : input.status === "selected" ? "offered" : input.status;
+      if (!canTransitionJobApplication(app.status, normalizedStatus)) {
+        throw new NeonAuthorizationError(403, "INVALID_APPLICATION_TRANSITION", "This application status cannot be changed that way.");
+      }
+      if (input.interviewAt && (!Number.isFinite(Date.parse(input.interviewAt)) || Date.parse(input.interviewAt) <= Date.now())) {
+        throw new NeonAuthorizationError(403, "INVALID_INTERVIEW_TIME", "Schedule an interview for a future time.");
+      }
+      if (normalizedStatus === "interview_scheduled" && !input.interviewAt) {
+        throw new NeonAuthorizationError(403, "INTERVIEW_TIME_REQUIRED", "An interview time is required.");
+      }
       const currentFormData = typeof app.form_data === "object" && app.form_data !== null ? (app.form_data as Record<string, unknown>) : {};
       const currentTimeline = Array.isArray(currentFormData.timeline) ? currentFormData.timeline : [];
       const updatedTimeline = [
@@ -624,7 +756,8 @@ export class NeonJobsRepository {
       WHERE a.user_id = $1::uuid
         AND a.interview_at IS NOT NULL
         AND a.deleted_at IS NULL
-      ORDER BY a.interview_at ASC`, [actor.userId]);
+        AND ${currentLinkedProfile}
+      ORDER BY a.interview_at ASC`, [actor.userId, actor.neonAuthUserId]);
 
     return rows.map((row) => {
       const formData = typeof row.form_data === "object" && row.form_data !== null ? row.form_data : {};
@@ -657,18 +790,21 @@ export class NeonJobsRepository {
       SELECT job_preferences
       FROM public.profiles
       WHERE user_id = $1::uuid AND account_status = 'active' AND deleted_at IS NULL
-      LIMIT 1`, [actor.userId]);
+        AND ${currentLinkedProfile}
+      LIMIT 1`, [actor.userId, actor.neonAuthUserId]);
 
-    return rows[0]?.job_preferences ?? {};
+    if (!rows[0]) throw new NeonAuthorizationError(403, "IDENTITY_NOT_LINKED", "A linked profile is required.");
+    return rows[0].job_preferences ?? {};
   }
 
   async updateStudentJobPreferences(actor: NeonActor, prefs: JobPreferences): Promise<JobPreferences> {
     const rows = await this.db.query<{ job_preferences: JobPreferences }>(`
       UPDATE public.profiles
-      SET job_preferences = $2::jsonb,
+      SET job_preferences = $3::jsonb,
           updated_at = now()
       WHERE user_id = $1::uuid AND account_status = 'active' AND deleted_at IS NULL
-      RETURNING job_preferences`, [actor.userId, JSON.stringify(prefs)]);
+        AND ${currentLinkedProfile}
+      RETURNING job_preferences`, [actor.userId, actor.neonAuthUserId, JSON.stringify(prefs)]);
 
     if (!rows[0]) throw new NeonAuthorizationError(404, "PROFILE_NOT_FOUND", "Profile not found.");
     return rows[0].job_preferences;
@@ -684,14 +820,11 @@ export class NeonJobsRepository {
       SELECT skills, location, experience_level, job_preferences
       FROM public.profiles
       WHERE user_id = $1::uuid AND account_status = 'active' AND deleted_at IS NULL
-      LIMIT 1`, [actor.userId]);
+        AND ${currentLinkedProfile}
+      LIMIT 1`, [actor.userId, actor.neonAuthUserId]);
 
-    const profile = profileRows[0] ?? {
-      skills: [],
-      location: null,
-      experience_level: null,
-      job_preferences: null,
-    };
+    const profile = profileRows[0];
+    if (!profile) throw new NeonAuthorizationError(403, "IDENTITY_NOT_LINKED", "A linked profile is required.");
 
     const jobs = await this.listPublicJobs({ limit: 50 });
 

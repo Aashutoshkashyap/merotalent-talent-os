@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+
 const DEFAULT_SITE_SETTINGS: SiteSettings = {
   site_title: "MeroTalent",
   favicon_url: "",
@@ -118,6 +120,16 @@ const loadCmsSnapshot = (page: string, force = false): Promise<CmsSnapshot> => {
   if (pending) return pending;
 
   const request = (async () => {
+    if (isNeonStaging) {
+      const response = await fetch(`/api/v1/neon-staging/cms?page=${encodeURIComponent(page)}`,
+        { cache: "no-store" });
+      if (!response.ok) throw new Error("CMS content is unavailable.");
+      const payload = await response.json() as { data?: CmsSnapshot };
+      if (!payload.data) throw new Error("CMS content is unavailable.");
+      cmsCache.set(page, { expiresAt: Date.now() + CMS_CACHE_TTL_MS, value: payload.data });
+      setStoredCmsSnapshot(page, payload.data);
+      return payload.data;
+    }
     const db = supabase as any;
     const [sectionsRes, visibilityRes, settingsRes] = await Promise.all([
       db.from("page_sections").select("*").eq("page", page).eq("is_visible", true).order("display_order", { ascending: true }),

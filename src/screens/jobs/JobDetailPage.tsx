@@ -33,7 +33,7 @@ export default function JobDetailPage() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { user, session } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export default function JobDetailPage() {
   }, [id]);
 
   const apply = () => {
-    if (!session) {
+    if (!session && !(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && user)) {
       navigate("/login", { state: { from: { pathname: location.pathname } } });
       return;
     }

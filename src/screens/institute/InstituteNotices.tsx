@@ -70,6 +70,7 @@ const navItems = [
   { path: "/institute/notices", icon: Bell, label: "Notices" },
   { path: "/institutes", icon: Building2, label: "Public listing" },
 ];
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 const InstituteNotices = () => {
   const { user } = useAuth();
@@ -110,6 +111,27 @@ const InstituteNotices = () => {
 
   const fetchInstituteAccess = async () => {
     if (!user) return;
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/college-workspaces", { credentials: "same-origin", cache: "no-store" });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "College access could not load.");
+        const workspaces = body.data.workspaces as Array<{ id: string; name: string; subscription_active: boolean }>;
+        const requested = searchParams.get("college");
+        const workspace = workspaces.find(row => row.id === requested && row.subscription_active) ||
+          workspaces.find(row => row.subscription_active);
+        setInstituteId(workspace?.id ?? null);
+        setHasWorkspaceAccess(!!workspace);
+        setInstituteName(workspace?.name || "College Notices");
+        if (workspace) await fetchNotices(workspace.id);
+        else setIsLoading(false);
+      } catch (cause) {
+        toast({ variant: "destructive", title: "Could not load college access",
+          description: cause instanceof Error ? cause.message : "Please retry." });
+        setIsLoading(false);
+      }
+      return;
+    }
     const db = supabase as any;
     const [workspaceResult, capabilityResult] = await Promise.all([
       db.rpc("get_my_college_workspaces"),
@@ -132,6 +154,20 @@ const InstituteNotices = () => {
   };
 
   const fetchNotices = async (instId: string) => {
+    if (isNeonStaging) {
+      try {
+        const response = await fetch(`/api/v1/neon-staging/college-workspaces/${instId}/notices`, {
+          credentials: "same-origin", cache: "no-store",
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Notices could not load.");
+        setNotices(body.data as Notice[]);
+      } catch (cause) {
+        toast({ variant: "destructive", title: "Notices unavailable",
+          description: cause instanceof Error ? cause.message : "Please retry." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const { data } = await supabase
       .from("institute_notices")
       .select("*")
@@ -147,6 +183,25 @@ const InstituteNotices = () => {
 
   const handleSubmit = async () => {
     if (!hasWorkspaceAccess || !instituteId || !formData.title) return;
+
+    if (isNeonStaging) {
+      try {
+        const response = await fetch(`/api/v1/neon-staging/college-workspaces/${instituteId}/notices`, {
+          method: editingNotice ? "PATCH" : "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...formData, ...(editingNotice ? { id: editingNotice.id } : {}) }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Notice could not be saved.");
+        toast({ title: editingNotice ? "Notice updated" : "Notice published" });
+        setIsDialogOpen(false);
+        await fetchNotices(instituteId);
+      } catch (cause) {
+        toast({ variant: "destructive", title: "Notice was not saved",
+          description: cause instanceof Error ? cause.message : "Please retry." });
+      }
+      return;
+    }
 
     if (editingNotice) {
       const { error } = await supabase
@@ -183,6 +238,22 @@ const InstituteNotices = () => {
 
   const handleDelete = async (id: string) => {
     if (!hasWorkspaceAccess || !instituteId) return;
+    if (isNeonStaging) {
+      try {
+        const response = await fetch(`/api/v1/neon-staging/college-workspaces/${instituteId}/notices`, {
+          method: "DELETE", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Notice could not be deleted.");
+        toast({ title: "Notice deleted" });
+        await fetchNotices(instituteId);
+      } catch (cause) {
+        toast({ variant: "destructive", title: "Notice was not deleted",
+          description: cause instanceof Error ? cause.message : "Please retry." });
+      }
+      return;
+    }
     const { error } = await supabase.from("institute_notices").delete().eq("id", id);
     if (!error && instituteId) {
       toast({ title: "Notice deleted" });

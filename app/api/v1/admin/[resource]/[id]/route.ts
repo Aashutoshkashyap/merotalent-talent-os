@@ -1,4 +1,6 @@
 import { authenticateAdminRequest } from "@/lib/server/auth";
+import { getBackendMode } from "@/lib/server/backend-mode";
+import { handleNeonAdminResource } from "@/lib/server/neon-admin-resource-route";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import {
   getAdminResource,
@@ -25,7 +27,7 @@ interface RouteContext {
 const resolveTarget = async (context: RouteContext) => {
   const { resource, id } = await context.params;
   return {
-    definition: isAdminResourceName(resource) ? getAdminResource(resource) : null,
+    definition: resource !== "companies" && isAdminResourceName(resource) ? getAdminResource(resource) : null,
     id,
   };
 };
@@ -51,6 +53,7 @@ const recordNotFound = (requestId: string) =>
   );
 
 export async function GET(request: Request, context: RouteContext) {
+  if (getBackendMode() === "neon-staging") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
   const requestId = crypto.randomUUID();
   let authenticated;
   try {
@@ -84,6 +87,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  if (getBackendMode() === "neon-staging") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
   const requestId = crypto.randomUUID();
   let authenticated;
   try {
@@ -127,6 +131,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
+  if (getBackendMode() === "neon-staging") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
   const requestId = crypto.randomUUID();
   let authenticated;
   try {

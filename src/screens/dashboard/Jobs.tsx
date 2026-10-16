@@ -112,6 +112,7 @@ const mapJob = (row: Record<string, any>): Job => ({
 
 export default function Jobs() {
   const { user, session } = useAuth();
+  const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("matching");
@@ -144,7 +145,7 @@ export default function Jobs() {
 
   useEffect(() => {
     loadAllData();
-  }, [session?.access_token]);
+  }, [session?.access_token, user?.id]);
 
   const loadAllData = async () => {
     setIsLoading(true);
@@ -156,13 +157,14 @@ export default function Jobs() {
 
       setAllJobs(jobsData.map(mapJob));
 
-      if (session?.access_token) {
+      if (user && (isStaging || session?.access_token)) {
+        const token = isStaging ? undefined : session?.access_token;
         const [matchingRes, appsRes, interviewsRes, savedRes, prefsRes] = await Promise.all([
-          fetchMatchingJobs(session.access_token).catch(() => []),
-          fetchStudentApplications(session.access_token).catch(() => []),
-          fetchStudentInterviews(session.access_token).catch(() => []),
-          fetchSavedJobsList(session.access_token).catch(() => []),
-          fetchJobPreferences(session.access_token).catch(() => ({})),
+          fetchMatchingJobs(token).catch(() => []),
+          fetchStudentApplications(token).catch(() => []),
+          fetchStudentInterviews(token).catch(() => []),
+          fetchSavedJobsList(token).catch(() => []),
+          fetchJobPreferences(token).catch(() => ({})),
         ]);
 
         setMatchingJobs((matchingRes || []).map(mapJob));
@@ -180,14 +182,14 @@ export default function Jobs() {
   };
 
   const handleToggleBookmark = async (job: Job) => {
-    if (!session?.access_token) {
+    if (!user || (!isStaging && !session?.access_token)) {
       toast({ variant: "destructive", title: "Sign in required to save jobs." });
       return;
     }
     const isSaved = savedJobIds.has(job.id);
     try {
       if (isSaved) {
-        await unsaveJobApi(job.id, session.access_token);
+        await unsaveJobApi(job.id, isStaging ? undefined : session?.access_token);
         setSavedJobIds((prev) => {
           const next = new Set(prev);
           next.delete(job.id);
@@ -196,7 +198,7 @@ export default function Jobs() {
         setSavedJobs((prev) => prev.filter((j) => j.id !== job.id));
         toast({ title: "Job removed from saved list." });
       } else {
-        await saveJobApi(job.id, session.access_token);
+        await saveJobApi(job.id, isStaging ? undefined : session?.access_token);
         setSavedJobIds((prev) => new Set(prev).add(job.id));
         setSavedJobs((prev) => [job, ...prev]);
         toast({ title: "Job saved successfully!" });
@@ -207,10 +209,10 @@ export default function Jobs() {
   };
 
   const handleSavePreferences = async () => {
-    if (!session?.access_token) return;
+    if (!user || (!isStaging && !session?.access_token)) return;
     setPrefSaving(true);
     try {
-      await updateJobPreferences(preferences, session.access_token);
+      await updateJobPreferences(preferences, isStaging ? undefined : session?.access_token);
       toast({ title: "Preferences Saved", description: "Job matching recommendations updated." });
       void loadAllData();
     } catch (err: any) {

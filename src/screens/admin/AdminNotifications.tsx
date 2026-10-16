@@ -85,6 +85,7 @@ const getTypeIcon = (type: string | null) => {
 
 const AdminNotifications = () => {
   const { user } = useAuth();
+  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [adminMembers, setAdminMembers] = useState<AdminMember[]>([]);
@@ -108,6 +109,21 @@ const AdminNotifications = () => {
     setLoadError(null);
 
     try {
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/admin/notifications", {
+          credentials: "same-origin", cache: "no-store",
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) throw new Error("The notification records could not be loaded.");
+        const data = payload?.data;
+        const members = Array.isArray(data?.adminMembers) ? data.adminMembers as ProfileSummary[] : [];
+        const recipients = Array.isArray(data?.profiles) ? data.profiles as ProfileSummary[] : [];
+        setNotifications(Array.isArray(data?.notifications) ? data.notifications as NotificationRow[] : []);
+        setProfiles([...new Map([...members, ...recipients].map(row => [row.user_id, row])).values()]);
+        setAdminMembers(members.map(row => ({ userId: row.user_id, email: row.email,
+          fullName: row.full_name, updatedAt: row.updated_at })));
+        return;
+      }
       const [notificationsResult, adminRolesResult] = await Promise.all([
         supabase
           .from("notifications")
@@ -168,7 +184,7 @@ const AdminNotifications = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isNeonStaging]);
 
   useEffect(() => {
     void fetchLiveData();
@@ -221,6 +237,24 @@ const AdminNotifications = () => {
         title: "Sign-in required",
         description: "Your session is not available. Sign in again and retry.",
       });
+      return;
+    }
+
+    if (isNeonStaging) {
+      setIsSending(true);
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/notifications", {
+          method: "POST", credentials: "same-origin", cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ title, message, type: newNotification.type, recipients: newNotification.recipients }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !Number.isInteger(payload?.data?.created)) throw new Error("Notification save could not be verified.");
+        toast({ title: "In-app notification saved", description: `${payload.data.created} notification record(s) created. Email and push delivery are separate.` });
+        setIsCreateOpen(false); resetComposer(); await fetchLiveData();
+      } catch (error) { toast({ variant: "destructive", title: "Notification save failed",
+        description: error instanceof Error ? error.message : "Please try again." }); }
+      finally { setIsSending(false); }
       return;
     }
 
@@ -293,6 +327,21 @@ const AdminNotifications = () => {
     }
 
     setDeletingId(notification.id);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/notifications", {
+          method: "DELETE", credentials: "same-origin", cache: "no-store",
+          headers: { "content-type": "application/json" }, body: JSON.stringify({ id: notification.id }),
+        });
+        if (!response.ok) throw new Error("Notification removal could not be verified.");
+        setNotifications(current => current.filter(item => item.id !== notification.id));
+        setSelectedNotification(current => current?.id === notification.id ? null : current);
+        toast({ title: "Notification removed", description: "The record is hidden from the notification center." });
+      } catch (error) { toast({ variant: "destructive", title: "Removal failed",
+        description: error instanceof Error ? error.message : "Please try again." }); }
+      finally { setDeletingId(null); }
+      return;
+    }
     const { data: deletedRow, error } = await supabase
       .from("notifications")
       .delete()
@@ -325,6 +374,20 @@ const AdminNotifications = () => {
   };
 
   const handleMarkAsRead = async (notification: NotificationRow) => {
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/admin/notifications", {
+          method: "PATCH", credentials: "same-origin", cache: "no-store",
+          headers: { "content-type": "application/json" }, body: JSON.stringify({ id: notification.id }),
+        });
+        if (!response.ok) throw new Error("Could not mark as read.");
+        setNotifications(current => current.map(item => item.id === notification.id ? { ...item, is_read: true } : item));
+        setSelectedNotification(current => current?.id === notification.id ? { ...current, is_read: true } : current);
+        toast({ title: "Notification updated", description: "Marked as read successfully." });
+      } catch (error) { toast({ variant: "destructive", title: "Could not mark as read",
+        description: error instanceof Error ? error.message : "Please try again." }); }
+      return;
+    }
     const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })

@@ -15,6 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { supabase } from "@/integrations/supabase/client";
 import { ProviderConfigurationPanel } from "./ProviderConfigurationPanel";
+import { invalidateCmsCache } from "@/hooks/useSiteCMS";
+
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 /**
  * public.site_settings is a key/value table — key (PK), value, extra_json,
@@ -96,6 +99,26 @@ const AdminSettings = () => {
 
   useEffect(() => {
     const loadSettings = async () => {
+      if (isNeonStaging) {
+        try {
+          const response = await fetch("/api/v1/neon-staging/admin/site-settings",
+            { credentials: "same-origin", cache: "no-store" });
+          if (!response.ok) throw new Error("Neon site settings are unavailable.");
+          const payload = await response.json() as { data?: Array<{ key: string; value: string | null }> };
+          const stored = new Map<string, string>((payload.data ?? []).map(row => [row.key, row.value ?? ""]));
+          setSiteTitle(stored.get("site_title") || "MeroTalent - National Talent & Education OS");
+          setSupportEmail(stored.get("support_email") || "support@merotalent.com");
+          setSupportPhone(stored.get("support_phone") || "+977 9801010802");
+          setLogoUrl(stored.get("logo_url") || "/logo.png");
+          setFaviconUrl(stored.get("favicon_url") || "/favicon.ico");
+          setBannerUrl(stored.get("banner_url") || "");
+          setMaintenanceMode(stored.get("maintenance_mode") === "true");
+        } catch (error) {
+          toast({ variant: "destructive", title: "Settings could not be loaded",
+            description: error instanceof Error ? error.message : "Please try again." });
+        }
+        return;
+      }
       const { data, error } = await (supabase as any)
         .from("site_settings")
         .select("key, value")
@@ -128,10 +151,11 @@ const AdminSettings = () => {
   }, [toast]);
 
   const loadProviderStatus = useCallback(async () => {
-    const { data: auth } = await supabase.auth.getSession();
-    if (!auth.session?.access_token) return;
-    const response = await fetch("/api/v1/admin/provider-status", {
-      headers: { Authorization: `Bearer ${auth.session.access_token}` },
+    const accessToken = isNeonStaging ? null : (await supabase.auth.getSession()).data.session?.access_token;
+    if (!isNeonStaging && !accessToken) return;
+    const response = await fetch(`${isNeonStaging ? "/api/v1/neon-staging" : "/api/v1"}/admin/provider-status`, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      credentials: "same-origin", cache: "no-store",
     });
     if (!response.ok) return;
     const payload = await response.json() as { data?: ProviderStatus };
@@ -145,6 +169,18 @@ const AdminSettings = () => {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
+      if (isNeonStaging) {
+        const values = { siteTitle, supportEmail, supportPhone, logoUrl, faviconUrl,
+          bannerUrl, maintenanceMode };
+        const response = await fetch("/api/v1/neon-staging/admin/site-settings", {
+          method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.fromEntries(SITE_SETTING_KEYS.map(key => [key, settingValue(key, values)]))),
+        });
+        if (!response.ok) throw new Error("Neon site settings were not saved.");
+        invalidateCmsCache();
+        toast({ title: "Settings saved", description: "Branding and support details saved for everyone." });
+        return;
+      }
       const { error } = await (supabase as any).from("site_settings").upsert(
         SITE_SETTING_KEYS.map((key) => ({
           key,

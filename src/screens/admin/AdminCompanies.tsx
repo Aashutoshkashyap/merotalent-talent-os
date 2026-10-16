@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import Image from "next/image";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,8 @@ import { OperationsPage } from "./OperationsUI";
 import { SystemPagination } from "@/components/ui/SystemPagination";
 import { generateCompanyDetails } from "@/lib/ai/ai-generator";
 import { SignedMediaUploader, type SignedMediaAsset } from "@/components/media/SignedMediaUploader";
+import { createAdminResource, deleteAdminResource, listAllAdminResource, listNeonAdminOptions,
+  resolveNeonManagedImage, updateAdminResource } from "@/lib/admin/admin-client";
 
 interface Company {
   id: string;
@@ -67,6 +70,7 @@ interface Company {
 }
 
 const AdminCompanies = () => {
+  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [availableUsers, setAvailableUsers] = useState<{ id: string; email: string; full_name: string | null }[]>([]);
@@ -76,6 +80,8 @@ const AdminCompanies = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [logoPreviews, setLogoPreviews] = useState<Record<string, string | null>>({});
+  const [formLogoPreview, setFormLogoPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     user_id: "",
@@ -89,13 +95,19 @@ const AdminCompanies = () => {
     is_verified: false,
   });
 
-  useEffect(() => {
-    fetchCompanies();
-    fetchAvailableUsers();
-  }, []);
-
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     setIsLoading(true);
+    if (staging) {
+      try {
+        const rows = await listAllAdminResource<Company>("companies", { sort_by: "created_at", sort_direction: "desc" });
+        const previews = await Promise.all(rows.map(async company => [company.id,
+          await resolveNeonManagedImage("company_logo", company.id, company.logo_url).catch(() => null)] as const));
+        setCompanies(rows); setLogoPreviews(Object.fromEntries(previews));
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to load companies", description: error instanceof Error ? error.message : "Try again shortly." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const { data, error } = await supabase
       .from("companies")
       .select("*")
@@ -106,9 +118,18 @@ const AdminCompanies = () => {
     }
     setCompanies((data || []) as Company[]);
     setIsLoading(false);
-  };
+  }, [staging, toast]);
 
-  const fetchAvailableUsers = async () => {
+  const fetchAvailableUsers = useCallback(async () => {
+    if (staging) {
+      try {
+        const profiles = await listNeonAdminOptions<{ user_id: string; email: string | null; full_name: string | null }>("owners");
+        setAvailableUsers(profiles.map(profile => ({ id: profile.user_id, email: profile.email || "", full_name: profile.full_name })));
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to load account choices", description: error instanceof Error ? error.message : "Try again shortly." });
+      }
+      return;
+    }
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, email, full_name")
@@ -121,7 +142,12 @@ const AdminCompanies = () => {
         full_name: p.full_name,
       })));
     }
-  };
+  }, [staging, toast]);
+
+  useEffect(() => {
+    void fetchCompanies();
+    void fetchAvailableUsers();
+  }, [fetchCompanies, fetchAvailableUsers]);
 
   const handleAIGenerate = async () => {
     if (!formData.name.trim()) {
@@ -163,7 +189,7 @@ const AdminCompanies = () => {
 
     setIsSubmitting(true);
     const payload = {
-      user_id: formData.user_id,
+      ...(!staging || !editingCompany ? { user_id: formData.user_id } : {}),
       name: formData.name,
       industry: formData.industry || null,
       description: formData.description || null,
@@ -174,12 +200,24 @@ const AdminCompanies = () => {
       is_verified: formData.is_verified,
     };
 
+    if (staging) {
+      try {
+        if (editingCompany) await updateAdminResource("companies", editingCompany.id, payload);
+        else await createAdminResource("companies", payload);
+        toast({ title: editingCompany ? "Company updated!" : "Company added!" });
+        resetForm(); await fetchCompanies();
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to save company", description: error instanceof Error ? error.message : "Try again shortly." });
+      } finally { setIsSubmitting(false); }
+      return;
+    }
+
     let error;
     if (editingCompany) {
       const result = await supabase.from("companies").update(payload).eq("id", editingCompany.id);
       error = result.error;
     } else {
-      const result = await supabase.from("companies").insert(payload);
+      const result = await supabase.from("companies").insert({ ...payload, user_id: formData.user_id });
       error = result.error;
     }
 
@@ -194,7 +232,14 @@ const AdminCompanies = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this company profile?")) return;
+    if (!window.confirm(staging ? "Remove this company from the directory? Existing jobs and ownership history are preserved." : "Are you sure you want to permanently delete this company profile?")) return;
+    if (staging) {
+      try {
+        await deleteAdminResource("companies", id);
+        toast({ title: "Company removed" }); await fetchCompanies();
+      } catch (error) { toast({ variant: "destructive", title: "Unable to remove company", description: error instanceof Error ? error.message : "Try again shortly." }); }
+      return;
+    }
     const { error } = await supabase.from("companies").delete().eq("id", id);
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });
@@ -205,6 +250,13 @@ const AdminCompanies = () => {
   };
 
   const toggleVerification = async (company: Company) => {
+    if (staging) {
+      try {
+        await updateAdminResource("companies", company.id, { is_verified: !company.is_verified });
+        toast({ title: company.is_verified ? "Verification revoked" : "Company verified" }); await fetchCompanies();
+      } catch (error) { toast({ variant: "destructive", title: "Unable to update verification", description: error instanceof Error ? error.message : "Try again shortly." }); }
+      return;
+    }
     const { error } = await supabase
       .from("companies")
       .update({ is_verified: !company.is_verified })
@@ -218,6 +270,7 @@ const AdminCompanies = () => {
 
   const openEdit = (company: Company) => {
     setEditingCompany(company);
+    setFormLogoPreview(staging ? logoPreviews[company.id] || null : company.logo_url);
     setFormData({
       user_id: company.user_id,
       name: company.name,
@@ -245,6 +298,7 @@ const AdminCompanies = () => {
       is_verified: false,
     });
     setEditingCompany(null);
+    setFormLogoPreview(null);
     setIsDialogOpen(false);
   };
 
@@ -393,19 +447,20 @@ const AdminCompanies = () => {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <SignedMediaUploader
+                  {staging && !editingCompany ? <p className="text-sm text-muted-foreground">Save the company, then reopen it to upload a logo.</p> : <SignedMediaUploader
                     label="Company Brand Logo"
                     module="company_logo"
                     resourceId={editingCompany?.id || "new-company"}
                     onUploaded={([asset]: SignedMediaAsset[]) => {
                       if (asset) {
-                        setFormData((current) => ({ ...current, logo_url: asset.publicUrl || asset.path }));
+                        setFormData((current) => ({ ...current, logo_url: staging ? asset.path : asset.publicUrl || asset.path }));
+                        setFormLogoPreview(asset.publicUrl);
                       }
                     }}
-                  />
-                  {formData.logo_url && (
+                  />}
+                  {formLogoPreview && (
                     <div className="relative h-20 w-20 overflow-hidden rounded-xl border mt-2">
-                      <img src={formData.logo_url} alt="Brand Logo" className="h-full w-full object-cover" />
+                      <Image src={formLogoPreview} alt="Company logo preview" width={80} height={80} unoptimized className="h-full w-full object-cover" />
                     </div>
                   )}
                 </div>
@@ -481,8 +536,8 @@ const AdminCompanies = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-[#fff5ed] text-[#c2410c] font-bold flex items-center justify-center border overflow-hidden shrink-0">
-                          {c.logo_url ? (
-                            <img src={c.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                          {(staging ? logoPreviews[c.id] : c.logo_url) ? (
+                            <Image src={staging ? logoPreviews[c.id]! : c.logo_url!} alt={`${c.name} logo`} width={40} height={40} unoptimized className="w-full h-full object-cover" />
                           ) : (
                             <Building2 className="w-5 h-5" />
                           )}

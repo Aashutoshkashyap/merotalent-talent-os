@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { SystemPagination } from "@/components/ui/SystemPagination";
@@ -64,12 +64,15 @@ interface UserRecord {
   email_verified: boolean;
   created_at: string;
   roles: string[];
+  identity_linked?: boolean;
 }
 
 interface EntityOption {
   id: string;
   label: string;
 }
+
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 const formatDateInput = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -98,8 +101,10 @@ const AdminUsers = () => {
   const [enrollUser, setEnrollUser] = useState<UserRecord | null>(null);
   const [enrollModuleKey, setEnrollModuleKey] = useState("college");
   const [enrollEntityId, setEnrollEntityId] = useState("");
+  const [enrollEntitySearch, setEnrollEntitySearch] = useState("");
   const [enrollEntityOptions, setEnrollEntityOptions] = useState<EntityOption[]>([]);
   const [isLoadingEntities, setIsLoadingEntities] = useState(false);
+  const entityRequest = useRef(0);
   const initialDates = defaultSubscriptionDates();
   const [enrollStartDate, setEnrollStartDate] = useState(initialDates.start);
   const [enrollEndDate, setEnrollEndDate] = useState(initialDates.end);
@@ -107,11 +112,29 @@ const AdminUsers = () => {
   const [enrollTransactionId, setEnrollTransactionId] = useState("");
   const [enrollNote, setEnrollNote] = useState("");
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [enrollIdempotencyKey, setEnrollIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [accessUser, setAccessUser] = useState<UserRecord | null>(null);
+  const [accessRows, setAccessRows] = useState<Array<{ capabilityId: string; module: string;
+    capabilityStatus: string; assignmentId: string | null; entityType: string | null;
+    entityId: string | null; assignmentStatus: string | null; label: string | null }>>([]);
+  const [isLoadingAccess, setIsLoadingAccess] = useState(false);
+  const [manualPayments, setManualPayments] = useState<Array<{ id: string; amount: number;
+    status: string; transactionReference: string; createdAt: string; module: string }>>([]);
+  const [reviewingPayment, setReviewingPayment] = useState<string | null>(null);
 
-  const loadEntityOptions = useCallback(async (moduleKey: string) => {
+  const loadEntityOptions = useCallback(async (moduleKey: string, search = "") => {
+    const requestId = ++entityRequest.current;
     setIsLoadingEntities(true);
     setEnrollEntityId("");
     try {
+      if (isNeonStaging) {
+        const response = await fetch(`/api/v1/neon-staging/admin/access?${new URLSearchParams({ mode: "entities", module: moduleKey, search })}`,
+          { credentials: "same-origin", cache: "no-store" });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(payload?.data)) throw new Error(payload?.error || "Could not load assignable records.");
+        if (requestId === entityRequest.current) setEnrollEntityOptions(payload.data);
+        return;
+      }
       if (moduleKey === "college") {
         const { data, error } = await (supabase as any).from("institutes").select("id,name").is("deleted_at", null).order("name").limit(500);
         if (error) throw error;
@@ -139,16 +162,20 @@ const AdminUsers = () => {
         setEnrollEntityOptions((data ?? []).map((row: any) => ({ id: row.id, label: row.title })));
       }
     } catch (error: any) {
-      setEnrollEntityOptions([]);
-      toast({ variant: "destructive", title: "Entities unavailable", description: error?.message || "Could not load assignable records." });
+      if (requestId === entityRequest.current) {
+        setEnrollEntityOptions([]);
+        toast({ variant: "destructive", title: "Entities unavailable", description: error?.message || "Could not load assignable records." });
+      }
     } finally {
-      setIsLoadingEntities(false);
+      if (requestId === entityRequest.current) setIsLoadingEntities(false);
     }
   }, [toast]);
 
   useEffect(() => {
-    if (isEnrollOpen) void loadEntityOptions(enrollModuleKey);
-  }, [enrollModuleKey, isEnrollOpen, loadEntityOptions]);
+    if (!isEnrollOpen) return;
+    const timer = window.setTimeout(() => void loadEntityOptions(enrollModuleKey, enrollEntitySearch), 250);
+    return () => window.clearTimeout(timer);
+  }, [enrollModuleKey, enrollEntitySearch, isEnrollOpen, loadEntityOptions]);
 
   const handleManualEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +189,29 @@ const AdminUsers = () => {
       const expiresAt = new Date(`${enrollEndDate}T23:59:59`);
       if (!Number.isFinite(startAt.getTime()) || !Number.isFinite(expiresAt.getTime()) || expiresAt <= startAt) {
         throw new Error("Choose a subscription end date after its start date.");
+      }
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/admin/access", {
+          method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: enrollUser.user_id, module: enrollModuleKey,
+            entityId: enrollEntityId, startAt: startAt.toISOString(), expiresAt: expiresAt.toISOString(),
+            amount: Number(enrollAmountPaid), transactionReference: enrollTransactionId.trim(),
+            note: enrollNote.trim(), idempotencyKey: enrollIdempotencyKey }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.data) throw new Error(payload?.error || "Could not assign module access.");
+        toast({ title: payload.data.paymentStatus === "pending" ? "Payment awaiting review" : "Complimentary access assigned",
+          description: payload.data.paymentStatus === "pending"
+            ? "The manual entry is pending. Paid access starts only after explicit payment confirmation."
+            : `${enrollUser.email} can now manage this assigned record during the granted period.` });
+        setEnrollIdempotencyKey(crypto.randomUUID());
+        setIsEnrollOpen(false);
+        setEnrollEntityId("");
+        setEnrollAmountPaid(0);
+        setEnrollTransactionId("");
+        setEnrollNote("");
+        void fetchUsers(currentPage, pageSize, searchQuery);
+        return;
       }
       const entityType = enrollModuleKey === "college" ? "college" : enrollModuleKey === "jobs" ? "company" : enrollModuleKey === "mentor" ? "mentor" : "event";
       const { error } = await (supabase as any).rpc("admin_assign_module_access_with_payment", {
@@ -191,6 +241,72 @@ const AdminUsers = () => {
     }
   };
 
+  const openAccess = async (user: UserRecord) => {
+    setAccessUser(user);
+    setIsLoadingAccess(true);
+    try {
+      const [accessResponse, paymentResponse] = await Promise.all([
+        fetch(`/api/v1/neon-staging/admin/access?${new URLSearchParams({ mode: "user", userId: user.user_id })}`,
+          { credentials: "same-origin", cache: "no-store" }),
+        fetch(`/api/v1/neon-staging/admin/manual-payments?${new URLSearchParams({ userId: user.user_id })}`,
+          { credentials: "same-origin", cache: "no-store" }),
+      ]);
+      const [accessPayload, paymentPayload] = await Promise.all([
+        accessResponse.json().catch(() => null), paymentResponse.json().catch(() => null),
+      ]);
+      if (!accessResponse.ok || !Array.isArray(accessPayload?.data) ||
+          !paymentResponse.ok || !Array.isArray(paymentPayload?.data)) {
+        throw new Error(accessPayload?.error || paymentPayload?.error || "Could not load module access.");
+      }
+      setAccessRows(accessPayload.data);
+      setManualPayments(paymentPayload.data);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Access unavailable",
+        description: error instanceof Error ? error.message : "Please try again." });
+      setAccessRows([]);
+      setManualPayments([]);
+    } finally { setIsLoadingAccess(false); }
+  };
+
+  const reviewManualPayment = async (paymentId: string, decision: "confirm" | "reject") => {
+    if (!accessUser) return;
+    const note = prompt(decision === "confirm" ? "Enter the payment verification evidence or receipt note (at least 8 characters):"
+      : "Enter the reason for rejecting this payment (at least 8 characters):");
+    if (note === null) return;
+    setReviewingPayment(paymentId);
+    try {
+      const response = await fetch("/api/v1/neon-staging/admin/manual-payments", {
+        method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, decision, note }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.data) throw new Error(payload?.error || "Payment review failed.");
+      toast({ title: decision === "confirm" ? "Payment confirmed" : "Payment rejected",
+        description: decision === "confirm" ? "The scoped entitlement is now active." : "No paid access was activated." });
+      void openAccess(accessUser);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Payment review failed",
+        description: error instanceof Error ? error.message : "Please try again." });
+    } finally { setReviewingPayment(null); }
+  };
+
+  const revokeAccess = async (kind: "scope" | "capability", id: string) => {
+    if (!accessUser || !confirm(`Revoke this ${kind}? Existing paid access for the affected scope will be disabled; payment history is preserved.`)) return;
+    try {
+      const response = await fetch("/api/v1/neon-staging/admin/access", {
+        method: "DELETE", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: accessUser.user_id, kind, id }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.data) throw new Error(payload?.error || "Access could not be revoked.");
+      toast({ title: "Access revoked", description: "The change was recorded in the audit log." });
+      void openAccess(accessUser);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Revocation failed",
+        description: error instanceof Error ? error.message : "Please try again." });
+    }
+  };
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
@@ -199,6 +315,19 @@ const AdminUsers = () => {
   const fetchUsers = useCallback(async (targetPage: number, targetPageSize: number, targetSearch: string) => {
     setIsLoading(true);
     try {
+      if (isNeonStaging) {
+        const params = new URLSearchParams({ page: String(targetPage), page_size: String(targetPageSize) });
+        if (targetSearch.trim()) params.set("search", targetSearch.trim());
+        const response = await fetch(`/api/v1/neon-staging/admin/users?${params}`, { cache: "no-store" });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(payload?.data)) {
+          throw new Error(typeof payload?.error === "string" ? payload.error : "Could not load registered users.");
+        }
+        setUsers(payload.data);
+        setTotalCount(Number(payload.meta?.total) || 0);
+        setTotalPages(Number(payload.meta?.totalPages) || 1);
+        return;
+      }
       try {
         const { data: auth } = await supabase.auth.getSession();
         if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
@@ -259,6 +388,7 @@ const AdminUsers = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isNeonStaging) return;
     if (!createEmail.trim()) {
       toast({ variant: "destructive", title: "Email is required", description: "Enter an email address for the invitation." });
       return;
@@ -301,6 +431,15 @@ const AdminUsers = () => {
 
   const handleSendPasswordReset = async (email: string) => {
     try {
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/auth/request-password-reset", {
+          method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        if (!response.ok) throw new Error("Neon password recovery is unavailable. Check the staging email provider.");
+        toast({ title: "Recovery requested", description: `If ${email} has a linked Neon account, it can receive a reset link when staging email delivery is configured.` });
+        return;
+      }
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: getPasswordResetUrl(),
       });
@@ -315,8 +454,21 @@ const AdminUsers = () => {
   };
 
   const handleToggleStatus = async (userId: string, currentStatus?: string | null) => {
-    const nextStatus = currentStatus === "suspended" ? "active" : "suspended";
+    const nextStatus = currentStatus === "suspended" || currentStatus === "deactivated" ? "active" : "suspended";
     try {
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/admin/users", {
+          method: "PATCH", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, status: nextStatus }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.data) throw new Error(payload?.error || "The account status could not be updated.");
+        toast({ title: nextStatus === "suspended" ? "User Account Suspended" : "User Account Re-activated",
+          description: `Account status updated to ${nextStatus}.` });
+        void fetchUsers(currentPage, pageSize, searchQuery);
+        return;
+      }
       const { data: auth } = await supabase.auth.getSession();
       if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
       const response = await fetch(`/api/v1/admin/auth-users/${encodeURIComponent(userId)}`, {
@@ -338,8 +490,22 @@ const AdminUsers = () => {
   };
 
   const handleDeleteUser = async (userId: string, email: string) => {
-    if (!confirm(`Are you sure you want to delete profile record for ${email}?`)) return;
+    if (!confirm(isNeonStaging
+      ? `Deactivate ${email}? Their existing session will lose application access, but their records will be preserved.`
+      : `Are you sure you want to delete profile record for ${email}?`)) return;
     try {
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/admin/users", {
+          method: "PATCH", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, status: "deactivated" }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.data) throw new Error(payload?.error || "The account could not be deactivated.");
+        toast({ title: "Account deactivated", description: `${email} can no longer access protected application features. Records are preserved.` });
+        void fetchUsers(currentPage, pageSize, searchQuery);
+        return;
+      }
       const { data: auth } = await supabase.auth.getSession();
       if (!auth.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
       const response = await fetch(`/api/v1/admin/auth-users/${encodeURIComponent(userId)}`, {
@@ -402,10 +568,10 @@ const AdminUsers = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsCreateOpen(true)} className="bg-[#071a3d] hover:bg-[#05132d] text-white font-bold rounded-xl text-xs">
+          {!isNeonStaging && <Button onClick={() => setIsCreateOpen(true)} className="bg-[#071a3d] hover:bg-[#05132d] text-white font-bold rounded-xl text-xs">
             <UserPlus className="mr-2 h-4 w-4" />
             Create New User
-          </Button>
+          </Button>}
           <Button variant="outline" onClick={() => void fetchUsers(currentPage, pageSize, searchQuery)} disabled={isLoading} className="rounded-xl text-xs font-bold">
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
@@ -491,13 +657,18 @@ const AdminUsers = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {user.account_status === "suspended" ? (
-                        <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] font-extrabold">Suspended</Badge>
+                      {user.account_status === "suspended" || user.account_status === "deactivated" ? (
+                        <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] font-extrabold">
+                          {user.account_status === "deactivated" ? "Deactivated" : "Suspended"}
+                        </Badge>
                       ) : (
                         <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] font-extrabold">Active</Badge>
                       )}
                       {!user.email_verified && (
                         <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-bold">Unconfirmed</Badge>
+                      )}
+                      {isNeonStaging && user.identity_linked === false && (
+                        <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-bold">Recovery needed</Badge>
                       )}
                     </div>
                   </TableCell>
@@ -514,15 +685,16 @@ const AdminUsers = () => {
                       <DropdownMenuContent align="end" className="w-48 rounded-xl">
                         <DropdownMenuLabel className="text-xs font-bold">User Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleSendPasswordReset(user.email)} className="text-xs font-semibold cursor-pointer">
+                        <DropdownMenuItem disabled={isNeonStaging && !user.identity_linked}
+                          onClick={() => handleSendPasswordReset(user.email)} className="text-xs font-semibold cursor-pointer">
                           <KeyRound className="w-4 h-4 mr-2 text-amber-600" />
-                          Send Password Reset
+                          Request Password Reset
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleToggleStatus(user.user_id, user.account_status)} className="text-xs font-semibold cursor-pointer">
-                          {user.account_status === "suspended" ? (
+                          {user.account_status === "suspended" || user.account_status === "deactivated" ? (
                             <>
                               <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-600" />
-                              Unsuspend User
+                              Reactivate User
                             </>
                           ) : (
                             <>
@@ -538,6 +710,7 @@ const AdminUsers = () => {
                             setEnrollUser(user);
                             setEnrollStartDate(dates.start);
                             setEnrollEndDate(dates.end);
+                            setEnrollIdempotencyKey(crypto.randomUUID());
                             setIsEnrollOpen(true);
                           }}
                           className="text-xs font-semibold text-[#071a3d] cursor-pointer"
@@ -545,11 +718,17 @@ const AdminUsers = () => {
                           <UserRoundCog className="w-4 h-4 mr-2 text-indigo-600" />
                           Assign Module Access
                         </DropdownMenuItem>
+                        {isNeonStaging && <DropdownMenuItem onClick={() => void openAccess(user)} className="text-xs font-semibold cursor-pointer">
+                          <KeyRound className="w-4 h-4 mr-2 text-indigo-600" />
+                          View / Revoke Access
+                        </DropdownMenuItem>}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleDeleteUser(user.user_id, user.email)} className="text-xs font-semibold text-red-600 cursor-pointer">
+                        {user.account_status !== "deactivated" && <DropdownMenuItem
+                          disabled={isNeonStaging && (user.roles.includes("admin") || user.roles.includes("super_admin"))}
+                          onClick={() => handleDeleteUser(user.user_id, user.email)} className="text-xs font-semibold text-red-600 cursor-pointer">
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Delete User Profile
-                        </DropdownMenuItem>
+                          {isNeonStaging ? "Deactivate Account" : "Delete User Profile"}
+                        </DropdownMenuItem>}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -652,14 +831,19 @@ const AdminUsers = () => {
             <DialogHeader>
               <DialogTitle className="text-xl font-black text-slate-900">Assign Module Access</DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Assign one person to a specific record, set the subscription period, and record any offline payment in the same audited action.
+                {isNeonStaging
+                  ? "Assign one person to a specific record and subscription period. A positive offline amount stays pending until payment is separately verified."
+                  : "Assign one person to a specific record and subscription period. Enter a positive amount only for payment already received."}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3">
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700">Module to Grant *</Label>
-                <Select value={enrollModuleKey} onValueChange={setEnrollModuleKey}>
+                <Select value={enrollModuleKey} onValueChange={(value) => {
+                  setEnrollModuleKey(value);
+                  setEnrollEntitySearch("");
+                }}>
                   <SelectTrigger className="h-10 text-xs rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
@@ -674,6 +858,9 @@ const AdminUsers = () => {
 
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700">Assigned record *</Label>
+                {isNeonStaging && <Input aria-label="Search assignable records" value={enrollEntitySearch}
+                  onChange={(event) => setEnrollEntitySearch(event.target.value)}
+                  placeholder="Search college, company, mentor or event" className="mb-2 h-10 text-xs rounded-xl" />}
                 <Select value={enrollEntityId} onValueChange={setEnrollEntityId} disabled={isLoadingEntities}>
                   <SelectTrigger className="h-10 text-xs rounded-xl">
                     <SelectValue placeholder={isLoadingEntities ? "Loading records..." : "Choose the exact record"} />
@@ -701,7 +888,7 @@ const AdminUsers = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Amount Received (NPR) *</Label>
+                <Label className="text-xs font-bold text-slate-700">{isNeonStaging ? "Recorded payment amount (NPR)" : "Amount Received (NPR)"} *</Label>
                 <Input
                   type="number"
                   min={0}
@@ -710,12 +897,14 @@ const AdminUsers = () => {
                   placeholder="e.g. 5000"
                   className="h-10 text-xs rounded-xl"
                 />
-                <p className="text-[10px] text-slate-500">Use 0 for a complimentary grant. Positive amounts are added to Payments as successful manual transactions.</p>
+                <p className="text-[10px] text-slate-500">{isNeonStaging
+                  ? "Use 0 for a complimentary grant. Positive amounts are pending until a separate payment review."
+                  : "Use 0 for a complimentary grant. Enter an amount only after receiving payment."}</p>
               </div>
 
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700" htmlFor="transaction-reference">Payment reference</Label>
-                <Input id="transaction-reference" value={enrollTransactionId} onChange={(e) => setEnrollTransactionId(e.target.value)} maxLength={180} placeholder="Receipt or bank reference (optional)" className="h-10 text-xs rounded-xl" />
+                <Input id="transaction-reference" value={enrollTransactionId} onChange={(e) => setEnrollTransactionId(e.target.value)} maxLength={180} required={isNeonStaging && enrollAmountPaid > 0} placeholder="Receipt or bank reference" className="h-10 text-xs rounded-xl" />
               </div>
 
               <div className="space-y-1">
@@ -737,6 +926,42 @@ const AdminUsers = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {isNeonStaging && <Dialog open={!!accessUser} onOpenChange={(open) => { if (!open) setAccessUser(null); }}>
+        <DialogContent className="max-w-lg rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle>Module access for {accessUser?.full_name || accessUser?.email}</DialogTitle>
+            <DialogDescription>Revocation takes effect on the next protected request. Financial history remains intact.</DialogDescription>
+          </DialogHeader>
+          {isLoadingAccess ? <p className="text-sm text-slate-500">Loading access…</p> :
+            <div className="max-h-80 space-y-3 overflow-y-auto">
+              {accessRows.length === 0 && <p className="text-sm text-slate-500">No module assignments found.</p>}
+              {accessRows.map((row) => <div key={`${row.capabilityId}-${row.assignmentId ?? "none"}`} className="rounded-xl border border-slate-200 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold capitalize">{row.module} · {row.capabilityStatus}</p>
+                  {row.capabilityStatus === "active" && accessRows.findIndex(candidate => candidate.capabilityId === row.capabilityId) === accessRows.indexOf(row) && <Button type="button" size="sm" variant="outline"
+                    onClick={() => void revokeAccess("capability", row.capabilityId)}>Revoke module</Button>}
+                </div>
+                {row.assignmentId && <div className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-xs text-slate-600">{row.label || row.entityType} · {row.assignmentStatus}</p>
+                  {row.assignmentStatus === "active" && <Button type="button" size="sm" variant="outline"
+                    onClick={() => void revokeAccess("scope", row.assignmentId!)}>Revoke scope</Button>}
+                </div>}
+              </div>)}
+              {manualPayments.length > 0 && <h3 className="pt-2 text-sm font-bold">Manual payment history</h3>}
+              {manualPayments.map((payment) => <div key={payment.id} className="rounded-xl border border-slate-200 p-3 text-xs">
+                <p className="font-semibold capitalize">{payment.module} · NPR {payment.amount.toLocaleString()} · {payment.status}</p>
+                <p className="break-all text-slate-600">Reference: {payment.transactionReference}</p>
+                {payment.status === "pending" && <div className="mt-2 flex gap-2">
+                  <Button type="button" size="sm" disabled={reviewingPayment === payment.id}
+                    onClick={() => void reviewManualPayment(payment.id, "confirm")}>Confirm payment</Button>
+                  <Button type="button" size="sm" variant="outline" disabled={reviewingPayment === payment.id}
+                    onClick={() => void reviewManualPayment(payment.id, "reject")}>Reject</Button>
+                </div>}
+              </div>)}
+            </div>}
+        </DialogContent>
+      </Dialog>}
     </OperationsPage>
   );
 };

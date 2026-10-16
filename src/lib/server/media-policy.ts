@@ -44,8 +44,11 @@ export const mediaModuleNames = [
   "application_file",
   "event_cover",
   "event_attachment",
+  "payment_proof",
+  "chat_attachment",
   "course_thumbnail",
   "advertisement",
+  "company_logo",
 ] as const;
 
 export type MediaModule = (typeof mediaModuleNames)[number];
@@ -60,6 +63,13 @@ interface MediaPolicy {
 }
 
 export const mediaPolicies: Record<MediaModule, MediaPolicy> = {
+  company_logo: {
+    bucket: "profile-media",
+    maxBytes: 3 * megabyte,
+    mimeTypes: imageMimeTypes,
+    resourceRequired: true,
+    permission: "job.post",
+  },
   profile_avatar: {
     bucket: "profile-media",
     maxBytes: 5 * megabyte,
@@ -125,6 +135,18 @@ export const mediaPolicies: Record<MediaModule, MediaPolicy> = {
     mimeTypes: documentMimeTypes,
     resourceRequired: true,
     permission: "event.organize",
+  },
+  payment_proof: {
+    bucket: "payment-proofs",
+    maxBytes: 5 * megabyte,
+    mimeTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"],
+    resourceRequired: true,
+  },
+  chat_attachment: {
+    bucket: "chat-attachments",
+    maxBytes: 5 * megabyte,
+    mimeTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"],
+    resourceRequired: true,
   },
   course_thumbnail: {
     bucket: "course-media",

@@ -7,7 +7,8 @@ import { getBackendMode } from "@/lib/server/backend-mode";
 import { authenticateRequest } from "@/lib/server/auth";
 import { registerForEvent } from "@/lib/server/events-service";
 import { NeonEventsRepository } from "@/lib/server/neon-events";
-import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
+import { getAuthenticatedApplicationUser, requireSameOrigin } from "@/lib/server/neon-session";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,16 +30,32 @@ export async function POST(
     }
 
     if (getBackendMode() === "neon-staging") {
+      requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonEventsRepository();
+      const parsed = z.object({ ticketTypeId: z.string().uuid().nullable().optional(),
+        attendeeCount: z.number().int().min(1).max(10).optional(),
+        participants: z.array(z.object({ fullName: z.string().trim().min(1).max(200),
+          email: z.string().email().optional(), phone: z.string().max(30).optional(),
+          college: z.string().max(200).optional(), studentId: z.string().max(100).optional(),
+          roleInTeam: z.string().max(50).optional() })).max(10).optional(),
+        customResponses: z.record(z.string(), z.unknown()).optional(),
+        programId: z.string().uuid().nullable().optional(), teamName: z.string().max(200).nullable().optional() })
+        .passthrough().safeParse(body);
+      if (!parsed.success || "totalAmount" in body || "paymentStatus" in body) {
+        return jsonApiResponse({ data: null, error: { code: "INVALID_REGISTRATION", message: "Choose a valid ticket and quantity." }, meta: { requestId } }, 422);
+      }
       const registration = await repo.registerForEvent(actor, {
         eventId,
-        ticketQuantity: typeof body.attendeeCount === "number" ? body.attendeeCount : 1,
-        participants: Array.isArray(body.participants) ? body.participants : undefined,
-        customResponses: typeof body.customResponses === "object" ? body.customResponses : {},
+        ticketTypeId: parsed.data.ticketTypeId,
+        ticketQuantity: parsed.data.attendeeCount ?? 1,
+        participants: parsed.data.participants?.map((participant) => ({
+          fullName: participant.fullName!, email: participant.email, phone: participant.phone, college: participant.college,
+        })),
+        customResponses: parsed.data.customResponses ?? {},
       });
 
-      return jsonApiResponse({ data: registration, error: null, meta: { requestId } }, 201);
+      return jsonApiResponse({ data: { registration, isFree: registration.payment_status === "not_required" }, error: null, meta: { requestId } }, 201);
     }
 
     // Legacy path

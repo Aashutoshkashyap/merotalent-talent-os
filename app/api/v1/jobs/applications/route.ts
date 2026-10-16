@@ -4,7 +4,7 @@ import { adminApiErrorResponse, AdminRequestError, readAdminJsonBody, throwDatab
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { getAdminClient } from "@/lib/server/supabase";
 import { getBackendMode } from "@/lib/server/backend-mode";
-import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
+import { getAuthenticatedApplicationUser, NeonSessionUnavailable, requireSameOrigin } from "@/lib/server/neon-session";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { NeonJobsRepository } from "@/lib/server/neon-jobs";
 import { loadProviderSecret } from "@/lib/server/provider-config-service";
@@ -153,6 +153,7 @@ export async function PATCH(request: Request) {
     const input = parsed.data;
 
     if (isStaging) {
+      requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonJobsRepository();
       const updated = await repo.reviewApplication(actor, {
@@ -231,6 +232,14 @@ export async function PATCH(request: Request) {
     }
     return jsonApiResponse({ data: { ...data, emailStatus }, error: null, meta: { requestId } });
   } catch (error) {
+    if (getBackendMode() === "neon-staging") {
+      if (error instanceof NeonAuthorizationError) {
+        return jsonApiResponse({ data: null, error: { code: error.code, message: error.message }, meta: { requestId } }, error.status);
+      }
+      if (error instanceof NeonSessionUnavailable) {
+        return jsonApiResponse({ data: null, error: { code: "AUTH_UNAVAILABLE", message: error.message }, meta: { requestId } }, 503);
+      }
+    }
     return adminApiErrorResponse(error, requestId, "review job application");
   }
 }

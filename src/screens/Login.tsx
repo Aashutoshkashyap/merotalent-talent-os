@@ -38,7 +38,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error, redirectTo } = await signIn(email, password);
+    const { error, redirectTo, needsAccountRecovery } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -47,6 +47,8 @@ const Login = () => {
         description: error.message,
       });
       setIsLoading(false);
+    } else if (needsAccountRecovery) {
+      navigate("/account-recovery", { replace: true });
     } else {
       toast({
         title: "Welcome back!",

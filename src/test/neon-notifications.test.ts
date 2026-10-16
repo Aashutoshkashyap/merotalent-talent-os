@@ -27,9 +27,27 @@ describe("Neon own-recipient notifications", () => {
     expect(data.notifications).toEqual([{ id: notificationId }]);
     expect(data.unreadCount).toBe(1);
     expect(calls).toHaveLength(1);
-    expect(calls[0].params).toEqual([actor.userId, actor.neonAuthUserId]);
+    expect(data.nextCursor).toBeNull();
+    expect(calls[0].params).toEqual([actor.userId, actor.neonAuthUserId, null]);
     expect(calls[0].sql).toContain("n.recipient_id = $1::uuid");
+    expect(calls[0].sql).toContain("n.deleted_at IS NULL");
     expect(calls[0].sql).toContain("l.neon_auth_user_id = $2::uuid");
+  });
+
+  it("paginates by an owned notification cursor without accepting a recipient ID", async () => {
+    const calls: Array<{ sql: string; params: readonly unknown[] }> = [];
+    const db: NeonQueryExecutor = { query: async (sql, params) => {
+      calls.push({ sql, params });
+      return [{ allowed: true, notifications: Array.from({ length: 51 }, (_, index) => ({
+        id: `30000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      })), unread_count: 2 }] as never;
+    } };
+    const page = await listOwnNotifications(actor, db, notificationId);
+    expect(page.notifications).toHaveLength(50);
+    expect(page.nextCursor).toBe(page.notifications[49].id);
+    expect(calls[0].params).toEqual([actor.userId, actor.neonAuthUserId, notificationId]);
+    expect(calls[0].sql).toContain("cursor.recipient_id=$1::uuid");
+    expect(calls[0].sql).toContain("cursor.deleted_at IS NULL");
   });
 
   it("denies a revoked account rather than returning an empty successful inbox", async () => {
@@ -49,6 +67,7 @@ describe("Neon own-recipient notifications", () => {
     expect(calls[0].params).toEqual([actor.userId, actor.neonAuthUserId, notificationId]);
     expect(calls[0].sql).toContain("UPDATE public.notifications n SET is_read = true");
     expect(calls[0].sql).toContain("n.recipient_id = $1::uuid");
+    expect(calls[0].sql).toContain("n.deleted_at IS NULL");
     expect(calls[0].sql).toContain("l.status = 'verified'");
   });
 

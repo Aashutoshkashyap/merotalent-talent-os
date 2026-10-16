@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Calendar,
   CalendarCheck,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { requestRoleWorkspace, useNeonRoleWorkspaces } from "@/lib/neon/role-workspaces-client";
 
 interface MentorBooking {
   id: string;
@@ -61,8 +62,8 @@ interface MentorBooking {
   } | null;
 }
 
-export function MentorSessionPipeline() {
-  const { session } = useAuth();
+export function MentorSessionPipeline({ mentorId, readOnly = false }: { mentorId?: string; readOnly?: boolean } = {}) {
+  const { session, user } = useAuth();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<MentorBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,14 +82,17 @@ export function MentorSessionPipeline() {
 
   const [isCompleting, setIsCompleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [session?.access_token]);
-
-  const fetchBookings = async () => {
-    if (!session?.access_token) return;
+  const fetchBookings = useCallback(async () => {
+    if (!(useNeonRoleWorkspaces ? user && mentorId : session?.access_token)) {
+      setBookings([]); setIsLoading(false); return;
+    }
     setIsLoading(true);
     try {
+      if (useNeonRoleWorkspaces) {
+        const data = await requestRoleWorkspace(`/api/v1/neon-staging/role-workspaces?role=mentor&entityId=${encodeURIComponent(mentorId!)}`);
+        setBookings(data.snapshot.mentorBookings);
+        return;
+      }
       const res = await fetch("/api/v1/mentors/bookings?mode=mentor", {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -97,13 +101,15 @@ export function MentorSessionPipeline() {
       const json = await res.json();
       if (res.ok && Array.isArray(json.data)) {
         setBookings(json.data);
-      }
+      } else throw new Error(json.error?.message || "Unable to load bookings.");
     } catch {
+      setBookings([]);
       toast({ variant: "destructive", title: "Error", description: "Failed to load mentor bookings." });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, mentorId, session, toast]);
+  useEffect(() => { void fetchBookings(); }, [fetchBookings]);
 
   const now = Date.now();
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -131,13 +137,13 @@ export function MentorSessionPipeline() {
   }, [completedSessions]);
 
   const handleComplete = async (bookingId: string) => {
-    if (!session?.access_token) return;
+    if (!(useNeonRoleWorkspaces ? user : session?.access_token)) return;
     setIsCompleting(bookingId);
     try {
       const res = await fetch("/api/v1/mentors/bookings", {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          ...(!useNeonRoleWorkspaces && session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -159,7 +165,7 @@ export function MentorSessionPipeline() {
   };
 
   const handleRescheduleSubmit = async () => {
-    if (!rescheduleBooking || !session?.access_token) return;
+    if (!rescheduleBooking || !(useNeonRoleWorkspaces ? user : session?.access_token)) return;
     if (!newDate || !newTime) {
       toast({ variant: "destructive", title: "Date and Time required", description: "Select new date and time slot." });
       return;
@@ -170,7 +176,7 @@ export function MentorSessionPipeline() {
       const res = await fetch("/api/v1/mentors/bookings", {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          ...(!useNeonRoleWorkspaces && session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -178,6 +184,7 @@ export function MentorSessionPipeline() {
           action: "reschedule",
           newDate,
           newTime,
+          durationMinutes: Math.round((new Date(rescheduleBooking.scheduled_end).getTime() - new Date(rescheduleBooking.scheduled_start).getTime()) / 60000),
           reason: rescheduleReason,
         }),
       });
@@ -199,13 +206,13 @@ export function MentorSessionPipeline() {
   };
 
   const handleCancelSubmit = async () => {
-    if (!cancelBooking || !session?.access_token) return;
+    if (!cancelBooking || !(useNeonRoleWorkspaces ? user : session?.access_token)) return;
     setIsCancelling(true);
     try {
       const res = await fetch("/api/v1/mentors/bookings", {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          ...(!useNeonRoleWorkspaces && session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -310,6 +317,7 @@ export function MentorSessionPipeline() {
                 onCancel={() => setCancelBooking(b)}
                 onComplete={() => handleComplete(b.id)}
                 isCompleting={isCompleting === b.id}
+                readOnly={readOnly}
               />
             ))
           ) : (
@@ -329,6 +337,7 @@ export function MentorSessionPipeline() {
                 onCancel={() => {}}
                 onComplete={() => {}}
                 isCompleting={false}
+                readOnly={readOnly}
               />
             ))
           ) : (
@@ -348,6 +357,7 @@ export function MentorSessionPipeline() {
                 onCancel={() => setCancelBooking(b)}
                 onComplete={() => handleComplete(b.id)}
                 isCompleting={isCompleting === b.id}
+                readOnly={readOnly}
               />
             ))
           ) : (
@@ -454,14 +464,16 @@ function BookingRow({
   onCancel,
   onComplete,
   isCompleting,
+  readOnly,
 }: {
   booking: MentorBooking;
   onReschedule: () => void;
   onCancel: () => void;
   onComplete: () => void;
   isCompleting: boolean;
+  readOnly: boolean;
 }) {
-  const canModify = ["pending", "confirmed", "rescheduled"].includes(booking.status);
+  const canModify = !readOnly && ["pending", "confirmed", "rescheduled"].includes(booking.status);
   const isCompleted = booking.status === "completed";
   const studentName = booking.form_data?.fullName || "Student";
   const topic = booking.form_data?.topic || booking.mentor_services?.title || "Mentoring session";

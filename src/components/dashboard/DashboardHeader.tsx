@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command, Briefcase, Building2, UserCog, Check } from "lucide-react";
+import { Bell, Search, User, Settings, LogOut, Menu, Plus, Command, Briefcase, Building2, UserCog, Check, CalendarDays } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
@@ -19,8 +19,9 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
-  const { profile, roles, signOut } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { profile, roles, capabilities, signOut } = useAuth();
+  const { notifications, unreadCount, isLoading: notificationsLoading, error: notificationsError,
+    hasMore, loadMore, refresh: refreshNotifications, markAsRead, markAsUnread, markAllAsRead } = useNotifications();
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
@@ -158,22 +159,37 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => markAsRead(n.id)}
-                  className={`p-3 rounded-xl transition-all cursor-pointer ${
+                  className={`w-full p-3 rounded-xl text-left transition-all ${
                     n.read ? "bg-white opacity-70" : "bg-blue-50/70 border border-blue-100"
                   }`}
                 >
+                  <button type="button" className="w-full text-left" onClick={async () => {
+                    await markAsRead(n.id);
+                    if (n.link?.startsWith("/") && !n.link.startsWith("//")) navigate(n.link);
+                  }}>
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-slate-900">{n.title}</p>
                     {!n.read && <span className="w-2 h-2 rounded-full bg-[#0073e6]" />}
                   </div>
                   <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{n.message}</p>
+                  </button>
+                  {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && n.read &&
+                    <button type="button" className="mt-1 text-[10px] text-[#0073e6] underline" onClick={() => void markAsUnread(n.id)}>Mark unread</button>}
                 </div>
               ))}
 
-              {notifications.length === 0 && (
+              {notificationsLoading && notifications.length === 0 && (
+                <p className="text-center text-xs text-slate-500 py-6">Loading notifications…</p>
+              )}
+              {notificationsError && (
+                <button type="button" onClick={() => void refreshNotifications()} className="w-full py-2 text-xs text-red-700 underline">
+                  {notificationsError} Retry
+                </button>
+              )}
+              {!notificationsLoading && !notificationsError && notifications.length === 0 && (
                 <p className="text-center text-xs text-slate-400 py-6">No notifications</p>
               )}
+              {hasMore && <button type="button" onClick={() => void loadMore()} className="w-full py-2 text-xs text-[#0073e6] underline">Load more</button>}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -212,7 +228,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {roles.includes("mentor") && (
+            {(roles.includes("mentor") || capabilities.includes("mentor")) && (
               <DropdownMenuItem asChild>
                 <Link to="/mentor" className="cursor-pointer">
                   <UserCog className="w-4 h-4 mr-2" />
@@ -220,7 +236,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 </Link>
               </DropdownMenuItem>
             )}
-            {roles.includes("company") && (
+            {(roles.includes("company") || capabilities.includes("jobs")) && (
               <DropdownMenuItem asChild>
                 <Link to="/company" className="cursor-pointer">
                   <Briefcase className="w-4 h-4 mr-2" />
@@ -228,7 +244,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 </Link>
               </DropdownMenuItem>
             )}
-            {roles.includes("institution") && (
+            {(roles.includes("institution") || capabilities.includes("college")) && (
               <DropdownMenuItem asChild>
                 <Link to="/institute" className="cursor-pointer">
                   <Building2 className="w-4 h-4 mr-2" />
@@ -236,6 +252,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 </Link>
               </DropdownMenuItem>
             )}
+            {capabilities.includes("events") && <DropdownMenuItem asChild><Link to="/event-admin" className="cursor-pointer"><CalendarDays className="mr-2 h-4 w-4" />Events Workspace</Link></DropdownMenuItem>}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={signOut}

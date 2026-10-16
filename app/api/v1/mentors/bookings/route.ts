@@ -11,7 +11,8 @@ import {
   cancelMentorBooking,
 } from "@/lib/server/mentorship-service";
 import { NeonMentorsRepository } from "@/lib/server/neon-mentors";
-import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
+import { getAuthenticatedApplicationUser, requireSameOrigin } from "@/lib/server/neon-session";
+import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -131,6 +132,9 @@ export async function GET(request: Request) {
 
     return jsonApiResponse({ data: formatted, error: null, meta: { requestId } }, 200);
   } catch (error) {
+    if (error instanceof NeonAuthorizationError) {
+      return jsonApiResponse({ data: null, error: { code: error.code, message: error.message }, meta: { requestId } }, error.status);
+    }
     if (error instanceof ApiAuthError) {
       return jsonApiResponse({ data: null, error: { code: error.code, message: error.message }, meta: { requestId } }, error.status);
     }
@@ -156,6 +160,7 @@ export async function PATCH(request: Request) {
     const action = body.action; // "reschedule", "cancel", "complete"
 
     if (getBackendMode() === "neon-staging") {
+      requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonMentorsRepository();
 
@@ -228,6 +233,9 @@ export async function PATCH(request: Request) {
       400
     );
   } catch (error) {
+    if (error instanceof NeonAuthorizationError) {
+      return jsonApiResponse({ data: null, error: { code: error.code, message: error.message }, meta: { requestId } }, error.status);
+    }
     if (error instanceof ApiAuthError) {
       return jsonApiResponse({ data: null, error: { code: error.code, message: error.message }, meta: { requestId } }, error.status);
     }

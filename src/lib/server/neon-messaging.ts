@@ -11,6 +11,7 @@ import {
   type NeonQueryExecutor,
 } from "./neon-authorization";
 import { appendMessageEvent, requireConversationMembership } from "./neon-application-events";
+import { assertMediaObjectPath, mediaPolicies } from "./media-policy";
 
 export interface ConversationSummaryRow extends QueryResultRow {
   id: string;
@@ -54,19 +55,33 @@ export class NeonMessagingRepository {
       LEFT JOIN public.profiles mp ON mp.user_id = mentor.user_id
       LEFT JOIN public.profiles ep ON ep.user_id = c.mentee_id
       WHERE c.is_active = true AND (c.mentee_id = $1::uuid OR mentor.user_id = $1::uuid)
+        AND EXISTS (SELECT 1 FROM public.neon_application_accounts a
+          JOIN public.neon_identity_links l ON l.application_account_id=a.id
+          JOIN public.profiles p ON p.user_id=a.legacy_user_id
+          WHERE a.legacy_user_id=$1::uuid AND a.status='active' AND p.account_status='active'
+            AND p.deleted_at IS NULL AND l.status='verified' AND l.neon_auth_user_id=$2::uuid)
       ORDER BY COALESCE((SELECT max(m.created_at) FROM public.messages m WHERE m.conversation_id = c.id), c.created_at) DESC
-      LIMIT 50`, [actor.userId]);
+      LIMIT 50`, [actor.userId,actor.neonAuthUserId]);
   }
 
-  async listMessages(actor: NeonActor, conversationId: string): Promise<MessageRow[]> {
+  async listMessages(actor: NeonActor, conversationId: string, beforeId: string | null = null): Promise<{
+    messages: MessageRow[]; nextCursor: string | null;
+  }> {
     await requireConversationMembership(actor, conversationId, this.db);
-    return this.db.query<MessageRow>(`
+    const rows = await this.db.query<MessageRow>(`
       SELECT id, conversation_id, sender_id, receiver_id, content, is_read,
              created_at, attachment_path, attachment_mime_type
       FROM public.messages
       WHERE conversation_id = $1::uuid
-      ORDER BY created_at ASC
-      LIMIT 100`, [conversationId]);
+        AND EXISTS (SELECT 1 FROM public.conversations c JOIN public.mentors mentor ON mentor.id=c.mentor_id
+          WHERE c.id=$1::uuid AND c.is_active=true AND (c.mentee_id=$3::uuid OR mentor.user_id=$3::uuid))
+        AND ($2::uuid IS NULL OR (created_at,id) < (
+          SELECT cursor.created_at,cursor.id FROM public.messages cursor
+          WHERE cursor.id=$2::uuid AND cursor.conversation_id=$1::uuid))
+      ORDER BY created_at DESC,id DESC
+      LIMIT 51`, [conversationId,beforeId,actor.userId]);
+    const page = rows.slice(0, 50);
+    return { messages: page.reverse(), nextCursor: rows.length > 50 ? page[0].id : null };
   }
 
   async sendMessage(
@@ -83,6 +98,13 @@ export class NeonMessagingRepository {
     if (trimmed.length > 5000) {
       throw new NeonAuthorizationError(400, "MESSAGE_TOO_LONG", "Message cannot exceed 5,000 characters.");
     }
+    // The JSON route never accepts attachment paths; validate even internal callers.
+    if (attachment) {
+      assertMediaObjectPath({ module: "chat_attachment", resourceId: conversationId, path: attachment.path }, actor.userId);
+      if (!mediaPolicies.chat_attachment.mimeTypes.includes(attachment.mimeType)) {
+        throw new NeonAuthorizationError(400, "ATTACHMENT_TYPE_INVALID", "Attachment type is not allowed.");
+      }
+    }
 
     const runWith = async (client: Pick<PoolClient, "query">) => {
       // 1. Authorize conversation and identify recipient
@@ -95,7 +117,13 @@ export class NeonMessagingRepository {
         SELECT c.id, c.mentor_id, c.mentee_id, mentor.user_id AS mentor_user_id
         FROM public.conversations c
         JOIN public.mentors mentor ON mentor.id = c.mentor_id
-        WHERE c.id = $1::uuid AND c.is_active = true FOR UPDATE`, [conversationId]);
+        WHERE c.id = $1::uuid AND c.is_active = true
+          AND EXISTS (SELECT 1 FROM public.neon_application_accounts a
+            JOIN public.neon_identity_links l ON l.application_account_id=a.id
+            JOIN public.profiles p ON p.user_id=a.legacy_user_id
+            WHERE a.legacy_user_id=$2::uuid AND a.status='active' AND p.account_status='active'
+              AND p.deleted_at IS NULL AND l.status='verified' AND l.neon_auth_user_id=$3::uuid)
+        FOR UPDATE OF c`, [conversationId,actor.userId,actor.neonAuthUserId]);
 
       const conv = convRows.rows[0];
       if (!conv || (conv.mentee_id !== actor.userId && conv.mentor_user_id !== actor.userId)) {
@@ -137,12 +165,31 @@ export class NeonMessagingRepository {
     return withTransaction(runWith);
   }
 
+  async attachmentForMessage(actor: NeonActor, conversationId: string, messageId: string): Promise<MessageRow> {
+    await requireConversationMembership(actor, conversationId, this.db);
+    const rows = await this.db.query<MessageRow>(`
+      SELECT m.id, m.conversation_id, m.sender_id, m.receiver_id, m.content,
+             m.is_read, m.created_at, m.attachment_path, m.attachment_mime_type
+      FROM public.messages m
+      WHERE m.id=$2::uuid AND m.conversation_id=$1::uuid
+        AND m.attachment_path IS NOT NULL
+        AND EXISTS (SELECT 1 FROM public.conversations c
+          JOIN public.mentors mentor ON mentor.id=c.mentor_id
+          WHERE c.id=m.conversation_id AND c.is_active=true
+            AND (c.mentee_id=$3::uuid OR mentor.user_id=$3::uuid))
+      LIMIT 1`, [conversationId, messageId, actor.userId]);
+    if (!rows[0]) throw new NeonAuthorizationError(404, "ATTACHMENT_NOT_FOUND", "Attachment not found in this conversation.");
+    return rows[0];
+  }
+
   async markConversationRead(actor: NeonActor, conversationId: string): Promise<number> {
     await requireConversationMembership(actor, conversationId, this.db);
     const result = await this.db.query<{ id: string }>(`
       UPDATE public.messages
       SET is_read = true, read_at = now()
       WHERE conversation_id = $1::uuid AND receiver_id = $2::uuid AND is_read = false
+        AND EXISTS (SELECT 1 FROM public.conversations c JOIN public.mentors mentor ON mentor.id=c.mentor_id
+          WHERE c.id=$1::uuid AND c.is_active=true AND (c.mentee_id=$2::uuid OR mentor.user_id=$2::uuid))
       RETURNING id`, [conversationId, actor.userId]);
     return result.length;
   }

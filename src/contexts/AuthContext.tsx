@@ -50,7 +50,7 @@ interface AuthContextType {
   signIn: (
     email: string,
     password: string,
-  ) => Promise<{ error: Error | null; redirectTo?: string }>;
+  ) => Promise<{ error: Error | null; redirectTo?: string; needsAccountRecovery?: boolean }>;
   signInWithOAuth: (
     provider: "google" | "apple",
   ) => Promise<{ error: Error | null }>;
@@ -93,7 +93,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const hydratedUserIdRef = useRef<string | null>(null);
+  const stagingHydrationErrorRef = useRef<string | null>(null);
   const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+
+  const hydrateStaging = async (): Promise<boolean> => {
+    const res = await fetch("/api/v1/neon-staging/profile", {
+      headers: { accept: "application/json" }, credentials: "same-origin", cache: "no-store",
+    });
+    if (!res.ok) {
+      const failure = await res.json().catch(() => null);
+      stagingHydrationErrorRef.current = typeof failure?.error === "string" ? failure.error : null;
+      setUser(null); setSession(null); setProfile(null); setRoles([]); setPermissions([]); setCapabilities([]);
+      return false;
+    }
+    stagingHydrationErrorRef.current = null;
+    const json = await res.json();
+    const data = json.data as Profile | undefined;
+    if (!data?.user_id) return false;
+    setUser({
+      id: data.user_id, email: data.email, app_metadata: {}, user_metadata: { full_name: data.full_name },
+      aud: "authenticated", created_at: new Date().toISOString(),
+    } as User);
+    setProfile(data);
+    setSession(null); // Neon uses an HttpOnly cookie, never a fabricated bearer token.
+    const access = json.access as { roles?: AppRole[]; permissions?: string[]; capabilities?: string[] } | undefined;
+    setRoles(Array.isArray(access?.roles) ? access.roles : ["talent"]);
+    setPermissions(Array.isArray(access?.permissions) ? access.permissions : []);
+    setCapabilities(Array.isArray(access?.capabilities) ? access.capabilities : []);
+    await claimGuestCollegeApplications(data.user_id).catch(() => undefined);
+    return true;
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
@@ -144,6 +173,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const claimGuestCollegeApplications = async (userId: string) => {
     const guestToken = getStoredGuestCollegeApplicationToken();
     if (!guestToken) return;
+    if (isStaging) {
+      const response = await fetch("/api/v1/neon-staging/guest-college-applications/claim", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestToken }),
+      });
+      const result = await response.json().catch(() => null);
+      if (response.ok && Number(result?.data?.claimed_count ?? 0) > 0) invalidateStudentActivityCache(userId);
+      return;
+    }
     const rpcClient = supabase as unknown as {
       rpc: (name: string, args: Record<string, unknown>) => Promise<{
         data: { claimed_count?: unknown } | null;
@@ -161,33 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshProfile = async () => {
     if (isStaging) {
       try {
-        const res = await fetch("/api/v1/neon-staging/profile", {
-          headers: { accept: "application/json" },
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) {
-            setProfile((prev) => ({
-              ...(prev || {
-                id: json.data.user_id,
-                email: "",
-                avatar_url: null,
-                phone: null,
-                bio: null,
-                location: null,
-                linkedin_url: null,
-                education: null,
-                experience_level: null,
-                skills: null,
-                resume_url: null,
-                onboarding_completed: null,
-              }),
-              user_id: json.data.user_id,
-              full_name: json.data.full_name,
-            }));
-          }
-        }
+        await hydrateStaging();
       } catch (err) {
         console.error("Failed to refresh staging profile", err);
       }
@@ -202,41 +214,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (isStaging) {
       void (async () => {
         try {
-          const res = await fetch("/api/v1/neon-staging/profile", {
-            headers: { accept: "application/json" },
-            cache: "no-store",
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json.data) {
-              const fakeUser: User = {
-                id: json.data.user_id,
-                app_metadata: {},
-                user_metadata: { full_name: json.data.full_name },
-                aud: "authenticated",
-                created_at: new Date().toISOString(),
-                email: "",
-              } as User;
-              setUser(fakeUser);
-              setProfile({
-                id: json.data.user_id,
-                user_id: json.data.user_id,
-                email: "",
-                full_name: json.data.full_name,
-                avatar_url: null,
-                phone: null,
-                bio: null,
-                location: null,
-                linkedin_url: null,
-                education: null,
-                experience_level: null,
-                skills: null,
-                resume_url: null,
-                onboarding_completed: true,
-              });
-              setRoles(["talent"]);
-            }
-          }
+          await hydrateStaging();
         } catch (err) {
           console.error("Staging session hydration failed", err);
         } finally {
@@ -296,17 +274,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (isStaging) {
-      // Staging still uses Supabase Auth; neon-staging profile derives the
-      // linked application identity from the active Supabase session cookie.
-      const { error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          emailRedirectTo: getAuthCallbackUrl(),
-          data: { full_name: fullName, account_type: "talent" },
-        },
-      });
-      return { error };
+      return { error: new Error("New staging identities require a separately verified application-account link.") };
     }
 
     // Check if an account already exists for this email
@@ -343,17 +311,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (isStaging) {
-      // Staging still uses Supabase Auth session; neon-staging profile endpoint
-      // derives the linked application identity from the same cookie.
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
-      if (error) return { error };
-      if (!data.user) return { error: new Error("Sign in failed. Please check your credentials.") };
-      await refreshProfile();
-      const redirectTo = resolveWorkspacePath(roles, permissions, capabilities);
-      return { error: null, redirectTo };
+      try {
+        const response = await fetch("/api/v1/neon-staging/auth/sign-in/email", {
+          method: "POST", credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail, password }),
+        });
+        if (!response.ok) return { error: new Error("Sign in failed. Please check your credentials.") };
+        if (!await hydrateStaging()) {
+          if (stagingHydrationErrorRef.current === "IDENTITY_NOT_LINKED") {
+            return { error: null, redirectTo: "/account-recovery", needsAccountRecovery: true };
+          }
+          await fetch("/api/v1/neon-staging/auth/sign-out", {
+            method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: "{}",
+          });
+          return { error: new Error("This staging identity is not linked to an application account.") };
+        }
+        return { error: null, redirectTo: "/dashboard/jobs" };
+      } catch {
+        return { error: new Error("Staging authentication is unavailable. Please try again.") };
+      }
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -410,6 +387,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithOAuth = async (
     provider: "google" | "apple",
   ) => {
+    if (isStaging) return { error: new Error("OAuth is not configured for the isolated staging environment.") };
     clearPendingModuleAccessRole();
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -429,8 +407,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       if (isStaging) {
-        // Sign out from Supabase session and clear state.
-        await supabase.auth.signOut().catch(() => undefined);
+        const response = await fetch("/api/v1/neon-staging/auth/sign-out", {
+          method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: "{}",
+        });
+        if (!response.ok) throw new Error("Staging sign out failed.");
         setUser(null);
         setSession(null);
         setProfile(null);

@@ -30,13 +30,18 @@ export default function AdminReports() {
     setIsExporting(true);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.getSession();
-      if (authError || !authData.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
+      let token:string|undefined;
+      if(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE !== "neon-staging") {
+        const { data: authData, error: authError } = await supabase.auth.getSession();
+        if (authError || !authData.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
+        token=authData.session.access_token;
+      }
       const params = new URLSearchParams({ format, limit: "5000" });
       if (fromDate) params.set("from", fromDate);
       if (toDate) params.set("to", toDate);
       const response = await fetch(`/api/v1/admin/reports/${selectedReport}?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${authData.session.access_token}` },
+        credentials:"same-origin",cache:"no-store",
+        headers: token?{Authorization:`Bearer ${token}`}:{},
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => null);

@@ -40,7 +40,6 @@ import {
   institutePath,
   safeExternalUrl,
 } from "@/lib/institutes/public-institutes";
-import { supabase } from "@/integrations/supabase/client";
 
 const sectionLinks = [
   { id: "about", label: "About" },
@@ -110,20 +109,15 @@ export default function InstituteDetailPage() {
     enabled: Boolean(instituteQuery.data?.id),
     queryFn: async () => {
       const instituteId = instituteQuery.data!.id;
-      const [blogsResult, noticesResult] = await Promise.all([
-        (supabase as any).from("college_blogs")
-          .select("id,title,slug,excerpt,published_at")
-          .eq("institute_id", instituteId).eq("status", "published").is("deleted_at", null)
-          .order("published_at", { ascending: false }).limit(3),
-        (supabase as any).from("institute_notices")
-          .select("id,title,content,published_at")
-          .eq("institute_id", instituteId).lte("published_at", new Date().toISOString())
-          .order("published_at", { ascending: false }).limit(3),
-      ]);
-      return {
-        blogs: blogsResult.error ? [] : (blogsResult.data || []) as Array<{ id: string; title: string; slug: string; excerpt: string | null; published_at: string | null }>,
-        notices: noticesResult.error ? [] : (noticesResult.data || []) as Array<{ id: string; title: string; content: string; published_at: string | null }>,
-      };
+      const response = await fetch(`/api/v1/institutes/${encodeURIComponent(instituteId)}/updates`, {
+        headers: { accept: "application/json" }, cache: "no-store",
+      });
+      if (!response.ok) throw new Error("College updates could not be loaded.");
+      const json = await response.json() as { data?: {
+        blogs: Array<{ id: string; title: string; slug: string; excerpt: string | null; published_at: string | null }>;
+        notices: Array<{ id: string; title: string; content: string | null; published_at: string | null }>;
+      } };
+      return json.data ?? { blogs: [], notices: [] };
     },
   });
 

@@ -19,6 +19,7 @@ import Onboarding from "./screens/Onboarding";
 import ResetPassword from "./screens/ResetPassword";
 import PendingApproval from "./screens/auth/PendingApproval";
 import OAuthCallback from "./screens/auth/OAuthCallback";
+import LegacyAccountRecovery from "./screens/auth/LegacyAccountRecovery";
 
 // Public Pages
 import CoursesPage from "./screens/courses/CoursesPage";
@@ -85,6 +86,7 @@ import InstituteDashboard from "./screens/institute/InstituteDashboard";
 import InstituteNotices from "./screens/institute/InstituteNotices";
 import InstituteBlogs from "./screens/institute/InstituteBlogs";
 import RoleWorkspace from "./screens/role/RoleWorkspace";
+import EventsWorkspace from "./screens/role/EventsWorkspace";
 import ModuleAIWorkspace from "./screens/role/ModuleAIWorkspace";
 import LegalPage from "./screens/LegalPage";
 
@@ -117,6 +119,8 @@ const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/pending-approval" element={<PendingApproval />} />
               <Route path="/auth/callback" element={<OAuthCallback />} />
+              <Route path="/account-recovery" element={<LegacyAccountRecovery />} />
+              <Route path="/account-recovery/source" element={<LegacyAccountRecovery sourceCallback />} />
               <Route path="/onboarding" element={<Onboarding />} />
               
               {/* Public Landing Pages */}
@@ -236,6 +240,7 @@ const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }
                   </ProtectedRoute>
                 }
               />
+              <Route path="/event-admin" element={<ProtectedRoute requiredModule="events"><EventsWorkspace /></ProtectedRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />

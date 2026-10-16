@@ -21,6 +21,15 @@ interface EntityAIControlsProps {
 type AIStatus = { configured: boolean; enabled: boolean; providerName: string | null; secretStorageReady: boolean };
 
 const getToken = async () => (await supabase.auth.getSession()).data.session?.access_token;
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const aiPath = (operation: "byok" | "generate") => isNeonStaging
+  ? `/api/v1/neon-staging/ai/${operation}` : `/api/v1/ai/${operation}`;
+const authHeaders = async (): Promise<Record<string, string>> => {
+  if (isNeonStaging) return {};
+  const token = await getToken();
+  if (!token) throw new Error("Sign in again to use AI.");
+  return { Authorization: `Bearer ${token}` };
+};
 
 /**
  * A workspace-scoped AI control.  It has no feature toggle: plan/grant
@@ -38,12 +47,11 @@ export default function EntityAIControls({ module, entityType, entityId, title, 
   const [saving, setSaving] = useState(false);
 
   const loadStatus = useCallback(async () => {
-    const token = await getToken();
-    if (!token) return;
     setLoading(true);
     try {
+      const headers = await authHeaders();
       const params = new URLSearchParams({ module, entity_type: entityType, entity_id: entityId });
-      const response = await fetch(`/api/v1/ai/byok?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+      const response = await fetch(`${aiPath("byok")}?${params}`, { headers, credentials: "same-origin", cache: "no-store" });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error?.message || "AI is unavailable for this entity.");
       setStatus(payload.data);
@@ -56,11 +64,11 @@ export default function EntityAIControls({ module, entityType, entityId, title, 
   useEffect(() => { void loadStatus(); }, [loadStatus]);
 
   const generate = async () => {
-    const token = await getToken(); if (!token) return;
     setGenerating(true);
     try {
-      const response = await fetch("/api/v1/ai/generate", {
-        method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      const headers = await authHeaders();
+      const response = await fetch(aiPath("generate"), {
+        method: "POST", credentials: "same-origin", headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ module, entityType, entityId, title: title.trim() || "Untitled", keywords: keywords.trim(), context: context.slice(0, 4000) }),
       });
       const payload = await response.json();
@@ -74,11 +82,11 @@ export default function EntityAIControls({ module, entityType, entityId, title, 
 
   const saveByok = async () => {
     if (!secret.trim()) return;
-    const token = await getToken(); if (!token) return;
     setSaving(true);
     try {
-      const response = await fetch("/api/v1/ai/byok", {
-        method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      const headers = await authHeaders();
+      const response = await fetch(aiPath("byok"), {
+        method: "PUT", credentials: "same-origin", headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ module, entityType, entityId, providerName: providerName.trim(), secret: secret.trim(), enabled: true }),
       });
       const payload = await response.json();

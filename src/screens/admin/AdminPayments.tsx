@@ -45,13 +45,14 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
 import { listAdminResource } from "@/lib/admin/admin-client";
+import { neonBillingRequest } from "@/lib/admin/neon-billing-client";
 
 export interface PaymentProofItem {
   id: string;
   payment_id: string;
   uploaded_by_user_id: string;
   file_name: string;
-  storage_path: string;
+  storage_path?: string;
   mime_type: string;
   file_size: number;
   proof_type: string;
@@ -73,6 +74,7 @@ export interface PaymentItem {
   currency: string;
   status: string;
   gateway: string | null;
+  payment_method?: string | null;
   gateway_transaction_id: string | null;
   payout_status?: string | null;
   payout_amount?: number | null;
@@ -93,13 +95,20 @@ export interface PaymentItem {
 }
 
 export default function AdminPayments() {
+  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [proofsMap, setProofsMap] = useState<Map<string, PaymentProofItem[]>>(new Map());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const serverSearch = staging ? searchQuery : "";
+  const serverStatus = staging ? statusFilter : "all";
+  const serverType = staging ? typeFilter : "all";
   const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState<{ collected: number; pending_payouts: number; pending_proofs: number } | null>(null);
 
   // Selected payment for inspection modal
   const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
@@ -126,8 +135,28 @@ export default function AdminPayments() {
   const [isReviewingProof, setIsReviewingProof] = useState<boolean>(false);
   const [signedDocUrls, setSignedDocUrls] = useState<Map<string, string>>(new Map());
 
-  const fetchPayments = useCallback(async () => {
+  const fetchPayments = useCallback(async (offset = 0) => {
     setIsLoading(true);
+    if (staging) {
+      try {
+        const params = new URLSearchParams({ offset: String(offset), search: serverSearch, status: serverStatus, type: serverType });
+        const result = await neonBillingRequest<{ payments: PaymentItem[]; proofs: PaymentProofItem[];
+          summary: { collected: number; pending_payouts: number; pending_proofs: number }; total: number; hasMore: boolean }>(
+          `/api/v1/neon-staging/admin/payments?${params}`);
+        setPayments(previous => offset ? [...previous, ...result.payments] : result.payments);
+        setProofsMap(previous => {
+          const map = offset ? new Map(previous) : new Map<string, PaymentProofItem[]>();
+          for (const proof of result.proofs) map.set(proof.payment_id, [...(map.get(proof.payment_id) || []), proof]);
+          return map;
+        });
+        setSummary(result.summary);
+        setTotal(result.total);
+        setHasMore(result.hasMore);
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to load payments", description: error instanceof Error ? error.message : "Billing lookup failed." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     let data: any[] = [];
     try {
       data = await listAdminResource<PaymentItem>("payments");
@@ -171,13 +200,24 @@ export default function AdminPayments() {
       setPayments((data || []) as PaymentItem[]);
     }
     setIsLoading(false);
-  }, [toast]);
+  }, [toast, staging, serverSearch, serverStatus, serverType]);
 
   useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+    const timer = setTimeout(() => void fetchPayments(), staging ? 250 : 0);
+    return () => clearTimeout(timer);
+  }, [fetchPayments, staging]);
 
   const handleOpenSignedDocument = async (proof: PaymentProofItem) => {
+    if (staging) {
+      try {
+        const result = await neonBillingRequest<{ signedUrl: string }>(
+          `/api/v1/neon-staging/payments/proofs?id=${encodeURIComponent(proof.id)}`);
+        window.open(result.signedUrl, "_blank", "noopener,noreferrer");
+      } catch (error) {
+        toast({ variant: "destructive", title: "Document Preview Error", description: error instanceof Error ? error.message : "Failed to load proof." });
+      }
+      return;
+    }
     if (signedDocUrls.has(proof.id)) {
       window.open(signedDocUrls.get(proof.id), "_blank");
       return;
@@ -185,7 +225,7 @@ export default function AdminPayments() {
     try {
       const { data, error } = await supabase.storage
         .from("payment-proofs")
-        .createSignedUrl(proof.storage_path, 3600);
+        .createSignedUrl(proof.storage_path!, 3600);
       if (error || !data?.signedUrl) throw error || new Error("Could not generate secure URL.");
       setSignedDocUrls((prev) => new Map(prev).set(proof.id, data.signedUrl));
       window.open(data.signedUrl, "_blank");
@@ -199,16 +239,21 @@ export default function AdminPayments() {
     if (!reviewProofTarget) return;
     setIsReviewingProof(true);
     try {
+      if (staging) await neonBillingRequest("/api/v1/neon-staging/admin/payments", { method: "PATCH",
+        body: JSON.stringify({ action: "proof", id: reviewProofTarget.id, paymentId: reviewProofTarget.payment_id,
+          status: proofDecision, note: proofReviewNote.trim() }) });
+      else {
       const { error } = await (supabase as any).rpc("admin_review_payment_proof", {
         p_proof_id: reviewProofTarget.id,
         p_decision: proofDecision,
         p_review_note: proofReviewNote.trim() || null,
       });
       if (error) throw error;
+      }
 
       toast({
         title: proofDecision === "accepted" ? "Payment Proof Accepted" : "Payment Proof Rejected",
-        description: `Proof marked as ${proofDecision}. Underlying payment reconciled.`,
+        description: staging ? "Evidence review saved. Payment confirmation remains separate." : `Proof marked as ${proofDecision}. Underlying payment reconciled.`,
       });
 
       setReviewProofTarget(null);
@@ -227,6 +272,10 @@ export default function AdminPayments() {
     if (!reconcileTarget) return;
     setIsReconciling(true);
     try {
+      if (staging) await neonBillingRequest("/api/v1/neon-staging/admin/payments", { method: "PATCH",
+        body: JSON.stringify({ action: "reconcile", id: reconcileTarget.id, status: reconcileStatus,
+          reconciliation: reconciliationType, note: reconcileNote.trim() }) });
+      else {
       const { error } = await (supabase as any).rpc("admin_verify_and_reconcile_payment", {
         p_payment_id: reconcileTarget.id,
         p_status: reconcileStatus,
@@ -234,6 +283,7 @@ export default function AdminPayments() {
         p_reconciliation_status: reconciliationType,
       });
       if (error) throw error;
+      }
       toast({
         title: "Payment state updated",
         description: `Payment ${reconcileTarget.id.slice(0, 8)} updated to ${reconcileStatus} (${reconciliationType}).`,
@@ -253,6 +303,10 @@ export default function AdminPayments() {
     if (!payoutTarget) return;
     setIsRecordingPayout(true);
     try {
+      if (staging) await neonBillingRequest("/api/v1/neon-staging/admin/payments", { method: "PATCH",
+        body: JSON.stringify({ action: "payout", id: payoutTarget.id, amount: Number(payoutAmount),
+          commission: Number(commissionAmount), reference: payoutReference.trim(), note: payoutNote.trim() }) });
+      else {
       const { error } = await (supabase as any).rpc("admin_record_mentor_payout", {
         p_payment_id: payoutTarget.id,
         p_payout_amount: Number(payoutAmount),
@@ -261,9 +315,10 @@ export default function AdminPayments() {
         p_note: payoutNote.trim() || null,
       });
       if (error) throw error;
+      }
       toast({
         title: "Mentor payout recorded",
-        description: `Recorded payout of ${payoutTarget.currency} ${payoutAmount} linked to booking transaction.`,
+        description: `Recorded external payout of ${payoutTarget.currency} ${payoutAmount}. This action does not transfer money.`,
       });
       setPayoutTarget(null);
       setPayoutReference("");
@@ -299,7 +354,7 @@ export default function AdminPayments() {
     setProofReviewNote(proof.review_note || "");
   };
 
-  const filteredPayments = payments.filter((p) => {
+  const filteredPayments = staging ? payments : payments.filter((p) => {
     const matchesSearch =
       (p.profiles?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.profiles?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -312,12 +367,12 @@ export default function AdminPayments() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const totalSuccessAmount = payments
+  const totalSuccessAmount = summary?.collected ?? payments
     .filter((p) => p.status === "success" && p.payment_type !== "mentor_payout_settlement")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-  const pendingPayoutCount = payments.filter((p) => p.payout_status === "pending").length;
-  const pendingProofCount = Array.from(proofsMap.values()).flat().filter((p) => p.status === "pending").length;
+  const pendingPayoutCount = summary?.pending_payouts ?? payments.filter((p) => p.payout_status === "pending").length;
+  const pendingProofCount = summary?.pending_proofs ?? Array.from(proofsMap.values()).flat().filter((p) => p.status === "pending").length;
 
   return (
     <OperationsPage>
@@ -377,6 +432,7 @@ export default function AdminPayments() {
           <SelectContent>
             <SelectItem value="all">All Modules</SelectItem>
             <SelectItem value="subscription">Subscriptions</SelectItem>
+            <SelectItem value="module_subscription">Manual module subscriptions</SelectItem>
             <SelectItem value="module_access_request">College / Module Access</SelectItem>
             <SelectItem value="mentor_booking">Mentor Bookings</SelectItem>
             <SelectItem value="event_ticket">Event Tickets</SelectItem>
@@ -391,7 +447,10 @@ export default function AdminPayments() {
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="success">Successful</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="failed">Failed / Cancelled</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
+            <SelectItem value="refunded">Refunded</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -450,7 +509,7 @@ export default function AdminPayments() {
                       </Badge>
                     ) : acceptedProof ? (
                       <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] font-bold flex items-center gap-1 w-fit">
-                        <FileCheck className="w-3 h-3" /> Proof Verified
+                        <FileCheck className="w-3 h-3" /> Evidence Accepted
                       </Badge>
                     ) : (
                       <span className="text-xs text-slate-400 font-semibold">—</span>
@@ -521,6 +580,12 @@ export default function AdminPayments() {
           </TableBody>
         </Table>
       </Card>
+      {staging && <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+        <span>{payments.length} of {total} transactions</span>
+        {hasMore && <Button variant="outline" disabled={isLoading} onClick={() => void fetchPayments(payments.length)}>
+          {isLoading ? "Loading…" : "Load more"}
+        </Button>}
+      </div>}
 
       {/* 10-Point Transaction Inspection & Evidence Review Modal */}
       <Dialog open={Boolean(selectedPayment)} onOpenChange={(open) => !open && setSelectedPayment(null)}>
@@ -692,7 +757,7 @@ export default function AdminPayments() {
                                 className="text-xs h-7 bg-emerald-600 hover:bg-emerald-700 text-white"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                                Accept & Reconcile
+                                {staging ? "Accept Evidence" : "Accept & Reconcile"}
                               </Button>
                             </div>
                           )}
@@ -730,10 +795,10 @@ export default function AdminPayments() {
               ) : (
                 <AlertTriangle className="w-5 h-5 text-red-600" />
               )}
-              {proofDecision === "accepted" ? "Accept Proof & Reconcile Payment" : "Reject Payment Proof"}
+              {proofDecision === "accepted" ? (staging ? "Accept Payment Evidence" : "Accept Proof & Reconcile Payment") : "Reject Payment Proof"}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {proofDecision === "accepted"
+              {staging ? "Reviewing evidence does not confirm payment or activate access. Gateway settlement is verified separately." : proofDecision === "accepted"
                 ? "Accepting this evidence authoritatively marks the underlying payment as success, updates reconciliation, and activates the entitled service."
                 : "Rejecting this evidence keeps the transaction unverified/failed."}
             </DialogDescription>
@@ -754,6 +819,8 @@ export default function AdminPayments() {
                   onChange={(e) => setProofReviewNote(e.target.value)}
                   className="text-xs min-h-[70px] mt-1"
                   required
+                  minLength={staging ? 8 : undefined}
+                  maxLength={2000}
                 />
               </div>
 
@@ -768,7 +835,7 @@ export default function AdminPayments() {
                   className={proofDecision === "accepted" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"}
                 >
                   {isReviewingProof ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-                  {proofDecision === "accepted" ? "Confirm & Reconcile" : "Confirm Rejection"}
+                  {proofDecision === "accepted" ? (staging ? "Accept Evidence" : "Confirm & Reconcile") : "Confirm Rejection"}
                 </Button>
               </DialogFooter>
             </form>
@@ -785,7 +852,7 @@ export default function AdminPayments() {
               Reconcile & Verify Payment
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Manually confirm external settlement or update transaction reconciliation state. This action is permanently audited.
+              {staging ? "Gateway status changes require provider verification. Only pending manual module receipts may be confirmed or rejected here. Every reconciliation is audited." : "Manually confirm external settlement or update transaction reconciliation state. This action is permanently audited."}
             </DialogDescription>
           </DialogHeader>
 
@@ -793,14 +860,18 @@ export default function AdminPayments() {
             <form onSubmit={handleReconcileSubmit} className="space-y-4 text-xs">
               <div>
                 <Label className="text-xs font-semibold">Payment Status</Label>
-                <Select value={reconcileStatus} onValueChange={setReconcileStatus}>
+                <Select value={reconcileStatus} onValueChange={setReconcileStatus}
+                  disabled={staging && !(reconcileTarget.gateway === "manual" && reconcileTarget.payment_type === "module_subscription" && reconcileTarget.status === "pending")}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="success">Success (Payment Received)</SelectItem>
                     <SelectItem value="pending">Pending (Awaiting Confirmation)</SelectItem>
-                    <SelectItem value="failed">Failed / Cancelled</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -827,6 +898,9 @@ export default function AdminPayments() {
                   value={reconcileNote}
                   onChange={(e) => setReconcileNote(e.target.value)}
                   className="mt-1"
+                  required={staging}
+                  minLength={staging ? 8 : undefined}
+                  maxLength={staging ? 1000 : undefined}
                 />
               </div>
 
@@ -853,7 +927,7 @@ export default function AdminPayments() {
               Record Mentor Payout
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Record a financial payout to the mentor linked to booking transaction #{payoutTarget?.id.slice(0, 8)}.
+              Record an external payout already made for booking transaction #{payoutTarget?.id.slice(0, 8)}. Saving this record does not transfer money.
             </DialogDescription>
           </DialogHeader>
 
@@ -864,6 +938,8 @@ export default function AdminPayments() {
                   <Label className="text-xs font-semibold">Payout Amount ({payoutTarget.currency})</Label>
                   <Input
                     type="number"
+                    min="0.01"
+                    step="0.01"
                     value={payoutAmount}
                     onChange={(e) => setPayoutAmount(Number(e.target.value))}
                     className="mt-1 font-bold"
@@ -874,6 +950,8 @@ export default function AdminPayments() {
                   <Label className="text-xs font-semibold">Commission ({payoutTarget.currency})</Label>
                   <Input
                     type="number"
+                    min="0"
+                    step="0.01"
                     value={commissionAmount}
                     onChange={(e) => setCommissionAmount(Number(e.target.value))}
                     className="mt-1 font-bold"
@@ -899,6 +977,9 @@ export default function AdminPayments() {
                   value={payoutNote}
                   onChange={(e) => setPayoutNote(e.target.value)}
                   className="mt-1"
+                  required={staging}
+                  minLength={staging ? 8 : undefined}
+                  maxLength={2000}
                 />
               </div>
 

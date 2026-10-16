@@ -80,6 +80,7 @@ const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) => 
 };
 
 const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogProps) => {
+  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const { profile, session, user, refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
@@ -117,6 +118,19 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
     setSelectedServiceId("");
 
     void (async () => {
+      if (staging) {
+        try {
+          const response = await fetch(`/api/v1/mentors/${mentor.id}`, { cache: "no-store" });
+          const body = await response.json();
+          if (!response.ok) throw new Error(body.error?.message || "Services unavailable.");
+          if (!current) return;
+          const availableServices = (body.data?.services ?? []) as MentorService[];
+          setServices(availableServices);
+          setSelectedServiceId(availableServices[0]?.id ?? "");
+        } catch (error) { if (current) setServicesError(error instanceof Error ? error.message : "Services unavailable."); }
+        finally { if (current) setServicesLoading(false); }
+        return;
+      }
       const { data, error } = await (supabase as any)
         .from("mentor_services")
         .select("id, title, description, session_type, duration_minutes, capacity, price, currency")
@@ -139,7 +153,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
     return () => {
       current = false;
     };
-  }, [isOpen, mentor.id]);
+  }, [isOpen, mentor.id, staging]);
 
   const selectedService = services.find((service) => service.id === selectedServiceId) ?? null;
   const timeSlots = defaultTimeSlots.filter((time) => {
@@ -202,7 +216,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
   };
 
   const handleBooking = async () => {
-    if (!session || !user || !selectedDate) {
+    if (!(staging ? user : session && user) || !selectedDate) {
       toast({
         variant: "destructive",
         title: "Login required",
@@ -214,6 +228,36 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
     setIsProcessing(true);
     setFieldErrors({});
     try {
+      if (staging) {
+        if (!selectedService) throw new Error("Choose an available mentor service.");
+        const start = new Date(`${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}:00`);
+        const end = new Date(start.getTime() + selectedService.duration_minutes * 60_000);
+        const response = await fetch("/api/v1/mentors/book", { method: "POST",
+          headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+          body: JSON.stringify({ mentorId: mentor.id, mentorServiceId: selectedService.id,
+            scheduledStart: start.toISOString(), scheduledEnd: end.toISOString(), topic, notes }) });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error?.message || "Booking failed.");
+        if (Number(selectedService.price) > 0) {
+          const checkoutResponse = await fetch("/api/v1/neon-staging/payments/checkout", {
+            method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+            body: JSON.stringify({ kind: "mentor_booking", targetId: payload.data.id }),
+          });
+          const checkout = await checkoutResponse.json();
+          onSubmitted?.(payload.data.id);
+          if (!checkoutResponse.ok || !checkout.data?.checkoutUrl || !checkout.data?.checkoutFields) {
+            toast({ title: "Booking pending payment", description: "Your booking was saved, but eSewa sandbox checkout is unavailable. No payment was taken or confirmed." });
+            resetForm(); onClose(); return;
+          }
+          postToCheckout(checkout.data.checkoutUrl, checkout.data.checkoutFields);
+          return;
+        } else {
+          toast({ title: "Free session confirmed", description: "Your session has been reserved." });
+        }
+        onSubmitted?.(payload.data.id);
+        resetForm(); onClose();
+        return;
+      }
       const result = await submitAuthenticatedModuleForm({
         accessToken: session.access_token,
         module: "mentor_booking",

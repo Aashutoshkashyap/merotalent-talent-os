@@ -5,6 +5,9 @@ import { ApplicationStorageError, privateDownloadUrl, uploadBytes } from "@/lib/
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
 import { buildMediaObjectPath, MediaPolicyError, parseMediaUploadIntent } from "@/lib/server/media-policy";
+import { assertMediaObjectPath } from "@/lib/server/media-policy";
+import { withTransaction } from "@/lib/server/db";
+import { deleteObject } from "@/lib/server/storage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -68,6 +71,42 @@ export async function POST(request: Request) {
     }
     const path = buildMediaObjectPath(intent, actor.userId);
     const stored = await uploadBytes(actor, { ...intent, bytes, path });
+    let previousPath: string | null = null;
+    let previousReferenced = false;
+    try {
+      previousPath = await withTransaction(async (client) => {
+        const current = await client.query<{ resume_url: string | null }>(`
+          SELECT p.resume_url FROM public.profiles p
+          JOIN public.neon_application_accounts a ON a.legacy_user_id=p.user_id AND a.status='active'
+          JOIN public.neon_identity_links l ON l.application_account_id=a.id AND l.status='verified'
+          WHERE p.user_id=$1::uuid AND l.neon_auth_user_id=$2::uuid
+            AND p.account_status='active' AND p.deleted_at IS NULL
+          LIMIT 1 FOR UPDATE OF p`, [actor.userId, actor.neonAuthUserId]);
+        if (!current.rows[0]) throw new NeonAuthorizationError(403, "IDENTITY_NOT_LINKED", "A current linked profile is required.");
+        if (current.rows[0].resume_url) {
+          const references = await client.query<{ referenced: boolean }>(`SELECT EXISTS (
+            SELECT 1 FROM public.job_applications WHERE resume_url=$1
+              OR form_data->>'resumeUrl'=$1 OR form_data->>'resume_url'=$1
+          ) AS referenced`, [current.rows[0].resume_url]);
+          previousReferenced = references.rows[0]?.referenced !== false;
+        }
+        await client.query(`UPDATE public.profiles SET resume_url=$2, updated_at=now()
+          WHERE user_id=$1::uuid`, [actor.userId, stored.path]);
+        return current.rows[0].resume_url;
+      });
+    } catch (error) {
+      await deleteObject(stored.bucket, stored.path).catch(() => undefined);
+      throw error;
+    }
+    // Application submission holds FOR SHARE on this profile. The FOR UPDATE
+    // above serializes replacement with snapshots so an earlier submission's
+    // private file remains available to its authorized recruiter.
+    if (previousPath && previousPath !== stored.path && !previousReferenced) {
+      try {
+        assertMediaObjectPath({ module: "resume", resourceId: null, path: previousPath }, actor.userId, true);
+        await deleteObject(stored.bucket, previousPath);
+      } catch { /* Imported legacy paths or transient cleanup failures remain private. */ }
+    }
     return NextResponse.json({ data: stored }, { status: 201, headers: noStore });
   } catch (error) { return failure(error); }
 }
@@ -80,5 +119,40 @@ export async function GET(request: Request) {
     if (!path) return NextResponse.json({ error: "PATH_REQUIRED" }, { status: 422, headers: noStore });
     const signedUrl = await privateDownloadUrl(actor, { module: "resume", path, expiresIn: 300 });
     return NextResponse.json({ data: { signedUrl, expiresIn: 300 } }, { headers: noStore });
+  } catch (error) { return failure(error); }
+}
+
+export async function DELETE(request: Request) {
+  if (!stagingOnly()) return new Response(null, { status: 404 });
+  if (!sameOrigin(request)) return NextResponse.json({ error: "INVALID_ORIGIN" }, { status: 403, headers: noStore });
+  try {
+    const actor = await getAuthenticatedApplicationUser(request);
+    const { oldPath, referenced } = await withTransaction(async (client) => {
+      const current = await client.query<{ resume_url: string | null }>(`
+        SELECT p.resume_url FROM public.profiles p
+        JOIN public.neon_application_accounts a ON a.legacy_user_id=p.user_id AND a.status='active'
+        JOIN public.neon_identity_links l ON l.application_account_id=a.id AND l.status='verified'
+        WHERE p.user_id=$1::uuid AND l.neon_auth_user_id=$2::uuid
+          AND p.account_status='active' AND p.deleted_at IS NULL
+        LIMIT 1 FOR UPDATE OF p`, [actor.userId, actor.neonAuthUserId]);
+      if (!current.rows[0]) throw new NeonAuthorizationError(403, "IDENTITY_NOT_LINKED", "A current linked profile is required.");
+      let referenced = false;
+      if (current.rows[0].resume_url) {
+        const references = await client.query<{ referenced: boolean }>(`SELECT EXISTS (
+          SELECT 1 FROM public.job_applications WHERE resume_url=$1
+            OR form_data->>'resumeUrl'=$1 OR form_data->>'resume_url'=$1
+        ) AS referenced`, [current.rows[0].resume_url]);
+        referenced = references.rows[0]?.referenced !== false;
+      }
+      await client.query(`UPDATE public.profiles SET resume_url=NULL, updated_at=now() WHERE user_id=$1::uuid`, [actor.userId]);
+      return { oldPath: current.rows[0].resume_url, referenced };
+    });
+    if (oldPath && !referenced) {
+      try {
+        assertMediaObjectPath({ module: "resume", resourceId: null, path: oldPath }, actor.userId, true);
+        await deleteObject("resumes", oldPath);
+      } catch { /* Imported legacy paths are retained privately for controlled cleanup. */ }
+    }
+    return NextResponse.json({ data: { deleted: true } }, { headers: noStore });
   } catch (error) { return failure(error); }
 }

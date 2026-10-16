@@ -5,9 +5,10 @@ import { Loader2 } from "lucide-react";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: "admin" | "talent" | "institution" | "company" | "mentor";
+  requiredModule?: "college" | "jobs" | "mentor" | "events";
 }
 
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requiredRole, requiredModule }: ProtectedRouteProps) => {
   const { user, profile, roles, permissions, capabilities, isLoading, isAdmin } = useAuth();
   const location = useLocation();
   const isLocalUiPreview =
@@ -36,6 +37,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   if (requiredRole === "admin" && !isAdmin && !isLocalUiPreview) {
     return <Navigate to="/dashboard" replace />;
   }
+  if (requiredModule && !isAdmin && !capabilities.includes(requiredModule) && !isLocalUiPreview) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   // For other required roles, check if user has the role
   const delegatedPermission = requiredRole === "institution"
@@ -55,6 +59,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   if (
     requiredRole &&
     requiredRole !== "admin" &&
+    !isAdmin &&
     !roles.includes(requiredRole) &&
     !(delegatedPermission && permissions.includes(delegatedPermission)) &&
     !(delegatedCapability && capabilities.includes(delegatedCapability)) &&

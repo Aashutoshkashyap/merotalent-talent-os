@@ -26,7 +26,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { registerForEventApi, type EventDetail, type EventTicketType, type EventProgram } from "@/lib/events/events-client";
-import { startEsewaCheckout } from "@/lib/payments/browser-checkout";
+import { postSignedCheckoutForm, startEsewaCheckout } from "@/lib/payments/browser-checkout";
 import TicketPassCard from "./TicketPassCard";
 
 interface EventRegistrationModalProps {
@@ -42,7 +42,8 @@ export default function EventRegistrationModal({
   onOpenChange,
   onSuccess,
 }: EventRegistrationModalProps) {
-  const { session, profile } = useAuth();
+  const { session, profile, user } = useAuth();
+  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
 
   const [step, setStep] = useState<"select_ticket" | "details" | "team" | "confirmation">("select_ticket");
@@ -156,7 +157,7 @@ export default function EventRegistrationModal({
   };
 
   const handleSubmitRegistration = async () => {
-    if (!session?.access_token) {
+    if (!(staging ? user : session?.access_token)) {
       toast({ variant: "destructive", title: "Authentication required", description: "Please sign in to register." });
       return;
     }
@@ -209,7 +210,7 @@ export default function EventRegistrationModal({
         customResponses,
       };
 
-      const result = await registerForEventApi(event.id, payload, session.access_token);
+      const result = await registerForEventApi(event.id, payload, staging ? undefined : session!.access_token);
       setRegistrationResult(result);
 
       if (result.isFree) {
@@ -220,12 +221,26 @@ export default function EventRegistrationModal({
         });
         onSuccess?.();
       } else {
+        if (staging) {
+          const checkoutResponse = await fetch("/api/v1/neon-staging/payments/checkout", {
+            method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+            body: JSON.stringify({ kind: "event_registration", targetId: result.registration.id }),
+          });
+          const checkout = await checkoutResponse.json();
+          onSuccess?.();
+          if (!checkoutResponse.ok || !checkout.data?.checkoutUrl || !checkout.data?.checkoutFields) {
+            toast({ title: "Registration pending payment", description: "Your registration was saved, but eSewa sandbox checkout is unavailable. No payment was taken and no paid ticket was issued." });
+            return;
+          }
+          postSignedCheckoutForm({ checkoutUrl: checkout.data.checkoutUrl, checkoutFields: checkout.data.checkoutFields });
+          return;
+        }
         toast({
           title: "Registration Stored",
           description: "Redirecting to payment gateway to complete ticket purchase...",
         });
         // Redirect to eSewa checkout
-        await startEsewaCheckout(session.access_token, {
+        await startEsewaCheckout(session!.access_token, {
           eventRegistrationId: result.registration.id,
         });
       }

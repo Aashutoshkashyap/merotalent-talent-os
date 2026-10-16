@@ -44,6 +44,17 @@ import {
 import { OperationsPage } from "./OperationsUI";
 import { safeExternalUrl } from "@/lib/institutes/public-institutes";
 import { invalidateCmsCache } from "@/hooks/useSiteCMS";
+
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+async function stagingRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`/api/v1/neon-staging/admin/${path}`, {
+    ...init, credentials: "same-origin", cache: "no-store",
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  const payload = await response.json().catch(() => ({})) as { data?: T; error?: string };
+  if (!response.ok || payload.data === undefined) throw new Error(payload.error || "CMS request failed.");
+  return payload.data;
+}
 import {
   SignedMediaUploader,
   type SignedMediaAsset,
@@ -287,6 +298,25 @@ const STANDARD_HOME_SECTIONS = [
 
   const fetchSections = useCallback(async () => {
     setIsLoading(true);
+    if (isNeonStaging) {
+      try {
+        const fetched = await stagingRequest<PageSection[]>("cms");
+        const existingKeys = new Set(fetched.filter(s => s.page === "home").map(s => s.section_key));
+        const missing = STANDARD_HOME_SECTIONS.filter(s => !existingKeys.has(s.section_key));
+        if (missing.length) {
+          for (const section of missing) {
+            await stagingRequest<PageSection>("cms", { method: "POST",
+              body: JSON.stringify({ ...emptyForm(), ...section }) });
+          }
+          setSections(await stagingRequest<PageSection[]>("cms"));
+        } else setSections(fetched);
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to load page sections",
+          description: error instanceof Error ? error.message : "Please try again." });
+        setSections([]);
+      } finally { setIsLoading(false); }
+      return;
+    }
     const db = supabase as any;
     const { data, error } = await db
       .from("page_sections")
@@ -321,6 +351,17 @@ const STANDARD_HOME_SECTIONS = [
   }, [toast]);
 
   const fetchSiteSettings = useCallback(async () => {
+    if (isNeonStaging) {
+      try {
+        const data = await stagingRequest<Array<{ key: string; value: string | null }>>("site-settings");
+        setSiteSettings({ ...defaultSiteSettings,
+          ...Object.fromEntries(data.map(row => [row.key, row.value ?? ""])) });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Unable to load site settings",
+          description: error instanceof Error ? error.message : "Please try again." });
+      }
+      return;
+    }
     const { data, error } = await (supabase as any).from("site_settings").select("*");
     if (error) {
       toast({ variant: "destructive", title: "Unable to load site settings", description: error.message });
@@ -402,6 +443,21 @@ const STANDARD_HOME_SECTIONS = [
       payload.parent_id = formData.parent_id;
     }
 
+    if (isNeonStaging) {
+      setIsSubmitting(true);
+      try {
+        await stagingRequest<PageSection>("cms", { method: editingSection ? "PATCH" : "POST",
+          body: JSON.stringify({ ...payload, ...(editingSection ? { id: editingSection.id } : {}) }) });
+        invalidateCmsCache(formData.page);
+        toast({ title: editingSection ? "Section updated successfully" : "New section created" });
+        setIsDialogOpen(false); resetForm(); await fetchSections();
+      } catch (error) {
+        toast({ variant: "destructive", title: editingSection ? "Update failed" : "Create failed",
+          description: error instanceof Error ? error.message : "Please try again." });
+      } finally { setIsSubmitting(false); }
+      return;
+    }
+
     const db = supabase as any;
 
     let { error } = editingSection
@@ -455,6 +511,17 @@ const STANDARD_HOME_SECTIONS = [
       return;
     }
     setIsSavingSettings(true);
+    if (isNeonStaging) {
+      try {
+        await stagingRequest("site-settings", { method: "PUT", body: JSON.stringify(siteSettings) });
+        invalidateCmsCache();
+        toast({ title: "Site branding & favicon updated!" });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Branding save failed",
+          description: error instanceof Error ? error.message : "Please try again." });
+      } finally { setIsSavingSettings(false); }
+      return;
+    }
     const db = supabase as any;
 
     const rows = Object.entries(siteSettings).map(([key, value]) => ({
@@ -489,6 +556,16 @@ const STANDARD_HOME_SECTIONS = [
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this section and any sub-items permanently?")) return;
+    if (isNeonStaging) {
+      try {
+        await stagingRequest("cms", { method: "DELETE", body: JSON.stringify({ id }) });
+        invalidateCmsCache(); toast({ title: "Section deleted" }); await fetchSections();
+      } catch (error) {
+        toast({ variant: "destructive", title: "Delete failed",
+          description: error instanceof Error ? error.message : "Please try again." });
+      }
+      return;
+    }
     const { error } = await (supabase as any).from("page_sections").delete().eq("id", id);
     if (error) {
       toast({ variant: "destructive", title: "Delete failed", description: error.message });
@@ -500,6 +577,17 @@ const STANDARD_HOME_SECTIONS = [
   };
 
   const toggleVisibility = async (section: PageSection) => {
+    if (isNeonStaging) {
+      try {
+        await stagingRequest("cms", { method: "PATCH",
+          body: JSON.stringify({ ...section, is_visible: !section.is_visible }) });
+        invalidateCmsCache(section.page); await fetchSections();
+      } catch (error) {
+        toast({ variant: "destructive", title: "Visibility not changed",
+          description: error instanceof Error ? error.message : "Please try again." });
+      }
+      return;
+    }
     const { error } = await (supabase as any)
       .from("page_sections")
       .update({ is_visible: !section.is_visible })

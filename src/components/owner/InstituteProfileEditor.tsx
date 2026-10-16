@@ -102,24 +102,39 @@ const InstituteProfileEditor = ({
   }, [institute, open]);
 
   const saveMedia = async (kind: "logo" | "cover", path: string) => {
-    const { error } = await (supabase as any).rpc("update_my_college_media", {
-      p_institute_id: institute.id,
-      p_logo_path: kind === "logo" ? path : null,
-      p_cover_path: kind === "cover" ? path : null,
-    });
-    if (error) throw error;
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE !== "neon-staging") {
+      const { error } = await (supabase as any).rpc("update_my_college_media", {
+        p_institute_id: institute.id,
+        p_logo_path: kind === "logo" ? path : null,
+        p_cover_path: kind === "cover" ? path : null,
+      });
+      if (error) throw error;
+    }
     if (kind === "logo") setLogoPath(path);
     else setCoverPath(path);
     toast({ title: `${kind === "logo" ? "Logo" : "Cover image"} updated` });
     onSaved();
   };
 
+  const removeMedia = async (kind: "logo" | "cover") => {
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE !== "neon-staging") return;
+    const response = await fetch(`/api/v1/neon-staging/college-workspaces/${institute.id}/media?kind=${kind}`, {
+      method: "DELETE", credentials: "same-origin",
+    });
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) {
+      toast({ variant: "destructive", title: "Image was not removed", description: payload.error || "Try again." });
+      return;
+    }
+    if (kind === "logo") setLogoPath("");
+    else setCoverPath("");
+    onSaved();
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
-    const result = await (supabase as any).rpc("update_my_college_profile", {
-      p_institute_id: institute.id,
-      p_profile: {
+    const profile = {
         name: name.trim(),
         short_name: shortName.trim() || null,
         type: type.trim() || null,
@@ -137,8 +152,22 @@ const InstituteProfileEditor = ({
         principal_name: principalName.trim() || null,
         principal_designation: principalDesignation.trim() || null,
         principal_message: principalMessage.trim() || null,
-      },
-    });
+    };
+    let result: { error: { message: string } | null };
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      try {
+        const response = await fetch(`/api/v1/neon-staging/college-workspaces/${institute.id}/profile`, {
+          method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profile),
+        });
+        const body = await response.json();
+        result = { error: response.ok ? null : { message: body.error || "Profile could not be saved." } };
+      } catch { result = { error: { message: "Profile could not be saved." } }; }
+    } else {
+      result = await (supabase as any).rpc("update_my_college_profile", {
+        p_institute_id: institute.id, p_profile: profile,
+      });
+    }
     setIsSubmitting(false);
 
     if (result.error) {
@@ -154,16 +183,15 @@ const InstituteProfileEditor = ({
   };
 
   const generateDescriptionDraft = async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session?.access_token) {
-      toast({ variant: "destructive", title: "Sign in again before generating a draft" });
-      return;
-    }
     setIsGeneratingDraft(true);
     try {
-      const response = await fetch("/api/v1/ai/generate", {
+      const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+      const token = isNeonStaging ? null : (await supabase.auth.getSession()).data.session?.access_token;
+      if (!isNeonStaging && !token) throw new Error("Sign in again before generating a draft.");
+      const response = await fetch(isNeonStaging ? "/api/v1/neon-staging/ai/generate" : "/api/v1/ai/generate", {
         method: "POST",
-        headers: { Authorization: `Bearer ${data.session.access_token}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), "Content-Type": "application/json" },
         body: JSON.stringify({ module: "college", entityType: "college", entityId: institute.id, title: name || institute.name, keywords: aiKeywords, context: `Type: ${type}; Location: ${location}` }),
       });
       const payload = await response.json() as { data?: { draft?: string }; error?: { message?: string } };
@@ -209,6 +237,10 @@ const InstituteProfileEditor = ({
       <div className="grid gap-4 sm:grid-cols-2">
         <SignedMediaUploader label="College logo" module="college_logo" resourceId={institute.id} onUploaded={async ([asset]) => { if (asset) await saveMedia("logo", asset.path); }} />
         <SignedMediaUploader label="College cover image (wide 2.63:1)" module="college_cover" resourceId={institute.id} onUploaded={async ([asset]) => { if (asset) await saveMedia("cover", asset.path); }} />
+        {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && logoPath &&
+          <Button type="button" variant="outline" onClick={() => void removeMedia("logo")}>Remove logo</Button>}
+        {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && coverPath &&
+          <Button type="button" variant="outline" onClick={() => void removeMedia("cover")}>Remove cover image</Button>}
         {(logoPath || coverPath) && <p className="sm:col-span-2 text-xs text-muted-foreground">Images are stored as controlled College Media assets and become public only through this approved profile.</p>}
       </div>
       <div className="rounded-xl border border-[#eadfd7] p-4 space-y-4">

@@ -36,6 +36,7 @@ const ONBOARDING_STEPS = [
 
 const Onboarding = () => {
   const { user, profile, refreshProfile } = useAuth();
+  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -61,6 +62,11 @@ const Onboarding = () => {
       setBio(profile.bio || "");
       setLocation(profile.location || "");
       setPhone(profile.phone || "");
+      setLinkedinUrl(profile.linkedin_url || "");
+      setEducation(profile.education || "");
+      setExperienceLevel(profile.experience_level || "");
+      setSelectedSkills(profile.skills || []);
+      setResumeUrl(profile.resume_url || "");
     }
   }, [profile]);
 
@@ -88,7 +94,30 @@ const Onboarding = () => {
       return;
     }
 
+    if (isNeonStaging && (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf"))) {
+      toast({ variant: "destructive", title: "PDF required", description: "Please upload a PDF résumé." });
+      return;
+    }
     setIsUploading(true);
+    if (isNeonStaging) {
+      try {
+        const form = new FormData();
+        form.set("file", file);
+        const response = await fetch("/api/v1/neon-staging/resume", {
+          method: "POST", body: form, credentials: "same-origin", cache: "no-store",
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || typeof payload?.data?.path !== "string") {
+          throw new Error(typeof payload?.error === "string" ? payload.error : "Resume upload failed.");
+        }
+        setResumeFile(file);
+        setResumeUrl(payload.data.path);
+        toast({ title: "Resume uploaded!", description: "Your resume has been saved." });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Upload failed", description: error instanceof Error ? error.message : "Please try again." });
+      } finally { setIsUploading(false); }
+      return;
+    }
     const fileExt = file.name.split('.').pop();
     const filePath = `${user.id}/resume.${fileExt}`;
 
@@ -115,8 +144,35 @@ const Onboarding = () => {
 
   const handleComplete = async () => {
     if (!user) return;
-    
+    if (!fullName.trim()) {
+      toast({ variant: "destructive", title: "Full name required", description: "Please enter your full name." });
+      return;
+    }
     setIsLoading(true);
+
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/profile", {
+          method: "PATCH", credentials: "same-origin", cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            full_name: fullName.trim(), bio: bio.trim() || null,
+            location: location.trim() || null, phone: phone.trim() || null,
+            linkedin_url: linkedinUrl.trim() || null, education: education.trim() || null,
+            experience_level: experienceLevel || null, skills: selectedSkills,
+            onboarding_completed: true,
+          }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : "Profile update failed.");
+        await refreshProfile();
+        toast({ title: "Profile complete! 🎉", description: "Welcome to Merotalent!" });
+        navigate("/dashboard");
+      } catch (error) {
+        toast({ variant: "destructive", title: "Update failed", description: error instanceof Error ? error.message : "Please try again." });
+      } finally { setIsLoading(false); }
+      return;
+    }
 
     const { error } = await supabase
       .from('profiles')
@@ -279,14 +335,25 @@ const Onboarding = () => {
               <div className="space-y-2">
                 <Label>Resume / CV</Label>
                 <div className="rounded-[18px] border border-dashed border-[#dfd1c8] bg-[#fbf9f7] p-5 text-center transition-colors hover:border-primary/40">
-                  {resumeFile ? (
+                  {resumeFile || resumeUrl ? (
                     <div className="flex items-center justify-center gap-2">
                       <FileText className="w-5 h-5 text-primary" />
-                      <span className="text-sm">{resumeFile.name}</span>
+                      <span className="text-sm">{resumeFile?.name || "Saved résumé"}</span>
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => {
+                        onClick={async () => {
+                          if (isNeonStaging) {
+                            try {
+                              const response = await fetch("/api/v1/neon-staging/resume", {
+                                method: "DELETE", credentials: "same-origin", cache: "no-store",
+                              });
+                              if (!response.ok) throw new Error("Could not remove your résumé.");
+                            } catch (error) {
+                              toast({ variant: "destructive", title: "Remove failed", description: error instanceof Error ? error.message : "Please try again." });
+                              return;
+                            }
+                          }
                           setResumeFile(null);
                           setResumeUrl("");
                         }}
@@ -298,7 +365,7 @@ const Onboarding = () => {
                     <label className="cursor-pointer">
                       <input
                         type="file"
-                        accept=".pdf,.doc,.docx"
+                        accept={isNeonStaging ? ".pdf,application/pdf" : ".pdf,.doc,.docx"}
                         onChange={handleResumeUpload}
                         className="hidden"
                         disabled={isUploading}
@@ -306,7 +373,7 @@ const Onboarding = () => {
                       <div className="space-y-2">
                         <FileText className="w-8 h-8 text-muted-foreground mx-auto" />
                         <p className="text-sm text-muted-foreground">
-                          {isUploading ? "Uploading..." : "Click to upload PDF, DOC (max 5MB)"}
+                          {isUploading ? "Uploading..." : isNeonStaging ? "Click to upload PDF (max 5MB)" : "Click to upload PDF, DOC (max 5MB)"}
                         </p>
                       </div>
                     </label>

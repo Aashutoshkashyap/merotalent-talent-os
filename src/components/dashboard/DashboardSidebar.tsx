@@ -14,6 +14,7 @@ import {
   LogOut,
   Shield,
   Calendar,
+  CalendarDays,
   Award,
   Sparkles,
   MessageCircle,
@@ -43,9 +44,9 @@ const DashboardSidebar = ({
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const isAdmin = roles.includes("admin");
-  const isMentor = roles.includes("mentor");
-  const isCompany = roles.includes("company");
-  const isInstitution = roles.includes("institution");
+  const isMentor = roles.includes("mentor") || capabilities.includes("mentor");
+  const isCompany = roles.includes("company") || capabilities.includes("jobs");
+  const isInstitution = roles.includes("institution") || capabilities.includes("college");
   const previewSuffix =
     process.env.NODE_ENV === "development" &&
     new URLSearchParams(location.search).get("preview") === "ui"
@@ -76,6 +77,7 @@ const DashboardSidebar = ({
     ...(isMentor ? [{ icon: UserCog, label: "Mentor Workspace", href: "/mentor" }] : []),
     ...(isCompany ? [{ icon: Briefcase, label: "Company Workspace", href: "/company" }] : []),
     ...(isInstitution ? [{ icon: Building2, label: "Institute Dashboard", href: "/institute" }] : []),
+    ...(capabilities.includes("events") ? [{ icon: CalendarDays, label: "Events Workspace", href: "/event-admin" }] : []),
     ...(capabilities.some((capability) => ["jobs", "mentor", "events"].includes(capability)) ? [{ icon: Sparkles, label: "Module AI Workspace", href: "/dashboard/ai-workspace" }] : []),
   ];
 

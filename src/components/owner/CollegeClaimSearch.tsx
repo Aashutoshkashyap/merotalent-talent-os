@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 
 export interface ClaimCollegeOption {
@@ -18,8 +17,6 @@ interface CollegeClaimSearchProps {
   disabled?: boolean;
 }
 
-const escapeLikePattern = (value: string) => value.replace(/[\\%_]/g, "\\$&");
-
 export function CollegeClaimSearch({ value, selected, onChange, onSelect, disabled }: CollegeClaimSearchProps) {
   const [matches, setMatches] = useState<ClaimCollegeOption[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -35,18 +32,17 @@ export function CollegeClaimSearch({ value, selected, onChange, onSelect, disabl
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
       setError(false);
-      const { data, error: lookupError } = await supabase
-        .from("institute_directory")
-        .select("id, name, location, institution_category")
-        .ilike("name", `%${escapeLikePattern(searchTerm)}%`)
-        .order("name", { ascending: true })
-        .limit(8);
-
-      if (!current) return;
-      setMatches((data ?? []) as ClaimCollegeOption[]);
-      setError(Boolean(lookupError));
-      setIsLoading(false);
-      setActiveIndex(-1);
+      try {
+        const params = new URLSearchParams({ name: searchTerm, sort: "name", limit: "8" });
+        const response = await fetch(`/api/v1/institutes/directory?${params}`);
+        if (!response.ok) throw new Error("College search is unavailable.");
+        const payload = await response.json() as { data: ClaimCollegeOption[] };
+        if (current) { setMatches(payload.data); setError(false); }
+      } catch {
+        if (current) { setMatches([]); setError(true); }
+      } finally {
+        if (current) { setIsLoading(false); setActiveIndex(-1); }
+      }
     }, 250);
 
     return () => {

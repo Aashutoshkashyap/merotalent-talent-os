@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,7 @@ const readableValue = (value: unknown): string => {
 };
 
 export default function AdminApplications() {
+  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const { toast } = useToast();
   const [applications, setApplications] = useState<CollegeApp[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,14 +60,15 @@ export default function AdminApplications() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  useEffect(() => {
-    fetchApplications();
-  }, []);
-
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       let apps: CollegeApp[] = [];
-      try {
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/admin/college-applications", { credentials: "same-origin", cache: "no-store" });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Unable to load applications");
+        apps = body.data as CollegeApp[];
+      } else try {
         apps = await listAdminResource<CollegeApp>("college-applications");
       } catch {
         const { data, error } = await (supabase as any)
@@ -80,16 +82,28 @@ export default function AdminApplications() {
         apps = (data || []) as CollegeApp[];
       }
       setApplications(apps);
-    } catch {
+    } catch (error) {
+      toast({ variant: "destructive", title: "Unable to load applications", description: error instanceof Error ? error.message : "Please retry." });
       setApplications([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isNeonStaging, toast]);
+
+  useEffect(() => { void fetchApplications(); }, [fetchApplications]);
 
   const updateStatus = async (id: string, newStatus: CollegeApplicationStatus) => {
     try {
-      await updateAdminResource("college-applications", id, { status: newStatus });
+      if (isNeonStaging) {
+        const response = await fetch("/api/v1/neon-staging/admin/college-applications", {
+          method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, status: newStatus }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Unable to update application");
+      } else {
+        await updateAdminResource("college-applications", id, { status: newStatus });
+      }
     } catch (error) {
       toast({ variant: "destructive", title: "Status update failed", description: error instanceof Error ? error.message : "Please retry." });
       return;

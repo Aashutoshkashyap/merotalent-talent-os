@@ -16,6 +16,15 @@ export interface AIParams {
 }
 
 async function callLLM(systemPrompt: string, userPrompt: string, module: "college" | "jobs" | "mentor" | "events"): Promise<string> {
+  if(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    const response=await fetch("/api/v1/neon-staging/ai/generate",{
+      method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({adminDraft:true,module,title:"Content draft",context:`${systemPrompt}\n${userPrompt}`}),
+    });
+    const payload=await response.json() as {data?:{draft?:string};error?:{message?:string}};
+    if(!response.ok || !payload.data?.draft)throw new Error(payload.error?.message||"AI generation is unavailable.");
+    return payload.data.draft;
+  }
   const { supabase } = await import("@/integrations/supabase/client");
   const { data } = await supabase.auth.getSession();
   if (!data.session?.access_token) throw new Error("Sign in again before generating an AI draft.");

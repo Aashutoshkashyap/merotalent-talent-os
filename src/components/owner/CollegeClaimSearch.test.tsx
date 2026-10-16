@@ -2,15 +2,6 @@ import { useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const lookup = vi.hoisted(() => ({
-  from: vi.fn(),
-  ilike: vi.fn(),
-}));
-
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { from: lookup.from },
-}));
-
 import { CollegeClaimSearch, type ClaimCollegeOption } from "./CollegeClaimSearch";
 
 const college: ClaimCollegeOption = {
@@ -38,16 +29,16 @@ function ClaimSearchHarness() {
 }
 
 describe("CollegeClaimSearch", () => {
+  const fetchDirectory = vi.fn();
   beforeEach(() => {
-    lookup.ilike.mockReturnValue({
-      order: () => ({ limit: async () => ({ data: [college], error: null }) }),
-    });
-    lookup.from.mockReturnValue({ select: () => ({ ilike: lookup.ilike }) });
+    fetchDirectory.mockResolvedValue({ ok: true, json: async () => ({ data: [college] }) });
+    vi.stubGlobal("fetch", fetchDirectory);
   });
 
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("offers matching directory colleges and selects the exact ID", async () => {
@@ -55,8 +46,7 @@ describe("CollegeClaimSearch", () => {
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "Xavier" } });
     await waitFor(() => expect(screen.getByRole("option", { name: /St. Xavier's College/ })).toBeInTheDocument());
-    expect(lookup.from).toHaveBeenCalledWith("institute_directory");
-    expect(lookup.ilike).toHaveBeenCalledWith("name", "%Xavier%");
+    expect(fetchDirectory).toHaveBeenCalledWith("/api/v1/institutes/directory?name=Xavier&sort=name&limit=8");
 
     fireEvent.click(screen.getByRole("option", { name: /St. Xavier's College/ }));
     expect(screen.getByTestId("selected-id")).toHaveTextContent(college.id);

@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 
 type Blog = { id: string; institute_id: string; title: string; slug: string; excerpt: string | null; content: string; featured_image_url: string | null; status: "draft" | "published"; published_at: string | null; };
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 100);
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const blogUrl = (collegeId: string) => `/api/v1/neon-staging/college-workspaces/${encodeURIComponent(collegeId)}/blogs`;
 
 export default function InstituteBlogs() {
   const { user } = useAuth(); const { toast } = useToast(); const [params] = useSearchParams();
@@ -20,12 +22,35 @@ export default function InstituteBlogs() {
   const [accessChecked, setAccessChecked] = useState(false);
   const [hasWorkspaceAccess, setHasWorkspaceAccess] = useState(false);
   const [form, setForm] = useState({ title: "", slug: "", excerpt: "", content: "", featured_image_url: "", status: "draft" as "draft" | "published" });
-  const load = useCallback(async () => { if (!instituteId) return; const { data, error } = await (supabase as any).from("college_blogs").select("id,institute_id,title,slug,excerpt,content,featured_image_url,status,published_at").eq("institute_id", instituteId).is("deleted_at", null).order("created_at", { ascending: false }); if (error) toast({ variant: "destructive", title: "Could not load blogs", description: error.message }); else setRows(data || []); }, [instituteId, toast]);
+  const load = useCallback(async () => {
+    if (!instituteId) return;
+    if (isNeonStaging) {
+      const response = await fetch(blogUrl(instituteId), { credentials: "same-origin", cache: "no-store" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) toast({ variant: "destructive", title: "Could not load blogs", description: payload.error || "Please retry." });
+      else setRows(payload.data || []);
+      return;
+    }
+    const { data, error } = await (supabase as any).from("college_blogs").select("id,institute_id,title,slug,excerpt,content,featured_image_url,status,published_at").eq("institute_id", instituteId).is("deleted_at", null).order("created_at", { ascending: false });
+    if (error) toast({ variant: "destructive", title: "Could not load blogs", description: error.message }); else setRows(data || []);
+  }, [instituteId, toast]);
   useEffect(() => {
     let cancelled = false;
     setAccessChecked(false);
     setHasWorkspaceAccess(false);
     if (!user || !instituteId) { setAccessChecked(true); return; }
+    if (isNeonStaging) {
+      void fetch("/api/v1/neon-staging/college-workspaces", { credentials: "same-origin", cache: "no-store" })
+        .then(async response => ({ ok: response.ok, payload: await response.json().catch(() => ({})) }))
+        .then(({ ok, payload }) => {
+          if (cancelled) return;
+          if (!ok) toast({ variant: "destructive", title: "Could not load college access", description: payload.error || "Please retry." });
+          setHasWorkspaceAccess(ok && payload.data?.capability === true && (payload.data?.workspaces || []).some((row: { id: string; subscription_active: boolean }) =>
+            row.id === instituteId && row.subscription_active === true));
+          setAccessChecked(true);
+        }).catch(() => { if (!cancelled) setAccessChecked(true); });
+      return () => { cancelled = true; };
+    }
     void Promise.all([
       (supabase as any).rpc("get_my_college_workspaces"),
       (supabase as any).rpc("has_active_module_capability", { p_user_id: user.id, p_module_key: "college" }),
@@ -41,8 +66,42 @@ export default function InstituteBlogs() {
   }, [user, instituteId, toast]);
   useEffect(() => { if (hasWorkspaceAccess) void load(); }, [hasWorkspaceAccess, load]);
   const edit = (row?: Blog) => { setEditing(row || null); setForm(row ? { title: row.title, slug: row.slug, excerpt: row.excerpt || "", content: row.content, featured_image_url: row.featured_image_url || "", status: row.status } : { title: "", slug: "", excerpt: "", content: "", featured_image_url: "", status: "draft" }); setOpen(true); };
-  const save = async () => { if (!hasWorkspaceAccess || !user || !instituteId || !form.title.trim() || !form.content.trim()) return; setSaving(true); const payload = { ...form, title: form.title.trim(), slug: slugify(form.slug || form.title), excerpt: form.excerpt.trim() || null, featured_image_url: form.featured_image_url.trim() || null, institute_id: instituteId, author_user_id: user.id, published_at: form.status === "published" ? new Date().toISOString() : null }; const query = editing ? (supabase as any).from("college_blogs").update(payload).eq("id", editing.id) : (supabase as any).from("college_blogs").insert(payload); const { error } = await query; setSaving(false); if (error) return toast({ variant: "destructive", title: "Blog was not saved", description: error.message }); toast({ title: editing ? "Blog updated" : "Blog created" }); setOpen(false); void load(); };
-  const remove = async (row: Blog) => { if (!hasWorkspaceAccess) return; const { error } = await (supabase as any).from("college_blogs").update({ deleted_at: new Date().toISOString() }).eq("id", row.id); if (error) toast({ variant: "destructive", title: "Could not remove blog", description: error.message }); else { toast({ title: "Blog removed" }); void load(); } };
+  const save = async () => {
+    if (!hasWorkspaceAccess || !user || !instituteId || !form.title.trim() || !form.content.trim()) return;
+    setSaving(true);
+    const payload = { ...form, title: form.title.trim(), slug: slugify(form.slug || form.title), excerpt: form.excerpt.trim() || null, featured_image_url: form.featured_image_url.trim() || null };
+    if (isNeonStaging) {
+      try {
+        const response = await fetch(blogUrl(instituteId), { method: editing ? "PATCH" : "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, ...(editing ? { id: editing.id } : {}) }) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) { toast({ variant: "destructive", title: "Blog was not saved", description: result.error || "Please retry." }); return; }
+        toast({ title: editing ? "Blog updated" : "Blog created" }); setOpen(false); void load();
+      } catch { toast({ variant: "destructive", title: "Blog was not saved", description: "Please retry." }); }
+      finally { setSaving(false); }
+      return;
+    }
+    const legacyPayload = { ...payload, institute_id: instituteId, author_user_id: user.id, published_at: form.status === "published" ? new Date().toISOString() : null };
+    const query = editing ? (supabase as any).from("college_blogs").update(legacyPayload).eq("id", editing.id) : (supabase as any).from("college_blogs").insert(legacyPayload);
+    const { error } = await query; setSaving(false);
+    if (error) return toast({ variant: "destructive", title: "Blog was not saved", description: error.message });
+    toast({ title: editing ? "Blog updated" : "Blog created" }); setOpen(false); void load();
+  };
+  const remove = async (row: Blog) => {
+    if (!hasWorkspaceAccess) return;
+    if (isNeonStaging) {
+      try {
+        const response = await fetch(blogUrl(instituteId), { method: "DELETE", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: row.id }) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) toast({ variant: "destructive", title: "Could not remove blog", description: result.error || "Please retry." });
+        else { toast({ title: "Blog removed" }); void load(); }
+      } catch { toast({ variant: "destructive", title: "Could not remove blog", description: "Please retry." }); }
+      return;
+    }
+    const { error } = await (supabase as any).from("college_blogs").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
+    if (error) toast({ variant: "destructive", title: "Could not remove blog", description: error.message }); else { toast({ title: "Blog removed" }); void load(); }
+  };
   if (!accessChecked) return <div className="flex min-h-screen items-center justify-center bg-white"><span className="text-sm text-slate-600">Checking college access…</span></div>;
   if (!hasWorkspaceAccess) return <div className="mx-auto max-w-3xl p-6"><Card><CardContent className="space-y-4 p-6 text-sm text-muted-foreground"><p>Super Admin approval, an assigned college, and an active plan or trial are required before managing its blog.</p><Button asChild variant="outline"><Link to="/institute">View access status</Link></Button></CardContent></Card></div>;
   return <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-[#0073e6]">College workspace</p><h1 className="text-2xl font-black">College blog</h1><p className="mt-1 text-sm text-muted-foreground">Draft, review, and publish updates for this assigned college.</p></div><Button onClick={() => edit()}><Plus className="mr-2 h-4 w-4" />New post</Button></div><div className="grid gap-3">{rows.length ? rows.map((row) => <Card key={row.id}><CardContent className="flex flex-wrap items-center justify-between gap-3 p-4"><div><p className="font-bold">{row.title}</p><p className="mt-1 text-xs text-muted-foreground">/{row.slug} · {row.status}{row.published_at ? ` · ${new Date(row.published_at).toLocaleDateString()}` : ""}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => edit(row)}><Pencil className="mr-1 h-3.5 w-3.5" />Edit</Button><Button size="sm" variant="ghost" className="text-destructive" onClick={() => void remove(row)}><Trash2 className="mr-1 h-3.5 w-3.5" />Remove</Button></div></CardContent></Card>) : <Card><CardContent className="p-10 text-center text-sm text-muted-foreground"><FileText className="mx-auto mb-3 h-8 w-8" />No posts yet.</CardContent></Card>}</div><Button asChild variant="outline"><Link to={`/institute?college=${encodeURIComponent(instituteId)}`}>Back to college workspace</Link></Button><Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{editing ? "Edit post" : "New post"}</DialogTitle></DialogHeader><div className="space-y-3"><div><Label>Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value, slug: form.slug || slugify(e.target.value) })} maxLength={180} /></div><div><Label>URL slug</Label><Input value={form.slug} onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })} /></div><div><Label>Summary</Label><Textarea value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} maxLength={500} /></div><div><Label>Featured image URL</Label><Input type="url" value={form.featured_image_url} onChange={(e) => setForm({ ...form, featured_image_url: e.target.value })} /></div><div><Label>Content</Label><Textarea rows={12} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} maxLength={50000} /></div><div><Label>Status</Label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as "draft" | "published" })} className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="draft">Draft</option><option value="published">Published</option></select></div><Button disabled={saving || !form.title.trim() || !form.content.trim()} onClick={() => void save()}>{saving ? "Saving…" : "Save post"}</Button></div></DialogContent></Dialog></div>;

@@ -3,6 +3,7 @@ import { createHash, createHmac, randomInt } from "node:crypto";
 import { getConfiguredTransactionalEmailProvider, getTransactionalEmailProvider } from "./email-provider";
 import { loadProviderSecret } from "./provider-config-service";
 import { getAdminClient, ServerConfigurationError } from "./supabase";
+import { getBackendMode } from "./backend-mode";
 
 export type GuestVerificationChannel = "email" | "whatsapp";
 
@@ -39,8 +40,8 @@ export function normalizeGuestIdentity(input: {
   return { guestToken, collegeId, email, whatsappNumber };
 }
 
-const verificationKey = () => {
-  const encoded = process.env.GUEST_VERIFICATION_HMAC_KEY?.trim() || "";
+const verificationKey = (environment: Record<string, string | undefined> = process.env) => {
+  const encoded = environment.GUEST_VERIFICATION_HMAC_KEY?.trim() || "";
   const key = Buffer.from(encoded, "base64");
   if (key.length !== 32 || key.toString("base64") !== encoded) {
     throw new ServerConfigurationError("Guest verification signing is not configured.");
@@ -54,14 +55,15 @@ export function guestCodeHash(
   identity: ReturnType<typeof normalizeGuestIdentity>,
   channel: GuestVerificationChannel,
   code: string,
+  environment: Record<string, string | undefined> = process.env,
 ) {
   const destination = channel === "email" ? identity.email : identity.whatsappNumber;
-  return createHmac("sha256", verificationKey())
+  return createHmac("sha256", verificationKey(environment))
     .update(`${hashGuestToken(identity.guestToken)}|${identity.collegeId}|${channel}|${destination}|${code}`)
     .digest("hex");
 }
 
-const openwaConfiguration = () => {
+export const openwaConfiguration = () => {
   const baseUrl = process.env.OPENWA_BASE_URL?.trim().replace(/\/$/, "") || "";
   const apiKey = process.env.OPENWA_API_KEY?.trim() || "";
   const sessionId = process.env.OPENWA_SESSION_ID?.trim() || "";
@@ -88,7 +90,7 @@ async function openwaRequest(path: string, init?: RequestInit) {
   return response.json().catch(() => null) as Promise<Record<string, unknown> | null>;
 }
 
-async function sendWhatsAppCode(number: string, code: string) {
+export async function sendWhatsAppCode(number: string, code: string) {
   const config = openwaConfiguration();
   const session = await openwaRequest(`/api/sessions/${encodeURIComponent(config.sessionId)}`);
   const directStatus = session?.status;
@@ -130,6 +132,10 @@ export async function startGuestVerification(
   identity: ReturnType<typeof normalizeGuestIdentity>,
   channel: GuestVerificationChannel,
 ) {
+  if (getBackendMode() === "neon-staging") {
+    const { startNeonGuestVerification } = await import("./neon-guest-college-verification");
+    return startNeonGuestVerification(identity, channel);
+  }
   // Reject missing provider configuration before reserving a code or a rate-limit slot.
   verificationKey();
   if (channel === "whatsapp") openwaConfiguration();
@@ -187,6 +193,10 @@ export async function checkGuestVerification(
   channel: GuestVerificationChannel,
   code: string,
 ) {
+  if (getBackendMode() === "neon-staging") {
+    const { checkNeonGuestVerification } = await import("./neon-guest-college-verification");
+    return checkNeonGuestVerification(identity, verificationId, channel, code);
+  }
   if (!uuidPattern.test(verificationId) || !/^\d{6}$/.test(code)) {
     throw new GuestVerificationError(422, "INVALID_CODE", "Enter the six-digit verification code.");
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import {
   createAdminResource,
   deleteAdminResource,
   listAdminResource,
+  listNeonAdminOptions,
   updateAdminResource,
 } from "@/lib/admin/admin-client";
 
@@ -138,11 +139,7 @@ const AdminJobs = () => {
     }
   };
 
-  useEffect(() => {
-    void Promise.all([fetchJobs(), fetchOwnershipOptions()]);
-  }, []);
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await listAdminResource<Job>("jobs", {
@@ -161,9 +158,16 @@ const AdminJobs = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[toast]);
 
-  const fetchOwnershipOptions = async () => {
+  const fetchOwnershipOptions = useCallback(async () => {
+    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      try {
+        const [companyRows,profileRows]=await Promise.all([listNeonAdminOptions<CompanyOption>("companies"),listNeonAdminOptions<OwnerOption>("owners")]);
+        setCompanies(companyRows); setOwners(profileRows);
+      } catch(error) {toast({variant:"destructive",title:"Unable to load job owners",description:error instanceof Error ? error.message : "Try again shortly."});}
+      return;
+    }
     const [{ data: companyRows, error: companyError }, { data: profileRows, error: profileError }] =
       await Promise.all([
         (supabase as any)
@@ -188,7 +192,9 @@ const AdminJobs = () => {
     }
     setCompanies((companyRows || []) as CompanyOption[]);
     setOwners((profileRows || []) as OwnerOption[]);
-  };
+  },[toast]);
+
+  useEffect(() => {void Promise.all([fetchJobs(),fetchOwnershipOptions()]);},[fetchJobs,fetchOwnershipOptions]);
 
   const handleSubmit = async () => {
     if (!formData.title.trim() || !formData.owner_user_id) {

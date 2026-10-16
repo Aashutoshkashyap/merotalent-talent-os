@@ -20,8 +20,8 @@ const originalDirectoryMigration = readFileSync(
   "utf8",
 );
 
-const directoryClient = readFileSync(
-  resolve(process.cwd(), "src/lib/institutes/public-institutes.ts"),
+const directoryRoute = readFileSync(
+  resolve(process.cwd(), "app/api/v1/institutes/directory/route.ts"),
   "utf8",
 );
 
@@ -68,11 +68,9 @@ describe("education directory search", () => {
   });
 
   it("applies every normalized search token as an AND filter", () => {
-    expect(directoryClient).toContain("for (const token of searchTokens)");
-    expect(directoryClient).toContain(
-      'request = request.ilike("search_document", `%${token}%`)',
-    );
-    expect(directoryClient).not.toContain("name.ilike.${pattern}");
+    expect(directoryRoute).toContain('const patterns = tokens.map((token) => `%${token.toLowerCase()}%`)');
+    expect(directoryRoute).toContain("lower(d.search_document) LIKE ALL($1::text[])");
+    expect(directoryRoute).not.toContain("name.ilike.${pattern}");
   });
 
   it.each([

@@ -40,6 +40,7 @@ import {
 
 const Settings = () => {
   const { profile, refreshProfile, signOut } = useAuth();
+  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
   const [personalInfo, setPersonalInfo] = useState({
     full_name: "",
     phone: "",
@@ -54,6 +55,7 @@ const Settings = () => {
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
@@ -70,6 +72,20 @@ const Settings = () => {
 
     let cancelled = false;
     const loadPreferences = async () => {
+      if (isNeonStaging) {
+        try {
+          const response = await fetch("/api/v1/neon-staging/preferences", {
+            credentials: "same-origin", cache: "no-store",
+          });
+          const payload = await response.json().catch(() => null);
+          if (!response.ok) throw new Error("Could not load preferences.");
+          if (!cancelled) {
+            setNotifications(normalizeNotificationPreferences(payload?.data?.notification_preferences));
+            setLanguage(normalizeAccountLanguage(payload?.data?.language));
+          }
+        } catch { if (!cancelled) toast.error("Could not load your saved preferences."); }
+        return;
+      }
       const { data, error } = await supabase
         .from("user_preferences")
         .select("notification_preferences, language")
@@ -91,7 +107,7 @@ const Settings = () => {
     return () => {
       cancelled = true;
     };
-  }, [profile?.user_id]);
+  }, [profile?.user_id, isNeonStaging]);
 
   useEffect(() => {
     document.documentElement.classList.remove("dark");
@@ -109,6 +125,22 @@ const Settings = () => {
     }
 
     setIsSavingProfile(true);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/profile", {
+          method: "PATCH", credentials: "same-origin", cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ full_name: personalInfo.full_name.trim(),
+            phone: personalInfo.phone.trim() || null,
+            location: personalInfo.location.trim() || null, bio: personalInfo.bio.trim() || null }),
+        });
+        if (!response.ok) throw new Error("Could not save your personal information.");
+        await refreshProfile();
+        toast.success("Personal information saved.");
+      } catch (error) { toast.error(error instanceof Error ? error.message : "Could not save your personal information."); }
+      finally { setIsSavingProfile(false); }
+      return;
+    }
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -135,6 +167,19 @@ const Settings = () => {
     }
 
     setIsSavingPreferences(true);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/preferences", {
+          method: "PUT", credentials: "same-origin", cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ notification_preferences: notifications, language }),
+        });
+        if (!response.ok) throw new Error("Could not save your preferences.");
+        toast.success(message);
+      } catch (error) { toast.error(error instanceof Error ? error.message : "Could not save your preferences."); }
+      finally { setIsSavingPreferences(false); }
+      return;
+    }
     const { error } = await supabase
       .from("user_preferences")
       .upsert({
@@ -161,8 +206,26 @@ const Settings = () => {
       toast.error("Your new passwords do not match.");
       return;
     }
+    if (isNeonStaging && !currentPassword) {
+      toast.error("Enter your current password to change it.");
+      return;
+    }
 
     setIsUpdatingPassword(true);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/auth/change-password", {
+          method: "POST", credentials: "same-origin", cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ currentPassword, newPassword }),
+        });
+        if (!response.ok) throw new Error("Could not update your password. Check your current password.");
+        setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+        toast.success("Password updated securely.");
+      } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update your password."); }
+      finally { setIsUpdatingPassword(false); }
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setIsUpdatingPassword(false);
     if (error) {
@@ -264,6 +327,10 @@ const Settings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {isNeonStaging && <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input id="currentPassword" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" />
+              </div>}
               <div className="space-y-2">
                 <Label htmlFor="language">Language</Label>
                 <select

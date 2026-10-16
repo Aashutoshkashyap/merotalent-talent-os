@@ -1,5 +1,5 @@
 import type { QueryResultRow } from "pg";
-import { neonQueryExecutor, type NeonActor, type NeonQueryExecutor } from "./neon-authorization";
+import { NeonAuthorizationError, neonQueryExecutor, type NeonActor, type NeonQueryExecutor } from "./neon-authorization";
 
 export interface SavedJobRow extends QueryResultRow {
   id: string;
@@ -47,11 +47,25 @@ export async function saveJob(
   jobId: string,
   db: NeonQueryExecutor = neonQueryExecutor,
 ): Promise<{ saved: boolean; jobId: string }> {
-  await db.query(`
+  const rows = await db.query<{ job_id: string }>(`
     INSERT INTO public.saved_jobs (user_id, job_id, created_at)
-    VALUES ($1::uuid, $2::uuid, now())
+    SELECT p.user_id, j.id, now()
+    FROM public.profiles p
+    JOIN public.neon_application_accounts account ON account.legacy_user_id = p.user_id
+      AND account.status = 'active'
+    JOIN public.neon_identity_links link ON link.application_account_id = account.id
+      AND link.neon_auth_user_id = $3::uuid AND link.status = 'verified'
+    JOIN public.jobs j ON j.id = $2::uuid
+      AND j.status = 'published' AND j.approval_status = 'approved'
+      AND j.is_active = true AND j.deleted_at IS NULL
+      AND (j.expires_at IS NULL OR j.expires_at > now())
+    WHERE p.user_id = $1::uuid AND p.account_status = 'active' AND p.deleted_at IS NULL
     ON CONFLICT (user_id, job_id)
-    DO UPDATE SET deleted_at = NULL, created_at = now()`, [actor.userId, jobId]);
+    DO UPDATE SET deleted_at = NULL, created_at = now()
+    RETURNING job_id`, [actor.userId, jobId, actor.neonAuthUserId]);
+  if (rows.length === 0) {
+    throw new NeonAuthorizationError(403, "JOB_SAVE_DENIED", "This job cannot be saved by this account.");
+  }
 
   return { saved: true, jobId };
 }
@@ -64,7 +78,15 @@ export async function unsaveJob(
   await db.query(`
     UPDATE public.saved_jobs
     SET deleted_at = now()
-    WHERE user_id = $1::uuid AND job_id = $2::uuid`, [actor.userId, jobId]);
+    WHERE user_id = $1::uuid AND job_id = $2::uuid
+      AND EXISTS (
+        SELECT 1 FROM public.profiles p
+        JOIN public.neon_application_accounts account ON account.legacy_user_id = p.user_id
+          AND account.status = 'active'
+        JOIN public.neon_identity_links link ON link.application_account_id = account.id
+          AND link.neon_auth_user_id = $3::uuid AND link.status = 'verified'
+        WHERE p.user_id = $1::uuid AND p.account_status = 'active' AND p.deleted_at IS NULL
+      )`, [actor.userId, jobId, actor.neonAuthUserId]);
 
   return { saved: false, jobId };
 }

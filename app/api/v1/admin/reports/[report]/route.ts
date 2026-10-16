@@ -1,4 +1,8 @@
 import { authenticateAdminRequest } from "@/lib/server/auth";
+import { getBackendMode } from "@/lib/server/backend-mode";
+import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
+import { NeonAuthorizationError, type NeonActor } from "@/lib/server/neon-authorization";
+import { loadNeonAdminReport } from "@/lib/server/neon-admin-reports";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import {
   getAdminReport,
@@ -184,9 +188,14 @@ const loadApplicationReportRows = async (
 export async function GET(request: Request, context: RouteContext) {
   const requestId = crypto.randomUUID();
   let authenticated;
+  let neonActor:NeonActor|undefined;
   try {
-    authenticated = await authenticateAdminRequest(request);
+    if(getBackendMode() === "neon-staging") neonActor=await getAuthenticatedApplicationUser(request);
+    else authenticated = await authenticateAdminRequest(request);
   } catch (error) {
+    if(error instanceof NeonAuthorizationError || error instanceof NeonSessionUnavailable) return jsonApiResponse({data:null,
+      error:{code:error instanceof NeonAuthorizationError?error.code:"AUTH_UNAVAILABLE",message:"The administrator session is unavailable."},meta:{requestId}},
+      error instanceof NeonAuthorizationError?error.status:503);
     return adminApiErrorResponse(error, requestId, "authenticate admin report");
   }
 
@@ -204,12 +213,14 @@ export async function GET(request: Request, context: RouteContext) {
 
   const definition = getAdminReport(report);
   try {
-    const { userClient } = authenticated;
+    const userClient = authenticated?.userClient;
     const options = parseAdminReportQuery(new URL(request.url).searchParams);
     let rows: AdminReportRow[];
-    if (report === "applications") {
+    if(neonActor) rows=await loadNeonAdminReport(neonActor,report,options);
+    else if (report === "applications") {
       rows = await loadApplicationReportRows(userClient, options);
     } else {
+      if(!userClient) throw new Error("Administrator session unavailable.");
       let query = userClient.from(definition.table).select(definition.select);
 
       if (options.from) query = query.gte(definition.dateColumn, options.from);
@@ -263,6 +274,7 @@ export async function GET(request: Request, context: RouteContext) {
       },
     });
   } catch (error) {
+    if(error instanceof NeonAuthorizationError) return jsonApiResponse({data:null,error:{code:error.code,message:error.message},meta:{requestId}},error.status);
     return adminApiErrorResponse(error, requestId, `export ${report} report`);
   }
 }

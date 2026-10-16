@@ -1,4 +1,6 @@
 import { jsonApiResponse } from "@/lib/server/api-response";
+import {getBackendMode} from "@/lib/server/backend-mode";
+import {handleManagedMediaDownload as downloadNeonMedia} from "@/lib/server/neon-managed-media-route";
 import { ApiAuthError, authenticateRequest } from "@/lib/server/auth";
 import { authorizeMediaAccess } from "@/lib/server/media-authorization";
 import {
@@ -72,12 +74,16 @@ function errorResponse(error: unknown, requestId: string) {
 }
 
 export async function POST(request: Request) {
+  if(getBackendMode()==="neon-staging")return downloadNeonMedia(request);
   const requestId = crypto.randomUUID();
 
   try {
     const context = await authenticateRequest(request);
     const body = await readJsonObject(request, 8 * 1024);
     const intent = parseMediaDownloadIntent(body);
+    if (intent.module === "chat_attachment") {
+      throw new MediaPolicyError(403, "MEDIA_ACCESS_DENIED", "Use the authorized chat attachment flow.");
+    }
 
     // Delegated job administrators can retain a student primary role. Resolve
     // their exact entity authorization before permitting a foreign file path.

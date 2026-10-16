@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import AuthShell from "@/components/auth/AuthShell";
 
 type ResetStep = "email" | "otp" | "password";
+const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
 
 const ResetPassword = () => {
   const [step, setStep] = useState<ResetStep>("email");
@@ -22,6 +23,10 @@ const ResetPassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (isNeonStaging) {
+      if (new URLSearchParams(window.location.search).get("token")) setStep("password");
+      return;
+    }
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         setStep("password");
@@ -42,6 +47,20 @@ const ResetPassword = () => {
   const handleRequestOtp = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
+    if (isNeonStaging) {
+      try {
+        const response = await fetch("/api/v1/neon-staging/auth/request-password-reset", {
+          method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        if (!response.ok) throw new Error("Password recovery is unavailable. Please try again later.");
+        toast({ title: "Check your email", description: "If an account exists, a password-reset link will arrive shortly." });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Recovery unavailable",
+          description: error instanceof Error ? error.message : "Please try again later." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: getPasswordResetUrl(),
     });
@@ -111,6 +130,28 @@ const ResetPassword = () => {
     }
 
     setIsLoading(true);
+    if (isNeonStaging) {
+      const token = new URLSearchParams(window.location.search).get("token");
+      if (!token) {
+        setIsLoading(false);
+        toast({ variant: "destructive", title: "Reset link required", description: "Request a fresh password-reset link." });
+        setStep("email");
+        return;
+      }
+      try {
+        const response = await fetch("/api/v1/neon-staging/auth/reset-password", {
+          method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, newPassword: password }),
+        });
+        if (!response.ok) throw new Error("The reset link is invalid or expired. Request a new one.");
+        toast({ title: "Password updated", description: "Sign in with your new password." });
+        navigate("/login", { replace: true });
+      } catch (error) {
+        toast({ variant: "destructive", title: "Password update failed",
+          description: error instanceof Error ? error.message : "Please try again later." });
+      } finally { setIsLoading(false); }
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password });
     setIsLoading(false);
 
@@ -143,7 +184,7 @@ const ResetPassword = () => {
       }
       description={
         step === "email"
-          ? "Enter your account email to receive a 6-digit OTP verification code."
+          ? isNeonStaging ? "Enter your account email to request a password-reset link." : "Enter your account email to receive a 6-digit OTP verification code."
           : step === "otp"
             ? `Enter the 6-digit OTP code sent to ${email}.`
             : "Create a new strong password for your MeroTalent account."
@@ -175,12 +216,12 @@ const ResetPassword = () => {
             </div>
             <Button type="submit" className="h-11 w-full rounded-xl bg-[#0073e6] hover:bg-[#0062c4] font-extrabold text-xs sm:text-sm" disabled={isLoading}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Send Verification OTP
+              {isNeonStaging ? "Send Reset Link" : "Send Verification OTP"}
             </Button>
           </form>
         )}
 
-        {step === "otp" && (
+        {!isNeonStaging && step === "otp" && (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="otpToken" className="text-xs font-bold text-slate-700">6-Digit OTP Code</Label>
@@ -254,7 +295,9 @@ const ResetPassword = () => {
         )}
 
         <div className="rounded-[15px] border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500 font-medium">
-          OTP codes expire in 10 minutes for your security. Enter the code sent to your email to verify your identity.
+          {isNeonStaging
+            ? "Use the link sent to your email. If it expires, request another reset link."
+            : "OTP codes expire in 10 minutes for your security. Enter the code sent to your email to verify your identity."}
         </div>
       </div>
     </AuthShell>

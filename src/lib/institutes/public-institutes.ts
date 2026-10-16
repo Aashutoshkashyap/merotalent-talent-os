@@ -1,9 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
-import {
-  cleanInstituteFilterText,
-  tokenizeInstituteSearch,
-} from "./directory-search";
 import { placeInstitutes } from "./placement";
 export {
   getGoogleMapsEmbedUrl,
@@ -12,6 +6,7 @@ export {
 
 export type InstituteCategory = "all" | "college" | "school" | "plus-two";
 export type InstituteSort = "recommended" | "name" | "newest";
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export interface InstituteRecord {
   id: string;
@@ -83,13 +78,6 @@ export interface PublicInstituteResult {
   count: number;
 }
 
-const categoryValues: Record<Exclude<InstituteCategory, "all">, string[]> = {
-  college: ["college", "colleges", "university", "universities", "campus"],
-  school: ["school", "schools"],
-  "plus-two": ["plus_two", "+2", "plus two", "plus-two", "higher secondary"],
-};
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const youtubeIdPattern = /^[A-Za-z0-9_-]{11}$/;
 
 export const institutePath = (institute: Pick<InstituteRecord, "id" | "slug">) =>
@@ -112,11 +100,12 @@ export const resolveCollegeMediaUrl = (value: string | null | undefined) => {
   }
 
   const safePath = value.replace(/^\/+/, "");
-  if (!safePath || safePath.includes("..") || safePath.includes("://")) {
+  if (!safePath || safePath.length > 512 || safePath.includes("\\") || safePath.includes("%") ||
+      safePath.includes("://") || safePath.split("/").some((part) => !part || part === "." || part === "..")) {
     return "/placeholder.svg";
   }
 
-  return supabase.storage.from("college-media").getPublicUrl(safePath).data.publicUrl;
+  return `/api/v1/institutes/media?path=${encodeURIComponent(safePath)}`;
 };
 
 export const safeExternalUrl = (value: string | null | undefined) => {
@@ -209,19 +198,6 @@ export const invalidatePublicInstituteCache = () => {
   detailCache.clear();
 };
 
-// This is deliberately explicit rather than `*`: public pages must consume
-// only MeroTalent's public directory contract, never internal provenance.
-const publicInstituteSelect = [
-  "id", "name", "short_name", "slug", "type", "institution_category", "affiliation", "level",
-  "description", "logo_url", "cover_image_url", "gallery_urls", "youtube_url", "website",
-  "chairperson_name", "chairperson_designation", "chairperson_message", "chairperson_image_url",
-  "principal_name", "principal_designation", "principal_message", "principal_image_url",
-  "location", "map_location", "contact_email", "contact_phone", "contact_info", "courses_offered",
-  "salient_features", "scholarships", "admission_guidelines", "established_year", "total_seats",
-  "available_seats", "admission_status", "admission_deadline", "applications_enabled", "payment_verified",
-  "program_names", "search_tags", "search_document", "is_featured", "ranking", "status", "created_at", "updated_at",
-].join(",");
-
 export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promise<PublicInstituteResult> {
   const cacheKey = JSON.stringify(query);
   const cached = queryCache.get(cacheKey);
@@ -229,66 +205,23 @@ export async function fetchPublicInstitutes(query: PublicInstituteQuery): Promis
     return cached.data;
   }
 
-  const { search, category, location, affiliation, admissionStatus, sort, limit } = query;
-
-  const searchTokens = tokenizeInstituteSearch(search);
-  const normalizedLocation = cleanInstituteFilterText(location);
-  const normalizedAffiliation = cleanInstituteFilterText(affiliation);
-  const buildRequest = () => {
-    let request = supabase
-      .from("institute_directory")
-      .select(publicInstituteSelect, { count: "exact" });
-    for (const token of searchTokens) request = request.ilike("search_document", `%${token}%`);
-    if (category !== "all") request = request.in("institution_category", categoryValues[category]);
-    if (normalizedLocation) request = request.ilike("location", `%${normalizedLocation}%`);
-    if (normalizedAffiliation) request = request.ilike("affiliation", `%${normalizedAffiliation}%`);
-    if (admissionStatus) request = request.eq("admission_status", admissionStatus);
-    return request;
-  };
-
-  let request = buildRequest();
-
-  if (sort === "name") {
-    request = request.order("name", { ascending: true });
-  } else if (sort === "newest") {
-    request = request.order("created_at", { ascending: false });
-  } else {
-    request = request
-      .order("is_featured", { ascending: false })
-      .order("created_at", { ascending: false })
-      .order("name", { ascending: true });
-  }
-
-  if (sort === "recommended") {
-    // Fetch the approved directory's numbered colleges independently of the
-    // first page. Applying LIMIT before placement loses a college assigned to
-    // a later slot (for example, #12 on a six-card student page).
-    const { data: positions, error: positionError } = await buildRequest()
-      .eq("admission_status", "open")
-      .not("ranking", "is", null)
-      .order("ranking", { ascending: true })
-      .order("name", { ascending: true })
-      .limit(1000);
-    if (positionError) throw new Error(positionError.message);
-
-    const positioned = (positions ?? []) as unknown as InstituteRecord[];
-    const { data, error, count } = await request.range(0, Math.max(0, limit + positioned.length - 1));
-    if (error) throw new Error(error.message);
-
-    const result: PublicInstituteResult = {
-      institutes: placeInstitutes((data ?? []) as unknown as InstituteRecord[], positioned, count ?? 0, limit),
-      count: count ?? 0,
-    };
-    queryCache.set(cacheKey, { timestamp: Date.now(), data: result });
-    return result;
-  }
-
-  const { data, error, count } = await request.range(0, Math.max(0, limit - 1));
-  if (error) throw new Error(error.message);
-
+  const params = new URLSearchParams({
+    search: query.search,
+    category: query.category,
+    location: query.location,
+    affiliation: query.affiliation,
+    admissionStatus: query.admissionStatus,
+    sort: query.sort,
+    limit: String(query.limit),
+  });
+  const response = await fetch(`/api/v1/institutes/directory?${params}`);
+  if (!response.ok) throw new Error("College directory is unavailable.");
+  const payload = await response.json() as { data: InstituteRecord[]; positions: InstituteRecord[]; count: number };
   const result: PublicInstituteResult = {
-    institutes: (data ?? []) as unknown as InstituteRecord[],
-    count: count ?? data?.length ?? 0,
+    institutes: query.sort === "recommended"
+      ? placeInstitutes(payload.data, payload.positions, payload.count, query.limit)
+      : payload.data,
+    count: payload.count,
   };
 
   queryCache.set(cacheKey, { timestamp: Date.now(), data: result });
@@ -302,18 +235,10 @@ export async function fetchPublicInstitute(identifier: string): Promise<Institut
     return cached.data;
   }
 
-  let request = supabase
-    .from("institute_directory")
-    .select(publicInstituteSelect);
-
-  request = uuidPattern.test(identifier)
-    ? request.eq("id", identifier)
-    : request.eq("slug", identifier);
-
-  const { data, error } = await request.maybeSingle();
-  if (error) throw new Error(error.message);
-
-  const record = data as unknown as InstituteRecord | null;
+  const response = await fetch(`/api/v1/institutes/directory?identifier=${encodeURIComponent(identifier)}`);
+  if (!response.ok) throw new Error("College details are unavailable.");
+  const payload = await response.json() as { data: InstituteRecord | null };
+  const record = payload.data;
   detailCache.set(cacheKey, { timestamp: Date.now(), data: record });
   return record;
 }

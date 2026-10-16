@@ -10,6 +10,8 @@ import { NeonJobsRepository } from "@/lib/server/neon-jobs";
 import { NeonMentorsRepository } from "@/lib/server/neon-mentors";
 import { NeonEventsRepository } from "@/lib/server/neon-events";
 import { NeonPaymentsRepository } from "@/lib/server/neon-payments";
+import { NeonCheckoutService } from "@/lib/server/neon-checkout";
+import type { EsewaV2PaymentProvider } from "@/lib/server/payment-provider";
 import { NeonMessagingRepository } from "@/lib/server/neon-messaging";
 import { listApplicationEvents } from "@/lib/server/neon-application-events";
 import { uploadBytes, privateDownloadUrl } from "@/lib/server/application-storage";
@@ -39,11 +41,21 @@ describe("Neon staging complete module runtime E2E verification", () => {
     process.env.NEON_STAGING_BRANCH_ID = NEON_MIGRATION_STAGING_BRANCH_ID;
     getNeonDatabaseConfig();
 
-    // Query 2 active profiles and 1 admin profile from staging
+    // Keep the legacy module tests' second user while binding Jobs to a real
+    // verified synthetic Managed Auth identity instead of a non-UUID placeholder.
     const users = await queryRows<{ user_id: string }>(`
       SELECT user_id FROM public.profiles
       WHERE account_status = 'active' AND deleted_at IS NULL
       ORDER BY user_id LIMIT 2`);
+
+    const linked = await queryRows<{ user_id: string; neon_auth_user_id: string }>(`
+      SELECT a.legacy_user_id AS user_id, l.neon_auth_user_id
+      FROM public.neon_identity_links l
+      JOIN public.neon_application_accounts a ON a.id = l.application_account_id
+      JOIN public.profiles p ON p.user_id = a.legacy_user_id
+      WHERE l.status = 'verified' AND a.status = 'active'
+        AND p.account_status = 'active' AND p.deleted_at IS NULL
+      LIMIT 1`);
 
     const admins = await queryRows<{ user_id: string }>(`
       SELECT ur.user_id FROM public.user_roles ur
@@ -52,9 +64,10 @@ describe("Neon staging complete module runtime E2E verification", () => {
       LIMIT 1`);
 
     expect(users).toHaveLength(2);
+    expect(linked).toHaveLength(1);
     actorA = {
-      userId: users[0].user_id,
-      neonAuthUserId: "MOCK_NEON_AUTH_USER_A",
+      userId: linked[0].user_id,
+      neonAuthUserId: linked[0].neon_auth_user_id,
       roles: ["talent"],
       permissions: [],
       platformAdmin: false,
@@ -68,7 +81,7 @@ describe("Neon staging complete module runtime E2E verification", () => {
     };
     adminActor = {
       userId: admins[0]?.user_id ?? users[0].user_id,
-      neonAuthUserId: "MOCK_NEON_AUTH_ADMIN",
+      neonAuthUserId: "00000000-0000-4000-8000-000000000002",
       roles: ["admin", "super_admin"],
       permissions: ["*"],
       platformAdmin: true,
@@ -107,6 +120,12 @@ describe("Neon staging complete module runtime E2E verification", () => {
 
       const testJob = seedJob.rows[0];
 
+      await client.query(`
+        UPDATE public.profiles
+        SET full_name = 'Staging Job Applicant', email = 'staging-job-applicant@example.invalid',
+            phone = '+9779800000000'
+        WHERE user_id = $1::uuid`, [actorA.userId]);
+
       // Submit application
       const app = await repo.submitJobApplication(actorA, {
         jobId: testJob.id,
@@ -132,19 +151,19 @@ describe("Neon staging complete module runtime E2E verification", () => {
         }, client)
       ).rejects.toThrow();
 
-      // Check own applications list
-      const ownApps = await repo.listOwnApplications(actorA);
-      expect(ownApps.some(a => a.id === app.id)).toBe(true);
+      // The transaction is intentionally uncommitted; verify its effect with
+      // the same client rather than an unrelated pooled connection.
+      const ownApps = await client.query<{ id: string }>(`
+        SELECT id FROM public.job_applications
+        WHERE id = $1::uuid AND user_id = $2::uuid`, [app.id, actorA.userId]);
+      expect(ownApps.rows).toHaveLength(1);
 
-      // Recruiter scheduling interview
-      const scheduled = await repo.scheduleInterview(adminActor, app.id, {
+      // A nominal admin without a verified Managed Auth link must not schedule.
+      await expect(repo.scheduleInterview(adminActor, app.id, {
         interviewAt: new Date(Date.now() + 86400000).toISOString(),
         interviewLocation: "Google Meet Link",
         interviewDurationMinutes: 30,
-      }, client);
-
-      expect(scheduled.status).toBe("interview_scheduled");
-      expect(scheduled.interview_location).toBe("Google Meet Link");
+      }, client)).rejects.toThrow();
     } finally {
       await client.query("ROLLBACK");
       client.release();
@@ -157,21 +176,22 @@ describe("Neon staging complete module runtime E2E verification", () => {
       await client.query("BEGIN");
       const repo = new NeonMentorsRepository({ query: (sql, p) => client.query(sql, [...p]).then(r => r.rows) });
 
-      // Fetch or seed approved mentor
-      let mentors = await repo.listPublicMentors({ limit: 5 });
-      if (mentors.length === 0) {
-        const seed = await client.query<{ id: string }>(`
-          INSERT INTO public.mentors (user_id, headline, hourly_rate, is_available, approval_status)
-          VALUES ($1::uuid, 'Test Senior Mentor', 1000, true, 'approved')
-          RETURNING id`, [actorB.userId]);
-        mentors = await repo.listPublicMentors({ limit: 5 });
-      }
-
-      expect(mentors.length).toBeGreaterThan(0);
-      const mentor = mentors[0];
+      const seeded = await client.query<{ id: string }>(`
+        INSERT INTO public.mentors (user_id, headline, hourly_rate, is_available, approval_status)
+        VALUES ($1::uuid, 'Staging Senior Mentor', 1000, true, 'approved')
+        ON CONFLICT (user_id) DO UPDATE SET is_available=true,approval_status='approved'
+        RETURNING id`, [actorB.userId]);
+      const mentor = (await repo.getPublicMentor(seeded.rows[0].id))!;
+      expect(mentor).toBeDefined();
       // Verify no direct email or phone column is leaked in PublicMentorRow
       expect((mentor as any).email).toBeUndefined();
       expect((mentor as any).phone).toBeUndefined();
+
+      const service = await client.query<{ id: string }>(`
+        INSERT INTO public.mentor_services (mentor_id,title,duration_minutes,price,currency)
+        VALUES ($1::uuid,'Staging test session',60,1000,'NPR') RETURNING id`, [mentor.id]);
+      await client.query(`UPDATE public.profiles SET full_name='Staging Test Student',phone='9800000000'
+        WHERE user_id=$1::uuid`, [actorA.userId]);
 
       // Book session as actorA
       const start = new Date(Date.now() + 3600000 * 24);
@@ -179,6 +199,7 @@ describe("Neon staging complete module runtime E2E verification", () => {
 
       const booking = await repo.bookMentorSession(actorA, {
         mentorId: mentor.id,
+        mentorServiceId: service.rows[0].id,
         scheduledStart: start.toISOString(),
         scheduledEnd: end.toISOString(),
         topic: "Career Growth & Architecture",
@@ -213,10 +234,7 @@ describe("Neon staging complete module runtime E2E verification", () => {
       await client.query("BEGIN");
       const repo = new NeonEventsRepository({ query: (sql, p) => client.query(sql, [...p]).then(r => r.rows) });
 
-      let events = await repo.listPublicEvents({ limit: 5 });
-      let testEvent = events[0];
-      if (!testEvent) {
-        const seed = await client.query<{ id: string }>(`
+      const seed = await client.query<{ id: string }>(`
           INSERT INTO public.events (
             organizer_user_id, organizer_type, title, event_type, format,
             start_date, end_date, capacity, ticket_price, currency,
@@ -226,9 +244,7 @@ describe("Neon staging complete module runtime E2E verification", () => {
             now() + interval '7 days', now() + interval '8 days', 100, 0, 'NPR',
             true, 'published', 'approved'
           ) RETURNING id`, [adminActor.userId]);
-        events = await repo.listPublicEvents({ limit: 5 });
-        testEvent = events[0];
-      }
+      const testEvent = (await repo.getPublicEvent(seed.rows[0].id))!;
 
       expect(testEvent).toBeDefined();
 
@@ -258,7 +274,7 @@ describe("Neon staging complete module runtime E2E verification", () => {
     }
   });
 
-  it("Payments: creates payment record, verifies callback, and updates reference status", async () => {
+  it("Payments: creates a pending record and rejects an unverified callback", async () => {
     const client = await getPool().connect();
     try {
       await client.query("BEGIN");
@@ -278,19 +294,67 @@ describe("Neon staging complete module runtime E2E verification", () => {
       expect(payment.amount).toBe(1500);
       expect(payment.status).toBe("pending");
 
-      // Verify sandbox callback
-      const verified = await repo.verifyPaymentCallback(actorA, payment.id, {
-        gatewayTransactionId: "ESEWA_TXN_TEST_998877",
-        status: "completed",
-      }, client);
-
-      expect(verified.status).toBe("completed");
-      expect(verified.gateway_transaction_id).toBe("ESEWA_TXN_TEST_998877");
-      expect(verified.paid_at).toBeDefined();
+      // A browser/actor-supplied success is not a verified eSewa result.
+      await expect(repo.verifyPaymentCallback(actorA, payment.id, {
+        gatewayTransactionId: "ESEWA_TXN_TEST_998877", status: "completed",
+      })).rejects.toMatchObject({ code: "VERIFIED_PROVIDER_REQUIRED" });
+      const stillPending = await client.query<{ status: string }>(`
+        SELECT status FROM public.payments WHERE id=$1::uuid`, [payment.id]);
+      expect(stillPending.rows[0].status).toBe("pending");
 
       // List own payments
       const ownPayments = await repo.listOwnPayments(actorA);
       expect(ownPayments.some(p => p.id === payment.id)).toBe(true);
+    } finally {
+      await client.query("ROLLBACK");
+      client.release();
+    }
+  });
+
+  it("Payments: stages a server-priced event intent and fulfills exactly once after provider verification", async () => {
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
+      const event = (await client.query<{ id: string }>(`INSERT INTO public.events
+        (organizer_user_id,organizer_type,title,event_type,format,start_date,end_date,capacity,
+         ticket_price,currency,is_active,status,approval_status)
+        VALUES ($1::uuid,'user','Checkout test event','paid','online',now()+interval '7 days',
+          now()+interval '8 days',10,400,'NPR',true,'published','approved') RETURNING id`, [adminActor.userId])).rows[0];
+      const tier = (await client.query<{ id: string }>(`INSERT INTO public.event_ticket_types
+        (event_id,name,price,currency,total_quantity,min_per_order,max_per_order,is_active)
+        VALUES ($1::uuid,'Normal',400,'NPR',10,1,10,true) RETURNING id`, [event.id])).rows[0];
+      const registration = await new NeonEventsRepository().registerForEvent(actorA, {
+        eventId: event.id, ticketTypeId: tier.id, ticketQuantity: 2,
+        participants: [{ fullName: "Fixture One" }, { fullName: "Fixture Two" }],
+      }, client);
+      const provider = {
+        createCheckout: async ({ paymentId }: { paymentId: string }) => ({
+          status: "pending", checkoutUrl: "https://sandbox.example.invalid/form",
+          checkoutFields: { transaction_uuid: paymentId },
+        }),
+        verifyRedirectPayload: () => true,
+        lookupStatus: async ({ reference }: { reference: string }) => ({ status: "successful", transactionId: `sandbox-${reference}` }),
+      } as unknown as EsewaV2PaymentProvider;
+      const checkout = new NeonCheckoutService(provider);
+      const initiated = await checkout.initiate(actorA, "event_registration", registration.id, "http://localhost:3210", client);
+      expect(Number(initiated.session.amount)).toBe(800);
+      const reused = await checkout.initiate(actorA, "event_registration", registration.id, "http://localhost:3210", client);
+      expect(reused.reused).toBe(true);
+      const reference = initiated.session.provider_reference;
+      const before = await client.query(`SELECT id FROM public.event_tickets WHERE registration_id=$1::uuid`, [registration.id]);
+      expect(before.rowCount).toBe(0);
+      const pending = await client.query<{ status: string; payment_status: string; total_amount: number }>(
+        `SELECT status,payment_status,total_amount::float AS total_amount FROM public.event_registrations WHERE id=$1::uuid`, [registration.id]);
+      expect(pending.rows[0]).toMatchObject({ status: "pending", payment_status: "pending", total_amount: 800 });
+      const settled = await checkout.verifyReturn({ reference }, client);
+      expect(settled.status).toBe("successful");
+      const repeated = await checkout.verifyReturn({ reference }, client);
+      expect(repeated.duplicate).toBe(true);
+      const after = await client.query(`SELECT id FROM public.event_tickets WHERE registration_id=$1::uuid`, [registration.id]);
+      expect(after.rowCount).toBe(2);
+      const paid = await client.query<{ status: string; payment_status: string }>(
+        `SELECT status,payment_status FROM public.event_registrations WHERE id=$1::uuid`, [registration.id]);
+      expect(paid.rows[0]).toMatchObject({ status: "confirmed", payment_status: "success" });
     } finally {
       await client.query("ROLLBACK");
       client.release();

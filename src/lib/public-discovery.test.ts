@@ -39,6 +39,9 @@ describe("public discovery contract", () => {
     expect(hero).toMatch(/title: "Events",[\s\S]*?path: "\/events"/);
     const detail = read("src/screens/institutes/InstituteDetailPage.tsx");
     expect(detail).toContain('id="updates"');
-    expect(detail).toContain('.eq("status", "published")');
+    expect(detail).toContain('/api/v1/institutes/${encodeURIComponent(instituteId)}/updates');
+    const updatesRoute = read("app/api/v1/institutes/[id]/updates/route.ts");
+    expect(updatesRoute).toContain("status='published' AND deleted_at IS NULL");
+    expect(updatesRoute).toContain("published_at <= now()");
   });
 });

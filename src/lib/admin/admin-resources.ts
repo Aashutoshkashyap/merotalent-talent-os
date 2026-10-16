@@ -3,6 +3,7 @@ export const ADMIN_RESOURCE_NAMES = [
   "user-roles",
   "user-permissions",
   "colleges",
+  "companies",
   "mentors",
   "partnered-courses",
   "jobs",
@@ -101,6 +102,28 @@ const commonStatusFilter: AdminFilterDefinition = {
 };
 
 const resources = {
+  companies: {
+    resource: "companies",
+    table: "companies",
+    select: "id,user_id,name,industry,description,logo_url,website,size,location,is_verified,created_at,updated_at,deleted_at",
+    searchColumn: "name",
+    sortColumns: ["name", "created_at", "updated_at"],
+    defaultSort: "created_at",
+    filters: { user_id: { column: "user_id", kind: "uuid" }, is_verified: { column: "is_verified", kind: "boolean" } },
+    fields: {
+      user_id: uuid({ create: true, update: false, requiredOnCreate: true }),
+      name: text({ create: true, update: true, requiredOnCreate: true, maxLength: 240 }),
+      industry: text({ create: true, update: true, nullable: true, maxLength: 240 }),
+      description: text({ create: true, update: true, nullable: true, maxLength: 20_000 }),
+      logo_url: { kind: "url", create: true, update: true, nullable: true },
+      website: { kind: "url", create: true, update: true, nullable: true },
+      size: text({ create: true, update: true, nullable: true, values: ["1-10", "11-50", "51-200", "201-500", "500+"] }),
+      location: text({ create: true, update: true, nullable: true, maxLength: 240 }),
+      is_verified: { kind: "boolean", create: true, update: true },
+    },
+    softDelete: { mode: "timestamp", column: "deleted_at" },
+    deletable: true,
+  },
   users: {
     resource: "users",
     table: "profiles",
