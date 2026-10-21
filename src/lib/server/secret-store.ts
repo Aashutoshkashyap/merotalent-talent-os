@@ -29,14 +29,24 @@ const loadEncryptionKey = (environment: Record<string, string | undefined> = pro
 
 export const isSecretStorageConfigured = (
   environment: Record<string, string | undefined> = process.env,
-) => {
+) => getSecretStorageStatus(environment) === "ready";
+
+/** Safe deployment diagnostics; never returns key material or its encoding. */
+export function getSecretStorageStatus(
+  environment: Record<string, string | undefined> = process.env,
+): "missing" | "invalid" | "ready" {
+  if (!environment.PROVIDER_CONFIG_ENCRYPTION_KEY?.trim()) return "missing";
   try {
     loadEncryptionKey(environment);
-    return true;
+    const probe = "provider-storage-healthcheck";
+    if (decryptProviderSecret(encryptProviderSecret(probe, environment), environment) !== probe) {
+      return "invalid";
+    }
+    return "ready";
   } catch {
-    return false;
+    return "invalid";
   }
-};
+}
 
 export function encryptProviderSecret(
   secret: string,

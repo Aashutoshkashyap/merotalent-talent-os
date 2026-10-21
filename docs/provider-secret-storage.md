@@ -76,3 +76,31 @@ entered again by an authorized Super Admin.
   `PROVIDER_CONFIG_ENCRYPTION_KEY` and can safely encrypt/decrypt server-side.
 - If storage is not ready, Provider Center disables secret entry and shows an
   actionable deployment message. It does not claim that a provider is usable.
+
+The authenticated Neon provider-status response also includes
+`secretStorageStatus`: `missing`, `invalid`, or `ready`. Readiness requires the
+canonical 32-byte key and an in-memory AES-GCM encryption/decryption self-test;
+the probe, key and ciphertext are never returned or persisted. A ready storage
+key does not imply that historical provider credentials decrypt under that key.
+
+## MeroTalent eSewa return configuration
+
+The canonical production return URL is:
+
+```text
+https://www.merotalent.com/api/v1/neon-staging/payments/esewa/return
+```
+
+The deployed checkout sends this as `success_url`. Its `failure_url` uses the
+same route with the server-generated `reference` and `state=failed` query
+parameters. Keep HTTPS and the canonical `www.merotalent.com` hostname. Despite
+the historical path name, this route uses the explicitly selected Neon runtime.
+
+If the merchant account has website/return-URL allowlisting, its owner must
+register the canonical website origin and the above return route, including
+support for the generated failure query string, with eSewa merchant operations.
+The application cannot prove or change merchant-side allowlisting without
+authorized merchant-portal access. ePay sends return URLs in its checkout form;
+do not describe a separate webhook as registered or mandatory without evidence
+from that merchant account. Portal registration remains unverified until the
+actual portal settings or eSewa's confirmation are inspected.

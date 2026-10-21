@@ -3,7 +3,7 @@ import { getBackendMode, type BackendMode } from "./backend-mode";
 import type { PoolClient, QueryResultRow } from "pg";
 import { queryRows, withTransaction } from "./db";
 import { type NeonActor, NeonAuthorizationError, requireSuperAdmin } from "./neon-authorization";
-import { decryptProviderSecret, encryptProviderSecret, isSecretStorageConfigured } from "./secret-store";
+import { decryptProviderSecret, encryptProviderSecret, getSecretStorageStatus } from "./secret-store";
 import { EsewaV2PaymentProvider } from "./payment-provider";
 type ProviderKind = "payment" | "ai" | "email";
 
@@ -45,12 +45,14 @@ export const canDecryptSecret = (
 const toStatus = (row: ProviderRow | null) => {
   const hasSecret = Boolean(row?.secret_ciphertext && row.secret_iv && row.secret_tag);
   const decryptable = hasSecret ? canDecryptSecret(row) : false;
+  const secretStorageStatus = getSecretStorageStatus();
   return {
     providerName: row?.provider_name ?? null,
     enabled: Boolean(row?.is_enabled && decryptable),
     configured: hasSecret,
     secretDecryptable: hasSecret ? decryptable : undefined,
-    secretStorageReady: isSecretStorageConfigured(),
+    secretStorageReady: secretStorageStatus === "ready",
+    secretStorageStatus,
     publicConfig: row ? safeSettings(row.provider_kind, row.public_config) : {},
     configuredAt: row?.configured_at ?? null,
     updatedAt: row?.updated_at ?? null,
