@@ -2626,7 +2626,9 @@ production configuration change or live payment occurred in this continuation.
   `Login Error — You cannot perform transaction.` The subsequent browser state
   showed the login page, test account ending 0002, CAPTCHA quota warning and
   disabled LOGIN; the transient rejection response/HTTP status was not captured.
-  Whether it appeared before OTP or confirmation is awaiting operator clarification.
+  The operator confirms it appears **immediately after LOGIN**, before OTP or
+  payment confirmation. This is a hosted login-stage rejection, not evidence of
+  successful authentication or a MeroTalent callback/fulfillment failure.
 - Provider status lookup at **2026-10-21T01:25:15.859Z** returned HTTP 200 /
   **PENDING**, exact merchant/reference/amount match, no settlement reference.
   No paid entitlement was granted. No new login submission, wallet switching,
