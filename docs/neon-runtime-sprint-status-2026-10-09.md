@@ -2666,3 +2666,35 @@ production configuration change or live payment occurred in this continuation.
   controlled replacement with legitimate merchant credentials. A genuine
   authorized settlement and merchant-portal callback registration remain
   unverified. Existing mocked E2E tests are not provider settlement evidence.
+
+#### Controlled production provider-key recovery — 2026-10-21
+
+- Authenticated canonical diagnostics on commit `785283e` identified the exact
+  failure: `secretStorageStatus=invalid`, not a missing variable. The original
+  Vercel value is sensitive/unreadable through authorized exports and retrieval;
+  the available local key does not decrypt the existing eSewa ciphertext.
+  No original key or merchant secret was recovered.
+- Read-only inventory found one encrypted platform payment credential, zero
+  BYOK credentials, and the intact original
+  `public.provider_configurations_backup_20261021` table. Its deterministic
+  SHA256 is `be4be7ef88c807902090bcf92663b913ef629f40b47698b04043712183f4d7c2`.
+- A controlled replacement 32-byte random key and both current/original provider
+  rows were backed up in a read-back-verified AES-GCM envelope outside the repo:
+  `provider-key-rotation-20261021094056691.aes256gcm.json` in the private migration
+  artifact directory. The envelope uses the existing operator snapshot Keychain
+  key. No secret was logged, committed, or sent to a browser.
+- Updated only the existing sensitive Vercel Production key variable, preserving
+  its identity/type/scope. Vercel confirmed the update. No provider row, original
+  backup table, payment flag, merchant credential, or application entitlement was
+  modified. A new deployment is required to load the replacement key.
+- `secret-store.ts` now exposes only `missing/invalid/ready` diagnostics and
+  performs an ephemeral encryption/decryption probe when reporting readiness.
+  The authenticated provider response exposes that state, never key material.
+  `docs/provider-secret-storage.md` documents the canonical return URL and the
+  distinction between form return URLs and unverified merchant allowlisting.
+- Verification: 185 files / 938 tests PASS, typecheck PASS, build PASS, lint
+  0 errors / 37 existing warnings, diff check PASS. These checks do not establish
+  merchant-credential save/read or real payment settlement. Remaining owner-only
+  action: enter legitimate production merchant credentials in authenticated
+  Provider Center after storage readiness is verified; then verify a fresh read
+  and explicitly authorize any real end-to-end payment test.
