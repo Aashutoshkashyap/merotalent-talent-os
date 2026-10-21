@@ -4,6 +4,7 @@ import type { PoolClient, QueryResultRow } from "pg";
 import { queryRows, withTransaction } from "./db";
 import { type NeonActor, NeonAuthorizationError, requireSuperAdmin } from "./neon-authorization";
 import { decryptProviderSecret, encryptProviderSecret, isSecretStorageConfigured } from "./secret-store";
+import { EsewaV2PaymentProvider } from "./payment-provider";
 type ProviderKind = "payment" | "ai" | "email";
 
 type ProviderRow = QueryResultRow & {
@@ -144,6 +145,22 @@ export async function saveNeonProviderConfiguration(actor: NeonActor, kind: Prov
     if (input.enabled && !encrypted && !existingDecryptable) {
       throw new NeonAuthorizationError(400, "PROVIDER_SECRET_REQUIRED", "Configure a valid provider secret before enabling.");
     }
+    if (input.enabled && kind === "payment") {
+      // Validate the effective credential, including a previously stored secret.
+      // Public metadata changes must not turn a sandbox credential into a live one.
+      const effectiveSecret = input.secret || decryptProviderSecret({
+        ciphertext: existing.secret_ciphertext!, iv: existing.secret_iv!, tag: existing.secret_tag!,
+      });
+      try {
+        new EsewaV2PaymentProvider(effectiveSecret, {
+          merchantCode: input.config.merchant_code,
+          environment: input.config.environment as "uat" | "production",
+        });
+      } catch {
+        throw new NeonAuthorizationError(400, "INVALID_ESEWA_CONFIGURATION",
+          "The stored credential is not valid for this eSewa environment. Configure the correct merchant secret before enabling.");
+      }
+    }
     const rows = await client.query<ProviderRow>(`INSERT INTO public.provider_configurations
       (provider_kind,provider_name,is_enabled,public_config,secret_ciphertext,secret_iv,
        secret_tag,configured_by,configured_at)
@@ -159,6 +176,10 @@ export async function saveNeonProviderConfiguration(actor: NeonActor, kind: Prov
         secret_iv,secret_tag,configured_at,updated_at`,
     [kind, input.providerName, input.enabled, JSON.stringify(input.config),
       encrypted?.ciphertext ?? null, encrypted?.iv ?? null, encrypted?.tag ?? null, actor.userId]);
+    if ((encrypted || input.enabled) && !canDecryptSecret(rows.rows[0])) {
+      throw new NeonAuthorizationError(503, "ENCRYPTION_VERIFICATION_FAILED",
+        "The saved provider credential could not be verified. No configuration change was committed.");
+    }
     await client.query(`INSERT INTO public.audit_logs
       (actor_user_id,action,entity_type,entity_id,metadata)
       VALUES ($1::uuid,'admin_save_provider_configuration','provider_configuration',$2,

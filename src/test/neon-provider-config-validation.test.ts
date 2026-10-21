@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "pg";
 import {
   canDecryptSecret,
+  getNeonProviderStatus,
   parseProviderInput,
   saveNeonProviderConfiguration,
 } from "@/lib/server/neon-provider-config";
@@ -147,6 +148,60 @@ describe("Neon provider configuration validation & security guards", () => {
   });
 
   describe("saveNeonProviderConfiguration security & rollback preservation", () => {
+    it("rejects enabling a stored sandbox secret with production metadata before any write", async () => {
+      const stored = encryptProviderSecret("8gBm/:&EnhH.1/q");
+      const query = vi.fn(async (sql: string) => {
+        if (sql.includes("FROM public.profiles")) return { rowCount: 1 };
+        if (sql.includes("FOR UPDATE")) return { rows: [{
+          secret_ciphertext: stored.ciphertext, secret_iv: stored.iv, secret_tag: stored.tag,
+        }] };
+        throw new Error("Unexpected write");
+      });
+      await expect(saveNeonProviderConfiguration(superAdmin, "payment", {
+        providerName: "esewa", enabled: true,
+        publicConfig: { merchant_code: "LIVE-MERCHANT", environment: "production" },
+      }, async (fn) => fn({ query } as unknown as PoolClient))).rejects.toMatchObject({
+        code: "INVALID_ESEWA_CONFIGURATION",
+      });
+      expect(query.mock.calls.every(([sql]) => sql.startsWith("SELECT"))).toBe(true);
+    });
+
+    it("fresh status reads verify persisted credentials against the current runtime key", async () => {
+      const stored = encryptProviderSecret("test-merchant-credential");
+      const query = vi.fn().mockResolvedValue([{
+        provider_kind: "payment", provider_name: "esewa", is_enabled: true,
+        public_config: { merchant_code: "LIVE-MERCHANT", environment: "production" },
+        secret_ciphertext: stored.ciphertext, secret_iv: stored.iv, secret_tag: stored.tag,
+      }]);
+      expect(await getNeonProviderStatus(superAdmin, "payment", query)).toMatchObject({
+        enabled: true, secretDecryptable: true,
+      });
+      process.env.PROVIDER_CONFIG_ENCRYPTION_KEY = differentKey;
+      const result = await getNeonProviderStatus(superAdmin, "payment", query);
+      expect(result).toMatchObject({ enabled: false, configured: true, secretDecryptable: false });
+      expect(JSON.stringify(result)).not.toContain(stored.ciphertext);
+      expect(JSON.stringify(result)).not.toContain("test-merchant-credential");
+      expect(query).toHaveBeenCalledTimes(2);
+    });
+
+    it("rejects corrupted persisted ciphertext before recording a successful save", async () => {
+      const query = vi.fn(async (sql: string) => {
+        if (sql.includes("FROM public.profiles")) return { rowCount: 1 };
+        if (sql.includes("FOR UPDATE")) return { rows: [] };
+        if (sql.includes("INSERT INTO public.provider_configurations")) return { rows: [{
+          secret_ciphertext: "corrupted", secret_iv: "corrupted", secret_tag: "corrupted",
+        }] };
+        throw new Error("Unexpected audit success");
+      });
+      await expect(saveNeonProviderConfiguration(superAdmin, "payment", {
+        providerName: "esewa", enabled: false, secret: "test-merchant-credential",
+        publicConfig: { merchant_code: "LIVE-MERCHANT", environment: "production" },
+      }, async (fn) => fn({ query } as unknown as PoolClient))).rejects.toMatchObject({
+        code: "ENCRYPTION_VERIFICATION_FAILED",
+      });
+      expect(query.mock.calls.some(([sql]) => sql.includes("INSERT INTO public.audit_logs"))).toBe(false);
+    });
+
     it("encrypts new secret, verifies round-trip decryption, and returns secret-free status", async () => {
       let savedRow: any = null;
       let auditLogged = false;

@@ -2633,3 +2633,36 @@ production configuration change or live payment occurred in this continuation.
   **PENDING**, exact merchant/reference/amount match, no settlement reference.
   No paid entitlement was granted. No new login submission, wallet switching,
   CAPTCHA bypass or production charge was performed during this diagnosis.
+
+#### Production provider validation continuation — 2026-10-21
+
+- Resumed clean `main` at `3350390` (also confirmed on `origin/main`). The
+  canonical domain now resolves to READY production deployment
+  `dpl_9RMMVWntrPuT6nDqRLxYR4Ua9oRA`; older preview-only notes above are historical.
+- `src/lib/server/neon-provider-config.ts` now validates the effective stored
+  eSewa secret with the existing adapter before enabling it. Changing public
+  metadata cannot enable a previously stored sandbox secret as production.
+  Saved ciphertext must decrypt before the transaction records success; a
+  verification failure throws and the existing transaction wrapper rolls back.
+- Added three regressions in `src/test/neon-provider-config-validation.test.ts`:
+  stored sandbox credential rejected before writes, fresh status read after key
+  mismatch fails closed without secret disclosure, and corrupt saved ciphertext
+  rejected before the success audit record. Focused tests: 4 files / 43 tests.
+- Final code verification: 185 files / 936 tests PASS, typecheck PASS, production
+  build PASS, lint 0 errors / 37 existing warnings, diff check PASS.
+- Actual canonical owner Google login succeeded via Neon Auth and opened Super
+  Admin. Authenticated GET of `/api/v1/neon-staging/admin/providers/payment`
+  reports `configured=true`, `enabled=false`, `secretDecryptable=false`,
+  `secretStorageReady=false`, environment production. No credential material is
+  returned. The Provider Center disables saving because secure storage is
+  unavailable. Vercel metadata lists the key variable, but fresh sensitive
+  exports omit its value; presence is not runtime key validity or decryptability.
+- Anonymous provider status and checkout return 401 AUTH_REQUIRED; malformed
+  callback data returns 400 INVALID_PROVIDER_PAYLOAD. These are denial checks,
+  not proof of successful checkout or fulfillment.
+- No provider configuration or backup table was changed, no encryption key was
+  rotated, and no real charge or new sandbox login was attempted. Operational
+  recovery still requires the original usable runtime encryption key, or a
+  controlled replacement with legitimate merchant credentials. A genuine
+  authorized settlement and merchant-portal callback registration remain
+  unverified. Existing mocked E2E tests are not provider settlement evidence.
