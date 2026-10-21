@@ -2606,3 +2606,28 @@ production configuration change or live payment occurred in this continuation.
   source freeze/final synchronization, and remaining acceptance/recovery checks.
   No new checkout or live charge was initiated by this port. ZIP compatibility and
   mocked tests do not establish genuine provider settlement or canonical cutover.
+
+#### Release branch and fresh provider rejection — 2026-10-21
+
+- Commit `7b869ff902c67d47cbce9be7c3f0774f1899f4a2` was pushed and independently
+  verified on `origin/codex/neon-esewa-reference-port`. The unrelated untracked
+  `CLAUDE.md` was not committed. `main` and canonical traffic were not promoted.
+- Candidate deployment `dpl_xnjiGak3j9bxBBsy5VbU1nbsjJpr` is READY at
+  `https://merotalent-k2vahmfbf-aashutoshkashyaps-projects.vercel.app` (preview).
+  It uses the pinned Neon production candidate DB/Auth/storage configuration,
+  with new production payments and notification delivery explicitly disabled.
+  Live preview checks: public directory reports 292 records; a referenced College
+  WebP returns HTTP 200 / 155,526 bytes from the exact Neon production storage
+  host; anonymous application-admin access returns HTTP 401 / AUTH_REQUIRED.
+  This is not authenticated login acceptance or canonical production cutover.
+- Fresh isolated UAT mentor checkout `340f3cf6-7a10-4abb-8a58-57c33bbf5773`
+  generated at 01:12:49.883 UTC reached eSewa once with EPAYTEST / NPR 10.00.
+  Mandatory fields, HMAC and callback origins validated. The operator reports
+  `Login Error — You cannot perform transaction.` The subsequent browser state
+  showed the login page, test account ending 0002, CAPTCHA quota warning and
+  disabled LOGIN; the transient rejection response/HTTP status was not captured.
+  Whether it appeared before OTP or confirmation is awaiting operator clarification.
+- Provider status lookup at **2026-10-21T01:25:15.859Z** returned HTTP 200 /
+  **PENDING**, exact merchant/reference/amount match, no settlement reference.
+  No paid entitlement was granted. No new login submission, wallet switching,
+  CAPTCHA bypass or production charge was performed during this diagnosis.
