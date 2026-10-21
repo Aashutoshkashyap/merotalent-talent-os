@@ -48,6 +48,7 @@ const toStatus = (row: ProviderRow | null) => {
     providerName: row?.provider_name ?? null,
     enabled: Boolean(row?.is_enabled && decryptable),
     configured: hasSecret,
+    secretDecryptable: hasSecret ? decryptable : undefined,
     secretStorageReady: isSecretStorageConfigured(),
     publicConfig: row ? safeSettings(row.provider_kind, row.public_config) : {},
     configuredAt: row?.configured_at ?? null,
@@ -167,9 +168,20 @@ export async function saveNeonProviderConfiguration(actor: NeonActor, kind: Prov
   });
 }
 
-export function providerHealth(status: Awaited<ReturnType<typeof getNeonProviderStatus>>,
+export type NeonProviderStatus = {
+  providerName: string | null;
+  enabled: boolean;
+  configured: boolean;
+  secretDecryptable?: boolean;
+  secretStorageReady: boolean;
+  publicConfig?: Record<string, unknown>;
+  configuredAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export function providerHealth(status: NeonProviderStatus,
   expectedProviderName: string) {
-  const credentialConfigured = status.configured;
+  const credentialConfigured = status.configured && (status.secretDecryptable ?? true);
   const integrationEnabled = status.enabled;
   const secretStorageReady = status.secretStorageReady;
   const state = !secretStorageReady ? "storage_unavailable"

@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 type ProviderKind = "payment" | "ai" | "email";
 const isNeonStaging = isNeonClientRuntime();
-type Status = { providerName: string | null; enabled: boolean; configured: boolean; secretStorageReady: boolean; publicConfig: Record<string, unknown> };
+type Status = { providerName: string | null; enabled: boolean; configured: boolean; secretDecryptable?: boolean; secretStorageReady: boolean; publicConfig: Record<string, unknown> };
 type ProviderConfigurationPanelProps = {
   kind: ProviderKind;
   title: string;
@@ -70,8 +70,15 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
         return;
       }
     }
-    if (enabled && !status?.configured && !trimmedSecret) {
-      toast({ variant: "destructive", title: `${title} not saved`, description: "A provider secret is required before this provider can be enabled." });
+    const secretAvailable = status?.configured && status.secretDecryptable !== false;
+    if (enabled && !secretAvailable && !trimmedSecret) {
+      toast({
+        variant: "destructive",
+        title: `${title} not saved`,
+        description: status?.configured && status.secretDecryptable === false
+          ? "A valid provider secret is required before enabling because the stored secret cannot be decrypted with the server's encryption key."
+          : "A provider secret is required before this provider can be enabled.",
+      });
       return;
     }
     setSaving(true);
@@ -101,7 +108,7 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
     <div className="flex items-center justify-between rounded-xl bg-white p-3"><span className="text-xs font-semibold text-slate-700">Enable integration</span><Switch checked={enabled} onCheckedChange={setEnabled} disabled={!status?.secretStorageReady} /></div>
     <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1"><Label className="text-xs">Provider</Label><select className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" value={providerName} onChange={(event) => setProviderName(event.target.value)}>{providers.map((provider) => <option key={provider}>{provider}</option>)}</select></div><div className="space-y-1"><Label className="text-xs">{kind === "ai" ? "Model" : kind === "payment" ? "Merchant code" : "From address"}</Label><Input value={modelOrIdentifier} onChange={(event) => setModelOrIdentifier(event.target.value)} placeholder={kind === "payment" ? "Merchant code supplied by eSewa" : undefined} className="bg-white" /></div></div>
     {kind === "payment" && <div className="space-y-1"><Label className="text-xs">eSewa environment</Label><select className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" value={environment} onChange={(event) => setEnvironment(event.target.value === "uat" ? "uat" : "production")}><option value="production">Production</option><option value="uat">UAT</option></select><p className="text-xs text-slate-500">Use UAT only with eSewa-issued test credentials; the return path always verifies status server-side.</p></div>}
-    <div className="space-y-1"><Label htmlFor={`${kind}-provider-secret`} className="text-xs">{status?.configured ? "Replace secret (optional)" : "Provider secret"}</Label><Input id={`${kind}-provider-secret`} type="password" autoComplete="new-password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder={status?.secretStorageReady ? "Stored securely; never displayed" : "Secure storage must be configured first"} disabled={!status?.secretStorageReady} aria-describedby={`${kind}-provider-secret-help`} /><p id={`${kind}-provider-secret-help`} className="flex items-center gap-1 text-xs text-slate-500"><EyeOff className="h-3 w-3" />{status?.configured ? "An encrypted provider secret is stored and masked." : "No encrypted provider secret is stored."} This is the external provider credential, not the application encryption key.</p></div>
+    <div className="space-y-1"><Label htmlFor={`${kind}-provider-secret`} className="text-xs">{status?.configured && status.secretDecryptable !== false ? "Replace secret (optional)" : "Provider secret"}</Label><Input id={`${kind}-provider-secret`} type="password" autoComplete="new-password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder={status?.secretStorageReady ? "Stored securely; never displayed" : "Secure storage must be configured first"} disabled={!status?.secretStorageReady} aria-describedby={`${kind}-provider-secret-help`} /><p id={`${kind}-provider-secret-help`} className="flex items-center gap-1 text-xs text-slate-500"><EyeOff className="h-3 w-3" />{status?.configured && status.secretDecryptable === false ? "A stored secret exists but cannot be decrypted with the current server encryption key. Enter a new secret to enable." : status?.configured ? "An encrypted provider secret is stored and masked." : "No encrypted provider secret is stored."} This is the external provider credential, not the application encryption key.</p></div>
     {status && !status.secretStorageReady && <div role="alert" className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>Secure provider-secret storage is not configured on this deployment.</strong> Ask the deployment administrator to configure <code>PROVIDER_CONFIG_ENCRYPTION_KEY</code>. This server-only application encryption key protects provider credentials; it is not your eSewa, AI, or email provider secret.</p></div>}
     <Button onClick={save} disabled={saving || !status?.secretStorageReady} size="sm" className="bg-[#071a3d] hover:bg-[#05132d]">{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save {title}</Button>
   </div>;
