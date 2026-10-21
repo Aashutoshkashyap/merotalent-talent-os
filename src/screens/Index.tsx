@@ -133,7 +133,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
             prizes: row.prize_pool ? String(row.prize_pool) : undefined,
             isOnline: String(row.format || "").toLowerCase() === "online",
             logo: companyMark(organizer),
-            path: "/competitions",
+            path: `/competitions#competition-${row.id}`,
           };
         }));
       }

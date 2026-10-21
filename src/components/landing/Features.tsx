@@ -1,39 +1,46 @@
 import { Trophy, Users, GraduationCap, Briefcase, Star, Zap, Target, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const features = [
   {
     icon: Trophy,
     title: "Compete & Prove",
+    path: "/competitions",
     description: "Participate in hackathons, coding challenges, case studies, and innovation contests to showcase your real skills.",
     color: "primary",
   },
   {
     icon: Star,
     title: "Build Your Profile",
+    path: "/dashboard/profile",
     description: "Create a performance-based talent profile that highlights your achievements, rankings, and verified skills.",
     color: "secondary",
   },
   {
     icon: Users,
     title: "Learn from Mentors",
+    path: "/mentorship",
     description: "Connect with industry experts for 1:1 mentorship sessions and accelerate your career growth.",
     color: "accent",
   },
   {
     icon: Briefcase,
     title: "Get Hired",
+    path: "/jobs",
     description: "Let companies discover you through your performance. Get hired based on what you can do, not just degrees.",
     color: "primary",
   },
   {
     icon: GraduationCap,
     title: "Upskill Yourself",
+    path: "/courses",
     description: "Access bootcamps, courses, and learning paths designed by industry experts.",
     color: "secondary",
   },
   {
     icon: Target,
     title: "Track Progress",
+    path: "/dashboard",
     description: "Monitor your growth with detailed analytics, leaderboards, and personalized insights.",
     color: "accent",
   },
@@ -74,9 +81,10 @@ const Features = () => {
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {features.map((feature, index) => (
-            <div
+            <Link
               key={feature.title}
-              className="group relative bg-card rounded-2xl p-8 border border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1"
+              to={feature.path}
+              className="group relative bg-card rounded-2xl p-8 border border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Icon */}
@@ -100,7 +108,7 @@ const Features = () => {
 
               {/* Hover Gradient */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-            </div>
+            </Link>
           ))}
         </div>
 

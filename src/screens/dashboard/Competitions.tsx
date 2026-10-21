@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ interface Competition {
 }
 
 const Competitions = () => {
+  const [searchParams] = useSearchParams();
+  const requestedCompetition = searchParams.get("competition");
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
@@ -53,6 +56,11 @@ const Competitions = () => {
   const [teamName, setTeamName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const requested = competitions.find(item => item.id === requestedCompetition);
+    if (requested) setSelectedDetailCompetition(requested);
+  }, [competitions, requestedCompetition]);
 
   useEffect(() => {
     fetchCompetitions();

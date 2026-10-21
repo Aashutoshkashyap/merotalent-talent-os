@@ -3,8 +3,19 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import FeaturedPosterCard from "./FeaturedPosterCard";
 import OpportunityCard from "./OpportunityCard";
+import Features from "./Features";
 
 describe("public discovery card destinations", () => {
+  it("makes every main feature card a usable link to an existing module", () => {
+    render(<MemoryRouter><Features /></MemoryRouter>);
+    for (const [title, path] of [
+      ["Compete & Prove", "/competitions"], ["Build Your Profile", "/dashboard/profile"],
+      ["Learn from Mentors", "/mentorship"], ["Get Hired", "/jobs"],
+      ["Upskill Yourself", "/courses"], ["Track Progress", "/dashboard"],
+    ]) {
+      expect(screen.getByRole("link", { name: new RegExp(title) })).toHaveAttribute("href", path);
+    }
+  });
   it("links partner courses directly to the approved external learning platform", () => {
     render(<OpportunityCard data={{
       id: "course-1", title: "Partner course", organizer: "MeroTalent", logo: "MT",

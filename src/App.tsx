@@ -92,7 +92,6 @@ const EventsWorkspace = lazy(() => import("./screens/role/EventsWorkspace"));
 const ModuleAIWorkspace = lazy(() => import("./screens/role/ModuleAIWorkspace"));
 import LegalPage from "./screens/LegalPage";
 
-import ComingSoonPage from "./screens/ComingSoonPage";
 
 const createQueryClient = () => new QueryClient({
   defaultOptions: {
@@ -139,7 +138,7 @@ const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }
               <Route path="/institutes/:slug" element={<InstituteDetailPage />} />
               <Route path="/institutes/:slug/blogs" element={<InstituteBlogsPage />} />
               <Route path="/institutes/:slug/blogs/:blogSlug" element={<InstituteBlogDetailPage />} />
-              <Route path="/competitions" element={<ComingSoonPage moduleKey="competitions" />} />
+              <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/events/:id" element={<EventDetailPage />} />
               <Route path="/mentorship" element={<MentorshipPage />} />

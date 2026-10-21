@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Trophy, Clock, ArrowRight } from "lucide-react";
 
@@ -59,6 +59,7 @@ function toDisplayItem(row: Record<string, unknown>): CompetitionItem {
 }
 
 export default function CompetitionsPage() {
+  const { hash } = useLocation();
   const [competitions, setCompetitions] = useState<CompetitionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -67,6 +68,12 @@ export default function CompetitionsPage() {
   useEffect(() => {
     fetchCompetitions();
   }, []);
+
+  useEffect(() => {
+    if (hash.startsWith("#competition-")) {
+      document.getElementById(hash.slice(1))?.scrollIntoView?.({ block: "start" });
+    }
+  }, [hash, competitions]);
 
   const fetchCompetitions = async () => {
     try {
@@ -154,12 +161,13 @@ export default function CompetitionsPage() {
           {filtered.map((item) => (
             <div
               key={item.id}
-              className="group flex flex-col rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden"
+              id={`competition-${item.id}`}
+              className="group flex scroll-mt-28 flex-col rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden"
             >
               {/* Image header */}
               <div className={`relative h-40 bg-gradient-to-br ${item.bgGradient} flex items-center justify-center overflow-hidden`}>
                 <span className="text-4xl select-none group-hover:scale-110 transition-transform duration-300">{item.imageIcon}</span>
-                <span className="absolute top-3 left-3 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-white/25 backdrop-blur-sm text-white">
+                <span className="absolute top-3 left-3 max-w-[calc(100%-1.5rem)] break-words text-xs leading-5 font-extrabold uppercase px-2.5 py-1 rounded-full bg-white/25 backdrop-blur-sm text-white">
                   {item.category}
                 </span>
               </div>
@@ -185,11 +193,11 @@ export default function CompetitionsPage() {
                     {item.avatarText}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[11px] font-bold text-slate-700 truncate">{item.organizer}</span>
-                    <span className="text-[10px] text-slate-400 font-semibold">{item.date}</span>
+                    <span className="text-sm font-bold text-slate-700 break-words">{item.organizer}</span>
+                    <span className="text-xs text-slate-500 font-semibold">{item.date}</span>
                   </div>
                 </div>
-                <Link to="/login" className="w-7 h-7 rounded-full bg-slate-50 hover:bg-blue-50 flex items-center justify-center text-slate-400 hover:text-[#0073e6] border border-slate-100 transition-colors flex-shrink-0">
+                <Link to={`/dashboard/competitions?competition=${encodeURIComponent(item.id)}`} aria-label={`View ${item.title} details and registration`} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-blue-50 flex items-center justify-center text-slate-400 hover:text-[#0073e6] border border-slate-100 transition-colors flex-shrink-0">
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>

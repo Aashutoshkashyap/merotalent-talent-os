@@ -74,7 +74,7 @@ export const RoleSwitchButton: React.FC<{
       >
         <Icon className="w-5 h-5" />
       </div>
-      <span className="text-[10px] mt-1 font-semibold tracking-tight truncate max-w-full">
+      <span className="text-xs mt-1 font-semibold leading-5 break-words max-w-full">
         {role.label}
       </span>
     </button>

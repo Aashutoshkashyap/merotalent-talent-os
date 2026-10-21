@@ -5,9 +5,9 @@ import { Badge } from "@/components/ui/badge";
 
 const source = (file: string) => readFileSync(`${process.cwd()}/${file}`, "utf8");
 describe("responsive performance regressions", () => {
-  it("keeps status pills compact and prevents word wrapping", () => {
+  it("keeps status pills compact without clipping long labels or shrinking global type", () => {
     render(<div className="flex flex-col"><Badge>Recovery needed</Badge></div>);
-    expect(screen.getByText("Recovery needed")).toHaveClass("w-fit", "shrink-0", "whitespace-nowrap", "leading-4");
+    expect(screen.getByText("Recovery needed")).toHaveClass("w-fit", "max-w-full", "min-w-0", "shrink-0", "whitespace-normal", "break-words", "leading-5", "text-xs");
   });
   it("does not create ancestor scroll containers that trap sticky headers", () => {
     for (const file of ["src/layouts/AdminLayout.tsx", "src/layouts/DashboardLayout.tsx"]) {

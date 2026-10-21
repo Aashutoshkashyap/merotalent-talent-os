@@ -33,7 +33,7 @@ export const SearchBar: React.FC<{
         value={val}
         onChange={(e) => setVal(e.target.value)}
         placeholder={placeholder}
-        className="min-w-0 w-full pl-11 pr-5 py-[10px] bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-[13px] text-slate-800 placeholder-slate-400 rounded-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+        className="min-w-0 w-full pl-11 pr-5 py-[10px] bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-sm text-slate-800 placeholder-slate-400 rounded-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
       />
     </form>
   );
@@ -52,7 +52,7 @@ export const LoginButton: React.FC<{ label?: string; onClick?: () => void }> = (
       <Link
         to={targetDashboard}
         onClick={onClick}
-        className="inline-flex items-center gap-2 px-5 py-[9px] bg-[#0073e6] hover:bg-[#0062c4] text-white font-bold text-[13px] rounded-full shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-500/20 active:scale-95"
+        className="inline-flex items-center gap-2 px-5 py-[9px] bg-[#0073e6] hover:bg-[#0062c4] text-white font-bold text-sm rounded-full shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-500/20 active:scale-95"
       >
         <UserIcon className="w-4 h-4" />
         <span>Dashboard</span>
@@ -64,7 +64,7 @@ export const LoginButton: React.FC<{ label?: string; onClick?: () => void }> = (
     <Link
       to="/login"
       onClick={onClick}
-      className="inline-flex items-center justify-center px-7 py-[9px] bg-[#0073e6] hover:bg-[#0062c4] text-white font-bold text-[13px] rounded-full shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-500/20 active:scale-95"
+      className="inline-flex items-center justify-center px-7 py-[9px] bg-[#0073e6] hover:bg-[#0062c4] text-white font-bold text-sm rounded-full shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-500/20 active:scale-95"
     >
       {label}
     </Link>
@@ -79,7 +79,7 @@ export const BusinessButton: React.FC<{
     <Link
       to="/company"
       onClick={onClick}
-      className="inline-flex items-center gap-2 px-5 py-[9px] bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-700 font-bold text-[13px] rounded-full transition-all duration-200 active:scale-95"
+      className="inline-flex items-center gap-2 px-5 py-[9px] bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-700 font-bold text-sm rounded-full transition-all duration-200 active:scale-95"
     >
       <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200/60">
         <Briefcase className="w-3 h-3" />

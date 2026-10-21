@@ -2698,3 +2698,43 @@ production configuration change or live payment occurred in this continuation.
   action: enter legitimate production merchant credentials in authenticated
   Provider Center after storage readiness is verified; then verify a fresh read
   and explicitly authorize any real end-to-end payment test.
+
+#### Isolated eSewa UAT retry and public-navigation fixes — 2026-10-21
+
+- Reused the existing browser UAT harness on the guarded migration-staging
+  branch and localhost:3001. Existing UAT configuration was already valid;
+  no production provider credential, enable flag, or entitlement was changed.
+- Actual authenticated checkout created durable NPR 10 mentor/event pending
+  orders. Diagnostics verified required form fields, EPAYTEST, exact HMAC field
+  order, UUID and amount, and the isolated callback origin. Only mentor checkout
+  `d1ae12c5-8a42-45d1-83b9-6fdf3a51c1bf` was submitted to the gateway (generated
+  2026-10-21T15:31:03.612Z); event checkout was not submitted.
+- Human-assisted hosted login showed **You cannot perform transaction** and
+  **This site is exceeding reCAPTCHA Enterprise free quota**. Screenshot:
+  `/private/tmp/merotalent-uat-captcha-unavailable-20261021.png`. No CAPTCHA was
+  bypassed. No OTP, confirmation, signed success return or settlement succeeded.
+- Authoritative RC status GET at 2026-10-21T15:45:55.598Z returned HTTP 200 /
+  PENDING with exact merchant/reference/amount match and no settlement reference.
+  Actual forged callbacks were denied and repeated returns did not fulfill the
+  mentor booking. The unsubmitted event resolved failed/cancelled, not paid.
+  These denial checks are not genuine settlement or cancellation-button proof.
+- Harness shutdown cleaned its disposable staging data; subsequent guarded
+  read-only query found zero disposable UAT student/mentor profiles. The standalone
+  recovery-cleanup script separately refused to run without snapshot evidence;
+  no guard was bypassed. Provider action remains restoring RC CAPTCHA quota and
+  test-wallet transaction permission before another genuine checkout can settle.
+- `src/App.tsx` now serves the real competition directory instead of Coming
+  Soon. Public competition cards link to the selected authenticated registration
+  detail; homepage competition links target the corresponding directory card.
+- `Features.tsx` cards are keyboard-accessible links to their actual modules.
+  Existing six featured College destinations were independently confirmed to
+  resolve to public records; no synthetic listings were published for testing.
+- Scoped navigation/category typography and shared badge wrapping fix cramped
+  pills without reducing global fonts. Observed production root/body font was
+  already 16px; no root font-size or zoom change was made.
+- Added public competition routing/detail and feature-link regressions. Focused
+  UI verification passed 4 files / 13 tests. Final revision: 186 files / 942 tests
+  PASS, typecheck PASS, production build PASS, lint 0 errors / 37 existing
+  warnings, diff check PASS. Fresh read-only production provider check confirms
+  eSewa remains disabled, environment production, original ciphertext present.
+  No genuine UAT settlement or production merchant decryptability is claimed.
