@@ -16,7 +16,7 @@ const maxPdfBytes = 5 * 1024 * 1024;
 const noStore = { "cache-control": "private, no-store" };
 
 function stagingOnly() {
-  try { return getBackendMode() === "neon-staging"; } catch { return false; }
+  try { return getBackendMode() !== "legacy"; } catch { return false; }
 }
 
 function failure(error: unknown) {

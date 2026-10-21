@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const limit = Number.isFinite(requestedLimit) ? Math.min(100, Math.max(1, requestedLimit)) : 50;
     const offset = Number.isFinite(requestedOffset) ? Math.max(0, requestedOffset) : 0;
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const competitions = await listPublicCompetitions(limit, offset);
 
       return jsonApiResponse({

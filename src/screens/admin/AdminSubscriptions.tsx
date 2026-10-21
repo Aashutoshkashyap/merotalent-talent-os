@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ const createEmptyFreeTierForm = () => ({
 });
 
 export default function AdminSubscriptions() {
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");

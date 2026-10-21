@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +95,7 @@ const AdminManagement = () => {
     setIsLoading(true);
     setError(null);
 
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    if (isNeonClientRuntime()) {
       try {
         const response = await fetch("/api/v1/neon-staging/admin/administrators", { credentials: "same-origin", cache: "no-store" });
         const body = await response.json().catch(() => null);
@@ -213,7 +214,7 @@ const AdminManagement = () => {
 
             <ol className="space-y-3 pt-2" aria-label="Administrator provisioning steps">
               {[
-                process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging"
+                isNeonClientRuntime()
                   ? "Authenticate the Neon Managed Auth identity and complete verified ownership linking before assigning authority."
                   : "Create or invite the identity from the owning Supabase project or another trusted server-side admin workflow.",
                 "Confirm that the Auth identity has a matching profile row with the correct user ID.",

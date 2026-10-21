@@ -4,6 +4,7 @@ import pg from "pg";
 import { readEncryptedSourceSnapshot } from "./source-snapshot-artifact.mjs";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
 import { snapshotFingerprint } from "./source-snapshot-reconciliation.mjs";
+import { classifyIdentityRecovery } from "./identity-recovery-classification.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
 requireNeonMigrationStaging(process.env.NEON_STAGING_DATABASE_URL);
@@ -23,26 +24,36 @@ try {
     LEFT JOIN public.neon_identity_links l ON l.application_account_id=a.id
     LEFT JOIN neon_auth."user" u ON u.id=l.neon_auth_user_id`)).rows;
   const profiles = (await target.query("SELECT user_id,account_status FROM public.profiles WHERE deleted_at IS NULL")).rows;
+  const attempts = (await target.query(`SELECT entity_id,count(*)::int AS count FROM public.audit_logs
+    WHERE action IN ('neon_identity_link_verified','neon_identity_link_attempt','neon_identity_link_rejected') GROUP BY entity_id`)).rows;
   const records = sourceUsers.map(user => {
     const candidates = accounts.filter(row => row.legacy_user_id === user.id);
     const profile = profiles.find(row => row.user_id === user.id);
     const activeSource = !user.deleted_at && (!user.banned_until ||
       (Number.isFinite(Date.parse(user.banned_until)) && Date.parse(user.banned_until) <= Date.now()));
-    const verified = candidates.length === 1 && candidates[0].account_status === "active" &&
-      candidates[0].link_status === "verified" && candidates[0].managed_user_present &&
-      candidates[0].verification_method === "dual_authenticated_session" && candidates[0].verified_at &&
-      profile?.account_status === "active" && activeSource;
+    const classification = classifyIdentityRecovery({
+      sourceActive: activeSource,
+      profilePresent: profile?.account_status === "active",
+      identityTypes: identities.filter(identity => identity.user_id === user.id).map(identity => identity.provider),
+      candidates,
+      attemptCount:attempts.find(attempt=>attempt.entity_id===user.id)?.count??0,
+    });
     return { account: snapshotFingerprint(user.id), requiredQa: user.email === "qa.admin@merotalent.com",
       identityTypes: [...new Set(identities.filter(identity => identity.user_id === user.id).map(identity => identity.provider))].sort(),
       profilePresent: !!profile, applicationAccountPresent: candidates.length === 1,
-      sourceActive: activeSource, verifiedSourceOwnership: !!verified,
-      status: verified ? "VERIFIED_DUAL_OWNERSHIP" : "LIVE_OWNERSHIP_PROOF_REQUIRED" };
+      sourceActive: activeSource, verifiedSourceOwnership: classification.status === "LINKED",
+      status: classification.status, recoveryTested: classification.recoveryTested, reasonCodes: classification.reasonCodes,
+      attempted:classification.attempted,verified:classification.verified,linked:classification.linked };
   });
   console.log(JSON.stringify({ mode: "READ_ONLY_ENCRYPTED_SNAPSHOT_IDENTITY_RECONCILIATION",
     sourceSnapshot: snapshot.statementTimestamp, targetSnapshot,
     sourceUsers: records.length, sourceIdentities: identities.length,
-    sourceVerifiedLinks: records.filter(record => record.verifiedSourceOwnership).length,
-    unresolvedSourceUsers: records.filter(record => !record.verifiedSourceOwnership).length,
+    sourceVerifiedLinks: records.filter(record => record.status === "LINKED").length,
+    eligibleForProofBasedRecovery: records.filter(record => record.status === "ELIGIBLE_FOR_PROOF_BASED_RECOVERY").length,
+    recoveryTestedSourceUsers: records.filter(record => record.recoveryTested).length,
+    attemptedSourceUsers:records.filter(record=>record.attempted===true).length,
+    attemptEvidenceUnavailable:records.filter(record=>record.attempted===null).length,
+    unresolvedSourceUsers: records.filter(record => record.status === "UNRESOLVED").length,
     requiredQaVerified: records.some(record => record.requiredQa && record.verifiedSourceOwnership),
     stagingOnlyAccountCount: accounts.filter(row => !sourceIds.has(row.legacy_user_id)).length,
     collisions: records.filter(record => accounts.filter(row => snapshotFingerprint(row.legacy_user_id) === record.account).length > 1).length,

@@ -1,4 +1,5 @@
-export const useNeonRoleWorkspaces = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+export const useNeonRoleWorkspaces = isNeonClientRuntime();
 export async function requestRoleWorkspace(url: string, init?: RequestInit) {
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
   const result = await response.json().catch(() => null);

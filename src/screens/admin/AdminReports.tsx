@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export default function AdminReports() {
 
     try {
       let token:string|undefined;
-      if(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE !== "neon-staging") {
+      if(!isNeonClientRuntime()) {
         const { data: authData, error: authError } = await supabase.auth.getSession();
         if (authError || !authData.session?.access_token) throw new Error("Your administrator session has expired. Sign in again.");
         token=authData.session.access_token;

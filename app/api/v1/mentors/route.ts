@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const repo = new NeonMentorsRepository();
       const search = url.searchParams.get("query") || url.searchParams.get("search") || undefined;
       const expertise = url.searchParams.get("expertise") || url.searchParams.get("topic") || url.searchParams.get("skill") || undefined;

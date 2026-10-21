@@ -10,7 +10,7 @@ export const runtime="nodejs";
 type Context={params:Promise<{id:string}>};
 const headers={"Cache-Control":"private, no-store"};
 async function handle(request:Request,context:Context) {
-  if(getBackendMode()!=="neon-staging") return new Response(null,{status:404});
+  if(getBackendMode() === "legacy") return new Response(null,{status:404});
   try {
     if(request.method!=="GET") requireSameOrigin(request);
     const actor=await getAuthenticatedApplicationUser(request);

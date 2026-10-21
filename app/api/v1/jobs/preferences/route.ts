@@ -26,7 +26,7 @@ const jobPreferencesSchema = z.object({
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
 
     if (isStaging) {
       const actor = await getAuthenticatedApplicationUser(request);
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       meta: { requestId },
     });
   } catch (err: any) {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       if (err instanceof NeonAuthorizationError) {
         return jsonApiResponse({ data: null, error: { code: err.code, message: err.message }, meta: { requestId } }, err.status);
       }
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
     const body = await request.json().catch(() => ({}));
 
     if (isStaging) {
@@ -122,7 +122,7 @@ export async function PUT(request: Request) {
       meta: { requestId },
     });
   } catch (err: any) {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       if (err instanceof NeonAuthorizationError) {
         return jsonApiResponse({ data: null, error: { code: err.code, message: err.message }, meta: { requestId } }, err.status);
       }

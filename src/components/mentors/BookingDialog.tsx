@@ -1,4 +1,7 @@
 "use client";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { postSignedCheckoutForm } from "@/lib/payments/browser-checkout";
+
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
@@ -64,23 +67,11 @@ const defaultTimeSlots = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const timeLabel = (value: string) => new Date(`2000-01-01T${value}:00`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) => {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = checkoutUrl;
-  for (const [key, value] of Object.entries(fields)) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = key;
-    input.value = value;
-    form.appendChild(input);
-  }
-  document.body.appendChild(form);
-  form.submit();
-};
+const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) =>
+  postSignedCheckoutForm({ checkoutUrl, checkoutFields: fields });
 
 const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogProps) => {
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const { toast } = useToast();
   const { profile, session, user, refreshProfile } = useAuth();
   const [step, setStep] = useState(1);

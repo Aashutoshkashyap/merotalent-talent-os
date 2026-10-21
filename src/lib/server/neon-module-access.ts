@@ -7,6 +7,7 @@ import { buildMediaObjectPath, parseMediaUploadIntent } from "./media-policy";
 import { validateManagedMediaBytes } from "./neon-managed-media";
 import { createPresignedDownloadUrl, deleteObject, headObject, uploadObject } from "./storage";
 import { appendNotificationEvent } from "./neon-application-events";
+import {requireNeonPaidInitiation} from './neon-paid-initiation';
 
 type Client = Pick<PoolClient, "query">;
 type Run = <T>(operation: (client: PoolClient) => Promise<T>) => Promise<T>;
@@ -168,6 +169,7 @@ export class NeonModuleAccess {
   }
 
   async submit(actor: NeonActor, input: ModuleAccessInput) {
+    requireNeonPaidInitiation();
     validateInput(input);
     return this.run(async client => {
       const profile = await assertActor(client, actor);

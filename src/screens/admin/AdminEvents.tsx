@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ import { checkinTicket } from "@/lib/events/events-client";
 
 type EventStatus = "pending_approval" | "approved" | "published" | "rejected" | "completed" | "cancelled" | "postponed";
 type LifecycleStatus = "draft" | "published" | "registration_open" | "registration_closed" | "ongoing" | "completed" | "cancelled" | "postponed";
-const isNeonStaging=process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging=isNeonClientRuntime();
 
 interface EventCategory {
   id: string;

@@ -98,7 +98,7 @@ export async function POST(request: Request, context: RouteContext) {
   // Only a college enquiry can start before account creation. A malformed
   // bearer token is deliberately not downgraded into anonymous access.
   const isGuestCollegeApplication = module === "college_application" && !getBearerToken(request);
-  if (isGuestCollegeApplication && getBackendMode() === "neon-staging" &&
+  if (isGuestCollegeApplication && getBackendMode() !== "legacy" &&
       request.headers.get("origin") !== new URL(request.url).origin) {
     return response(requestId, 403, null, { code: "CROSS_ORIGIN_WRITE_DENIED", message: "Submit applications from this website." });
   }
@@ -254,7 +254,7 @@ export async function POST(request: Request, context: RouteContext) {
           invalid.code = "22023";
           throw invalid;
         }
-        if (getBackendMode() === "neon-staging") {
+        if (getBackendMode() !== "legacy") {
           const { submitNeonGuestCollegeApplication } = await import("@/lib/server/neon-guest-college-verification");
           return submitNeonGuestCollegeApplication(payload, guestToken, guestVerificationId!, command.idempotencyKey);
         }

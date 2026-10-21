@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { ServerConfigurationError } from "./server-configuration-error";
+import {getBackendMode} from './backend-mode';
 export { ServerConfigurationError } from "./server-configuration-error";
 
 if (typeof window !== "undefined" && process.env.NODE_ENV !== "test") {
@@ -52,6 +53,7 @@ const serverAuthOptions = {
 };
 
 export function getAdminClient(): SupabaseClient {
+  if(getBackendMode()!=='legacy')throw new ServerConfigurationError('Legacy database runtime is disabled in Neon mode.');
   const url = getSupabaseUrl();
   const secretKey = getSecretKey();
 
@@ -71,6 +73,7 @@ export function getAdminClient(): SupabaseClient {
 }
 
 export function getUserClient(accessToken: string): SupabaseClient {
+  if(getBackendMode()!=='legacy')throw new ServerConfigurationError('Legacy database runtime is disabled in Neon mode.');
   if (!accessToken) {
     throw new ServerConfigurationError(
       "A user access token is required for the Supabase client.",

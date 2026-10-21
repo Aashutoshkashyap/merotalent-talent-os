@@ -8,7 +8,7 @@ import { ServerConfigurationError } from "@/lib/server/server-configuration-erro
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ kind: string }> };
-const active = () => getBackendMode() === "neon-staging";
+const active = () => getBackendMode() !== "legacy";
 
 function failure(error: unknown) {
   if (error instanceof NeonAuthorizationError) return NextResponse.json({ error: { code: error.code, message: error.message } }, { status: error.status });

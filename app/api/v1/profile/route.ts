@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
       const rows = await queryRows<Record<string, unknown>>(`
         SELECT p.user_id, p.full_name, p.email, p.phone, p.whatsapp_number,
@@ -74,7 +74,7 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
 
       const fullName = typeof body.full_name === "string" ? body.full_name.trim().slice(0, 180) : undefined;

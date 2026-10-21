@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -85,7 +86,7 @@ const getTypeIcon = (type: string | null) => {
 
 const AdminNotifications = () => {
   const { user } = useAuth();
-  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isNeonStaging = isNeonClientRuntime();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [adminMembers, setAdminMembers] = useState<AdminMember[]>([]);

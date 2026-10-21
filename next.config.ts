@@ -1,22 +1,24 @@
 import type { NextConfig } from "next";
+import { getBackendMode } from "./src/lib/server/backend-mode";
 
-const isolatedNeonStorageOrigin = process.env.VERCEL_ENV !== "production" &&
-  process.env.MEROTALENT_BACKEND_MODE === "neon-staging"
-  ? " https://br-frosty-haze-azsnybmr.storage.c-3.ap-southeast-1.aws.neon.tech"
-  : "";
+const backendMode=getBackendMode();
+const neonStorageOrigin = backendMode === 'neon-production'
+  ? ' https://br-falling-breeze-azr6q64l.storage.c-3.ap-southeast-1.aws.neon.tech'
+  : backendMode === 'neon-staging'
+    ? ' https://br-frosty-haze-azsnybmr.storage.c-3.ap-southeast-1.aws.neon.tech' : '';
 
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${isolatedNeonStorageOrigin}`,
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${neonStorageOrigin}`,
   "font-src 'self' data:",
   // eSewa uses a browser form POST. Keep this limited to the documented UAT
   // and production ePay endpoints rather than permitting arbitrary providers.
   "form-action 'self' https://rc-epay.esewa.com.np https://epay.esewa.com.np",
   "frame-ancestors 'none'",
   "frame-src 'self' https://www.youtube-nocookie.com https://player.vdocipher.com https://player.vimeo.com",
-  `img-src 'self' data: blob: https://*.supabase.co${isolatedNeonStorageOrigin}`,
-  `media-src 'self' blob: https://*.supabase.co${isolatedNeonStorageOrigin}`,
+  `img-src 'self' data: blob: https://*.supabase.co${neonStorageOrigin}`,
+  `media-src 'self' blob: https://*.supabase.co${neonStorageOrigin}`,
   "object-src 'none'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://player.vdocipher.com`,
   "style-src 'self' 'unsafe-inline'",
@@ -50,8 +52,7 @@ const nextConfig: NextConfig = {
   // The browser must follow the same explicit mode as the server. This flag
   // carries no credential and does not enable Neon on production by itself.
   env: {
-    NEXT_PUBLIC_MEROTALENT_BACKEND_MODE: process.env.VERCEL_ENV !== "production" &&
-      process.env.MEROTALENT_BACKEND_MODE === "neon-staging" ? "neon-staging" : "legacy",
+    NEXT_PUBLIC_MEROTALENT_BACKEND_MODE: backendMode,
   },
   reactStrictMode: true,
   poweredByHeader: false,

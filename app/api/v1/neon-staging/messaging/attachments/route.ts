@@ -16,7 +16,7 @@ const noStore = { "cache-control": "private, no-store" };
 const maxBytes = 5 * 1024 * 1024;
 
 function stagingOnly() {
-  try { return getBackendMode() === "neon-staging"; } catch { return false; }
+  try { return getBackendMode() !== "legacy"; } catch { return false; }
 }
 
 function sameOrigin(request: Request) {

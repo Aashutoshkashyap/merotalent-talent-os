@@ -13,7 +13,7 @@ const failure = (error: unknown) => NextResponse.json({ error: error instanceof 
 { status: error instanceof NeonAuthorizationError ? error.status : 503, headers });
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     requireSuperAdmin(actor);
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   } catch (error) { return failure(error); }
 }
 async function change(request: Request, action: "grant" | "revoke") {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

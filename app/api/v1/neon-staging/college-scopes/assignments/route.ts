@@ -8,7 +8,7 @@ import { getAuthenticatedApplicationUser, NeonSessionUnavailable, requireSameOri
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 const service = new NeonCollegeScopes();
-const staging = () => { try { return getBackendMode() === "neon-staging"; } catch { return false; } };
+const staging = () => { try { return getBackendMode() !== "legacy"; } catch { return false; } };
 const reply = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "private, no-store" } });
 const failure = (error: unknown) => error instanceof NeonAuthorizationError ? reply({ error: error.code }, error.status)
   : reply({ error: error instanceof NeonSessionUnavailable ? "AUTH_UNAVAILABLE" : "COLLEGE_ASSIGNMENT_UNAVAILABLE" }, 503);

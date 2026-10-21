@@ -30,7 +30,7 @@ const resolveResource = async (context: RouteContext) => {
 };
 
 export async function GET(request: Request, context: RouteContext) {
-  if (getBackendMode() === "neon-staging") return handleNeonAdminResource(request,(await context.params).resource);
+  if (getBackendMode() !== "legacy") return handleNeonAdminResource(request,(await context.params).resource);
   const requestId = crypto.randomUUID();
   let authenticated;
   try {
@@ -100,7 +100,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  if (getBackendMode() === "neon-staging") return handleNeonAdminResource(request,(await context.params).resource);
+  if (getBackendMode() !== "legacy") return handleNeonAdminResource(request,(await context.params).resource);
   const requestId = crypto.randomUUID();
   let authenticated;
   try {

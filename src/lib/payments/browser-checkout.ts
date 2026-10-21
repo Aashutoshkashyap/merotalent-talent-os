@@ -4,6 +4,22 @@ export interface BrowserCheckoutResponse {
 }
 
 export const postSignedCheckoutForm = ({ checkoutUrl, checkoutFields }: BrowserCheckoutResponse) => {
+  // Port the reference's auto-submitting POST form without interpolating HTML.
+  // Treat the API response as untrusted: never POST signed fields to another host.
+  const gateways = ["https://rc-epay.esewa.com.np/api/epay/main/v2/form",
+    "https://epay.esewa.com.np/api/epay/main/v2/form"];
+  const fields = ["amount", "tax_amount", "total_amount", "transaction_uuid", "product_code",
+    "product_service_charge", "product_delivery_charge", "success_url", "failure_url",
+    "signed_field_names", "signature"];
+  if (!gateways.includes(checkoutUrl) || !checkoutFields || Array.isArray(checkoutFields) ||
+      Object.keys(checkoutFields).length !== fields.length ||
+      fields.some(name => typeof checkoutFields[name] !== "string" || !checkoutFields[name])) {
+    throw new Error("Invalid secure eSewa checkout form.");
+  }
+  if ((checkoutUrl === gateways[1] && checkoutFields.product_code === "EPAYTEST") ||
+      (checkoutUrl === gateways[0] && checkoutFields.product_code !== "EPAYTEST")) {
+    throw new Error("Mixed eSewa checkout environment.");
+  }
   const form = document.createElement("form");
   form.method = "POST";
   form.action = checkoutUrl;
@@ -16,7 +32,7 @@ export const postSignedCheckoutForm = ({ checkoutUrl, checkoutFields }: BrowserC
     form.appendChild(input);
   }
   document.body.appendChild(form);
-  form.submit();
+  try { form.submit(); } finally { form.remove(); }
 };
 
 export async function startEsewaCheckout(

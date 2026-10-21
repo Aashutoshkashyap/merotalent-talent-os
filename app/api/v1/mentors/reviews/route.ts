@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonMentorsRepository();
       const review = await repo.submitReview(actor, body.bookingId, body.rating, body.feedback);

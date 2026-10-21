@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { CalendarClock, Pencil, Plus, Search, Trash2 } from "lucide-react";
@@ -19,7 +20,7 @@ const localInput = (value?: string, daysAhead = 0) => { const date = value ? new
 const blankForm = (): AdForm => ({ title: "", placement: "homepage", image_url: "", destination_url: "", sponsor_name: "", priority: "0", status: "draft", start_date: localInput(), end_date: localInput(undefined, 30) });
 
 export default function AdminAdvertisements() {
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const [previews, setPreviews] = useState<Record<string, string | null>>({});
   const [formPreview, setFormPreview] = useState<string | null>(null);
   const { toast } = useToast(); const [ads, setAds] = useState<Advertisement[]>([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [query, setQuery] = useState(""); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Advertisement | null>(null); const [form, setForm] = useState<AdForm>(blankForm());

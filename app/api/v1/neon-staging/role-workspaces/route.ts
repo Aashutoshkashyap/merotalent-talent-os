@@ -16,7 +16,7 @@ const failure = (error: unknown) => error instanceof NeonAuthorizationError
     : reply({ error: "WORKSPACE_UNAVAILABLE" }, 503);
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request), params = new URL(request.url).searchParams;
     const role = params.get("role");
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
   } catch (error) { return failure(error); }
 }
 export async function POST(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request); const actor = await getAuthenticatedApplicationUser(request);
     const body = await request.json().catch(() => null);
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   } catch (error) { return failure(error); }
 }
 export async function PATCH(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request); const actor = await getAuthenticatedApplicationUser(request);
     const body = await request.json().catch(() => null);

@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { listAdminResource } from "@/lib/admin/admin-client";
 import { ShieldCheck, Clock, Loader2, UserCheck, Inbox } from "lucide-react";
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 async function stagingRequest(url: string, init?: RequestInit) {
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
   const payload = await response.json();

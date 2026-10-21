@@ -21,7 +21,7 @@ export async function GET(request: Request): Promise<Response> {
 
     let courses: PartnerCourse[] = [];
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       let query = `
         SELECT id::text, title, description, category, thumbnail_url, redirect_url,
                partner_name, partner_id::text, display_order, referral_code,

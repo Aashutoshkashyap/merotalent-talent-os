@@ -15,7 +15,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ error: "Invalid college update request." }, { status: 400 });
   }
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const rows = slug === null
         ? await queryRows(`SELECT b.id::text, b.title, b.slug, b.excerpt,
             b.featured_image_url, b.published_at

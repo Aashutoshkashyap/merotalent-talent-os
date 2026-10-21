@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { FileText, Pencil, Plus, Trash2 } from "lucide-react";
@@ -13,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type Blog = { id: string; institute_id: string; title: string; slug: string; excerpt: string | null; content: string; featured_image_url: string | null; status: "draft" | "published"; published_at: string | null; };
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 100);
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 const blogUrl = (collegeId: string) => `/api/v1/neon-staging/college-workspaces/${encodeURIComponent(collegeId)}/blogs`;
 
 export default function InstituteBlogs() {

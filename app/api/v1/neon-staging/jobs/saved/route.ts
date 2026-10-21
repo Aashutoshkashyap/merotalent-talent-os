@@ -24,7 +24,7 @@ function pagination(request: Request): { limit: number; offset: number } | null 
 export async function GET(request: Request) {
   let mode: string;
   try { mode = getBackendMode(); } catch { return new Response(null, { status: 404 }); }
-  if (mode !== "neon-staging") return new Response(null, { status: 404 });
+  if (mode === "legacy") return new Response(null, { status: 404 });
 
   try {
     const actor = await getAuthenticatedApplicationUser(request);

@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProviderConfigurationPanel } from "./ProviderConfigurationPanel";
 import { invalidateCmsCache } from "@/hooks/useSiteCMS";
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 /**
  * public.site_settings is a key/value table — key (PK), value, extra_json,

@@ -14,7 +14,7 @@ const maxBytes = 5 * 1024 * 1024;
 const noStore = { "cache-control": "private, no-store" };
 
 function stagingOnly() {
-  try { return getBackendMode() === "neon-staging"; } catch { return false; }
+  try { return getBackendMode() !== "legacy"; } catch { return false; }
 }
 function validImage(bytes: Uint8Array, mime: string) {
   const prefix = (...values: number[]) => values.every((value, index) => bytes[index] === value);

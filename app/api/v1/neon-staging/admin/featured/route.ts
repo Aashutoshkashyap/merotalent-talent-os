@@ -15,7 +15,7 @@ const fail = (error: unknown) => {
 };
 
 export async function GET(request: Request): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     const options = new URL(request.url).searchParams.get("options");
@@ -25,7 +25,7 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);
@@ -35,7 +35,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 export async function DELETE(request: Request): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

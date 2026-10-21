@@ -53,7 +53,7 @@ const recordNotFound = (requestId: string) =>
   );
 
 export async function GET(request: Request, context: RouteContext) {
-  if (getBackendMode() === "neon-staging") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
+  if (getBackendMode() !== "legacy") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
   const requestId = crypto.randomUUID();
   let authenticated;
   try {
@@ -87,7 +87,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  if (getBackendMode() === "neon-staging") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
+  if (getBackendMode() !== "legacy") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
   const requestId = crypto.randomUUID();
   let authenticated;
   try {
@@ -131,7 +131,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-  if (getBackendMode() === "neon-staging") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
+  if (getBackendMode() !== "legacy") { const {resource,id}=await context.params; return handleNeonAdminResource(request,resource,id); }
   const requestId = crypto.randomUUID();
   let authenticated;
   try {

@@ -6,7 +6,7 @@ import { deleteAdminSection, readAdminCms, saveAdminSection } from "@/lib/server
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-const active = () => getBackendMode() === "neon-staging";
+const active = () => getBackendMode() !== "legacy";
 const failure = (error: unknown) => error instanceof NeonAuthorizationError
   ? NextResponse.json({ error: error.code }, { status: error.status })
   : error instanceof NeonSessionUnavailable

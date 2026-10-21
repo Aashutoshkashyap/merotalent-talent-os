@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
@@ -52,7 +53,7 @@ export default function EventDetailPage() {
   };
 
   const handleRegisterClick = () => {
-    if (!session && !(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && user)) {
+    if (!session && !(isNeonClientRuntime() && user)) {
       navigate("/login", { state: { from: { pathname: location.pathname } } });
       return;
     }

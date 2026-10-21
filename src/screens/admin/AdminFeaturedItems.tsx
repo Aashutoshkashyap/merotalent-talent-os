@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ interface FeaturedItem {
   created_at: string;
 }
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 async function stagingFeaturedRequest(method: "GET" | "POST" | "DELETE", path = "", body?: unknown) {
   const response = await fetch(`/api/v1/neon-staging/admin/featured${path}`, {

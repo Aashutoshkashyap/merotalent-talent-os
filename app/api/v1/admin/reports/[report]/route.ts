@@ -190,7 +190,7 @@ export async function GET(request: Request, context: RouteContext) {
   let authenticated;
   let neonActor:NeonActor|undefined;
   try {
-    if(getBackendMode() === "neon-staging") neonActor=await getAuthenticatedApplicationUser(request);
+    if(getBackendMode() !== "legacy") neonActor=await getAuthenticatedApplicationUser(request);
     else authenticated = await authenticateAdminRequest(request);
   } catch (error) {
     if(error instanceof NeonAuthorizationError || error instanceof NeonSessionUnavailable) return jsonApiResponse({data:null,

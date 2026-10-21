@@ -9,6 +9,9 @@ import {
 } from "@/contexts/AuthContext";
 import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
 import { supabase } from "@/integrations/supabase/client";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { isSourceRecoveryCallback } from "@/lib/auth/legacy-recovery";
+import LegacyAccountRecovery from "./LegacyAccountRecovery";
 
 type AccessContext = {
   account_status?: unknown;
@@ -25,6 +28,43 @@ const stringList = (value: unknown) =>
  * workspace without ever letting the browser grant itself a module role.
  */
 export default function OAuthCallback() {
+  return isNeonClientRuntime() ? <NeonOAuthCallback /> : <LegacyOAuthCallback />;
+}
+
+function NeonOAuthCallback() {
+  const [sourceRecovery] = useState(isSourceRecoveryCallback);
+  return sourceRecovery ? <LegacyAccountRecovery sourceCallback /> : <NeonPostSignIn />;
+}
+
+function NeonPostSignIn() {
+  const { refreshProfile } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const response = await fetch("/api/v1/neon-staging/profile", { credentials: "same-origin", cache: "no-store" });
+        const result = await response.json().catch(() => null);
+        if (!active) return;
+        if (response.status === 403 && result?.error === "IDENTITY_NOT_LINKED") {
+          navigate("/account-recovery", { replace: true }); return;
+        }
+        if (!response.ok) { navigate("/login", { replace: true }); return; }
+        await refreshProfile();
+        if (!active) return;
+        if (getPendingModuleAccessRole()) {
+          clearPendingModuleAccessRole(); navigate("/request-access", { replace: true }); return;
+        }
+        navigate(resolveWorkspacePath(stringList(result?.access?.roles), stringList(result?.access?.permissions),
+          stringList(result?.access?.capabilities)), { replace: true });
+      } catch { if (active) navigate("/login", { replace: true }); }
+    })();
+    return () => { active = false; };
+  }, [navigate, refreshProfile]);
+  return <p role="status" className="p-6">Finishing secure sign-in…</p>;
+}
+
+function LegacyOAuthCallback() {
   const { user, isLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [message, setMessage] = useState("Finishing secure sign-in…");

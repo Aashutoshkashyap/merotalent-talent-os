@@ -1,6 +1,7 @@
 /** Same-origin browser bridge to the approved isolated Neon Managed Auth service. */
 import { getBackendMode } from "@/lib/server/backend-mode";
 import { getNeonAuthBaseUrl } from "@/lib/neon/neon-config";
+import { startNeonGoogleOAuth } from "@/lib/server/neon-oauth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,8 +11,16 @@ const allowed = new Set(["sign-in/email", "sign-up/email", "send-verification-em
   "sign-out", "get-session", "request-password-reset", "reset-password", "change-password"]);
 
 async function forward(request: Request, action: string[], method: "GET" | "POST") {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   const path = action.join("/");
+  if (path === "sign-in/social" && method === "POST") {
+    try { return await startNeonGoogleOAuth(request); }
+    catch (error) {
+      const status = error && typeof error === "object" && "code" in error && error.code === "CROSS_ORIGIN_WRITE_DENIED" ? 403
+        : error instanceof SyntaxError ? 400 : 503;
+      return Response.json({ error: status === 403 ? "INVALID_ORIGIN" : status === 400 ? "INVALID_AUTH_REQUEST" : "AUTH_UNAVAILABLE" }, { status, headers: noStore });
+    }
+  }
   if (!allowed.has(path) || (method === "GET") !== (path === "get-session")) {
     return Response.json({ error: "AUTH_ACTION_UNAVAILABLE" }, { status: 404, headers: noStore });
   }

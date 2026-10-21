@@ -18,7 +18,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const repo = new NeonMentorsRepository();
       const mentor = await repo.getPublicMentor(id);
       if (!mentor) {

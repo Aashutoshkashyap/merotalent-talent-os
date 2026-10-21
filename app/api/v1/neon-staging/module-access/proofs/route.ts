@@ -13,7 +13,7 @@ const failure = (error: unknown) => error instanceof NeonAuthorizationError || e
   ? reply({ error: error.code, message: error.message }, error.status) : reply({ error: "PROOF_UNAVAILABLE" }, 503);
 
 export async function POST(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     const params = new URL(request.url).searchParams;

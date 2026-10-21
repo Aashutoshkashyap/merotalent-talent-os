@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     const userId = new URL(request.url).searchParams.get("userId") ?? "";
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

@@ -31,7 +31,7 @@ const publicFields = `id, user_id, email, full_name, phone, bio, location, linke
   certifications, skills, resume_url, avatar_url, onboarding_completed`;
 
 function stagingOnly() {
-  try { return getBackendMode() === "neon-staging"; } catch { return false; }
+  try { return getBackendMode() !== "legacy"; } catch { return false; }
 }
 
 function failure(error: unknown) {

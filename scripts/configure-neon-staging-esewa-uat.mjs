@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import pg from "pg";
 import dotenv from "dotenv";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import { readEsewaEnvironment } from "./esewa-environment.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
 dotenv.config({ path: ".env", quiet: true });
@@ -19,9 +20,15 @@ if (key.length !== 32 || key.toString("base64") !== encodedKey) {
 }
 // Official public ePay UAT merchant credentials, not a production merchant secret.
 // https://developer.esewa.com.np/pages/Test-credentials
-const merchantCode = "EPAYTEST";
-const testSecret = "8gBm/:&EnhH.1/q";
-const client = new pg.Client({ connectionString: targetUrl, connectionTimeoutMillis: 15000 });
+// Explicit configured credentials take precedence. Partial/mixed configurations
+// fail closed instead of silently selecting a test merchant or secret.
+const hasConfiguredEnvironment = Object.keys(process.env).some(name => name.startsWith('ESEWA_'));
+const configuredEnvironment = hasConfiguredEnvironment ? readEsewaEnvironment(process.env, 'uat') : null;
+const merchantCode = configuredEnvironment?.merchantCode ?? "EPAYTEST";
+const testSecret = configuredEnvironment?.secret ?? "8gBm/:&EnhH.1/q";
+const secureTarget = new URL(targetUrl);
+secureTarget.searchParams.set('sslmode', 'verify-full');
+const client = new pg.Client({ connectionString: secureTarget.href, connectionTimeoutMillis: 15000 });
 const existingSecretMatches = row => {
   if (!row?.secret_ciphertext || !row.secret_iv || !row.secret_tag) return false;
   try {
@@ -77,6 +84,6 @@ try {
   }
 } catch (error) {
   await client.query("ROLLBACK").catch(() => undefined);
-  console.error("eSewa UAT staging bootstrap failed:", error instanceof Error ? error.message : "UNKNOWN_ERROR");
+  console.error(JSON.stringify({ configuration: "ESEWA_STAGING_BOOTSTRAP_FAILED" }));
   process.exitCode = 1;
 } finally { await client.end().catch(() => undefined); }

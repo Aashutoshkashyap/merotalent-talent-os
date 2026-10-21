@@ -3,14 +3,18 @@ import type { PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
 import { queryRows, withTransaction } from "./db";
 import { getNeonConfig } from "@/lib/neon/neon-config";
+import { getBackendMode } from "./backend-mode";
 import { NeonAuthorizationError, type NeonActor } from "./neon-authorization";
 import { EsewaV2PaymentProvider } from "./payment-provider";
+import { parseEsewaAmount } from "./esewa-amount";
 import { activateVerifiedCollegeScope } from "./neon-college-scope-activation";
 import { decryptProviderSecret } from "./secret-store";
 import { prepareNeonModuleAccessCheckout, activateVerifiedNeonModuleAccess } from "./neon-module-access";
+import {prepareAssignedScopeRenewal,activateVerifiedAssignedScope} from './neon-assigned-scope-renewal';
+import {requireNeonPaidInitiation} from './neon-paid-initiation';
 
 type Client = Pick<PoolClient, "query">;
-type Kind = "mentor_booking" | "event_registration" | "college_scope_request" | "module_access_request";
+type Kind = "mentor_booking" | "event_registration" | "college_scope_request" | "module_access_request" | "assigned_scope";
 type CheckoutRow = {
   id: string; user_id: string; entity_type: Kind; entity_id: string; package_id: string | null;
   provider_reference: string; amount: number; currency: string; status: string;
@@ -19,6 +23,10 @@ type CheckoutRow = {
 
 export async function stagingEsewaProvider(query: typeof queryRows = queryRows): Promise<EsewaV2PaymentProvider> {
   getNeonConfig();
+  const environment = getBackendMode() === "neon-production" ? "production" : "uat";
+  const unavailable = () => new NeonAuthorizationError(503,
+    environment === "uat" ? "SANDBOX_UNAVAILABLE" : "PROVIDER_UNAVAILABLE",
+    environment === "uat" ? "The isolated eSewa sandbox is not configured." : "Production eSewa is not configured.");
   const [configured] = await query<{
     provider_name: string; is_enabled: boolean; public_config: Record<string, unknown> | null;
     secret_ciphertext: string | null; secret_iv: string | null; secret_tag: string | null;
@@ -26,16 +34,18 @@ export async function stagingEsewaProvider(query: typeof queryRows = queryRows):
     FROM public.provider_configurations WHERE provider_kind='payment' LIMIT 1`, []);
   const merchantCode = configured?.public_config?.merchant_code;
   if (!configured?.is_enabled || configured.provider_name !== "esewa" ||
-      configured.public_config?.environment !== "uat" ||
+      configured.public_config?.environment !== environment ||
       typeof merchantCode !== "string" || !/^[A-Za-z0-9-]{2,128}$/.test(merchantCode) ||
+      (environment==='uat' && merchantCode!=='EPAYTEST') ||
       !configured.secret_ciphertext || !configured.secret_iv || !configured.secret_tag) {
-    throw new NeonAuthorizationError(503, "SANDBOX_UNAVAILABLE", "The isolated eSewa sandbox is not configured.");
+    throw unavailable();
   }
   let secret: string;
   try { secret = decryptProviderSecret({ ciphertext: configured.secret_ciphertext,
     iv: configured.secret_iv, tag: configured.secret_tag }); }
-  catch { throw new NeonAuthorizationError(503, "SANDBOX_UNAVAILABLE", "The isolated eSewa sandbox is not configured."); }
-  return new EsewaV2PaymentProvider(secret, { merchantCode, environment: "uat" });
+  catch { throw unavailable(); }
+  try{return new EsewaV2PaymentProvider(secret, { merchantCode, environment });}
+  catch{throw unavailable();}
 }
 
 function deny(code: string, message: string, status: 400 | 403 | 404 | 409 | 503 = 403): never {
@@ -55,6 +65,8 @@ export class NeonCheckoutService {
 
   async initiate(actor: NeonActor, kind: Kind, targetId: string, origin: string, transactionClient?: Client,
     selectedPackageId?: string, renewal = false) {
+    // Disable new paid checkout independently of verification of existing returns.
+    requireNeonPaidInitiation();
     const provider = this.configuredProvider ?? await stagingEsewaProvider();
     const run = async (db: Client) => {
       const linked = (await db.query<{ allowed: boolean }>(`SELECT true AS allowed
@@ -95,6 +107,11 @@ export class NeonCheckoutService {
         const unit = row.unit_price ?? row.event_price;
         if (Number(row.total_amount) !== Number(unit) * row.ticket_quantity) deny("PRICE_CHANGED", "The registration price no longer matches its ticket.", 409);
         amount = money(row.total_amount); currency = row.tier_currency ?? row.event_currency;
+      } else if(kind==='assigned_scope'){
+        if(!selectedPackageId)deny('INVALID_PLAN','Select a valid renewal plan.',400);
+        const prepared=await prepareAssignedScopeRenewal(db,actor.userId,targetId,selectedPackageId);
+        amount=money(prepared.price);currency=prepared.currency;packageId=prepared.package_id;
+        await db.query(`SELECT pg_advisory_xact_lock(hashtextextended($1::text,0))`,[`checkout:${actor.userId}:${kind}:${targetId}`]);
       } else if (kind === "module_access_request") {
         if (!selectedPackageId || renewal) deny("INVALID_PLAN", "Select a valid access plan.", 400);
         const prepared = await prepareNeonModuleAccessCheckout(actor,targetId,selectedPackageId,db);
@@ -158,7 +175,7 @@ export class NeonCheckoutService {
       const reference = existing?.provider_reference ?? randomUUID();
       const checkout = await provider.createCheckout({ paymentId: reference, amount, currency,
         description: kind === "mentor_booking" ? "Mentor session" : kind === "event_registration" ? "Event tickets"
-          : kind === "module_access_request" ? "Module management access" : "College access request",
+          : kind === 'assigned_scope' ? 'Assigned module renewal' : kind === "module_access_request" ? "Module management access" : "College access request",
         returnUrl: `${origin}/api/v1/neon-staging/payments/esewa/return`,
         failureUrl: `${origin}/api/v1/neon-staging/payments/esewa/return?reference=${reference}&state=failed` });
       if (!checkout.checkoutUrl || !checkout.checkoutFields || checkout.status !== "pending") {
@@ -169,7 +186,7 @@ export class NeonCheckoutService {
       await db.query(`INSERT INTO public.payments
         (id,user_id,payment_type,reference_id,amount,currency,status,payment_method,gateway,metadata)
         VALUES ($1::uuid,$2::uuid,$3,$4::uuid,$5,$6,'pending','esewa','esewa',$7::jsonb)`, [
-        reference, actor.userId, kind === "mentor_booking" ? "mentor_booking" : kind === "event_registration" ? "event_ticket" : "module_access_request",
+        reference, actor.userId, kind === "mentor_booking" ? "mentor_booking" : kind === "event_registration" ? "event_ticket" : kind === 'assigned_scope' ? 'module_subscription' : "module_access_request",
         targetId, amount, currency, JSON.stringify({ source: "neon_staging_checkout" })]);
       const session = (await db.query<CheckoutRow>(`INSERT INTO public.payment_checkout_sessions
         (user_id,package_id,entity_type,entity_id,provider_name,provider_reference,amount,currency,status,expires_at)
@@ -203,7 +220,7 @@ export class NeonCheckoutService {
       FROM public.payment_checkout_sessions WHERE provider_reference=$1 AND provider_name='esewa'`, [input.reference])).rows[0];
     const checkout = transactionClient ? await read(transactionClient) : await withTransaction(read);
     if (!checkout) deny("CHECKOUT_NOT_FOUND", "Checkout not found.", 404);
-    if (input.signedPayload && (Number(input.signedPayload.total_amount) !== Number(checkout.amount) ||
+    if (input.signedPayload && (parseEsewaAmount(input.signedPayload.total_amount) !== Number(checkout.amount) ||
         input.signedPayload.status !== "COMPLETE")) {
       deny("INVALID_PROVIDER_PAYLOAD", "The eSewa response does not match checkout.", 400);
     }
@@ -211,6 +228,10 @@ export class NeonCheckoutService {
     if (!["pending", "initiated", "expired"].includes(checkout.status)) return { status: checkout.status, duplicate: true };
 
     const verified = await provider.lookupStatus({ reference: input.reference, amount: Number(checkout.amount), strict: true });
+    if (input.signedPayload && verified.status === "successful" &&
+        input.signedPayload.transaction_code !== verified.transactionId) {
+      deny("PROVIDER_TRANSACTION_MISMATCH", "The verified eSewa transaction does not match its signed response.", 400);
+    }
     if(checkout.status === "expired" && verified.status !== "successful")return {status:"expired",duplicate:true};
     if (verified.status === "pending") return { status: "pending", duplicate: false };
     if (verified.status === "refunded") {
@@ -246,6 +267,22 @@ export class NeonCheckoutService {
         [input.reference,verified.transactionId ?? null,JSON.stringify({provider_status:"successful",
           reconciliation:"late_success_needs_review",checkout_session_id:locked.id}),locked.user_id,locked.entity_id]);
         return {status:"expired",duplicate:locked.status === "expired",manualReview:true};
+      }
+      if(locked.entity_type==='assigned_scope'){
+        if(!locked.package_id)deny('INVALID_PLAN','The renewal plan is missing.',409);
+        const scope=await prepareAssignedScopeRenewal(db,locked.user_id,locked.entity_id,locked.package_id);
+        if(Number(scope.price)!==Number(locked.amount)||scope.currency!==locked.currency)deny('PRICE_CHANGED','The renewal price changed.',409);
+        const payment=await db.query(`UPDATE public.payments SET status=$2,gateway_transaction_id=$3,
+          paid_at=CASE WHEN $2='success' THEN now() ELSE NULL END,
+          failed_at=CASE WHEN $2='success' THEN NULL ELSE now() END,updated_at=now(),
+          metadata=COALESCE(metadata,'{}'::jsonb)||$4::jsonb WHERE id=$1::uuid AND user_id=$5::uuid
+          AND reference_id=$6::uuid AND payment_type='module_subscription' AND amount=$7 AND currency=$8 AND status='pending'`,
+          [input.reference,status==='successful'?'success':'failed',verified.transactionId,
+            JSON.stringify({checkout_session_id:locked.id,provider_status:verified.status}),locked.user_id,locked.entity_id,locked.amount,locked.currency]);
+        if(!payment.rowCount)deny('PAYMENT_CHANGED','Renewal payment cannot be settled.',409);
+        const activation=status==='successful'?await activateVerifiedAssignedScope(db,{userId:locked.user_id,
+          assignmentId:locked.entity_id,packageId:locked.package_id,paymentId:input.reference}):{activated:false};
+        return {status,duplicate:false,activation};
       }
       if (locked.entity_type === "module_access_request") {
         const target=(await db.query<{id:string}>(`SELECT r.id FROM public.sub_admin_requests r

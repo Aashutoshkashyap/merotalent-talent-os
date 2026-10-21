@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -95,7 +96,7 @@ export interface PaymentItem {
 }
 
 export default function AdminPayments() {
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const { toast } = useToast();
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [proofsMap, setProofsMap] = useState<Map<string, PaymentProofItem[]>>(new Map());

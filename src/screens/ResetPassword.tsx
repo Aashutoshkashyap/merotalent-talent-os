@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { KeyRound, Loader2, Lock, Mail, ShieldCheck } from "lucide-react";
@@ -10,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import AuthShell from "@/components/auth/AuthShell";
 
 type ResetStep = "email" | "otp" | "password";
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const ResetPassword = () => {
   const [step, setStep] = useState<ResetStep>("email");

@@ -1,11 +1,12 @@
 /** Anonymous admission proofs and submission, bound to one guest and college. */
 import { randomInt } from "node:crypto";
 import type { PoolClient, QueryResultRow } from "pg";
-import { requireNeonStaging } from "./backend-mode";
+import { getBackendMode, requireNeonBackend } from "./backend-mode";
 import { queryRows, withTransaction } from "./db";
 import { GuestVerificationError, guestCodeHash, hashGuestToken, normalizeGuestIdentity,
   openwaConfiguration, sendWhatsAppCode, type GuestVerificationChannel } from "./guest-college-verification";
-import { neonEmailRecipients, resolveNeonEmailProvider } from "./neon-email-queue";
+import { resolveNeonEmailProvider } from "./neon-email-queue";
+import { neonEmailRecipientAllowed } from "./neon-delivery-policy";
 import type { NeonMaintenanceTransaction } from "./neon-maintenance";
 import { validateModuleForm } from "@/lib/forms/module-form-validation";
 import { appendNotificationEvent } from "./neon-application-events";
@@ -27,7 +28,7 @@ const proofRequired = () => new GuestVerificationError(403, "GUEST_VERIFICATION_
 
 async function senderFor(identity: Identity, channel: GuestVerificationChannel, options: Options): Promise<Sender> {
   const environment = options.environment ?? process.env;
-  const allowed = channel === "email" ? neonEmailRecipients(environment).includes(identity.email)
+  const allowed = channel === "email" ? neonEmailRecipientAllowed(identity.email, environment)
     : environment.NEON_STAGING_WHATSAPP_VERIFICATION_ENABLED === "true" &&
       (environment.NEON_STAGING_WHATSAPP_TEST_RECIPIENTS ?? "").split(",").map(v => v.trim())
         .filter(v => /^\+[1-9]\d{7,14}$/.test(v)).includes(identity.whatsappNumber);
@@ -56,7 +57,7 @@ async function requireAcceptingCollege(client: PoolClient, collegeId: string) {
 
 export async function startNeonGuestVerification(rawIdentity: Identity, channel: GuestVerificationChannel, options: Options = {}) {
   const environment = options.environment ?? process.env;
-  requireNeonStaging(environment);
+  requireNeonBackend(environment);
   const identity = normalizeGuestIdentity(rawIdentity);
   if (channel !== "email" && channel !== "whatsapp") throw unavailable(channel);
   const send = await senderFor(identity, channel, options);
@@ -124,7 +125,7 @@ export async function startNeonGuestVerification(rawIdentity: Identity, channel:
 export async function checkNeonGuestVerification(rawIdentity: Identity, verificationId: string,
   channel: GuestVerificationChannel, code: string, options: Options = {}) {
   const environment = options.environment ?? process.env;
-  requireNeonStaging(environment);
+  requireNeonBackend(environment);
   const identity = normalizeGuestIdentity(rawIdentity);
   if (!uuid.test(verificationId) || !/^\d{6}$/.test(code) || !["email", "whatsapp"].includes(channel)) {
     throw new GuestVerificationError(422, "INVALID_CODE", "Enter the six-digit verification code.");
@@ -155,7 +156,8 @@ export async function checkNeonGuestVerification(rawIdentity: Identity, verifica
 
 export async function submitNeonGuestCollegeApplication(rawPayload: Record<string, unknown>, guestToken: string,
   verificationId: string, idempotencyKey: string | undefined, options: Options = {}) {
-  requireNeonStaging(options.environment ?? process.env);
+  const environment = options.environment ?? process.env;
+  requireNeonBackend(environment);
   const { _formVersion, _idempotencyKey, ...submitted } = rawPayload;
   const validation = validateModuleForm("college_application", submitted);
   if (!validation.success) throw new GuestVerificationError(422, "INVALID_GUEST_DETAILS", "Check your application details.");
@@ -216,12 +218,12 @@ export async function submitNeonGuestCollegeApplication(rawPayload: Record<strin
       'info','college_application',delivery.channel,'queued','college_application',$2::uuid,
       CASE WHEN delivery.channel='email' THEN r.email ELSE NULL END,'/institute',
       jsonb_build_object('source_type','college_application','source_id',$2::uuid,'college_id',$1::uuid,
-        'delivery_environment','neon-staging')
+        'delivery_environment',$3::text)
     FROM recipients r CROSS JOIN (VALUES('dashboard'),('email')) delivery(channel)
     WHERE (delivery.channel='dashboard' OR r.email ~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$')
       AND NOT EXISTS(SELECT 1 FROM public.notifications n WHERE n.recipient_id=r.user_id
         AND n.entity_type='college_application' AND n.entity_id=$2::uuid AND n.channel=delivery.channel)
-    RETURNING id,recipient_id`, [identity.collegeId, saved.id]);
+    RETURNING id,recipient_id`, [identity.collegeId, saved.id, getBackendMode(environment)]);
     for (const notice of notices.rows) await appendNotificationEvent(client, notice.recipient_id, notice.id);
     const lead = (await client.query<{ id: string }>(`SELECT id FROM public.leads
       WHERE source_type='college_application' AND source_id=$1::uuid`, [saved.id])).rows[0];
@@ -234,7 +236,7 @@ export async function submitNeonGuestCollegeApplication(rawPayload: Record<strin
  * mandatory; this operation never creates a user link or grants a capability. */
 export async function claimNeonGuestCollegeApplications(actor: NeonActor, guestToken: string, verifiedSessionEmail: string,
   run: NeonMaintenanceTransaction = withTransaction) {
-  requireNeonStaging();
+  requireNeonBackend();
   if (!uuid.test(guestToken) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(verifiedSessionEmail)) {
     throw new GuestVerificationError(422, "INVALID_GUEST_DETAILS", "Enter a valid guest application token.");
   }

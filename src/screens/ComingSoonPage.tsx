@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -21,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 interface FeatureConfig {
   title: string;

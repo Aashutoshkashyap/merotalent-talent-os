@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,7 +71,7 @@ interface Company {
 }
 
 const AdminCompanies = () => {
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const { toast } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [availableUsers, setAvailableUsers] = useState<{ id: string; email: string; full_name: string | null }[]>([]);

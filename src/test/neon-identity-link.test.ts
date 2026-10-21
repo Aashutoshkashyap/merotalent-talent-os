@@ -48,6 +48,23 @@ afterEach(() => {
 });
 
 describe("staging dual-auth identity link", () => {
+  it.each([["google"],["email"],["google","email"]])("uses live ownership proof for provider category %j while preserving an existing application ID",async (...providers)=>{
+    mocks.account={id:other,status:"active",neon_auth_user_id:null,link_status:null};
+    mocks.fetch.mockResolvedValueOnce({ok:true,status:200,json:async()=>({id:legacy,email_confirmed_at:"2026-01-01",identities:providers.map(provider=>({provider}))})});
+    expect(await linkVerifiedLegacyIdentity(request,"source-token")).toEqual({status:"linked"});
+    const index=mocks.queries.findIndex(sql=>sql.includes("INSERT INTO public.neon_identity_links"));
+    expect(mocks.queryArgs[index]).toEqual([managed,other]);
+    expect(mocks.queries.some(sql=>/INSERT INTO public.neon_application_accounts|UPDATE public\.(profiles|user_roles|user_module_capabilities|entity_admin_assignments)/.test(sql))).toBe(false);
+  });
+
+  it("rejects expired source proof on repeated attempts and expired new sessions without linking",async()=>{
+    mocks.fetch.mockResolvedValue({ok:false,status:401});
+    for(let i=0;i<2;i++)await expect(linkVerifiedLegacyIdentity(request,"expired-source-token")).rejects.toMatchObject({code:"LEGACY_PROOF_INVALID"});
+    expect(mocks.queries).toHaveLength(0);
+    mocks.session.session.expiresAt="2020-01-01T00:00:00Z";
+    await expect(linkVerifiedLegacyIdentity(request,"source-token")).rejects.toMatchObject({code:"AUTH_REQUIRED"});
+    expect(mocks.queries).toHaveLength(0);
+  });
   it("requires a current verified Managed Auth session before contacting source Auth", async () => {
     mocks.session = null;
     await expect(linkVerifiedLegacyIdentity(request, "source-token")).rejects.toMatchObject({ code: "AUTH_REQUIRED" });

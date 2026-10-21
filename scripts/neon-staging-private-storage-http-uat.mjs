@@ -6,13 +6,14 @@ import dotenv from "dotenv";
 import pg from "pg";
 import { S3Client, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import {stagingUatOrigin} from './staging-uat-origin.mjs';
 
 dotenv.config({ path: ".migration.env", quiet: true });
 requireNeonMigrationStaging(process.env.NEON_STAGING_DATABASE_URL);
 const auth = "https://ep-wispy-credit-azt6tgwj.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth";
 const endpoint = "https://br-frosty-haze-azsnybmr.storage.c-3.ap-southeast-1.aws.neon.tech";
 if (process.env.NEON_AUTH_BASE_URL !== auth || process.env.AWS_ENDPOINT_URL_S3 !== endpoint) throw new Error("UNEXPECTED_STAGING_TARGET");
-const app = "http://localhost:3210";
+const app = stagingUatOrigin();
 const db = new pg.Client({ connectionString: process.env.NEON_STAGING_DATABASE_URL, connectionTimeoutMillis: 30000 });
 const s3 = new S3Client({ endpoint, region: process.env.AWS_REGION, forcePathStyle: true,
   credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY } });

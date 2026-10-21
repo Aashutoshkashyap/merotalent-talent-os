@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { Suspense, useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
@@ -30,7 +30,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className="min-h-[100dvh] w-full overflow-x-hidden bg-white text-[#19172b]"
+      className="min-h-[100dvh] w-full overflow-x-clip bg-white text-[#19172b]"
       style={
         {
           "--background": "0 0% 100%",
@@ -95,7 +95,9 @@ const DashboardLayout = () => {
                     : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
                 }
               >
-                {outlet}
+                <Suspense fallback={<div role="status" className="p-6 text-muted-foreground">Loading dashboard…</div>}>
+                  {outlet}
+                </Suspense>
               </motion.div>
             </AnimatePresence>
           </main>

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NeonMentorsRepository } from "@/lib/server/neon-mentors";
 import { NeonEventsRepository } from "@/lib/server/neon-events";
 import type { NeonActor } from "@/lib/server/neon-authorization";
@@ -48,8 +48,20 @@ function eventClient(price: number, sold = 0) {
 }
 
 describe("Neon mentor and event transactional guards", () => {
+  afterEach(()=>vi.unstubAllEnvs());
   const start = new Date(Date.now() + 86400000).toISOString();
   const end = new Date(new Date(start).getTime() + 3600000).toISOString();
+
+  it('disabled production payments cannot reserve paid mentor or event capacity, while free events remain usable',async()=>{
+    vi.stubEnv('MEROTALENT_BACKEND_MODE','neon-production');
+    vi.stubEnv('NEXT_PUBLIC_MEROTALENT_BACKEND_MODE','neon-production');
+    vi.stubEnv('NEON_PRODUCTION_PAYMENTS_ENABLED','false');
+    const mentor=mentorClient(),event=eventClient(250),free=eventClient(0);
+    await expect(new NeonMentorsRepository().bookMentorSession(actor,{mentorId,mentorServiceId:serviceId,scheduledStart:start,scheduledEnd:end,topic:'Advice'},mentor.client)).rejects.toMatchObject({code:'PAYMENTS_DISABLED'});
+    await expect(new NeonEventsRepository().registerForEvent(actor,{eventId,ticketTypeId:tierId,ticketQuantity:1},event.client)).rejects.toMatchObject({code:'PAYMENTS_DISABLED'});
+    expect([...mentor.calls,...event.calls].some(call=>call.sql.includes('INSERT INTO'))).toBe(false);
+    await expect(new NeonEventsRepository().registerForEvent(actor,{eventId,ticketTypeId:tierId,ticketQuantity:1},free.client)).resolves.toMatchObject({status:'confirmed'});
+  });
 
   it("prices a mentor booking from its published service, never a client amount", async () => {
     const { client, calls } = mentorClient();
@@ -124,5 +136,16 @@ describe("Neon mentor and event transactional guards", () => {
     await expect(provider.lookupStatus({ reference, amount: 500, strict: true,
       fetcher: vi.fn().mockRejectedValue(new Error("sandbox timeout")) as unknown as typeof fetch }))
       .rejects.toThrow(/timeout/);
+  });
+  it.each([undefined,null,"invalid","",true,"Infinity","500.01","500.001"])("rejects invalid or inexact provider amount %j",async amount=>{
+    const provider=new EsewaV2PaymentProvider("fixture-secret-only",{merchantCode:"EPAYTEST",environment:"uat"});
+    await expect(provider.lookupStatus({reference:"fixture",amount:500,strict:true,fetcher:vi.fn().mockResolvedValue({ok:true,json:async()=>({product_code:"EPAYTEST",transaction_uuid:"fixture",status:"COMPLETE",total_amount:amount,ref_id:"fixture-ref"})}) as unknown as typeof fetch})).rejects.toThrow(/amount/);
+  });
+  it("requires a provider transaction ID for completion and preserves cancelled/expired states",async()=>{
+    const provider=new EsewaV2PaymentProvider("fixture-secret-only",{merchantCode:"EPAYTEST",environment:"uat"});
+    const lookup=(status:string)=>provider.lookupStatus({reference:"fixture",amount:500,strict:true,fetcher:vi.fn().mockResolvedValue({ok:true,json:async()=>({product_code:"EPAYTEST",transaction_uuid:"fixture",status,total_amount:500})}) as unknown as typeof fetch});
+    await expect(lookup("COMPLETE")).rejects.toThrow(/reference/);
+    await expect(lookup("CANCELED")).resolves.toMatchObject({status:"cancelled"});
+    await expect(lookup("NOT_FOUND")).resolves.toMatchObject({status:"expired"});
   });
 });

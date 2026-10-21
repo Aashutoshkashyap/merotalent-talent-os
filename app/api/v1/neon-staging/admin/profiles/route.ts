@@ -7,7 +7,7 @@ import { getAuthenticatedApplicationUser, requireSameOrigin } from "@/lib/server
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   const headers = { "Cache-Control": "private, no-store" };
   try {
     requireSameOrigin(request);

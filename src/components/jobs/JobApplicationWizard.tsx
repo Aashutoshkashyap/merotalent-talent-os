@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -192,7 +193,7 @@ export default function JobApplicationWizard({
   };
 
   const handleSubmit = async () => {
-    const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+    const isStaging = isNeonClientRuntime();
     if (!user || (!isStaging && !session?.access_token)) {
       toast({ variant: "destructive", title: "Login required", description: "Please sign in to submit your application." });
       return;
@@ -349,7 +350,7 @@ export default function JobApplicationWizard({
                 </div>
 
                 <div className="space-y-1.5 border-t border-slate-100 pt-3">
-                  {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" ? (
+                  {isNeonClientRuntime() ? (
                     <div className="space-y-2">
                       <Label htmlFor="job-resume-upload">CV / Resume PDF</Label>
                       <Input id="job-resume-upload" type="file" accept=".pdf,application/pdf" disabled={isUploadingResume}
@@ -446,7 +447,7 @@ export default function JobApplicationWizard({
                     ))
                   )}
                 </div>
-                {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && (
+                {isNeonClientRuntime() && (
                   <div className="grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2">
                     {(["experience", "training"] as const).map((kind) => {
                       const path = kind === "experience" ? experienceLetterUrl : trainingDocumentUrl;
@@ -537,7 +538,7 @@ export default function JobApplicationWizard({
                   <p><span className="text-slate-500">Contact:</span> <span className="font-bold text-slate-900">{email} • {phone}</span></p>
                   <p><span className="text-slate-500">Skills ({typedSkills.length}):</span> <span className="font-bold text-slate-900">{typedSkills.join(", ") || "None"}</span></p>
                   <p><span className="text-slate-500">CV Attached:</span> <span className="font-bold text-slate-900">{resumeUrl ? "Yes" : "No"}</span></p>
-                  {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && <p><span className="text-slate-500">Supporting documents:</span> <span className="font-bold text-slate-900">{[experienceLetterUrl && "Experience letter", trainingDocumentUrl && "Training document"].filter(Boolean).join(", ") || "None"}</span></p>}
+                  {isNeonClientRuntime() && <p><span className="text-slate-500">Supporting documents:</span> <span className="font-bold text-slate-900">{[experienceLetterUrl && "Experience letter", trainingDocumentUrl && "Training document"].filter(Boolean).join(", ") || "None"}</span></p>}
                 </div>
 
                 <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-[11px] text-amber-800">

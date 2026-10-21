@@ -75,7 +75,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       if (identifier) {
         const isId = uuid.test(identifier);
         const rows = await queryRows<Record<string, unknown>>(`

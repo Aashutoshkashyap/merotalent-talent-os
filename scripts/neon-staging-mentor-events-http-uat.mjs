@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import pg from "pg";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import {stagingUatOrigin} from './staging-uat-origin.mjs';
 
 dotenv.config({ path: ".migration.env", quiet: true });
 requireNeonMigrationStaging(process.env.NEON_STAGING_DATABASE_URL);
@@ -11,7 +12,7 @@ const auth = process.env.NEON_AUTH_BASE_URL;
 if (auth !== "https://ep-wispy-credit-azt6tgwj.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth") {
   throw new Error("Refusing UAT: unexpected Managed Auth branch.");
 }
-const app = "http://localhost:3210";
+const app = stagingUatOrigin();
 const db = new pg.Client({ connectionString: process.env.NEON_STAGING_DATABASE_URL, connectionTimeoutMillis: 10000 });
 const suffix = randomBytes(6).toString("hex");
 const studentId = randomUUID(), mentorOwnerId = randomUUID();
@@ -218,7 +219,8 @@ try {
   check(unavailableCheckout.status === 422, "browser checkout price manipulation denied");
   const sandboxCheckout = await request("/api/v1/neon-staging/payments/checkout", { method: "POST", signedIn: true,
     body: { kind: "mentor_booking", targetId: booked.value.data.id } });
-  check(sandboxCheckout.status === 503, "unconfigured sandbox fails closed without initiating payment");
+  check(sandboxCheckout.status === 503 || (sandboxCheckout.status === 201 && typeof sandboxCheckout.value?.data?.checkoutUrl === "string"),
+    "sandbox checkout returns 503 if unconfigured or 201 initiated checkout");
 
   paymentId = (await db.query(`INSERT INTO public.payments
     (user_id,payment_type,reference_id,amount,currency,status,payment_method,gateway,metadata)
@@ -294,6 +296,7 @@ try {
     }
     await db.query("BEGIN").catch(() => undefined);
     try {
+      await db.query(`DELETE FROM public.payment_checkout_sessions WHERE user_id IN ($1::uuid,$2::uuid)`, [studentId, mentorOwnerId]);
       await db.query(`DELETE FROM public.payment_proofs WHERE payment_id=$1::uuid`, [paymentId]);
       await db.query(`DELETE FROM public.payments WHERE id=$1::uuid`, [paymentId]);
       await db.query(`DELETE FROM public.neon_application_events WHERE recipient_user_id IN ($1::uuid,$2::uuid)`, [studentId, mentorOwnerId]);
@@ -310,6 +313,7 @@ try {
       await db.query(`DELETE FROM public.neon_identity_links WHERE application_account_id=$1::uuid`, [accountId]);
       await db.query(`DELETE FROM public.neon_application_accounts WHERE id=$1::uuid`, [accountId]);
       await db.query(`DELETE FROM public.profiles WHERE user_id IN ($1::uuid,$2::uuid)`, [studentId, mentorOwnerId]);
+      await db.query(`DELETE FROM neon_auth."user" WHERE email=$1`, [`student-${suffix}@example.com`]);
       await db.query("COMMIT");
     } catch (error) {
       await db.query("ROLLBACK").catch(() => undefined);

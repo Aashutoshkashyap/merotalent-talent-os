@@ -11,7 +11,7 @@ import pg from "pg";
 import { S3Client, ListBucketsCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
 import { listAllBucketObjects } from "./storage-reconciliation-utils.mjs";
-import { sha256, tableFingerprints, assertFingerprints, quoteIdentifier, storageReference } from "./recovery-integrity.mjs";
+import { sha256, tableFingerprints, assertFingerprints, quoteIdentifier, storageReference, schemaFingerprints, compareRecoveryEvidence } from "./recovery-integrity.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
 const url = process.env.NEON_STAGING_DATABASE_URL;
@@ -90,6 +90,7 @@ try {
   await remote.query("SET LOCAL TIME ZONE 'UTC'");
   const snapshot = (await remote.query("SELECT pg_export_snapshot() AS id")).rows[0].id;
   const baseline = await tableFingerprints(remote);
+  const schemaBaseline = await schemaFingerprints(remote);
   const references = await getReferences(remote);
   phase = "database_archive";
   run("pg_dump", ["--format=custom", "--no-owner", "--no-privileges", "--schema=public", "--schema=neon_auth",
@@ -104,13 +105,20 @@ try {
     writeFileSync(join(objects, file), bytes, { mode: 0o600 });
     manifest.push({ bucket, key: object.key, file, bytes: bytes.length, sha256: sha256(bytes),
       contentType: response.ContentType || "application/octet-stream", etag: response.ETag,
-      lastModified: response.LastModified?.toISOString() });
+      lastModified: response.LastModified?.toISOString(), cacheControl: response.CacheControl,
+      contentDisposition:response.ContentDisposition,contentEncoding:response.ContentEncoding,
+      contentLanguage:response.ContentLanguage,expires:response.Expires?.toISOString(),metadata:response.Metadata??{} });
   }
   // A moving object source cannot be described as one verified DB+storage recovery point.
   for (const object of manifest) {
     const head = await s3.send(new HeadObjectCommand({ Bucket: object.bucket, Key: object.key }));
     check(head.ETag === object.etag && head.LastModified?.toISOString() === object.lastModified &&
       head.ContentLength === object.bytes, "SOURCE_OBJECT_CHANGED_DURING_SNAPSHOT");
+    check(head.ContentType === object.contentType && head.CacheControl === object.cacheControl &&
+      head.ContentDisposition === object.contentDisposition && head.ContentEncoding === object.contentEncoding &&
+      head.ContentLanguage === object.contentLanguage && head.Expires?.toISOString() === object.expires &&
+      JSON.stringify(Object.entries(head.Metadata??{}).sort()) === JSON.stringify(Object.entries(object.metadata).sort()),
+      "SOURCE_OBJECT_METADATA_CHANGED_DURING_SNAPSHOT");
   }
   const finalObjectNames = [];
   for (const bucket of buckets) for (const object of await listAllBucketObjects(s3, bucket)) finalObjectNames.push(`${bucket}/${object.key}`);
@@ -149,6 +157,11 @@ try {
   await local.query("SET TIME ZONE 'UTC'");
   phase = "restore_integrity";
   assertFingerprints(baseline, await tableFingerprints(local));
+  const schemaDifferences = compareRecoveryEvidence(schemaBaseline,await schemaFingerprints(local));
+  if(schemaDifferences.length) {
+    console.error(JSON.stringify({result:"FAIL",phase:"schema_restore_verification",differences:schemaDifferences}));
+    throw new Error("RESTORED_SCHEMA_CONTENT_MISMATCH");
+  }
   check(JSON.stringify(references) === JSON.stringify(await getReferences(local)), "RESTORED_MEDIA_REFERENCE_MISMATCH");
   const verifyFiles = () => {
     for (const object of manifest) {
@@ -197,10 +210,13 @@ try {
   local = new pg.Client({ host: socket, port, database: "postgres", user: localEnv.PGUSER }); await local.connect();
   await local.query("SET TIME ZONE 'UTC'");
   assertFingerprints(baseline, await tableFingerprints(local)); verifyFiles();
+  check(compareRecoveryEvidence(schemaBaseline,await schemaFingerprints(local)).length===0,"ROLLBACK_SCHEMA_MISMATCH");
   check(JSON.stringify(references) === JSON.stringify(await getReferences(local)), "ROLLBACK_REFERENCE_MISMATCH");
   console.log(JSON.stringify({ result: "PASS", sourceBranch: branch, sourceWrites: 0,
     target: "disposable local PostgreSQL 18 and local object archive", tablesVerified: baseline.length,
     rowsVerified: baseline.reduce((sum,row)=>sum+row.count,0), objectsVerified: manifest.length,
+    tableEvidence:baseline,schemaEvidence:schemaBaseline,
+    excludedFromRestore:["database ownership and role grants (--no-owner --no-privileges)","non-public/non-neon_auth schemas","live S3 access control; restored objects are local files"],
     objectBytesVerified: manifest.reduce((sum,row)=>sum+row.bytes,0), mediaReferences: references.length,
     resolvedReferences: resolved.length, preexistingMissingReferences: references.length-resolved.length, missingByBucket,
     referenceCoverage: references.length===resolved.length ? "PASS" : "FAIL_PREEXISTING_MISSING_OBJECTS",

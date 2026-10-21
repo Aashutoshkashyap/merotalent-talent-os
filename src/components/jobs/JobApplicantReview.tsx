@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ const fields = (a: Application): [string, unknown][] => [
 
 export default function JobApplicantReview({ companyId }: { companyId?: string } = {}) {
   const { session, user } = useAuth();
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const [rows, setRows] = useState<Application[]>([]);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<Application | null>(null);

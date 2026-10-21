@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -240,7 +241,7 @@ const AdminDashboard = () => {
       const payload = await getCachedOrFetch(
         dashboardCacheKey,
         async () => {
-          if(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+          if(isNeonClientRuntime()) {
             const response=await fetch("/api/v1/neon-staging/admin/dashboard",{credentials:"same-origin",cache:"no-store"});
             const result=await response.json();
             if(!response.ok)throw new Error(result.error || "Dashboard unavailable.");
@@ -756,9 +757,9 @@ const AdminDashboard = () => {
             CircleCheck,
             "Data source",
             dataLoadState === "loading"
-              ? "Loading Supabase snapshot"
+              ? `Loading ${isNeonClientRuntime() ? "Neon" : "Supabase"} records`
               : dataLoadState === "ready"
-                ? "Supabase snapshot loaded"
+                ? `${isNeonClientRuntime() ? "Neon" : "Supabase"} records loaded`
                 : dataLoadState === "partial"
                   ? "Some records unavailable"
                   : "Records unavailable",

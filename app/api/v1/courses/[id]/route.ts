@@ -22,7 +22,7 @@ export async function GET(
 
     let course: PartnerCourse | null = null;
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const rows = await queryRows<PartnerCourse>(`
         SELECT id::text, title, description, category, thumbnail_url, redirect_url,
                partner_name, partner_id::text, display_order, referral_code,
@@ -105,7 +105,7 @@ export async function POST(
       );
     }
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       await queryRows(`
         INSERT INTO public.course_referrals (course_id, user_id, destination_url, referrer, metadata)
         VALUES ($1::uuid, $2::uuid, $3, $4, $5::jsonb)

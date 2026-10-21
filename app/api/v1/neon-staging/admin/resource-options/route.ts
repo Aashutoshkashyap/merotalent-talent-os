@@ -6,7 +6,7 @@ import { neonAdminOptions } from "@/lib/server/neon-admin-resources";
 export const dynamic="force-dynamic";
 export const runtime="nodejs";
 export async function GET(request: Request) {
-  if (getBackendMode()!=="neon-staging") return new Response(null,{status:404});
+  if (getBackendMode() === "legacy") return new Response(null,{status:404});
   const headers={"Cache-Control":"private, no-store"};
   try {
     const data=await neonAdminOptions(await getAuthenticatedApplicationUser(request),new URL(request.url).searchParams.get("kind")??"");

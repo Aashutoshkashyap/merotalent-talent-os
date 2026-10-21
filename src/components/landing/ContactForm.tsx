@@ -1,10 +1,12 @@
 "use client";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+
 
 import React, { useState } from "react";
 import { MapPin, Phone, Mail, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({

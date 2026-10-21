@@ -13,7 +13,7 @@ const fail = (cause: unknown) => cause instanceof NeonAuthorizationError ? reply
   : reply({ error: cause instanceof NeonSessionUnavailable ? "AUTH_UNAVAILABLE" : "BOOKINGS_UNAVAILABLE" }, 503);
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     requireSuperAdmin(actor);
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

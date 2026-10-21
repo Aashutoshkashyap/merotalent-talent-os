@@ -30,7 +30,7 @@ export async function GET(request?: Request): Promise<Response> {
 
     let ads: AdvertisementRow[] = [];
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       ads = await queryRows<AdvertisementRow>(`
         SELECT id, title, image_url, destination_url, sponsor_name
         FROM public.advertisements

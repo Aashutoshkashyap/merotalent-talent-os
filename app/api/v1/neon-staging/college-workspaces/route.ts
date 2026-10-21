@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+    if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
     const actor = await getAuthenticatedApplicationUser(request);
     const [capability] = await queryRows<{ allowed: boolean }>(`
       SELECT EXISTS (SELECT 1 FROM public.user_module_capabilities umc

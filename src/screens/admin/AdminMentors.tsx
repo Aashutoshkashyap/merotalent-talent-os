@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -105,7 +106,7 @@ const AdminMentors = () => {
         sort_by: "created_at",
         sort_direction: "desc",
       });
-      if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+      if (isNeonClientRuntime()) {
         setMentors(mentorsData.map(mentor=>({...mentor,hourly_rate:Number(mentor.hourly_rate)||0,rating:Number(mentor.rating)||0,expertise:Array.isArray(mentor.expertise)?mentor.expertise:[]})));
         return;
       }
@@ -153,7 +154,7 @@ const AdminMentors = () => {
   },[toast]);
 
   const fetchAvailableUsers = useCallback(async () => {
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    if (isNeonClientRuntime()) {
       try { setAvailableUsers(await listNeonAdminOptions<{id:string;email:string;full_name:string|null}>("mentors")); }
       catch(error) {toast({variant:"destructive",title:"Unable to load mentor users",description:error instanceof Error ? error.message : "Try again shortly."});}
       return;
@@ -479,7 +480,7 @@ const AdminMentors = () => {
                   onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
                 />
               </div>
-              {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && (editingMentor
+              {isNeonClientRuntime() && (editingMentor
                 ? <SignedMediaUploader label="Upload profile photo" module="mentor_profile" resourceId={editingMentor.id}
                   disabled={isSubmitting} onUploaded={assets=>{if(assets[0])setFormData(current=>({...current,avatar_url:assets[0].path}));}}/>
                 : <p className="text-xs text-muted-foreground">Save the mentor profile, then edit it to upload a photo.</p>)}

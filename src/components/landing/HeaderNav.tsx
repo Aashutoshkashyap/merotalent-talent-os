@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Briefcase, Sparkles, User as UserIcon } from "lucide-react";
+import { Search, Briefcase, Sparkles, Menu, X, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
@@ -33,7 +33,7 @@ export const SearchBar: React.FC<{
         value={val}
         onChange={(e) => setVal(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-11 pr-5 py-[10px] bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-[13px] text-slate-800 placeholder-slate-400 rounded-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+        className="min-w-0 w-full pl-11 pr-5 py-[10px] bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-[13px] text-slate-800 placeholder-slate-400 rounded-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
       />
     </form>
   );
@@ -93,30 +93,47 @@ export default function HeaderNav({
   onSearch,
   brandHref = "/",
 }: HeaderNavProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <header className="sticky top-0 right-0 left-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 h-[60px] px-5 md:px-8 flex items-center justify-between z-50">
+    <header className="sticky top-0 right-0 left-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 h-[60px] px-3 sm:px-5 md:px-8 flex items-center justify-between gap-2 z-50">
       {/* Left: Brand Logo */}
       <div className="flex items-center gap-4 flex-shrink-0">
         <Link
           to={brandHref}
           className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+          aria-label="MeroTalent home"
         >
           <img src="/logo.png" alt="MeroTalent Logo" className="h-8 w-auto object-contain rounded-lg" />
-          <span className="text-xl font-black text-slate-900 tracking-tight">
+          <span className="hidden text-xl font-black text-slate-900 tracking-tight sm:inline">
             Mero<span className="text-[#0073e6]">Talent</span>
           </span>
         </Link>
       </div>
 
       {/* Center: Search Bar */}
-      <div className="flex-1 max-w-xl mx-6 hidden sm:flex justify-center">
+      <div className="min-w-0 flex-1 max-w-xl mx-2 hidden md:flex justify-center">
         <SearchBar onSearch={onSearch} />
       </div>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-3 flex-shrink-0">
         <LoginButton />
+        <button type="button" aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={menuOpen} aria-controls="public-mobile-navigation"
+          onClick={() => setMenuOpen(open => !open)}
+          className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 lg:hidden">
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
+      {menuOpen && <nav id="public-mobile-navigation" aria-label="Main navigation"
+        className="absolute inset-x-0 top-full max-h-[calc(100dvh-60px)] overflow-y-auto border-b border-slate-200 bg-white p-4 shadow-lg lg:hidden">
+        <div className="grid grid-cols-2 gap-2">
+          {[["Jobs", "/jobs"], ["Competitions", "/competitions"], ["Learn", "/courses"],
+            ["Mentorship", "/mentorship"], ["Institutes", "/institutes"], ["Events", "/events"]].map(([label, to]) =>
+            <Link key={to} to={to} onClick={() => setMenuOpen(false)}
+              className="rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">{label}</Link>)}
+        </div>
+      </nav>}
     </header>
   );
 }

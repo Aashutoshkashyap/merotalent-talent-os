@@ -28,7 +28,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   try {
     let blogs: BlogUpdate[] = [];
     let notices: NoticeUpdate[] = [];
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const rows = await queryRows<{ blogs: BlogUpdate[]; notices: NoticeUpdate[] }>(`
         SELECT
           COALESCE((SELECT jsonb_agg(to_jsonb(b)) FROM (

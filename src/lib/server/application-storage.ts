@@ -88,7 +88,7 @@ export async function managedInstituteMediaSignedUrl(
   actor: NeonActor,
   input: { module: "college_logo" | "college_cover" | "college_gallery"; instituteId: string; path: string },
 ): Promise<string> {
-  if (getBackendMode() !== "neon-staging") {
+  if (getBackendMode() === "legacy") {
     throw new ApplicationStorageError(503, "Legacy institute media uses the existing storage route.");
   }
   await authorizeObject(actor, input.module, input.instituteId, input.path);
@@ -102,7 +102,7 @@ export async function deleteInstituteMedia(
   actor: NeonActor,
   input: { module: "college_logo" | "college_cover" | "college_gallery"; instituteId: string; path: string },
 ): Promise<void> {
-  if (getBackendMode() !== "neon-staging") {
+  if (getBackendMode() === "legacy") {
     throw new ApplicationStorageError(503, "Legacy institute media uses the existing storage route.");
   }
   await authorizeObject(actor, input.module, input.instituteId, input.path);
@@ -137,7 +137,7 @@ export async function privateDownloadUrl(
 ): Promise<string> {
   const intent = parseMediaDownloadIntent({ ...input, download: true });
   if (publicModules.has(intent.module)) throw new ApplicationStorageError(403, "Use the public media URL.");
-  if (getBackendMode() !== "neon-staging") {
+  if (getBackendMode() === "legacy") {
     throw new ApplicationStorageError(503, "Legacy private downloads use the existing authorized media route.");
   }
   await authorizeObject(actor, intent.module, intent.resourceId, intent.path);
@@ -165,7 +165,7 @@ export async function uploadBytes(
     module: input.module, resourceId: input.resourceId ?? null,
     fileName: input.fileName, contentType: input.contentType, sizeBytes: input.bytes.byteLength,
   });
-  if (getBackendMode() !== "neon-staging") {
+  if (getBackendMode() === "legacy") {
     throw new ApplicationStorageError(503, "Legacy uploads use the existing authorized media route.");
   }
   await authorizeObject(actor, intent.module, intent.resourceId, input.path);

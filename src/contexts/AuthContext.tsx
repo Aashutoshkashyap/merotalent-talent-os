@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const hydratedUserIdRef = useRef<string | null>(null);
   const stagingHydrationErrorRef = useRef<string | null>(null);
-  const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isStaging = isNeonClientRuntime();
 
   const hydrateStaging = async (): Promise<boolean> => {
     const res = await fetch("/api/v1/neon-staging/profile", {
@@ -387,7 +388,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithOAuth = async (
     provider: "google" | "apple",
   ) => {
-    if (isStaging) return { error: new Error("OAuth is not configured for the isolated staging environment.") };
+    if (isStaging) {
+      if (provider !== "google") return { error: new Error("This sign-in provider is unavailable.") };
+      try {
+        const response = await fetch("/api/v1/neon-staging/auth/sign-in/social", { method: "POST",
+          credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ provider }) });
+        const data = await response.json().catch(() => null);
+        // The server validates the destination against the pinned Managed Auth
+        // branch or Google. Neon may wrap the provider URL for its PKCE exchange.
+        const destination = typeof data?.url === "string" ? new URL(data.url) : null;
+        if (!response.ok || !destination || destination.protocol !== "https:" || destination.username || destination.password) {
+          return { error: new Error("Google sign-in is unavailable. Please try again later.") };
+        }
+        clearPendingModuleAccessRole();
+        window.location.assign(data.url);
+        return { error: null };
+      } catch { return { error: new Error("Google sign-in is unavailable. Please try again later.") }; }
+    }
     clearPendingModuleAccessRole();
 
     const { error } = await supabase.auth.signInWithOAuth({

@@ -84,7 +84,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
         <p className="hidden text-xs text-[#9996a9] xl:block">One calm view of the platform</p>
       </div>
 
-      <form onSubmit={runCommand} className="relative mx-auto w-full max-w-xl">
+      <form onSubmit={runCommand} className="relative mx-auto min-w-0 w-full max-w-xl">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9b98aa]" />
         <Input
           ref={searchRef}

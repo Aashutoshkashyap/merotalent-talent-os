@@ -15,7 +15,7 @@ const site = () => (process.env.NEXT_PUBLIC_SITE_URL || "https://www.merotalent.
 async function getHomeCmsSnapshot(slug: string[] | undefined): Promise<CmsSnapshot | null> {
   if (slug?.length) return null;
   try {
-    if (getBackendMode() === "neon-staging") return await readPublicCms("home");
+    if (getBackendMode() !== "legacy") return await readPublicCms("home");
     const db = getAdminClient() as any;
     const [sectionsResult, visibilityResult, settingsResult] = await Promise.all([
       db.from("page_sections").select("*").eq("page", "home").eq("is_visible", true).order("display_order", { ascending: true }),
@@ -42,7 +42,7 @@ async function getHomeCmsSnapshot(slug: string[] | undefined): Promise<CmsSnapsh
 
 async function getPublicRecord(slug: string[] | undefined): Promise<PublicRecord | null> {
   if (!slug || slug.length !== 2) return null;
-  if (getBackendMode() === "neon-staging") {
+  if (getBackendMode() !== "legacy") {
     try { return await readNeonPublicRecord(slug); } catch { return null; }
   }
   const [section, identifier] = slug; const db = getAdminClient() as any;

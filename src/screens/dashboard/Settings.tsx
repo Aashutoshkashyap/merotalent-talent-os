@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +41,7 @@ import {
 
 const Settings = () => {
   const { profile, refreshProfile, signOut } = useAuth();
-  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isNeonStaging = isNeonClientRuntime();
   const [personalInfo, setPersonalInfo] = useState({
     full_name: "",
     phone: "",

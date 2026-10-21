@@ -1,4 +1,6 @@
 "use client";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -64,7 +66,7 @@ export default function EventsPage() {
   const handleOpenRegistration = (e: React.MouseEvent, eventItem: EventDetail) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!session && !(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && user)) {
+    if (!session && !(isNeonClientRuntime() && user)) {
       navigate("/login", { state: { from: { pathname: `/events/${eventItem.id}` } } });
       return;
     }
@@ -200,6 +202,8 @@ export default function EventsPage() {
                         <img
                           src={eventItem.cover_image_url}
                           alt={eventItem.title}
+                          loading="lazy"
+                          decoding="async"
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (

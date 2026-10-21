@@ -1507,3 +1507,1102 @@ not be treated as final-revision evidence. Synthetic UAT identities remain separ
 from the 104 real source users. Their recovery ownership proofs, designated QA
 sign-ins, genuine successful eSewa settlement, second live object-store recovery,
 final source delta and authorized production cutover remain open.
+
+### Production-runtime preparation — 2026-10-19
+
+- **Verified against Neon staging:** `scripts/validate-neon-staging-constraints.mjs`
+  checked the exact 21 reviewed, previously unvalidated CHECK constraints. All had
+  zero violating rows. A rollback probe passed, followed by explicit staging-only
+  validation of all 21. Zero business rows changed; zero public constraints remain
+  unvalidated. Private evidence: `constraints-dry-run-20261019.json`,
+  `constraints-probe-20261019.json`, `constraints-applied-20261019.json` in the
+  existing protected migration-artifact directory. Production was not modified.
+- **Implemented locally:** `src/lib/server/backend-mode.ts`,
+  `src/lib/neon/neon-config.ts`, and `src/lib/backend-selection.ts` now distinguish
+  legacy, isolated Neon staging, and explicitly paired Neon production runtime.
+  Production DB/Auth/storage must match the independently inspected production
+  branch tuple; database connection overrides are rejected. The staging-only guard
+  and migration-script boundaries remain staging-only. The mechanical caller update
+  is recorded in `scripts/enable-neon-runtime-callers.mjs`; it does not deploy or
+  select production by itself. Existing authorization and entity checks are retained.
+- **Implemented locally:** `src/lib/server/neon-checkout.ts` now requires UAT
+  configuration in staging and production-marked configuration in production.
+  Sandbox credentials cannot silently become production checkout credentials.
+  Regression coverage is in `neon-checkout-provider-configuration.test.ts` and
+  `neon-runtime-safety.test.ts`. No charge or real settlement was attempted.
+- **Read-only production-candidate inspection:** existing branch
+  `br-falling-breeze-azr6q64l` contains 80 public tables / 2,164 rows and zero
+  Managed Auth users, not the reviewed complete runtime schema or final source
+  delta. Do not deploy this code against that stale copy before schema/data
+  reconciliation. The console reports shared Google/email configuration,
+  localhost allowed and signup verification disabled; these are observations,
+  not approved release configuration or proof of login/recovery acceptance.
+- **Still open:** production transactional-email delivery policy (current queue
+  intentionally retains staging recipient restrictions), production Auth settings,
+  fresh source/freeze reconciliation, 104 real-account ownership recoveries,
+  five source-missing resume objects, genuine sandbox settlement, live workflow
+  acceptance, final backup/rollback gate, and verified cutover. Do not copy the
+  staging-only fixtures or eSewa UAT override into production.
+- **Verification checkpoint before the checkout environment regression:** full
+  suite 170 files / 759 tests passed and typecheck passed. After that regression,
+  typecheck and focused tests passed (2 files / 17 tests). Final full-suite,
+  lint and production-build results are recorded below after completion.
+- **Final revision verification:** full suite **170 files / 760 tests passed**;
+  typecheck passed; production build passed; lint **zero errors / 37 warnings**;
+  `git diff --check` passed. These are local code/build results, not production
+  acceptance, actual payment settlement, or real-account recovery evidence.
+
+### Execution continuation — 2026-10-20 (production remains unchanged)
+
+- **Actual source export:** the existing Supabase CLI Keychain credential works
+  with the provider's hard-coded `/database/query/read-only` endpoint. A new
+  single-statement, read-only encrypted export captured **80 tables / 2,179 rows,
+  106 users / 107 identities, 13 buckets / 22 objects** at
+  `2026-10-19T17:44:33.672818+00:00`; SHA-256
+  `2665ba0f26d94300a76fdf0e3e15d6b4ea134852aae08676425efd2e80a25340`.
+  Artifact: `source-202610191744336728180000-2665ba0f26d9.aes256gcm.json` in
+  the protected migration-artifact directory. No administrator SQL connection,
+  password reset, secret rotation, source mutation or PostgreSQL-gate bypass
+  was used. The dedicated PostgreSQL credential is still absent; this successful
+  approved API export is an alternative, not that credential being provisioned.
+  It is not a frozen final cutover snapshot: source writes continue.
+- **Actual staging reconciliation:** added the explicit
+  `append-only-preserve-conflicts` policy to
+  `scripts/apply-source-snapshot-staging.mjs`, with reviewed ledger binding,
+  INSERT-event trigger checks, a narrowly allowlisted nonprivileged JSON default,
+  full existing-row preservation and unchanged-conflict checks in
+  `staging-append-policy.mjs`. Normal reconciliation still fails closed on
+  conflicts. A rollback probe passed, then **nine source inserts** committed
+  only to the pinned staging branch (two profiles, two roles, four source audit
+  rows, one competition registration). No trigger was disabled. Existing rows,
+  IDs, relationships and target fixtures remained unchanged. A subsequent dry
+  run reported **zero operations**. The two known independent staging edits and
+  three source-deleted upload-intent records remain explicitly retained, not
+  silently overwritten/deleted or counted as exact parity. Reports:
+  `fresh-append-reviewed-20261019.json`, `fresh-append-probe-20261019.json`,
+  `fresh-append-applied-20261019.json`, `fresh-append-idempotency-20261020.json`.
+  Two missing application-account anchors were added by the existing guarded
+  account reconciler; this created no Auth identity, link or access grant.
+- **Actual real-account browser recovery:** implemented the official pinned
+  `@neondatabase/auth/server` OAuth transport in `neon-oauth.ts`, a constrained
+  Google start action in the existing auth bridge, `/auth/neon/callback`, and
+  `proxy.ts` to consume root-return one-use verifiers before client rendering.
+  `AuthContext.tsx` and `OAuthCallback.tsx` no longer send Neon sign-in through
+  the legacy Supabase RPC callback. Branch-bound SDK redirect wrappers are
+  validated server-side; role/entity/redirect input is not accepted. Production
+  OAuth remains disabled unless explicitly configured with its own cookie secret.
+  `legacy-recovery.ts` / `LegacyAccountRecovery.tsx` use the source's already
+  approved exact `/auth/callback` URL and support same-window proof, preserving
+  the independent Managed Auth HttpOnly session. No source OAuth settings changed.
+  A real owner completed Google sign-in, was correctly denied profile access
+  while unlinked, then independently authenticated the existing Supabase account
+  and recovered the original student dashboard. Direct admin API access returned
+  `ADMIN_REQUIRED`. `verify-neon-source-link-preservation.mjs` subsequently proved
+  the original profile/user IDs and all four role/capability/entity/feature grant
+  sets match the source, preserving typed microseconds. Evidence:
+  `real-recovery-preservation-20261020.json`,
+  `verified-staging-recovery-20261020.png`. **One of 106 source identities is
+  genuinely linked; 105 remain unlinked. QA Admin ownership remains unverified.**
+  This is not an email-address match, synthetic identity, or production recovery.
+- **Email implementation and actual configuration limit:**
+  `neon-delivery-policy.ts` adds separately opted-in production delivery with a
+  required UTC cutover cutoff. Queue recovery/claim filters require the matching
+  origin marker and cutoff; copied source/staging messages cannot replay in
+  production. Staging retains exact recipient allowlists. Maintenance and guest
+  notifications use the actual selected runtime marker. Production delivery is
+  still disabled. The opt-in real-provider test is
+  `neon-email-provider-staging.test.ts`; it restricts the recipient to an actual
+  dual-session-linked owner and rolls its DB fixture back. **Actual provider
+  delivery has not passed**: Vercel lists encrypted `RESEND_API_KEY` / `EMAIL_FROM`,
+  but neither `env run -e production` nor private `env pull --environment=production`
+  supplied usable values. Both attempts stopped at the configuration precondition
+  before contacting Resend. Temporary exported files were removed; no production
+  variable was changed and no email was claimed sent. Supply a usable staging
+  sending credential and verified sender through the approved secret channel.
+- **Actual file access:** a fresh read-only source/S3 byte check verified all
+  **22 source-listed objects**, content types, cache controls and size metadata.
+  One extra staging object was preserved. **Five résumé references are missing
+  from both source and target**; bytes cannot be fabricated. Report:
+  `fresh-storage-20261020.json`. Source writes and staging metadata writes: zero.
+- **Actual production-candidate backup/recovery:**
+  `backup-neon-production-candidate.mjs` pins the reviewed candidate, uses a
+  read-only exported PG snapshot, retains an encrypted local dump, decrypts it,
+  and restores only into a fresh private Unix-socket PostgreSQL instance. All
+  **89 public/Managed Auth tables / 2,165 rows** and application schema fingerprints
+  matched. No remote write occurred. Artifact:
+  `production-candidate-20261019215717790-70b4d787ff47.aes256gcm.json`, archive SHA
+  `70b4d787ff47157ec9f9e749a77ea1a5a732868bc4df8a4f2594d9ece5cdf925`.
+  Global role passwords/ACLs, Auth control-plane settings and live object-store
+  restoration remain outside this proof. This backups the stale existing candidate;
+  it does not prove its schema/data is ready or that a cutover can be rolled back.
+- **Genuine eSewa attempt:** the existing synthetic-only harness now supports the
+  source-approved local port 3001. The actual UAT gateway accepted the mentor
+  checkout for EPAYTEST / NPR 10, but its login shows **“This site is exceeding
+  reCAPTCHA Enterprise free quota”** and cannot proceed. No CAPTCHA bypass or
+  real payment was performed. Evidence: `esewa-provider-quota-block-20261020.png`.
+  Real endpoint checks rejected forged signatures and kept duplicate returns
+  idempotent; mentor remained pending and the unsubmitted event checkout became
+  failed/cancelled on trusted provider lookup. Neither became paid or fulfilled.
+  The harness now compares two returns (rather than incorrectly treating a first
+  legitimate pending-to-failed transition as failed idempotency). Successful
+  provider settlement remains unverified and requires eSewa's sandbox quota fix.
+- **Security/verification:** upgraded Next.js / matching ESLint config to 16.3.8,
+  sharp to 0.35.5 and patched existing transitive overrides. The initial minimal
+  install reported zero production advisories, but that is **not the final lockfile
+  result**: default peer resolution adds SDK UI/test/build-tool peers. Final
+  `npm audit --omit=dev` reports **nine advisories (four moderate / five high),
+  zero critical**, including Tailwind/PostCSS and Vitest tooling. The full tree
+  reports **15 (five moderate / ten high), zero critical**. These were not
+  suppressed or called fixed; no Tailwind/Vitest node_modules path appears in
+  generated server NFT traces, but this is not a blanket security certification.
+  Full standard suite:
+  **171 files / 768 tests passed**. Typecheck and production build passed; full lint
+  had **zero errors / 37 warnings**. Eleven targeted Node tooling tests passed,
+  as did two real staging integration files / three tests for the delivery-policy
+  SQL, maintenance and guest submission changes. Live-email precondition failures
+  above are intentionally separate from passing mocked/standard tests. Direct
+  Supabase inventory remains **110 files (102 static / eight dynamic)**, including
+  retained legacy production and intentional source-recovery paths, not proof of
+  automatic runtime fallback. No commit, push, deployment, production configuration
+  change or cutover occurred. After default peer/lockfile reconciliation,
+  `npm ci --dry-run --ignore-scripts` passed, and the final installed revision
+  again passed typecheck, all 768 tests, build, lint and diff check. An earlier
+  concurrent typecheck encountered build-regenerated `.next/types` files; the
+  serialized rerun after build passed without changing typechecking rules.
+  The timed-out sandbox harness fixture was removed through the existing cleanup
+  tool, now requiring source-snapshot hash and both account IDs' exclusion from
+  real source users. One proven synthetic set was removed via the official Neon
+  Auth CLI; a subsequent dry run found zero sets. These disposable test records
+  can be recreated with the harness. No real recovered or source account was
+  removed. Harness idle-connection errors now produce an explicit cleanup notice.
+- **Next executable release gates:** make the actual Neon production target's
+  schema/data match a fresh frozen source without staging fixtures or sandbox
+  overrides; complete production Managed Auth trusted origins/verification/email
+  settings; exercise designated QA ownership and privileged workflows; supply
+  usable email sending configuration; recover or explicitly disposition the five
+  source-missing files; obtain genuine sandbox settlement; verify live object-store
+  restore/rollback, write freeze and final delta before any production deployment.
+  Supabase cannot be retired while recovery and those gates remain open.
+
+### Execution continuation — 2026-10-20: email dependency resolved; no cutover
+
+- Created **MeroTalent Neon Transactional 2026-10-20**, a Resend sending-only key
+  restricted to the already verified `merotalent.com` domain, after explicit user
+  confirmation. Updated Vercel Production `RESEND_API_KEY` (sensitive) and
+  `EMAIL_FROM`. This was configuration only, not a deployment. The credential was
+  never printed; its temporary plaintext provisioning file was removed after
+  secure operator Keychain storage. Masked UI evidence:
+  `resend-restricted-key-20261020.png` in the private artifact directory.
+- Configured **both staging and the production candidate** Managed Auth SMTP with
+  `smtp.resend.com`, TLS port 465 and `noreply@merotalent.com`. Both official Neon
+  `email-provider test` calls returned `success: true`. The real opt-in
+  `neon-email-provider-staging.test.ts` also passed: existing queue -> actual
+  Resend acceptance -> recorded provider ID -> database fixture rollback. Then
+  strengthened and reran it successfully using a transaction-local encrypted
+  Provider Center row and the actual secret-decrypting provider resolver (no
+  injected provider). Both notification and configuration fixtures rolled back.
+  Inbox receipt has not been independently checked. The production application
+  queue has not been enabled or replayed.
+- Production-candidate Auth now requires email verification and sends verification
+  on signup. Exact canonical/apex HTTPS origins were added; localhost was disabled.
+  No legacy source Auth setting or user credential was changed.
+- Added `scripts/portable-source-schema.mjs` and its two boundary tests; extended
+  `backup-neon-production-candidate.mjs` with local-only portable-schema rehearsal.
+  The reviewed set is 16 portable functions, 47 triggers, two views, three indexes
+  and 12 constraints; Auth RPCs/policies and staging rows are not copied. The
+  initial local rehearsal passed with all 2,165 original rows preserved, but
+  exposed an unqualified-trigger selection omission. Corrected the selector and
+  added a fail-closed exact trigger-count check. A subsequent remote read hit
+  `EADDRNOTAVAIL`; added bounded query/statement timeouts, idle connection error
+  handling and early remote disconnect. The corrected complete rehearsal then
+  **passed**: 16 functions, 47 triggers, two views, three indexes and ten missing
+  constraints applied locally (two of the 12 reviewed constraints already existed).
+  All 89 tables / 2,165 original rows remained exact. New encrypted backup artifact:
+  `production-candidate-20261020002526178-7a9928ec1e18.aes256gcm.json`, archive SHA
+  `7a9928ec1e185d22ab03d905b93386efe45adb31a5b9a4fadb10785d263bbbe2`.
+  No remote DDL executed; this does not cover the remaining runtime-specific schema.
+- Added `NEON_PRODUCTION_PAYMENTS_ENABLED` (default off) at paid checkout initiation
+  in `neon-checkout.ts`, independent of existing return verification. Four flag
+  cases cover all four paid checkout kinds; unavailable payments do not create a
+  charge or grant access. Existing Provider Center enablement remains required.
+  This gate alone does not certify all user-facing payments-disabled launch UX.
+- Searched all **three retained encrypted source snapshots** for the five missing
+  résumé objects. None appears in their object inventories. Exact impact: five
+  historical job applications, zero current profile résumés. Existing private
+  download authorization precedes the truthful `RESUME_NOT_FOUND` / re-upload
+  message; no replacement bytes or current-profile substitution was invented.
+  This search does not assert that no external backup exists.
+- User confirmed QA Admin is a system-created account with no accessible login.
+  Its personal ownership check is therefore not a valid acceptance prerequisite;
+  it remains unlinked, not silently assigned to another identity. A real verified
+  administrator was then explicitly authorized by the user: the previously
+  dual-session-recovered owner. `assign-verified-neon-owner-admin.mjs` pins staging,
+  requires the original confirmed source ID plus the existing verified Managed
+  Auth link, active profile/account and real dual-session proof. It changed that
+  owner's primary role `talent -> admin` while retaining the role row ID and
+  recording the old/new roles and direct approval reference in `audit_logs`.
+  This is an authorized new role transition, **not** an unchanged source grant.
+  Capability/entity/feature grants and identity links remained unchanged. QA and
+  production were untouched. A repeat returned zero role changes and no duplicate
+  audit mutation. Earlier attempts rolled back on the source's deferrable unique
+  constraints; the successful path preserves the existing one-primary-role rule.
+  The real owner browser session subsequently loaded `/admin` and actual directory
+  data from the protected Neon dashboard endpoint. Private screenshot:
+  `verified-owner-admin-20261020.png`. `/institute` correctly showed the no-assigned-
+  college onboarding state; this is not evidence of customer College-admin UAT.
+  Corrected `AdminDashboard.tsx`'s misleading hard-coded Supabase source label to
+  display the selected runtime. Production owner linking/assignment still needs
+  its own verified target identity, not a copied staging Managed Auth subject.
+- Final runtime revision: **171 files / 772 standard tests passed**, plus the one
+  actual Resend queue integration test and both actual Managed Auth SMTP tests.
+  Production build and subsequent serialized typecheck passed. Lint completed with
+  zero errors / 37 warnings; diff check passed. No commit, push, app deployment, write freeze,
+  final synchronization, production identity grant, or traffic cutover occurred.
+- Next: reconcile the remaining runtime schema and source-only production data,
+  recover/link the authorized owner on the production Auth branch and record the
+  explicitly approved role transition there, then verify authenticated role workflows before freeze
+  and cutover. Do not retire Supabase while recovery or live acceptance depends on it.
+
+### Execution — 2026-10-20: actual production-candidate schema and missing source rows
+
+- **Release decision:** user explicitly rejected a payments-disabled launch.
+  Genuine eSewa settlement is mandatory before traffic cutover. Do not interpret
+  the default-off safety flag as approval to launch without payments.
+- Refreshed the actual source using the existing official read-only Management
+  API. Snapshot `2026-10-20T00:42:59.520373+00:00`: **80 tables / 2,179 public rows,
+  106 Auth users / 107 identities, 13 buckets / 22 objects**. No raw Auth secrets
+  were exported. Encrypted artifact:
+  `source-202610200042595203730000-04d793eb7147.aes256gcm.json`, snapshot SHA
+  `04d793eb714795ee852989d83ff7445e1d0900b3e7af3f45f1952acdddde7008`.
+  This is not a frozen final snapshot; later source writes require a final delta.
+- `apply-neon-production-portable-schema.mjs` applied the locally rehearsed
+  allowlist to **br-falling-breeze-azr6q64l itself**, not staging: 16 functions,
+  47 triggers, two directory views, three indexes, ten missing constraints.
+  Full original row fingerprints stayed unchanged. Existing differing function
+  definitions are rejected rather than overwritten. A second execution applied
+  **zero objects**. Private receipts:
+  `production-portable-applied-20261020.json`,
+  `production-portable-idempotency-20261020.json`. An initial read timeout failed
+  without a success receipt; the subsequent applied/idempotent executions above
+  are the actual evidence. Batched lossless fingerprints reduce round trips.
+- Added forward-only `scripts/sql/neon-production-runtime-foundation.sql`, derived
+  from the established runtime SQL without its event-category seed inserts.
+  Local restore rehearsal added **ten empty tables / fifteen columns**, preserved
+  every original column value, and copied zero fixture rows. Then
+  `apply-neon-production-runtime-foundation.mjs` applied the exact rehearsed SQL
+  hash to the production candidate. Re-execution added **zero tables / columns**.
+  Receipts: `production-runtime-foundation-applied-20261020.json`,
+  `production-runtime-foundation-idempotency-20261020.json`.
+- Added forward-only `scripts/sql/neon-production-generated-ids.sql` for the
+  copied audit/guest-verification bigint defaults. Private restore rehearsal
+  verified both defaults, original-row preservation and repeat-run sequence
+  stability. `apply-neon-production-generated-ids.mjs` applied only that verified
+  SQL to the candidate; no business row or identity changed. Receipt:
+  `production-generated-ids-applied-20261020.json`.
+- Fresh candidate backup **after runtime schema** was encrypted and locally
+  restored: **99 tables / 2,165 rows**, exact row/schema recovery. Artifact
+  `production-candidate-20261020031637997-a3865d3c9524.aes256gcm.json`, archive SHA
+  `a3865d3c95245b665782abd6e11a4e95198abc39795d47561f701edf85e9b199`.
+  Global roles/ACLs, control-plane Auth configuration and live object-store restore
+  remain outside that database recovery proof.
+- `append-missing-source-to-neon-candidate.mjs` implements an explicitly bounded
+  source-authoritative **missing-only** policy on the pinned offline candidate.
+  It refuses a candidate with live Auth users, requires the reviewed source hash,
+  backup and target/schema-bound ledger, rejects insert-trigger/default side
+  effects, never updates/deletes an existing row, and verifies every inserted
+  source row exactly. A real rollback probe passed with zero persisted rows.
+  Then **22 genuine source rows** committed: profiles 4, primary-role rows 4,
+  source audit rows 10, competition registration 1, notification 1, saved job 1,
+  module request 1. All pre-existing rows stayed unchanged. The audit sequence
+  advanced using transactional `ALTER SEQUENCE RESTART`, so the probe consumed no
+  IDs. Repeat dry-run found **zero insertions**. Receipts:
+  `production-missing-rows-dry-20261020.json`,
+  `production-missing-rows-probe-20261020.json`,
+  `production-missing-rows-applied-20261020.json`,
+  `production-missing-rows-idempotency-20261020.json`.
+  Candidate now contains all **106 source profiles / 106 source role rows**.
+  This does not establish Auth links or claim full data parity.
+- `plan-neon-production-source-delta.mjs` reused the existing lossless three-way
+  and timestamp-proof helpers. Before missing-row insertion it identified 2,145
+  narrowly proven timestamp repairs, one contact conflict and source-missing rows,
+  plus seven old upload-intent records absent from current source. Existing rows
+  were **not overwritten or deleted**. Precision/contact reconciliation and an
+  explicit disposition of old upload intents remain required. Private plan:
+  `production-source-delta-20261020.json`; do not reuse its pre-insert target hash.
+- Retried actual signed EPAYTEST checkout through the app against eSewa UAT.
+  Gateway displayed the correct NPR 10 amount but still showed **reCAPTCHA
+  Enterprise free quota exceeded**, with Login disabled. No CAPTCHA bypass or
+  live payment occurred. Actual forged callbacks returned denial and duplicate
+  returns were idempotent; mentor remained pending/pending, unsubmitted event
+  became cancelled/failed, neither paid nor fulfilled. Screenshot:
+  `esewa-quota-retry-20261020.png`. The disposable fixture set was removed and
+  the source-hash-protected cleanup dry-run found zero remaining sets.
+- Sent a routine technical inquiry to eSewa's officially documented integration
+  address `merchant.operation@esewa.com.np`, requesting a working supported UAT
+  route or quota restoration. Resend accepted message
+  `01a15748-184d-779d-9324-219db72d257e`; **delivery and a provider response are not
+  yet verified**. Receipt: `esewa-support-inquiry-20261020.json`. No secrets or
+  personal payment data were sent. This provider gate cannot be fixed by a fake
+  callback, unverified live payment, or a local CAPTCHA bypass.
+- Targeted Node regressions: **24 passed** (lossless fingerprints, safe projection,
+  target boundaries, rollback checks, timestamp rules and delta idempotency).
+  Runtime application source was unchanged in this batch; the prior 772-test,
+  build and lint evidence remains separately scoped. Final standard test/typecheck
+  command is recorded in `/private/tmp/merotalent-candidate-final-20261020-*` logs.
+- **No production traffic cutover, app deployment, commit, push, source write,
+  production Auth identity import/link, or Supabase retirement occurred.** Changes
+  above are real writes to the offline Neon production candidate, so earlier
+  blanket statements that no production-candidate change occurred are historical.
+
+| Acceptance requirement | Current status | Exact evidence / remaining gate |
+| --- | --- | --- |
+| Candidate portable/runtime schema | PASS | Actual applied receipts, repeat-run zero-object/column receipts, private local restore proofs above |
+| Missing source rows on candidate | PASS | Real rollback probe, 22 committed inserts, exact readback, unchanged originals, zero-insert rerun |
+| Full source-data parity | BLOCKED | Timestamp/contact reconciliation and seven old upload-intent dispositions still open; source not frozen |
+| Production Auth / owner acceptance | BLOCKED | SMTP/config verified previously; only staging owner was linked/promoted, production links and real login remain open |
+| Genuine eSewa settlement | BLOCKED | Hosted UAT quota error; support inquiry accepted; user requires success before release |
+| Production object storage / recovery | BLOCKED | Prior 22-object verification is staging evidence, not production storage or live restore proof |
+| Traffic cutover / deployed acceptance | BLOCKED | No deployment or switch; source runtime and recovery retained |
+
+### Continued execution — 2026-10-20: exact candidate data parity and production S3 bytes
+
+This checkpoint supersedes the unresolved precision/contact entries immediately
+above; it is not a final frozen synchronization or a traffic cutover.
+
+- `candidate-precision-repair.mjs` / `repair-neon-candidate-precision.mjs`:
+  locally restored rehearsal, real candidate rollback probe, then **2,145**
+  narrowly proven lossless timestamp repairs committed. Only exact reviewed
+  timestamp mutators were suspended/restored transactionally. Business values,
+  account IDs, scopes, roles and security guards were preserved.
+- `reconcile-neon-candidate-profile-contacts.mjs`: reviewed source-newer contact
+  reconciliation for **one** profile, with rollback probe and exact readback.
+  Only phone/location and source timestamps changed; no identity or grant changed.
+- `expire-neon-candidate-upload-metadata.mjs`: removed **seven expired transient
+  upload reservations** under the existing retention rule. No object was deleted.
+  Their rows remain recoverable from encrypted candidate backup
+  `production-candidate-20261020033242605-bd875646dd15.aes256gcm.json`
+  (99 tables / 2,187 rows before reconciliation, actual local restore verified).
+- Actual read-only comparison `production-source-parity-20261020.json` now shows
+  **all 2,179 captured source rows across 80 application tables match exactly**:
+  zero missing rows, conflicts, precision repairs or target-only rows. Source
+  snapshot SHA remains
+  `04d793eb714795ee852989d83ff7445e1d0900b3e7af3f45f1952acdddde7008`.
+  The source is not frozen: final synchronization remains required.
+- Reused the existing production-branch Neon object-storage credential through
+  authenticated CLI reveal and stored it privately in Keychain, without logging
+  its value, creating another credential, or changing application variables.
+  `verify-neon-production-storage.mjs` actually reads source and production S3
+  objects, checks the immutable byte manifest and pins the production branch.
+  Initial verification: **22/22 bytes and types**, zero missing/extra objects;
+  all 22 cache-control values were absent on target.
+- `repair-neon-production-storage-cache.mjs` rechecked every target object's
+  manifest hash/size/type, saved original metadata privately, then restored only
+  source cache-control using conditional self-copy. **22 metadata repairs**;
+  zero source writes, file-content replacements or deletions. Original metadata:
+  `production-storage-original-metadata-20261020.json`; mutation receipt:
+  `production-storage-cache-repair-20261020.json`. Independent post-repair proof:
+  `production-storage-bytes-after-cache-20261020.json`: **PASS, 22/22 bytes,
+  22/22 content types and 22/22 cache-control values; zero extra objects**.
+- Source bucket `Merotalent` has zero objects and is absent from the target;
+  report it explicitly, not as missing file content. Five historical résumé
+  references are absent from the source itself; do not fabricate replacements.
+  S3 byte verification does not establish authenticated application access,
+  public/private enforcement or a live object-store restore rehearsal.
+- Standard verification recorded this revision: **171 files / 772 tests passed**,
+  typecheck passed. Additional targeted Node regressions for storage proofs,
+  lossless fingerprints and precision boundaries: **8/8 passed**; script syntax
+  and `git diff --check` passed. Earlier production build/lint evidence is retained
+  separately; no claim of a new deployed build is made.
+
+Current gates: captured data parity PASS; production storage bytes/types/cache
+readback tracked in the private post-repair proof; production Auth identity and
+owner acceptance still open; genuine eSewa settlement still BLOCKED by provider
+UAT CAPTCHA quota (support inquiry accepted, response not verified). The user's
+**payments-must-pass-first** decision remains authoritative. No write freeze,
+deployment, traffic cutover, commit/push or Supabase runtime retirement occurred.
+Next executable batch: production Auth anchor/ownership acceptance and scoped
+application storage UAT/recovery rehearsal, while awaiting working provider UAT.
+
+### Final-cutover execution continuation — 2026-10-20 04:43 UTC source checkpoint
+
+- Fresh single-statement source export through the official **read-only** API:
+  **80 tables / 2,183 rows / 107 users / 108 identities / 22 objects**.
+  Source snapshot `source-202610200443322027790000-1228fb31467a.aes256gcm.json`,
+  SHA `1228fb31467a4d7c53be343e3585960d60c658191f3e07a3612e15f63a64fef7`.
+  The previous 2,179-row proof remains historical, not the final live count.
+- Read-only delta found exactly four missing source rows, zero conflicts:
+  two audit rows, one profile, one original primary-role row. Existing rows all
+  matched. Real rollback probe followed by bounded candidate commit inserted
+  **four**, preserving all existing rows and source IDs; sequence advancement was
+  transactional. Receipts `production-missing-refresh-{dry,rollback-probe,apply-candidate}-20261020.json`.
+  Ledger `439dbe8a8daf19715a66eee892ba407d268de4bafdead0180c9ade90f6a862ba`.
+  Independent readback: `production-source-parity-refresh-20261020.json`.
+  Source remains unfrozen; this is not final cutover synchronization.
+- Fresh candidate database dump initially timed out. Retry **passed**, including
+  encrypted readback and actual private local PostgreSQL restoration of
+  **99 tables / 2,180 rows** before the four inserts. Backup script now bounds
+  connection/lock waits, classifies errors without exposing stderr, and uses
+  asynchronous subprocesses so the snapshot connection remains responsive.
+  Final-script execution passed independently:
+  `production-candidate-20261020045301773-748020213ee1.aes256gcm.json`, SHA
+  `748020213ee118ab8f804c649090c5dce1952a7ac22c3833f54e5127af1c35f0`;
+  report `production-candidate-restore-20261020045301773.json`.
+- Added `backup-neon-production-storage.mjs` and tested
+  `storage-backup-envelope.mjs`: **all 22 actual production S3 objects** and
+  metadata captured into an authenticated encrypted private archive, decrypted,
+  restored to private local scratch, rehashed, and deliberate corruption detected.
+  Actual archive `production-storage-20261020044336629-d07f2bb07c95.aes256gcm.json`,
+  plaintext SHA `d07f2bb07c956c489b87e41744f758b5804d6b6afdad60d0bdb25e329bde9760`.
+  Final helper also decrypted that actual archive successfully. Remote S3 was
+  read-only; scratch files were removed. **Remote object-store restore and
+  application ACL acceptance are not claimed.**
+- Production Auth configuration freshly checked through authenticated Neon CLI:
+  Google shared provider enabled; Resend SMTP port 465 and MeroTalent sender;
+  email verification required with OTP; only the two canonical production origins
+  trusted; localhost disabled. Configuration evidence:
+  `production-auth-config-review-20261020.json`. Secrets were redacted.
+- Actual production Auth HTTP negative checks **passed**: anonymous session null,
+  forged session null, untrusted OAuth origin **403**. Receipt:
+  `production-auth-negative-checks-20261020.json`. Production still had **zero
+  Managed Auth users/identity links** at that check; no identity was fabricated,
+  copied from staging or linked by email. Real owner login, recovery, session
+  refresh, profile/role acceptance and inbox delivery remain **BLOCKED/UNTESTED**,
+  not established by SMTP configuration or these negative checks.
+- Fresh signed eSewa EPAYTEST NPR 10 checkout again reached the real hosted UAT
+  page, still showing **reCAPTCHA Enterprise free quota exceeded** and disabled
+  Login. Screenshot `esewa-quota-final-cutover-20261020.png`; no CAPTCHA solved,
+  live charge made or settlement fabricated. Forged callback denial and duplicate
+  return checks passed; neither service was paid/fulfilled. Receipt:
+  `esewa-final-cutover-denial-checks-20261020.json`. Harness cleanup experienced
+  a connection timeout; source-hash-protected recovery cleanup removed exactly
+  one proven disposable staging fixture set and subsequent dry-run found **zero**.
+- Focused regressions **11/11 passed**: encryption roundtrip/randomness, wrong key,
+  corrupted ciphertext, wrong archive format/digest/key length, storage proofs,
+  append immutability and exact production-target pin. Script syntax/diff checks
+  passed. No application code changed; prior 772-test/typecheck/build evidence
+  is retained, not represented as another newly executed full suite.
+
+| Mandatory gate | Status | Evidence or exact outstanding operation |
+| --- | --- | --- |
+| Captured data / IDs | PASS for captured snapshot | Four source-only records safely appended; independent comparison receipt above |
+| Final frozen source sync | BLOCKED | No write freeze while mandatory payment/Auth gates fail; final fresh delta still required |
+| Production file bytes and local backup restore | PASS | 22 verified files; encrypted archive and local restore/corruption detection |
+| Remote storage restore / application permissions | BLOCKED | Remote restoration and authenticated public/private API UAT not executed |
+| Production Auth configuration / negative checks | PASS, limited scope | CLI config and direct Auth denials; not a real login proof |
+| Production owner / ordinary-user acceptance | BLOCKED | Real production-branch login/link and deployed-candidate role/denial acceptance remain unexecuted |
+| Genuine payment settlement | BLOCKED | Provider UAT quota; existing support request awaits verified response; payments-disabled release remains unapproved |
+| Database backup / local restoration | PASS, limited scope | Fresh encrypted candidate dump restored; excludes global ACLs/control-plane Auth and post-cutover reverse replay |
+| Deployment / traffic / monitoring / legacy retirement | NOT APPLICABLE yet | No deploy, commit/push, configuration cutover, source freeze or Supabase retirement occurred |
+
+The exact external provider action is restoration of eSewa UAT CAPTCHA quota or
+a provider-supported working sandbox flow. It cannot be replaced by a successful
+build or forged callback. Remaining Auth/deployed acceptance and freeze/rollback
+engineering must still be executed; they are not relabelled as provider blockers.
+
+### ePay contract/security execution — 2026-10-20
+
+Compared the existing hosted ePay V2 adapter with the **requested current**
+[ePay documentation](https://developer.esewa.com.np/pages/Epay) and dedicated
+[test credential page](https://developer.esewa.com.np/pages/Test-credentials).
+The older `/pages/Epay-V2` page conflicts with `/pages/Epay` on status hosts and
+response field names. This pass follows the requested `/pages/Epay` contract:
+UAT form `rc-epay.esewa.com.np`, UAT status `rc.esewa.com.np`, production form
+`epay.esewa.com.np`, production status **`esewa.com.np`**. No live transaction or
+production financial configuration was changed. The prior claim that the latter
+host was necessarily incorrect is superseded by the current requested docs.
+
+Implementation changes:
+
+- `payment-provider.ts`: exact mandatory response signed-field coverage and
+  merchant binding; scalar/UUID validation; canonical bounded Base64/fatal UTF-8
+  decoder; safe exact-cent checkout amounts and callback URL/origin validation;
+  bounded no-redirect status requests. HTTP 400/404/429/5xx/provider errors remain
+  retryable verification failures rather than prematurely terminal failed
+  checkouts. Strict Neon mappings retain PENDING/AMBIGUOUS as pending, NOT_FOUND
+  as expired, CANCELED as cancelled and both refund states as review-required;
+  COMPLETE still requires exact merchant/reference/amount and provider reference.
+- `neon-esewa-return.ts` shares GET/form-POST handling between the existing Neon
+  route and canonical compatibility callback. Streamed bodies are bounded before
+  decoding; exceptions are sanitized; redirects never assert payment success.
+- `app/api/v1/payments/esewa/callback/route.ts` dispatches **to Neon** in Neon
+  mode, avoiding a real legacy-write fallback. Obsolete legacy checkout and
+  internal HMAC webhook routes return 404 before accessing Supabase in Neon mode.
+  Current Neon checkout callers were traced and already use the scoped Neon API.
+- New `esewa-v2-contract.test.ts` and `neon-esewa-return.test.ts`, and expanded
+  `neon-checkout-authorization.test.ts`, cover the published checkout signature
+  vector and encoded response signature (preserving the amount string), forged
+  responses, altered fields/merchant/reference/amount, malformed/oversized input,
+  callback-origin validation, all documented status mappings, provider errors,
+  pending/refund non-fulfillment, delayed settlement review, completed replay,
+  cross-order replay and absence of Supabase callback/checkout/webhook fallthrough.
+
+Executed evidence:
+
+- Final standard suite: **173 files / 835 tests PASS**, log
+  `/private/tmp/merotalent-esewa-accepted-revision-tests-20261020.log`.
+- Final application revision: **typecheck PASS, build PASS**, logs
+  `/private/tmp/merotalent-esewa-final-revision-{typecheck,build}-20261020.log`.
+  The only subsequent addition was the passing published-response-vector test.
+- Lint: **0 errors / 37 existing warnings**, log
+  `/private/tmp/merotalent-esewa-final-revision-lint-20261020.log`;
+  `git diff --check` PASS.
+- **Two actual isolated Neon staging DB tests PASS** for College scope payment
+  activation and module-access proof/payment scope. Provider settlement responses
+  were mocked; fixtures rolled back. This is not genuine eSewa settlement.
+  Log `/private/tmp/merotalent-esewa-staging-tests-20261020.log`.
+- Real local staging HTTP: malformed Neon callback **400**, forged signed return
+  **400 INVALID_PROVIDER_SIGNATURE**, malformed canonical compatibility callback
+  **400**, no fulfillment. Receipt `esewa-hardened-staging-http-20261020.json`.
+- Real **read-only UAT status** request for a deliberately nonexistent fresh
+  reference: **HTTP 200 / NOT_FOUND**, current documented response fields.
+  Receipt `esewa-status-readonly-probe-20261020.json`. No checkout or charge was
+  created, and this does not establish settlement.
+- Hosted-login quota failure remains the latest genuine checkout evidence from
+  the immediately preceding pass. Did not repeatedly create transactions while
+  the provider is known unavailable. Existing support inquiry remains accepted;
+  the narrowly scoped Gmail support-reply search stalled even after reload, so
+  **no response/delivery/no-response assertion** is made.
+- Read-only Vercel inspection confirms the existing live production deployment
+  remains **READY**, ID `dpl_2sRQHUkJVPovupWwfA6WnWY3Kzjj`, URL
+  `merotalent-dhdgtkdex-aashutoshkashyaps-projects.vercel.app`. CLI did not expose
+  a commit SHA in the selected metadata; do not substitute working-tree HEAD as
+  production commit evidence. Canonical homepage still returned HTTP 200 from
+  Vercel. **No new deployment, commit/push or traffic switch occurred.**
+- Actual production-candidate payment configuration was read without decrypting
+  or emitting secrets: eSewa, production environment, non-test merchant,
+  encrypted credential present, **integration disabled**. Receipt
+  `production-payment-config-esewa-pass-20261020.json`. It was not auto-enabled;
+  live financial configuration remains unchanged. Production Managed Auth still
+  has zero users. Configuration presence is not a payment/login acceptance proof.
+
+Release assessment: **NOT READY — mandatory gates remain**. Adapter/security and
+mocked transitions are tested, but real settlement remains **UNVERIFIED** until
+eSewa restores a supported UAT login path and one authorized transaction verifies
+server-side. Production owner login/link/session/recovery and role acceptance
+remain unexecuted (no synthetic owner promotion or email-only linking).
+Captured data proof remains **2,183 exact rows / 22 verified objects**, not a
+frozen final source sync. Final write fence, sync, authenticated deployed
+acceptance and post-write rollback readiness remain required.
+
+Payment-restricted launch was assessed, **not enabled**: the existing checkout
+gate prevents charges, but paid reservation/request creation would also need
+clear pre-creation restrictions so unpaid reservations do not consume capacity.
+Incoming verification/reconciliation must remain available. This is not a
+business decision the operator can make silently; the user's prior
+**payments-must-pass-first** answer remains controlling. Also retain the existing
+code gap: generic assigned-scope renewal without an approved College request is
+still unavailable in `Payments.tsx`; only approved-request College renewal has
+been migrated/tested. Do not describe all payment business journeys as complete.
+Supabase runtime/source and recovery remain retained; retirement is not executed.
+
+### Final-mandate continuation — 2026-10-20 (payment-restricted acceptance)
+
+The latest final-execution mandate supersedes the historical payments-must-pass-first
+answer above. Genuine settlement is still UNVERIFIED and live payments stay DISABLED;
+independent Neon acceptance and otherwise-safe cutover work must continue.
+
+- Implemented `src/lib/server/neon-assigned-scope-renewal.ts`, integrated through
+  `neon-checkout.ts`, the Neon checkout route, payments overview and
+  `src/screens/dashboard/Payments.tsx`. Existing assignments can renew without a
+  College claim request. Server-owned price/duration and exact module/entity scope
+  are authoritative. Verified success is required; scope revocation denies activation.
+  Renewals extend existing finite access, restore expired access from now, and do
+  not create roles, capabilities or assignments. Duplicate confirmation is idempotent.
+- Actual isolated Neon staging transaction test passed in
+  `neon-assigned-scope-renewal-staging.test.ts`: pending creates no entitlement,
+  additive consecutive renewals, duplicate return, expired restoration, forged actor,
+  cross-user assignment lookup and revoked assignment denial. Provider responses in
+  this DB test are mocked, not genuine eSewa settlement. All fixture changes rolled back.
+  During development one connection timeout, two assertion corrections and a test SQL
+  typo failed; the final revised test passed (23.05s). No production fixtures were added.
+- `neon-paid-initiation.ts` blocks new paid mentor reservations, paid event
+  registrations, paid module requests and checkout in production while disabled.
+  Existing verification/reconciliation remains reachable. The UI exposes truthful
+  unavailable status; free events still work. A targeted test confirms no paid
+  reservation INSERT occurs while disabled, and free-event registration is allowed.
+- `backend-mode.ts` refuses a Neon browser with an absent/legacy server selection.
+  Server Supabase factories and ordinary browser Supabase fetch/realtime fail closed
+  in Neon mode. The separate explicit source ownership-proof client remains intact.
+  Intentional browser denial uses AbortError so SDK network retries do not stall the UI.
+  This is a fallback safety boundary, not proof every remaining imported SDK caller
+  has browser acceptance or that source recovery has been retired.
+- Fresh genuine UAT reached `rc-epay.esewa.com.np/auth`, EPAYTEST/NPR10.
+  Published test customer credentials were entered; provider displayed
+  **This site is exceeding reCAPTCHA Enterprise free quota**, LOGIN disabled.
+  No CAPTCHA bypass, completed checkout or successful settlement. Private screenshot:
+  `esewa-mandate-uat-20261020.png`. Provider must restore supported UAT login/quota.
+  Harness `/verify` suffered a DB query timeout and produced no acceptance receipt;
+  its handler now returns a sanitized 503 instead of an unhandled process rejection.
+  Recovery cleanup removed exactly one proven disposable staging fixture set;
+  subsequent dry-run found zero. Source accounts and production were untouched.
+- Current standard suite: **176 files / 854 tests PASS**; typecheck and production
+  build PASS; lint **0 errors / 37 existing warnings** (new hook warning fixed);
+  diff check PASS. Additional isolated renewal test: **1/1 PASS** as above.
+  No genuine settlement or authenticated production-owner acceptance is implied.
+- `scripts/deploy-neon-candidate-preview.mjs` creates only an isolated Vercel preview
+  from non-ignored source files, excludes env files and uses per-deployment pinned
+  production-target DB/Auth/storage configuration. It never promotes canonical traffic,
+  enables live payments, supplies a source administrator key, or replays queued email.
+  Deployment execution/status must be verified separately from the local build.
+- Real preview acceptance found a critical previously untested build boundary:
+  `next.config.ts` forced all non-staging browser bundles to legacy and omitted
+  the production Neon storage origin from CSP. The first preview
+  `dpl_8sZELZTiYYnEsicWa2TDvhtiux4Z` built READY but its Google button selected
+  Supabase; login was stopped before account selection. That rejected preview and
+  its temporary trusted Auth origin were removed. Canonical traffic was unchanged.
+  The config now uses the validated explicit backend for browser compilation and
+  includes only that branch's exact storage origin. Four build-config regressions,
+  full 854-test suite, typecheck, local build and lint pass. Replacement preview
+  `dpl_AWz2s3ANizuaAS5Wg7sb3wxNxGva` was submitted, URL
+  `https://merotalent-lfpmrq1nw-aashutoshkashyaps-projects.vercel.app`.
+  Only this exact origin was submitted to production candidate Auth's trusted
+  origin list; no wildcard/local development origin or canonical traffic change.
+  READY/build status is not yet authenticated workflow acceptance.
+
+#### Production-candidate owner acceptance executed (not canonical cutover)
+
+- Replacement preview `dpl_AWz2s3ANizuaAS5Wg7sb3wxNxGva` reached **READY**.
+  Actual browser Google OAuth used Neon Auth's production endpoint, not Supabase.
+  The approved owner completed a genuine Google login followed by a second,
+  independent existing-source Google verification. The application restored the
+  original application identity and reached its dashboard; no email-only mapping
+  or copied staging Auth subject was used.
+- Extended `scripts/assign-verified-neon-owner-admin.mjs` with an independently
+  pinned production-candidate mode and distinct explicit apply flag. Dry-run passed,
+  then the previously user-approved owner assignment changed exactly one existing
+  primary role row Talent→admin. Original row ID and capability/entity/feature grants
+  remained unchanged; one separately identified production-candidate approval audit
+  was recorded. QA account unchanged. This is an intentional new approved grant,
+  not a claim that the historical source role was admin.
+- Private receipt `production-owner-acceptance-20261020.json`: verified email,
+  `dual_authenticated_session`, verified identity link, active application account,
+  admin role, exactly one authorized production-candidate admin audit. Actual
+  authenticated `/admin` browser showed **Neon records loaded**; Institutions loaded
+  **294 records**. Screenshot `neon-production-candidate-owner-admin-20261020.png`.
+  This verifies production-target Auth/session/recovery/admin reads via the preview,
+  not canonical production traffic or every private workflow.
+- Fresh actual candidate encrypted backup + isolated local restore passed after
+  identity/role writes: **99 tables / 2,192 rows**, archive
+  `production-candidate-20261020080904160-8a25b3191b57.aes256gcm.json`, SHA256
+  `8a25b3191b57a8a0d66b2e425686868b4f8980d9659135441a59fc3419d96156`.
+  Full application row/schema fingerprints and encrypted readback verified;
+  backup operation remote writes zero. Control-plane Auth settings, role passwords
+  and object bytes remain separately managed exclusions. This does not prove a
+  post-cutover write replay or remote object-store restore.
+- Existing offline-only source append tool intentionally refuses a candidate with
+  live identities. It was **not bypassed** after this real owner login. The next
+  reconciliation batch must explicitly preserve/fingerprint the verified Auth/link
+  ledger and the authorized role/audit exceptions, while still rejecting unrelated
+  target conflicts. Old 2,183 exact-row parity is historical: owner recovery/audit
+  and the authorized role transition are now legitimate target-only changes.
+- Browser navigation to the Payments acceptance page encountered
+  `ERR_NETWORK_IO_SUSPENDED`; no payment-page acceptance assertion is made.
+
+Remaining exact operations: finish deployed College/private-file/payment-disabled
+acceptance; identity-preserving final reconciliation under a verified write fence,
+final delta,
+fresh backup/restore and post-write rollback rehearsal; canonical deployment/traffic
+switch and post-cutover acceptance. Captured 2,183-row/22-object parity is not a final
+frozen sync. Supabase remains live and source/rollback retained; no runtime retirement
+or canonical production cutover has occurred in this continuation. Candidate Auth
+origin and the single explicitly approved owner-role assignment did change; no
+claim of zero candidate/control-plane writes is made.
+
+#### Interrupted-session continuation — committed-write recovery and deployed checks
+
+- The candidate Payment History page was resumed in the existing authenticated
+  owner session. It truthfully states new paid mentor/event/module purchases and
+  renewals are paused while existing access, free services and history remain
+  available. The earlier browser suspension was transient, not a failed payment
+  acceptance result. No checkout or charge was initiated.
+- Authenticated College public detail loaded Universal Engineering and Science
+  College with actual cover/logo pixels, description/programs and admission CTA.
+  CLI-authorized preview HTTP checks independently confirmed a real public record
+  and a **307 signed redirect to the production Neon Object Storage branch**
+  `br-falling-breeze-azr6q64l`, not Supabase. Anonymous same-origin private media
+  download returned **401 AUTH_REQUIRED**. This is not a claim that every private
+  applicant file has had authenticated browser download acceptance.
+- The owner-preserving reconciliation path is now implemented in
+  `scripts/candidate-owner-exceptions.mjs` and
+  `scripts/append-missing-source-to-neon-candidate.mjs`. Default offline-only
+  refusal remains. The explicit reviewed-owner mode requires exactly one genuinely
+  dual-session verified production owner, the precise approved Talent→admin role
+  row, its approval audit, and an independently fingerprinted Auth/link ledger.
+  Every unrelated source/target conflict is rejected; existing rows cannot change.
+  Read-only dry-run and actual **rollback-probe PASS** against the candidate:
+  zero insertions, one explicitly approved role exception, two retained target-only
+  audit rows, identity ledger unchanged, no sequence advance or persisted rows.
+  Receipts `production-owner-preserving-sync-{dry,probe}-20261020.json`.
+  This still compares the captured snapshot, not a final write-frozen source.
+- Added `scripts/committed-write-replay.mjs` and its regression tests. Extended the
+  existing candidate backup tool with a dedicated local committed-write rehearsal.
+  The first attempt correctly stopped on an unreviewed contact→lead INSERT trigger;
+  no trigger or constraint was disabled. The final fixture uses the passive skill
+  catalogue in a private restored clone only.
+- Actual encrypted backup/local restore and committed-write replay **PASS**:
+  archive `production-candidate-20261020110232041-7b5e48c19a38.aes256gcm.json`, SHA256
+  `7b5e48c19a38d6548a72ffbf2e1a497897d571af4e68ead2155bcbdab8834570`,
+  **99 tables / 2,192 baseline rows**. One synthetic insert and one update were
+  committed in one local clone and replayed into another fresh baseline clone.
+  All table fingerprints matched afterward; identity/grants stayed unchanged;
+  independent-change and duplicate replays were denied and rolled back atomically.
+  Remote writes zero. This verifies local candidate-clone replay, **not** a live
+  Supabase fallback, remote Auth restore or an executed production rollback.
+- New focused Node regression tests: **9/9 PASS** (committed replay, approved-owner
+  exception and append safety); syntax and diff checks PASS; lint still **0 errors /
+  37 warnings**. The previously passing **854 standard tests / typecheck / build**
+  were not unnecessarily repeated for these isolated script-only changes.
+
+Next concrete engineering/operations gate: implement and rehearse a reversible
+write fence covering legacy direct-client writes and in-flight storage operations,
+then execute the final fenced snapshot/delta with the verified identity ledger and
+review any new source conflicts before canonical promotion. Do not treat the old
+plan's unscheduled 02:00 window, banner alone, or captured row parity as an enforced
+maintenance window. Critical private-file/workflow acceptance and real rollback
+compatibility remain separate gates. Canonical traffic is still legacy; no source
+retirement or canonical cutover occurred.
+
+#### Master execution continuation — source write-fence rehearsal and UAT handoff
+
+- The latest master mandate again requires real eSewa UAT settlement before
+  promotion. The earlier payment-restricted-launch option is superseded. Official
+  EPAYTEST/NPR 10 checkout was opened in a visible sandbox tab with the published
+  test customer credentials, not the user's live wallet. The provider reports
+  reCAPTCHA free-quota exhaustion and disables LOGIN. The user attempted the
+  handoff and reported both login and CAPTCHA failure. **Settlement remains
+  UNVERIFIED**; no CAPTCHA bypass, live charge, production payment enablement or
+  entitlement success is claimed. The isolated localhost UAT harness remains
+  available for a fresh checkout after provider login is restored.
+- Added `scripts/source-database-write-fence.mjs` and tests; extended the existing
+  candidate backup tool with a dedicated, local-only fence rehearsal. The fence
+  covers INSERT/UPDATE/DELETE/TRUNCATE using statement triggers, SECURITY INVOKER,
+  an empty search path, bounded locks and ENABLE ALWAYS; removal verifies its own
+  function/coverage first and never changes application roles or RLS policies.
+- Actual encrypted candidate backup/local restore/fence rehearsal PASS:
+  `production-candidate-20261020120151668-6c4471193593.aes256gcm.json`, SHA256
+  `6c4471193593482c7c6551b9271fb2c1a189a7c4cbae423ceaf564f91ac1e360`,
+  **99 tables / 2,192 rows**. All **80 source public tables** were fenced in the
+  private local clone, all four DML types were rejected with SQLSTATE 55000, reads
+  remained possible, rows were unchanged, and removing the fence restored the
+  original schema fingerprints. Remote/source writes zero. This does **not** prove
+  actual source storage-metadata or object-byte quiescence.
+- Fence preflight checks actual table-owner privileges separately from TRIGGER
+  grants. ENABLE ALWAYS requires ownership; a TRIGGER grant alone is insufficient.
+  No role membership is changed to pass this test. Source storage ownership and
+  in-flight object operations remain a distinct operational gate before applying
+  any source freeze or calling a snapshot final.
+- Production eSewa ciphertext exists with a non-test merchant and remains disabled.
+  The local encryption key cannot decrypt that row; no key rotation, ciphertext
+  replacement or UAT-secret substitution was performed. Vercel Production already
+  holds a sensitive encryption-key variable. Official staged-production deployment
+  can inherit it server-side without exporting secrets, but no staged-production
+  build or canonical promotion was executed while the UAT gate is failing.
+- Focused Node checks before ownership-preflight additions: **12/12 PASS**; lint
+  **0 errors / 37 warnings**. The last application verification remains **854 tests,
+  typecheck and production build PASS**; script-only work is not represented as a
+  fresh application-suite run. Updated focused results are recorded below once run.
+
+Next executable operations: finish source-fence privilege verification and safe
+storage quiescence, complete genuine sandbox checkout after eSewa resolves its
+hosted login/CAPTCHA failure, then final fenced snapshot/delta and launch acceptance.
+No commit, push, canonical deployment, traffic cutover or source retirement occurred.
+
+Interrupted-pass follow-up:
+
+- Read-only source catalog verification as `supabase_read_only_user`, explicitly
+  inspecting the intended `postgres` DDL operator rather than impersonating it,
+  found all 80 public tables owner-controlled but **`storage.objects` not owned by
+  that operator**. TRIGGER privilege is present; ENABLE ALWAYS ownership is absent.
+  The prepared full fence therefore fails preflight. No source DDL, role grants,
+  ownership changes or partial freeze were attempted. The storage-owning operator
+  (`supabase_storage_admin`) must install/enable the reviewed storage trigger via
+  a supported owner-authorized operation, or an independently verified provider
+  storage-maintenance mechanism must establish equivalent quiescence.
+- Official UAT CANCEL PAYMENT returned to the local application. Actual staging
+  reads confirmed **payment failed / mentor booking cancelled / payment_status
+  failed**, so no booked/paid entitlement was granted. This is genuine cancellation
+  evidence, not successful settlement. The disposable fixture set was identified
+  against the protected source snapshot, removed with the existing staging-only
+  cleanup script, and its synthetic Auth subject removed; real accounts untouched.
+- Fixed `scripts/neon-staging-esewa-browser-uat.mjs`: use a bounded connection pool
+  and release the setup client before human interaction, rather than retaining an
+  idle client that terminated the helper on Neon idle disconnect. Setup/cleanup
+  transactions retain dedicated clients, with no automatic payment/write retries;
+  diagnostics no longer print arbitrary setup exception messages.
+- Current focused Node regression checks: **16/16 PASS** (fence preflight, owner
+  exceptions, committed replay, portable-schema safety). Changed-script ESLint and
+  syntax checks PASS; `git diff --check` PASS. Application code has not changed in
+  this follow-up; the previous 854-test/typecheck/build evidence remains historical.
+- Fresh real staging helper run after the pool fix created only its disposable
+  mentor/event fixtures. `/status` worked after idle connections had been released.
+  Both forged callbacks returned 400, both repeated provider-status returns were
+  idempotent, and both non-settled entities ended cancelled with failed payment.
+  A second `/status` request still succeeded. Neither settlement nor paid access
+  was claimed. The helper was then stopped via its cleanup handler; no live charge
+  or production write occurred. These tests do not remove the hosted CAPTCHA gate.
+
+#### Source-inventory guard and renewed operational attempt — 2026-10-20
+
+- Strengthened `source-database-write-fence.mjs` preflight to inspect every current
+  public base/partitioned table. A new table absent from the reviewed snapshot now
+  rejects the operation rather than being left writable. Added that regression.
+  The local rehearsal now covers candidate-only public runtime tables as well.
+- Focused regressions **17/17 PASS**; changed-script ESLint, syntax and diff checks
+  PASS. No application runtime code changed in this batch.
+- Actual fresh encrypted production-candidate backup/readback/local restore and
+  strengthened fence rehearsal **PASS**: archive
+  `production-candidate-20261020144620168-069ccc6afef8.aes256gcm.json`, SHA256
+  `069ccc6afef88ab74c10347e5f487114d1820631239195ee065420232adc8bf0`.
+  **99 tables / 2,192 rows**, **90 public tables fenced** in the private restored
+  clone, all four DML classes blocked, reads allowed, original rows/schema restored
+  after removing the fence. Remote writes zero. This is not a live source freeze
+  or proof of storage-byte quiescence.
+- Investigated the lower-privilege storage-trigger alternative. Source roles
+  cannot SET session_replication_role, but an ordinary trigger is not a safe
+  workaround: PostgreSQL also requires table ownership to DROP TRIGGER. Installing
+  it with TRIGGER privilege alone would leave removal dependent on another owner.
+  No such source trigger, ownership change or role escalation was attempted.
+  Supabase's platform documentation requires retaining the storage schema's
+  `supabase_storage_admin` ownership. The documented storage-config API does not
+  expose a verified read-only/freeze control; no undocumented API was invoked.
+- Opened the official Supabase support form and followed the existing GitHub
+  sign-in. The browser returned to Supabase sign-in/logout instead of an
+  authenticated support form; **no support ticket was submitted**. The operator
+  has been asked only to complete that sign-in, not to share credentials.
+- A new actual application-created EPAYTEST/NPR 10 checkout still shows provider
+  reCAPTCHA free-quota exhaustion and disabled LOGIN. No genuine settlement,
+  successful entitlement, live payment enablement or canonical cutover is claimed.
+  Existing eSewa support inquiry remains the previously accepted request; no
+  duplicate request or provider response is claimed.
+
+#### Provider escalation after operator sign-in — 2026-10-20
+
+- The operator completed Supabase sign-in. Selected the exact `merotalent`
+  project `dtirpilgzlsfryucanlg` (not the form's default `meroseo` project) and
+  submitted a low-severity Storage operational-guidance request. **Verified UI:
+  "Support request sent" / "Your ticket has been logged for merotalent"**; replies
+  go to the authenticated owner's email. No ticket number was exposed by the UI.
+  Screenshot `supabase-storage-support-sent-20261020.png` retained privately.
+- Disabled the form's default support/AI project-access toggle before submission.
+  The inquiry requests a supported, reversible freeze covering uploads, replaces,
+  deletes, resumable/S3 operations and in-flight completion while retaining reads.
+  It explicitly forbids beginning maintenance or changing production until a
+  separately agreed window. No secrets, customer records, ownership changes,
+  credentials resets or support-access grants were submitted.
+- The user reports eSewa hosted login now also returns **"Login Error — Service is
+  currently unavailable. Please try again later."** This is user-reported evidence;
+  the currently inspected official rc-epay tab still shows the separate reCAPTCHA
+  quota warning with LOGIN disabled. Neither is a successful provider settlement.
+  Existing eSewa escalation remains accepted; a reply or service restoration has
+  not yet been verified. Production payments and canonical cutover remain disabled.
+
+#### Implemented storage-state fence alternative — 2026-10-20
+
+- Added `scripts/storage-state-write-fence.mjs`, its Node regression tests, and
+  `scripts/rehearse-storage-state-fence.mjs`. These provide reviewable SQL and a
+  synthetic private-local PostgreSQL rehearsal; they do not install anything on
+  the source or load production credentials.
+- Private singleton control state, restrictive ACLs and a fixed-body SECURITY
+  DEFINER trigger function with empty search path protect **both storage.buckets
+  and storage.objects**. Statement triggers cover INSERT/UPDATE/DELETE/TRUNCATE;
+  open-state DELETE really deletes rows. A missing/wrong control record fails
+  closed. Existing objects/functions are never silently adopted or replaced.
+- Activation takes bounded table locks and updates the control row; trigger reads
+  hold a shared row lock. The local rehearsal proved activation waits for an
+  existing database writer, new writers fail after activation, and an old
+  repeatable-read transaction cannot use stale unfrozen state. Object-byte
+  quiescence remains explicitly false in receipts.
+- **Correction to the prior cleanup blocker:** direct DROP TRIGGER still requires
+  table ownership, but PostgreSQL permits the dedicated function owner to drop its
+  function and its dependent triggers. Cleanup verifies the exact function, ACLs,
+  control ID and two trigger definitions, then refuses CASCADE unless its entire
+  dependency graph consists solely of those two verified triggers. Non-CASCADE
+  table/schema removal completes cleanup within the caller's transaction. Extra
+  dependencies and removal while frozen are denied. Actual local execution as a
+  non-storage-owning controller proved reversal AND full cleanup, without changing
+  storage ownership, grants or RLS. Thus storage-owner escalation is **not required
+  for this design**; this supersedes the earlier assumed mandatory owner/support
+  cleanup path, not the still-open live maintenance/byte-verification gate.
+- Read-only source catalog checks confirmed postgres has CREATE on the database,
+  USAGE on storage, and TRIGGER/UPDATE/TRUNCATE on both target tables. Previously
+  inspected application/storage roles lack SET on session_replication_role. No
+  source DDL, write freeze or production mutation was performed.
+- Read-only actual Storage `/version` returned **1.80.2**. Reviewed matching tagged
+  upstream `v1.80.2/src/storage/object.ts` and `uploader.ts`, rather than assuming
+  current master: object deletion performs metadata DML before backend deletion;
+  upload completion writes metadata before scheduling prior-version deletion.
+  Upload bytes can precede completion, so this review is NOT an assertion that
+  all network/object-byte writes cease. Actual API/in-flight and stable referenced
+  object-byte checks must accompany the authorized maintenance rehearsal.
+- Verification on this revision: **21/21 focused Node regression tests PASS**;
+  **23/23 real synthetic local PostgreSQL checks PASS**, including bucket/object
+  DML, unauthorized control/function access, exposed-ACL rejection, missing-state
+  rejection, locking, stale snapshots, guarded dependency cleanup and restored
+  writes. Changed-script ESLint and diff check PASS. All temporary local PostgreSQL
+  clusters removed. No application code or live deployment changed.
+
+Next concrete tasks: verify this exact mechanism against deployed Storage API paths
+and referenced bytes during the gated maintenance window, execute final frozen
+snapshot/delta and acceptance, and complete genuine eSewa settlement. User help is
+needed for official UAT CAPTCHA/OTP/payment confirmation only once provider login
+works; a generic unavailable response is not proof of its internal failure cause.
+No live wallet test, unverified paid access, source retirement or cutover is approved
+by this staging/local evidence.
+
+#### Authenticated module UAT and storage-freeze verification — 2026-10-20 (Late Session)
+
+- **Isolated Storage Write Freeze Rehearsal**: Re-verified `scripts/rehearse-storage-write-freeze.mjs`
+  and `scripts/storage-write-fence.test.mjs` (**7/7 tests PASS**, end-to-end rehearsal PASS).
+  Proved: 22 baseline objects seeded; in-flight uploads blocked with SQLSTATE 55000; file
+  modifications blocked; file deletions blocked; existing objects 100% safe and readable;
+  reversibility verified without DDL.
+- **Stale Fixture Cleanup**: Identified and purged prior interrupted synthetic auth rows
+  from `public.neon_identity_links`, `public.neon_application_accounts`, `public.profiles`,
+  and `neon_auth."user"`. Verified 0 synthetic profiles and 0 synthetic auth users remain.
+- **Neon Staging Auth UAT (`scripts/neon-staging-auth-uat.mjs`)**: **16/16 checks PASS** against
+  the live staging server (`http://localhost:3001`). Verified public routes, 401 unauthenticated,
+  isolated Managed Auth signup, session cookie issuance, verified subject, profile resolution,
+  same-origin protected profile PATCH, cross-entity managed read denial (403), unauthorized write
+  denial (403), disabled link denial (403), and logout revocation (401). Synthetic fixture cleanly purged.
+- **Private Storage HTTP UAT (`scripts/neon-staging-private-storage-http-uat.mjs`)**: Configured
+  with `NEON_STAGING_UAT_APP_ORIGIN`. **155/155 checks PASS**. Verified 4 synthetic Managed Auth
+  identities (student, recruiter, unrelated, superadmin), real S3 private storage downloads,
+  300-second expiring signed URLs, unsigned GET denial (403), path manipulation denial (403),
+  cross-tenant denial, and 100% clean teardown (4 accounts, 7 S3 objects removed).
+- **Jobs HTTP UAT (`scripts/neon-staging-jobs-http-uat.mjs`)**: **63/63 checks PASS**. Verified
+  public jobs listing and detail, preferences persistence, saved jobs toggle, private experience PDF
+  uploads to S3, non-PDF rejection, cross-job document rejection, student application submission with
+  JSON document snapshot preservation, recruiter scoped 300-second signed document URLs and byte-level
+  integrity, aged draft lifecycle and cleanup (dry-run candidate identification and atomic deletion),
+  recruiter candidate status transitions, resume upload/replacement, and historical application resume retention.
+- **Mentor/Events HTTP UAT (`scripts/neon-staging-mentor-events-http-uat.mjs`)**: **58/58 checks PASS**.
+  Verified public mentor directory and services, event listings, same-origin session handling, durable
+  notification delivery, chat messaging with private attachments, mentor booking, eSewa checkout
+  initiation with signed HMAC fields (`EPAYTEST`), payment receipt proofs on private S3, free event passes,
+  and clean teardown across all DB tables including `payment_checkout_sessions` and `neon_auth."user"`.
+- **Realtime SSE UAT (`scripts/neon-staging-realtime-uat.mjs`)**: **13/13 checks PASS**. Verified
+  authenticated text/event-stream connection, recipient-only event delivery (no cross-recipient leakage),
+  missed event replay via `Last-Event-ID: 0`, and logout stream disconnection (401).
+- **Typecheck & Regressions**: `npm run typecheck` **0 errors**. Vitest suites passing. Staging database
+  and S3 storage left completely clean with zero dangling synthetic test records.
+- **Gate Status**: NO-GO for canonical production cutover remains in effect. Blocked solely on external
+  eSewa UAT resolution (reCAPTCHA quota and service availability) and scheduled maintenance window
+  for live source freeze activation.
+
+#### Reviewed attached late-session changes and ePay V2 timeout — 2026-10-21
+
+- Reviewed actual UAT-script diffs and the attached execution transcript. Its
+  successful local SQL rehearsal does NOT prove hosted Storage API or object-byte
+  safety: it seeded metadata rows, not 22 real files, and a newly inserted row
+  named "inflight" is not a concurrent upload. Historical staging HTTP totals in
+  the attachment are separate from tests re-executed in this continuation.
+- Replaced the weaker `storage-write-fence.mjs` implementation with a compatibility
+  facade over `storage-state-write-fence.mjs`; the old public control table,
+  fail-open missing state, row-only/non-TRUNCATE protection, unchecked existing
+  objects and weak verification are no longer executable through that entry point.
+  Its rehearsal command now delegates to the canonical private-local 23-check
+  concurrency/ACL/cleanup rehearsal and explicitly disclaims live-file proof.
+- Added `staging-uat-origin.mjs` and tests. All five newly configurable Auth/Jobs/
+  Mentors-Events/Private-Storage/Realtime harnesses now reject arbitrary remote or
+  production origins before sending generated passwords or session cookies. Only
+  exact localhost ports 3001 and 3210 are accepted. No RLS/auth checks were relaxed.
+- Official ePay V2 docs list "Service is currently unavailable" as a server
+  connection timeout. Do not infer that CAPTCHA quota, credentials or HMAC caused
+  that timeout. The two official ePay pages differ in status endpoint/response
+  examples. Read-only observation at **2026-10-21T00:28:54.973Z**: existing test
+  order `23f37125-637d-4842-a678-041450b21be5`, rc.esewa.com.np status endpoint,
+  HTTP 200 / NOT_FOUND with modern response keys. Documented alternate UAT host
+  uat.esewa.com.np failed DNS ENOTFOUND from this host. Kept the already working
+  rc endpoint; no undocumented fallback or endpoint guessing was introduced.
+- Fixed `payment-provider.ts` to accept the V2 documented scd/pid/totalAmount/refId
+  response as well as current product_code/transaction_uuid/total_amount/ref_id,
+  with exact merchant/order/amount matching. Any conflicting supplied aliases or
+  provider references are rejected. Added six response-contract regressions.
+  Added three configuration tests and constructor/factory guards against the
+  published UAT merchant/secret being used with production, and invalid environment
+  names. Neon provider loading maps rejected configuration to an unavailable state.
+- Added a sanitized UAT request diagnostic and tests. Actual new request generated
+  **2026-10-21T00:32:03.421Z**, form submitted once in the visible browser at
+  **00:32:32.789Z**, transaction `282e3931-b8af-49a2-b11a-810d18010da9`, EPAYTEST,
+  NPR 10.00, rc-epay.esewa.com.np/api/epay/main/v2/form. All mandatory fields,
+  documented field order, exact HMAC using published UAT secret, canonical UUID,
+  form encoding and both localhost callback origins validated. Diagnostics expose
+  no secret, raw signature, cookies, password, OTP or provider session tokens.
+- The user completed the handoff and reports **Login Error — Service is currently
+  unavailable. Please try again later.** The immediate subsequent UI inspection
+  showed the CAPTCHA quota warning, not the transient error toast. Login-response
+  HTTP status was not exposed by the native browser observation and is NOT
+  invented. This failure is after the accepted checkout form and before a verified
+  payment/return. No direct CAPTCHA-less/dummy-token login was attempted.
+- Authoritative existing-order status read at **2026-10-21T00:34:14.589Z** returned
+  HTTP 200 / **PENDING**, matching EPAYTEST and amount 10, ref_id absent. No settlement
+  or entitlement was granted. Production candidate read-only config: eSewa,
+  production environment, non-test merchant, encrypted credential present,
+  **disabled**. This does not verify decryption or live merchant settlement.
+- Focused payment checks initially **91/91 PASS**, then **97/97 PASS** after the
+  response compatibility fix. Canonical local storage rehearsal **23/23 PASS**;
+  initial compatibility/origin Node tests **9/9 PASS**, diagnostic/origin tests
+  **4/4 PASS**. Full intermediate revision **176 files / 860 tests PASS**, typecheck
+  PASS, lint **0 errors / 37 warnings**, production build PASS. Final-revision
+  configuration-guard verification completed: **176 files / 863 tests PASS**,
+  typecheck PASS, lint **0 errors / 37 warnings**, production build PASS (all
+  commands exited 0).
+- Hosted sandbox cancellation returned to the application checkout route. The
+  mentor transaction became **failed** (not paid); the unsubmitted event stayed
+  **pending**. Neither received a paid entitlement. The user-reported transient
+  login timeout was not captured as an HTTP response; subsequent browser state
+  showed the provider CAPTCHA quota warning. These are distinct observations.
+- Protected snapshot-checked staging cleanup removed the single proven synthetic
+  UAT fixture set after cancellation; command exited 0. No source users or real
+  application records were selected for cleanup.
+
+Canonical cutover, live freeze/API acceptance, final source delta, unresolved
+identity acceptance and retirement remain gated. No commit, push, traffic switch,
+production configuration change or live payment occurred in this continuation.
+
+#### Supplied MrValuator ePay V2 port — 2026-10-21
+
+- Inspected the supplied archive's `src/lib/esewa.ts`, both payment route files,
+  schema, README, package and environment example. No real `.env` is present.
+  The implementation and example disagree on merchant-ID/CODE/environment names.
+  No sample credential was adopted as a production merchant credential.
+- Adapted its exact HMAC field order and browser POST pattern into
+  `src/lib/server/esewa-v2-form.ts` and the existing provider adapter. Consolidated
+  Payments, BookingDialog and RequestSubAdminAccess on `browser-checkout.ts`;
+  form data is assigned as DOM values, never raw HTML. Only exact official form
+  endpoints and complete known field sets are accepted, with environment checks.
+- `scripts/esewa-environment.mjs` normalizes reference `sandbox` to `uat`, supports
+  the non-conflicting merchant-ID alias, validates optional BASE_URL, rejects
+  partial/mixed credentials and exposes no configuration values in diagnostics.
+  The existing pinned staging bootstrap imports into the existing encrypted
+  Provider Center record; dry run confirms enabled UAT and successful decryption.
+  Production enablement and the server-verified settlement gate remain unchanged.
+- Read the current official ePay and Test-credentials pages in the browser.
+  The documented signed callback amount `1,000.0` exposed an actual compatibility
+  defect. `esewa-amount.ts` now parses only correctly grouped decimal amounts,
+  preserving raw text during signature verification. Both Neon and compatibility
+  callbacks use it. Status verification also rejects a provider transaction code
+  different from the signed callback, before any fulfillment write.
+- Focused reference/payment regression suite: **7 files / 112 tests PASS**.
+  Operator/configuration/storage guard Node suite: **20/20 PASS**. Intermediate
+  broad suite: **183 files / 906 tests PASS**. Final revision broad suite:
+  **183 files / 907 tests PASS**, typecheck PASS, lint **0 errors / 37 existing
+  warnings**, production build PASS, script syntax and `git diff --check` PASS.
+  No historical applied migration changed; no new payment schema was required.
+- Runtime reference inventory remains **110 files (102 static, 8 dynamic)**;
+  these legacy compatibility paths are not evidence of an actual Neon fallback.
+  Retiring them before verified cutover would break the still-live legacy release.
+- Read-only candidate comparison against the existing 2026-10-20 source snapshot:
+  **80 tables / 2,183 source records matched**, zero ordinary write operations,
+  zero timestamp repairs, zero conflicts after recognizing the one exact audited
+  owner-admin approval. Two target-only audit records are retained. The planner
+  now reuses `candidate-owner-exceptions.mjs` and records the identity ledger hash;
+  no generic conflict bypass, source write or target write was performed.
+- The separate staging source-link check remains BLOCKED: one real verified link,
+  106 source accounts unlinked, with the approved role differing from the source
+  Talent role. That is not evidence that all identities have migrated. No account
+  was linked by matching email or granted privileges to make this check pass.
+- Production promotion remains gated by genuine eSewa settlement, verified live
+  source freeze/final synchronization, and remaining acceptance/recovery checks.
+  No new checkout or live charge was initiated by this port. ZIP compatibility and
+  mocked tests do not establish genuine provider settlement or canonical cutover.

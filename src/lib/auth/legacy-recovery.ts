@@ -1,9 +1,10 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 /** Temporary source ownership proof for migration recovery; no persistent source session. */
 import { createClient } from "@supabase/supabase-js";
 
 const sourceOrigin = "https://dtirpilgzlsfryucanlg.supabase.co";
 export function createLegacyRecoveryClient(detectSessionInUrl = false) {
-  if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE !== "neon-staging" ||
+  if (!isNeonClientRuntime() ||
       process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") !== sourceOrigin ||
       !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     throw new Error("Existing-account verification is unavailable in this environment.");
@@ -17,8 +18,20 @@ export function createLegacyRecoveryClient(detectSessionInUrl = false) {
 export function supportsSourceRecoveryPopup(origin: string): boolean {
   try {
     const url = new URL(origin);
-    return (url.protocol === "http:" && url.hostname === "localhost" && ["3000", "3001"].includes(url.port)) ||
+    if (url.username || url.password || url.pathname !== "/" || url.search || url.hash) return false;
+    return (url.protocol === "https:" && !url.port && ["www.merotalent.com", "merotalent.com"].includes(url.hostname)) ||
+      (url.protocol === "http:" && url.hostname === "localhost" && ["3000", "3001"].includes(url.port)) ||
       (url.protocol === "https:" && /^[a-z0-9-]+\.vercel\.app$/.test(url.hostname));
+  } catch { return false; }
+}
+
+export const sourceRecoveryMarker = "merotalent.source-recovery-started";
+/** A popup marker chooses the callback UI only; it is never an identity proof. */
+export function isSourceRecoveryCallback(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const started = Number(window.sessionStorage.getItem(sourceRecoveryMarker));
+    return started > 0 && started <= Date.now() && Date.now() - started < 10 * 60_000;
   } catch { return false; }
 }
 

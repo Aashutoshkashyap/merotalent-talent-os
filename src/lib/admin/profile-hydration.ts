@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminProfileSummary {
@@ -10,7 +11,7 @@ export async function loadAdminProfiles(userIds: Array<string | null | undefined
   const ids = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
   if (ids.length === 0) return new Map<string, AdminProfileSummary>();
 
-  if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+  if (isNeonClientRuntime()) {
     const profiles: AdminProfileSummary[] = [];
     for (let offset = 0; offset < ids.length; offset += 100) {
       const response = await fetch("/api/v1/neon-staging/admin/profiles", { method: "POST", credentials: "same-origin", cache: "no-store",

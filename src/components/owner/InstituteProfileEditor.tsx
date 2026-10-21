@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -102,7 +103,7 @@ const InstituteProfileEditor = ({
   }, [institute, open]);
 
   const saveMedia = async (kind: "logo" | "cover", path: string) => {
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE !== "neon-staging") {
+    if (!isNeonClientRuntime()) {
       const { error } = await (supabase as any).rpc("update_my_college_media", {
         p_institute_id: institute.id,
         p_logo_path: kind === "logo" ? path : null,
@@ -117,7 +118,7 @@ const InstituteProfileEditor = ({
   };
 
   const removeMedia = async (kind: "logo" | "cover") => {
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE !== "neon-staging") return;
+    if (!isNeonClientRuntime()) return;
     const response = await fetch(`/api/v1/neon-staging/college-workspaces/${institute.id}/media?kind=${kind}`, {
       method: "DELETE", credentials: "same-origin",
     });
@@ -154,7 +155,7 @@ const InstituteProfileEditor = ({
         principal_message: principalMessage.trim() || null,
     };
     let result: { error: { message: string } | null };
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    if (isNeonClientRuntime()) {
       try {
         const response = await fetch(`/api/v1/neon-staging/college-workspaces/${institute.id}/profile`, {
           method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" },
@@ -185,7 +186,7 @@ const InstituteProfileEditor = ({
   const generateDescriptionDraft = async () => {
     setIsGeneratingDraft(true);
     try {
-      const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+      const isNeonStaging = isNeonClientRuntime();
       const token = isNeonStaging ? null : (await supabase.auth.getSession()).data.session?.access_token;
       if (!isNeonStaging && !token) throw new Error("Sign in again before generating a draft.");
       const response = await fetch(isNeonStaging ? "/api/v1/neon-staging/ai/generate" : "/api/v1/ai/generate", {
@@ -237,9 +238,9 @@ const InstituteProfileEditor = ({
       <div className="grid gap-4 sm:grid-cols-2">
         <SignedMediaUploader label="College logo" module="college_logo" resourceId={institute.id} onUploaded={async ([asset]) => { if (asset) await saveMedia("logo", asset.path); }} />
         <SignedMediaUploader label="College cover image (wide 2.63:1)" module="college_cover" resourceId={institute.id} onUploaded={async ([asset]) => { if (asset) await saveMedia("cover", asset.path); }} />
-        {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && logoPath &&
+        {isNeonClientRuntime() && logoPath &&
           <Button type="button" variant="outline" onClick={() => void removeMedia("logo")}>Remove logo</Button>}
-        {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && coverPath &&
+        {isNeonClientRuntime() && coverPath &&
           <Button type="button" variant="outline" onClick={() => void removeMedia("cover")}>Remove cover image</Button>}
         {(logoPath || coverPath) && <p className="sm:col-span-2 text-xs text-muted-foreground">Images are stored as controlled College Media assets and become public only through this approved profile.</p>}
       </div>

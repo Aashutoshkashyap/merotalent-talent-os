@@ -32,7 +32,7 @@ function handleNeonError(err: unknown, requestId: string) {
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
 
     if (isStaging) {
       const actor = await getAuthenticatedApplicationUser(request);
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       meta: { requestId, count: saved?.length || 0 },
     });
   } catch (err: any) {
-    if (getBackendMode() === "neon-staging") return handleNeonError(err, requestId);
+    if (getBackendMode() !== "legacy") return handleNeonError(err, requestId);
     return jsonApiResponse(
       {
         data: null,
@@ -110,7 +110,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
     const body = await request.json().catch(() => ({}));
     if (!body || !body.jobId) {
       return jsonApiResponse(
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
       meta: { requestId },
     });
   } catch (err: any) {
-    if (getBackendMode() === "neon-staging") return handleNeonError(err, requestId);
+    if (getBackendMode() !== "legacy") return handleNeonError(err, requestId);
     return jsonApiResponse(
       {
         data: null,
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
     const url = new URL(request.url);
     const jobId = url.searchParams.get("jobId");
     if (!jobId) {
@@ -218,7 +218,7 @@ export async function DELETE(request: Request) {
       meta: { requestId },
     });
   } catch (err: any) {
-    if (getBackendMode() === "neon-staging") return handleNeonError(err, requestId);
+    if (getBackendMode() !== "legacy") return handleNeonError(err, requestId);
     return jsonApiResponse(
       {
         data: null,

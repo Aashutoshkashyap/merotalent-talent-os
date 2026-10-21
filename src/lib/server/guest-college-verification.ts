@@ -132,7 +132,7 @@ export async function startGuestVerification(
   identity: ReturnType<typeof normalizeGuestIdentity>,
   channel: GuestVerificationChannel,
 ) {
-  if (getBackendMode() === "neon-staging") {
+  if (getBackendMode() !== "legacy") {
     const { startNeonGuestVerification } = await import("./neon-guest-college-verification");
     return startNeonGuestVerification(identity, channel);
   }
@@ -193,7 +193,7 @@ export async function checkGuestVerification(
   channel: GuestVerificationChannel,
   code: string,
 ) {
-  if (getBackendMode() === "neon-staging") {
+  if (getBackendMode() !== "legacy") {
     const { checkNeonGuestVerification } = await import("./neon-guest-college-verification");
     return checkNeonGuestVerification(identity, verificationId, channel, code);
   }

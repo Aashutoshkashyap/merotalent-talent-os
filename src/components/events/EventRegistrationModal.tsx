@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState } from "react";
 import {
   Dialog,
@@ -43,7 +44,7 @@ export default function EventRegistrationModal({
   onSuccess,
 }: EventRegistrationModalProps) {
   const { session, profile, user } = useAuth();
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const { toast } = useToast();
 
   const [step, setStep] = useState<"select_ticket" | "details" | "team" | "confirmation">("select_ticket");

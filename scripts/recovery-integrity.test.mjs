@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assertFingerprints, quoteIdentifier, storageReference } from "./recovery-integrity.mjs";
+import { assertFingerprints, quoteIdentifier, storageReference,compareRecoveryEvidence } from "./recovery-integrity.mjs";
+
+test("schema verification reports changed definitions even when counts match",()=>{
+  assert.deepEqual(compareRecoveryEvidence([{category:"policies",count:2,hash:"a"}],[{category:"policies",count:2,hash:"a"}]),[]);
+  assert.equal(compareRecoveryEvidence([{category:"policies",count:2,hash:"a"}],[{category:"policies",count:2,hash:"b"}])[0].reason,"SCHEMA_FINGERPRINT_MISMATCH");
+});
 
 test("row integrity refuses deleted, divergent, or extra data", () => {
   const baseline = [{ schema: "public", name: "profiles", count: 1, hash: "a" }];

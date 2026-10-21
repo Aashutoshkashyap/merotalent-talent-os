@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Search, Inbox, Eye, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { loadAdminProfiles } from "@/lib/admin/profile-hydration";
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 interface LeadItem {
   id: string;

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonEventsRepository();

@@ -13,6 +13,7 @@ import {
 } from "./neon-authorization";
 import { appendNotificationEvent } from "./neon-application-events";
 import { assertRoleWorkspaceIdentity, requireRoleWorkspaceAccess } from "./neon-role-workspaces";
+import {requireNeonPaidInitiation} from './neon-paid-initiation';
 
 export interface PublicMentorRow extends QueryResultRow {
   id: string;
@@ -208,6 +209,7 @@ export class NeonMentorsRepository {
       if (conflict.rows.length) throw new NeonAuthorizationError(403, "SLOT_TAKEN", "This time is already booked.");
 
       const amount = service.price;
+      if(amount>0)requireNeonPaidInitiation();
       const currency = service.currency;
       const initialStatus = amount === 0 ? "confirmed" : "pending";
       const paymentStatus = amount === 0 ? "not_required" : "pending";

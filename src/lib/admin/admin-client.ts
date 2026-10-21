@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AdminApiErrorBody {
@@ -36,7 +37,7 @@ const getAccessToken = async () => {
 };
 
 const adminRequest = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
   const accessToken = staging ? null : await getAccessToken();
   const response = await fetch(path, {
     ...init,

@@ -34,7 +34,7 @@ async function resolveProvider(): Promise<TransactionalEmailProvider> {
  * the provider idempotency key protects the accepted-but-not-recorded edge.
  */
 export async function dispatchQueuedEmails(limit = 25, authorization: string | null = null) {
-  if (getBackendMode() === "neon-staging") {
+  if (getBackendMode() !== "legacy") {
     const { dispatchNeonQueuedEmails } = await import("./neon-email-queue");
     return dispatchNeonQueuedEmails(authorization, limit);
   }

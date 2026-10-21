@@ -34,7 +34,7 @@ function matchesMagic(bytes: Uint8Array, type: string) {
 }
 
 export async function POST(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   if (!sameOrigin(request)) return NextResponse.json({ error: "INVALID_ORIGIN" }, { status: 403, headers: noStore });
   const length = Number(request.headers.get("content-length"));
   if (!Number.isSafeInteger(length) || length < 1) return NextResponse.json({ error: "LENGTH_REQUIRED" }, { status: 411, headers: noStore });
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     const proofId = new URL(request.url).searchParams.get("id");
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   if (!sameOrigin(request)) return NextResponse.json({ error: "INVALID_ORIGIN" }, { status: 403, headers: noStore });
   try {
     const actor = await getAuthenticatedApplicationUser(request);

@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +54,9 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { listAdminResource } from "@/lib/admin/admin-client";
 import { getPasswordResetUrl } from "@/lib/auth/public-origin";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { loadAdminUserPage } from "@/lib/admin/user-page-cache";
 
 interface UserRecord {
   id: string;
@@ -72,7 +76,7 @@ interface EntityOption {
   label: string;
 }
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const formatDateInput = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -85,6 +89,10 @@ const defaultSubscriptionDates = () => {
 
 const AdminUsers = () => {
   const { toast } = useToast();
+  const { user: actor } = useAuth();
+  const actorId = actor?.id;
+  const queryClient = useQueryClient();
+  const userRequest = useRef(0);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -312,17 +320,30 @@ const AdminUsers = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchUsers = useCallback(async (targetPage: number, targetPageSize: number, targetSearch: string) => {
+  const fetchUsers = useCallback(async (targetPage: number, targetPageSize: number, targetSearch: string, force = true) => {
+    const requestId = ++userRequest.current;
     setIsLoading(true);
     try {
       if (isNeonStaging) {
+        if (!actorId) return;
         const params = new URLSearchParams({ page: String(targetPage), page_size: String(targetPageSize) });
         if (targetSearch.trim()) params.set("search", targetSearch.trim());
-        const response = await fetch(`/api/v1/neon-staging/admin/users?${params}`, { cache: "no-store" });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !Array.isArray(payload?.data)) {
-          throw new Error(typeof payload?.error === "string" ? payload.error : "Could not load registered users.");
+        // Mutations/Refresh always bypass freshness; navigation reuses a short-lived
+        // account-specific page. The authenticated endpoint remains private/no-store.
+        if (force) {
+          await queryClient.cancelQueries({ queryKey: ["admin-user-pages", actorId] });
+          await queryClient.invalidateQueries({ queryKey: ["admin-user-pages", actorId] });
         }
+        const payload = await loadAdminUserPage(queryClient, actorId,
+          { page: targetPage, pageSize: targetPageSize, search: targetSearch }, async (signal) => {
+            const response = await fetch(`/api/v1/neon-staging/admin/users?${params}`, { cache: "no-store", signal });
+            const result = await response.json().catch(() => null);
+            if (!response.ok || !Array.isArray(result?.data)) {
+              throw new Error(typeof result?.error === "string" ? result.error : "Could not load registered users.");
+            }
+            return result;
+          }, force);
+        if (requestId !== userRequest.current) return;
         setUsers(payload.data);
         setTotalCount(Number(payload.meta?.total) || 0);
         setTotalPages(Number(payload.meta?.totalPages) || 1);
@@ -372,18 +393,25 @@ const AdminUsers = () => {
         }
       }
     } catch (err: any) {
+      if (requestId !== userRequest.current) return;
+      setUsers([]);
+      if (actorId) queryClient.removeQueries({ queryKey: ["admin-user-pages", actorId] });
       toast({ variant: "destructive", title: "Fetch Failed", description: err?.message || "Could not fetch users." });
     } finally {
-      setIsLoading(false);
+      if (requestId === userRequest.current) setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, actorId, queryClient]);
 
   useEffect(() => {
+    const requests = userRequest;
     const timer = window.setTimeout(() => {
       setCurrentPage(1);
-      void fetchUsers(1, pageSize, searchQuery);
-    }, 300);
-    return () => window.clearTimeout(timer);
+      void fetchUsers(1, pageSize, searchQuery, false);
+    }, searchQuery ? 300 : 0);
+    return () => {
+      window.clearTimeout(timer);
+      ++requests.current;
+    };
   }, [fetchUsers, pageSize, searchQuery]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -607,9 +635,9 @@ const AdminUsers = () => {
       </div>
 
       {/* Users Table */}
-      <Card className="border-border/50 rounded-2xl overflow-hidden shadow-2xs">
+      <Card aria-busy={isLoading} className="border-border/50 rounded-2xl overflow-hidden shadow-2xs">
         <CardContent className="p-0">
-          <Table>
+          <Table className="min-w-[1000px]">
             <TableHeader className="bg-slate-50">
               <TableRow>
                 <TableHead>User Profile</TableHead>
@@ -621,6 +649,11 @@ const AdminUsers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {isLoading && users.length === 0 && <TableRow><TableCell colSpan={6}>
+                <div role="status" className="flex items-center justify-center gap-2 p-8 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading users…
+                </div>
+              </TableCell></TableRow>}
               {filteredUsers.map((user) => (
                 <TableRow key={user.id} className="hover:bg-slate-50/50">
                   <TableCell>
@@ -656,7 +689,7 @@ const AdminUsers = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col items-start gap-1">
                       {user.account_status === "suspended" || user.account_status === "deactivated" ? (
                         <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] font-extrabold">
                           {user.account_status === "deactivated" ? "Deactivated" : "Suspended"}
@@ -745,18 +778,17 @@ const AdminUsers = () => {
               pageSize={pageSize}
               onPageChange={(nextPage) => {
                 setCurrentPage(nextPage);
-                void fetchUsers(nextPage, pageSize, searchQuery);
+                void fetchUsers(nextPage, pageSize, searchQuery, false);
               }}
               onPageSizeChange={(size) => {
                 setPageSize(size);
                 setCurrentPage(1);
-                void fetchUsers(1, size, searchQuery);
               }}
               itemLabel="users"
             />
           </div>
 
-          {filteredUsers.length === 0 && (
+          {!isLoading && filteredUsers.length === 0 && (
             <div className="p-12 text-center text-muted-foreground">
               {isLoading ? (
                 <div className="flex justify-center items-center gap-2">

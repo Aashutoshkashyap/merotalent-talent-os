@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export async function GET() {
   const requestId = crypto.randomUUID();
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const repo = new NeonEventsRepository();
       const categories = await repo.listCategories();
       return jsonApiResponse({ data: categories, error: null, meta: { requestId } });

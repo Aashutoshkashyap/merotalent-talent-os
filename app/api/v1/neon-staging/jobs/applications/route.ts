@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 function stagingOnly() {
-  try { return getBackendMode() === "neon-staging"; } catch { return false; }
+  try { return getBackendMode() !== "legacy"; } catch { return false; }
 }
 
 function failure(error: unknown) {

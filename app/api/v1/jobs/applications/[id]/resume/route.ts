@@ -24,7 +24,7 @@ interface ApplicationResumeRow {
 }
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const { id } = await context.params;
     if (!uuid.test(id)) return NextResponse.json({ error: "INVALID_APPLICATION_ID" }, { status: 422, headers });

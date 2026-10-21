@@ -73,7 +73,7 @@ function errorResponse(error: unknown, requestId: string) {
 }
 
 export async function POST(request: Request) {
-  if(getBackendMode()==="neon-staging")return uploadNeonMedia(request);
+  if(getBackendMode() !== "legacy")return uploadNeonMedia(request);
   const requestId = crypto.randomUUID();
 
   try {

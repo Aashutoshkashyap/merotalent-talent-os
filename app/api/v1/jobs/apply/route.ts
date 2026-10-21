@@ -31,7 +31,7 @@ const applicationSchema = z.object({
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
     const body = await request.json().catch(() => ({}));
 
     if (!body || typeof body !== "object" || !body.jobId) {
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
       201
     );
   } catch (err: any) {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       if (err instanceof NeonAuthorizationError) {
         return jsonApiResponse(
           { data: null, error: { code: err.code, message: err.message }, meta: { requestId } },

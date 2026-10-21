@@ -16,7 +16,7 @@ const errorResponse = (error: unknown) => NextResponse.json({ error:
 { status: error instanceof NeonAuthorizationError ? error.status : 503, headers });
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return unavailable();
+  if (getBackendMode() === "legacy") return unavailable();
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     const url = new URL(request.url);
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (getBackendMode() !== "neon-staging") return unavailable();
+  if (getBackendMode() === "legacy") return unavailable();
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (getBackendMode() !== "neon-staging") return unavailable();
+  if (getBackendMode() === "legacy") return unavailable();
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

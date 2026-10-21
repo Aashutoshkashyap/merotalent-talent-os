@@ -1,4 +1,6 @@
 "use client";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -131,7 +133,7 @@ export default function JobsPage() {
     .sort((a, b) => sortBy === "salary" ? b.salary.localeCompare(a.salary, undefined, { numeric: true }) : 0);
 
   const openApplication = (job: JobItem) => {
-    if (!session && !(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && user)) {
+    if (!session && !(isNeonClientRuntime() && user)) {
       navigate("/login", { state: { from: { pathname: "/jobs" } } });
       return;
     }

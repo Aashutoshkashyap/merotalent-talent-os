@@ -3,6 +3,7 @@
  * Enforces active profiles, verified identity links, capacity boundaries, and atomic ticket registrations.
  */
 import type { PoolClient, QueryResultRow } from "pg";
+import {requireNeonPaidInitiation} from './neon-paid-initiation';
 import { queryRows, withTransaction } from "./db";
 import {
   NeonAuthorizationError,
@@ -208,6 +209,7 @@ export class NeonEventsRepository {
       const unitPrice = tier?.price ?? event.ticket_price ?? 0;
       const totalAmount = unitPrice * ticketQty;
       const isFree = totalAmount === 0;
+      if(!isFree)requireNeonPaidInitiation();
       const status = isFree ? "confirmed" : "pending";
       const paymentStatus = isFree ? "not_required" : "pending";
 

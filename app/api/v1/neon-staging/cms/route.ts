@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const page = new URL(request.url).searchParams.get("page") ?? "home";
     return NextResponse.json({ data: await readPublicCms(page) },

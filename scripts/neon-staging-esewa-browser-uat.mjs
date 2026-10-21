@@ -5,18 +5,31 @@ import { execFileSync } from "node:child_process";
 import dotenv from "dotenv";
 import pg from "pg";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import {diagnoseEsewaUatRequest} from './esewa-uat-request-diagnostic.mjs';
 
 dotenv.config({ path: ".migration.env", quiet: true });
 requireNeonMigrationStaging(process.env.NEON_STAGING_DATABASE_URL);
-const app = "http://localhost:3210";
+const app = process.env.NEON_STAGING_UAT_APP_ORIGIN ?? "http://localhost:3210";
+if (!["http://localhost:3001", "http://localhost:3210"].includes(app)) throw new Error("Isolated local UAT origin required.");
 const auth = process.env.NEON_AUTH_BASE_URL;
 if (auth !== "https://ep-wispy-credit-azt6tgwj.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth") throw new Error("Unexpected Auth branch.");
-const db = new pg.Client({ connectionString: process.env.NEON_STAGING_DATABASE_URL });
+const databaseUrl=new URL(process.env.NEON_STAGING_DATABASE_URL);databaseUrl.searchParams.set('sslmode','verify-full');
+// Release connections while a human handles hosted UAT. Idle compute suspension
+// must not kill the harness. Never automatically retry a transaction or payment.
+const pool = new pg.Pool({ connectionString: databaseUrl.href,connectionTimeoutMillis:15000,query_timeout:30000,
+  max:2,idleTimeoutMillis:10000,keepAlive:true });
+let db;
 const studentId = randomUUID(), ownerId = randomUUID();
 const suffix = randomBytes(6).toString("hex");
 const email = `neon-esewa-${suffix}@example.com`, password = randomBytes(32).toString("base64url");
 let managedId, accountId, mentorId, serviceId, eventId, bookingId, registrationId, cookie;
 let server, cleaning = false;
+pool.on("error", () => {
+  console.error(JSON.stringify({ result: "SANDBOX_IDLE_CONNECTION_REPLACED", settlementVerified:false, productionWrites:0 }));
+});
+const transactionConnectionError=()=>console.error(JSON.stringify({result:'SANDBOX_TRANSACTION_CONNECTION_LOST',settlementVerified:false,cleanupRequired:true}));
+const acquire=async()=>{const client=await pool.connect();client.on('error',transactionConnectionError);return client;};
+const release=()=>{if(db){db.removeListener('error',transactionConnectionError);db.release();db=null;}};
 const check = (value, label) => { if (!value) throw new Error(label); };
 const request = async (path, body) => {
   const response = await fetch(`${app}${path}`, { method: body ? "POST" : "GET",
@@ -34,6 +47,7 @@ async function cleanup() {
   cleaning = true;
   server?.close();
   try {
+    db ??= await acquire();
     await db.query("BEGIN");
     await db.query("DELETE FROM public.event_tickets WHERE event_id=$1::uuid", [eventId ?? null]);
     await db.query("DELETE FROM public.payment_checkout_sessions WHERE user_id=$1::uuid", [studentId]);
@@ -55,16 +69,17 @@ async function cleanup() {
     await db.query("DELETE FROM public.profiles WHERE user_id=ANY($1::uuid[])", [[studentId, ownerId]]);
     await db.query("COMMIT");
     // Delete only this script's disposable subject through the supported Auth CLI.
-    if (managedId) execFileSync("npx", ["--yes","neon@latest","neon-auth","user","delete",managedId,
+    if (managedId) execFileSync("npx", ["--yes","neon@8.8.0","neon-auth","user","delete",managedId,
       "--project-id","summer-sky-63693897","--branch","br-frosty-haze-azsnybmr"],
     {stdio:["ignore","pipe","pipe"],timeout:30000});
-  } catch (error) { await db.query("ROLLBACK").catch(() => undefined);
+  } catch (error) { await db?.query("ROLLBACK").catch(() => undefined);
     console.error(JSON.stringify({cleanup:"REVIEW_REQUIRED",code:error?.code ?? "unknown",constraint:error?.constraint ?? null})); }
-  await db.end();
+  release();
+  await pool.end();
 }
 
 try {
-  await db.connect();
+  db=await acquire();
   const configuration = (await db.query("SELECT provider_name,is_enabled,public_config FROM public.provider_configurations WHERE provider_kind='payment'")).rows[0];
   check(configuration?.provider_name === "esewa" && configuration.is_enabled &&
     configuration.public_config?.environment === "uat" && configuration.public_config?.merchant_code === "EPAYTEST", "Approved eSewa UAT configuration is required.");
@@ -105,15 +120,23 @@ try {
   for (const [kind,targetId] of [["mentor_booking",bookingId],["event_registration",registrationId]]) {
     const checkout = await request("/api/v1/neon-staging/payments/checkout", {kind,targetId});
     check(checkout.checkoutUrl?.startsWith("https://rc-epay.esewa.com.np/") && checkout.checkoutFields?.product_code === "EPAYTEST", "Checkout is not the authorized sandbox.");
-    fixtures.push({kind,targetId,checkout});
+    const generatedAt=new Date().toISOString();
+    check(diagnoseEsewaUatRequest(checkout,generatedAt,app).valid,'Official UAT form validation failed.');
+    fixtures.push({kind,targetId,checkout,generatedAt});
   }
+  release();
   server = createServer(async (req,res) => {
+    try {
     const url = new URL(req.url, "http://localhost:3222");
+    if(url.pathname==='/diagnostic'){
+      res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'});
+      res.end(JSON.stringify({requests:fixtures.map(f=>({kind:f.kind,...diagnoseEsewaUatRequest(f.checkout,f.generatedAt,app)})),productionWrites:0}));return;
+    }
     if (url.pathname === "/status") {
       const states = [];
       for (const fixture of fixtures) {
         const reference=fixture.checkout.session.provider_reference;
-        const payment=(await db.query("SELECT status,amount::float AS amount FROM public.payments WHERE id=$1::uuid",[reference])).rows[0];
+        const payment=(await pool.query("SELECT status,amount::float AS amount FROM public.payments WHERE id=$1::uuid",[reference])).rows[0];
         states.push({kind:fixture.kind,status:payment?.status,amount:payment?.amount});
       }
       res.writeHead(200,{"content-type":"application/json","cache-control":"no-store"});res.end(JSON.stringify({states}));return;
@@ -122,20 +145,27 @@ try {
       const checks=[];
       for (const fixture of fixtures) {
         const reference=fixture.checkout.session.provider_reference;
-        const before=(await db.query("SELECT status FROM public.payments WHERE id=$1::uuid",[reference])).rows[0];
+        const before=(await pool.query("SELECT status FROM public.payments WHERE id=$1::uuid",[reference])).rows[0];
         const fakePayload=Buffer.from(JSON.stringify({transaction_uuid:reference,total_amount:"10.00",status:"COMPLETE",
           product_code:"EPAYTEST",transaction_code:"FORGED",signed_field_names:"transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names",signature:"invalid"})).toString("base64");
         const forged=await fetch(`${app}/api/v1/neon-staging/payments/esewa/return?data=${encodeURIComponent(fakePayload)}`,{redirect:"manual"});
+        const firstReturn=await fetch(`${app}/api/v1/neon-staging/payments/esewa/return?reference=${reference}`,{redirect:"manual"});
+        const firstState=(await pool.query("SELECT status FROM public.payments WHERE id=$1::uuid",[reference])).rows[0];
         const repeated=await fetch(`${app}/api/v1/neon-staging/payments/esewa/return?reference=${reference}`,{redirect:"manual"});
-        const after=(await db.query("SELECT status FROM public.payments WHERE id=$1::uuid",[reference])).rows[0];
+        const after=(await pool.query("SELECT status FROM public.payments WHERE id=$1::uuid",[reference])).rows[0];
         checks.push({kind:fixture.kind,settled:before?.status==="success",forgedCallbackDenied:forged.status===400,
-          duplicateReturn:repeated.status===307&&before?.status===after?.status,
-          entity:(await db.query(fixture.kind==="mentor_booking"?"SELECT status,payment_status FROM public.mentor_bookings WHERE id=$1::uuid":"SELECT status,payment_status FROM public.event_registrations WHERE id=$1::uuid",[fixture.targetId])).rows[0]});
+          duplicateReturn:firstReturn.status===307&&repeated.status===307&&firstState?.status===after?.status,
+          entity:(await pool.query(fixture.kind==="mentor_booking"?"SELECT status,payment_status FROM public.mentor_bookings WHERE id=$1::uuid":"SELECT status,payment_status FROM public.event_registrations WHERE id=$1::uuid",[fixture.targetId])).rows[0]});
       }
       res.writeHead(200,{"content-type":"application/json"});res.end(JSON.stringify({checks}));return;
     }
     res.writeHead(200,{"content-type":"text/html; charset=utf-8","cache-control":"no-store"});
     res.end(`<html><body><h1>MeroTalent isolated eSewa sandbox UAT</h1><p>Two disposable staging transactions. UAT only; no real charge.</p>${fixtures.map(f=>`<form method="POST" action="${escape(f.checkout.checkoutUrl)}"><h2>${escape(f.kind)}: NPR 10 test amount</h2>${Object.entries(f.checkout.checkoutFields).map(([key,value])=>`<input type="hidden" name="${escape(key)}" value="${escape(value)}">`).join("")}<button type="submit">Continue to eSewa ${escape(f.kind)}</button></form>`).join("")}<a href="/status">Check settlement state</a></body></html>`);
+    } catch {
+      if (!res.headersSent) res.writeHead(503,{"content-type":"application/json","cache-control":"no-store"});
+      res.end(JSON.stringify({error:"SANDBOX_VERIFICATION_UNAVAILABLE",settlementVerified:false}));
+      console.error(JSON.stringify({result:"SANDBOX_VERIFICATION_UNAVAILABLE",settlementVerified:false,cleanupRequired:true}));
+    }
   });
   await new Promise(resolve=>server.listen(3222,"127.0.0.1",resolve));
   console.log(JSON.stringify({mode:"ISOLATED_ESEWA_BROWSER_UAT",harnessUrl:"http://localhost:3222",pendingCheckouts:fixtures.length,
@@ -143,6 +173,6 @@ try {
   process.on("SIGINT",async()=>{await cleanup();process.exit(0);});
   process.on("SIGTERM",async()=>{await cleanup();process.exit(0);});
 } catch (error) {
-  console.error("Isolated eSewa UAT setup failed:",error instanceof Error?error.message:"Unknown error");
-  await db.query("ROLLBACK").catch(()=>undefined);await cleanup();process.exitCode=1;
+  console.error(JSON.stringify({result:'ISOLATED_ESEWA_UAT_SETUP_FAILED',code:/^[A-Z0-9_]+$/.test(error?.code??'')?error.code:'SETUP_UNAVAILABLE',settlementVerified:false}));
+  await db?.query("ROLLBACK").catch(()=>undefined);await cleanup();process.exitCode=1;
 }

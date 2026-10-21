@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 const headers = { "cache-control": "private, no-store" };
 
 export async function POST(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   const origin = request.headers.get("origin");
   if (!origin || origin !== new URL(request.url).origin) {
     return NextResponse.json({ error: "INVALID_ORIGIN" }, { status: 403, headers });
@@ -18,12 +18,12 @@ export async function POST(request: Request) {
     const actor = await getAuthenticatedApplicationUser(request);
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body) ||
-        !["mentor_booking", "event_registration", "college_scope_request", "module_access_request"].includes(body.kind) ||
+        !["mentor_booking", "event_registration", "college_scope_request", "module_access_request", "assigned_scope"].includes(body.kind) ||
         typeof body.targetId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.targetId) ||
         Object.keys(body).some((key) => !["kind", "targetId", "packageId", "renewal"].includes(key)) ||
-        (["college_scope_request","module_access_request"].includes(body.kind)
+        (["college_scope_request","module_access_request","assigned_scope"].includes(body.kind)
           ? typeof body.packageId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.packageId) ||
-            (body.kind === "college_scope_request" ? body.renewal !== undefined && typeof body.renewal !== "boolean" : body.renewal !== undefined)
+            (["college_scope_request","assigned_scope"].includes(body.kind) ? body.renewal !== undefined && typeof body.renewal !== "boolean" : body.renewal !== undefined)
           : body.packageId !== undefined || body.renewal !== undefined)) {
       return NextResponse.json({ error: "INVALID_CHECKOUT" }, { status: 422, headers });
     }

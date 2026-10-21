@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     const url = new URL(request.url);
@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function PATCH(request: Request): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

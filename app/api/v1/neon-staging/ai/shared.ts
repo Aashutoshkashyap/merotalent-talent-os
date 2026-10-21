@@ -4,7 +4,7 @@ import { getBackendMode } from "@/lib/server/backend-mode";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { NeonSessionUnavailable } from "@/lib/server/neon-session";
 
-export const stagingOnly = () => getBackendMode() === "neon-staging";
+export const stagingOnly = () => getBackendMode() !== "legacy";
 export const reply = (data: unknown, status = 200) => NextResponse.json(data, {
   status, headers: { "Cache-Control": "private, no-store" },
 });

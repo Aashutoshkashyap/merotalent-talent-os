@@ -57,7 +57,7 @@ const Navbar = () => {
           </span>
         </Link>
 
-        <form onSubmit={submitSearch} className="relative hidden w-full max-w-[300px] lg:block">
+        <form onSubmit={submitSearch} className="relative hidden min-w-0 w-full max-w-[300px] 2xl:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9996a8]" />
           <input
             value={search}
@@ -112,7 +112,7 @@ const Navbar = () => {
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
-          className="ml-auto grid h-10 w-10 place-items-center rounded-xl bg-[#fff0e7] text-[#c2410c] md:hidden"
+          className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#fff0e7] text-[#c2410c] xl:hidden"
           aria-label={isOpen ? "Close navigation" : "Open navigation"}
           aria-expanded={isOpen}
         >
@@ -121,7 +121,7 @@ const Navbar = () => {
       </div>
 
       {isOpen ? (
-        <div className="border-t border-[#eee5e0] bg-[#fffdfb] px-4 pb-5 pt-4 shadow-xl md:hidden">
+        <div className="max-h-[calc(100dvh-68px)] overflow-y-auto border-t border-[#eee5e0] bg-[#fffdfb] px-4 pb-5 pt-4 shadow-xl xl:hidden">
           <form onSubmit={submitSearch} className="relative mb-4">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9996a8]" />
             <input
@@ -144,14 +144,18 @@ const Navbar = () => {
               </Link>
             ))}
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          {user ? (
+            <Button className="mt-4 h-11 w-full rounded-xl" asChild>
+              <Link to={targetDashboard} onClick={() => setIsOpen(false)}>Go to Dashboard</Link>
+            </Button>
+          ) : <div className="mt-4 grid grid-cols-2 gap-2">
             <Button variant="outline" className="h-11 rounded-xl" asChild>
               <Link to="/login" onClick={() => setIsOpen(false)}>Log in</Link>
             </Button>
             <Button className="h-11 rounded-xl bg-[#c2410c]" asChild>
               <Link to="/signup" onClick={() => setIsOpen(false)}>Join free</Link>
             </Button>
-          </div>
+          </div>}
           <div className="mt-3 flex gap-2 text-xs font-semibold text-[#777078]">
             <Link to="/company" className="flex items-center gap-1 rounded-lg px-2 py-1.5">
               <BriefcaseBusiness className="h-3.5 w-3.5" /> Company

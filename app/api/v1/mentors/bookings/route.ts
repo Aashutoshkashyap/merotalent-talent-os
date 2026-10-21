@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const mode = url.searchParams.get("mode"); // "mentor" or "student"
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonMentorsRepository();
       const bookings = await repo.listOwnBookingsDetailed(actor, mode === "mentor" ? "mentor" : "student");
@@ -159,7 +159,7 @@ export async function PATCH(request: Request) {
 
     const action = body.action; // "reschedule", "cancel", "complete"
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonMentorsRepository();

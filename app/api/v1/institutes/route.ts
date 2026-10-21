@@ -41,7 +41,7 @@ export async function GET(request: Request): Promise<Response> {
 
     let institutes: PublicInstituteRow[] = [];
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const searchFilter = search ? `%${search.toLowerCase()}%` : null;
       institutes = await queryRows<PublicInstituteRow>(`
         SELECT id, name, short_name, slug, type, institution_category,

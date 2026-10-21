@@ -29,7 +29,7 @@ export async function POST(
       );
     }
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
       const repo = new NeonEventsRepository();
       const result = await repo.updateLifecycle(actor, eventId, body.lifecycleStatus, {

@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,7 +113,7 @@ const mapJob = (row: Record<string, any>): Job => ({
 
 export default function Jobs() {
   const { user, session } = useAuth();
-  const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isStaging = isNeonClientRuntime();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("matching");

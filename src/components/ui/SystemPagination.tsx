@@ -23,7 +23,7 @@ export const SystemPagination: React.FC<SystemPaginationProps> = ({
   onPageChange,
   onPageSizeChange,
   itemLabel = "items",
-  pageSizeOptions = [10, 20, 50, 100],
+  pageSizeOptions = [10, 20, 25, 50, 100],
   className = "",
 }) => {
   const safeTotalPages = Math.max(1, totalPages);
@@ -54,7 +54,7 @@ export const SystemPagination: React.FC<SystemPaginationProps> = ({
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-2 ${className}`}>
       {/* Items Counter Info */}
-      <div className="flex items-center gap-3 text-xs text-slate-600">
+      <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-600">
         <span>
           Showing <strong className="font-bold text-slate-900">{startItem}</strong> to{" "}
           <strong className="font-bold text-slate-900">{endItem}</strong> of{" "}
@@ -72,7 +72,7 @@ export const SystemPagination: React.FC<SystemPaginationProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {pageSizeOptions.map((opt) => (
+                {Array.from(new Set([...pageSizeOptions, pageSize])).sort((a, b) => a - b).map((opt) => (
                   <SelectItem key={opt} value={String(opt)} className="text-xs">
                     {opt}
                   </SelectItem>
@@ -85,7 +85,7 @@ export const SystemPagination: React.FC<SystemPaginationProps> = ({
 
       {/* Page Navigation Controls */}
       {safeTotalPages > 1 && (
-        <div className="flex items-center gap-1">
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
           {/* First Page */}
           <Button
             variant="outline"
@@ -111,7 +111,7 @@ export const SystemPagination: React.FC<SystemPaginationProps> = ({
           </Button>
 
           {/* Page Number Buttons */}
-          <div className="flex items-center gap-1 mx-1">
+          <div className="mx-1 flex max-w-full flex-wrap items-center justify-center gap-1">
             {getPageNumbers().map((page, idx) =>
               page === "..." ? (
                 <span key={`ellipsis-${idx}`} className="px-2 text-slate-400 text-xs font-bold">

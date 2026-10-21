@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -161,7 +162,7 @@ const AdminJobs = () => {
   },[toast]);
 
   const fetchOwnershipOptions = useCallback(async () => {
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    if (isNeonClientRuntime()) {
       try {
         const [companyRows,profileRows]=await Promise.all([listNeonAdminOptions<CompanyOption>("companies"),listNeonAdminOptions<OwnerOption>("owners")]);
         setCompanies(companyRows); setOwners(profileRows);

@@ -19,7 +19,7 @@ export default function PublicPageLayout({ children, activeNavId = "home" }: Pub
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-white font-sans text-slate-900">
+    <div className="flex min-h-screen overflow-x-clip bg-white font-sans text-slate-900">
       {/* The role rail is a desktop navigation aid. On phones it used to consume
           72px of the viewport, which left the public pages unnecessarily narrow. */}
       <div className="hidden lg:block">

@@ -10,7 +10,7 @@ const service = new NeonModuleAccess();
 const reply = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "private, no-store" } });
 const failure = (error: unknown) => error instanceof NeonAuthorizationError
   ? reply({ error: error.code, message: error.message }, error.status) : reply({ error: "MODULE_ACCESS_UNAVAILABLE" }, 503);
-const enabled = () => getBackendMode() === "neon-staging";
+const enabled = () => getBackendMode() !== "legacy";
 
 export async function GET(request: Request) {
   if (!enabled()) return new Response(null, { status: 404 });

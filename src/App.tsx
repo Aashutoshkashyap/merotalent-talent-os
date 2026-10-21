@@ -1,4 +1,5 @@
 "use client";
+import { lazy, Suspense, useState } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { PrivateQueryCacheBoundary } from "@/components/auth/PrivateQueryCacheBoundary";
 import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
 import type { CmsSnapshot } from "@/hooks/useSiteCMS";
 
@@ -22,77 +24,77 @@ import OAuthCallback from "./screens/auth/OAuthCallback";
 import LegacyAccountRecovery from "./screens/auth/LegacyAccountRecovery";
 
 // Public Pages
-import CoursesPage from "./screens/courses/CoursesPage";
-import CourseDetailPage from "./screens/courses/CourseDetailPage";
-import JobsPage from "./screens/jobs/JobsPage";
-import JobDetailPage from "./screens/jobs/JobDetailPage";
-import InstitutesPage from "./screens/institutes/InstitutesPage";
-import InstituteDetailPage from "./screens/institutes/InstituteDetailPage";
-import InstituteBlogsPage from "./screens/institutes/InstituteBlogsPage";
-import InstituteBlogDetailPage from "./screens/institutes/InstituteBlogDetailPage";
-import CompetitionsPage from "./screens/competitions/CompetitionsPage";
-import MentorshipPage from "./screens/mentorship/MentorshipPage";
-import MentorDetailPage from "./screens/mentorship/MentorDetailPage";
-import EventsPage from "./screens/events/EventsPage";
-import EventDetailPage from "./screens/events/EventDetailPage";
+const CoursesPage = lazy(() => import("./screens/courses/CoursesPage"));
+const CourseDetailPage = lazy(() => import("./screens/courses/CourseDetailPage"));
+const JobsPage = lazy(() => import("./screens/jobs/JobsPage"));
+const JobDetailPage = lazy(() => import("./screens/jobs/JobDetailPage"));
+const InstitutesPage = lazy(() => import("./screens/institutes/InstitutesPage"));
+const InstituteDetailPage = lazy(() => import("./screens/institutes/InstituteDetailPage"));
+const InstituteBlogsPage = lazy(() => import("./screens/institutes/InstituteBlogsPage"));
+const InstituteBlogDetailPage = lazy(() => import("./screens/institutes/InstituteBlogDetailPage"));
+const CompetitionsPage = lazy(() => import("./screens/competitions/CompetitionsPage"));
+const MentorshipPage = lazy(() => import("./screens/mentorship/MentorshipPage"));
+const MentorDetailPage = lazy(() => import("./screens/mentorship/MentorDetailPage"));
+const EventsPage = lazy(() => import("./screens/events/EventsPage"));
+const EventDetailPage = lazy(() => import("./screens/events/EventDetailPage"));
 
 // Layouts
-import DashboardLayout from "./layouts/DashboardLayout";
-import AdminLayout from "./layouts/AdminLayout";
+const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 
 // Dashboard Pages
-import Dashboard from "./screens/dashboard/Dashboard";
-import Profile from "./screens/dashboard/Profile";
-import Competitions from "./screens/dashboard/Competitions";
-import Mentors from "./screens/dashboard/Mentors";
-import Jobs from "./screens/dashboard/Jobs";
-import Sessions from "./screens/dashboard/Sessions";
-import Settings from "./screens/dashboard/Settings";
+const Dashboard = lazy(() => import("./screens/dashboard/Dashboard"));
+const Profile = lazy(() => import("./screens/dashboard/Profile"));
+const Competitions = lazy(() => import("./screens/dashboard/Competitions"));
+const Mentors = lazy(() => import("./screens/dashboard/Mentors"));
+const Jobs = lazy(() => import("./screens/dashboard/Jobs"));
+const Sessions = lazy(() => import("./screens/dashboard/Sessions"));
+const Settings = lazy(() => import("./screens/dashboard/Settings"));
 
-import Colleges from "./screens/dashboard/Colleges";
-import ActivityTracker from "./screens/dashboard/ActivityTracker";
-import Payments from "./screens/dashboard/Payments";
-import MyTickets from "./screens/dashboard/MyTickets";
+const Colleges = lazy(() => import("./screens/dashboard/Colleges"));
+const ActivityTracker = lazy(() => import("./screens/dashboard/ActivityTracker"));
+const Payments = lazy(() => import("./screens/dashboard/Payments"));
+const MyTickets = lazy(() => import("./screens/dashboard/MyTickets"));
 
 // Admin Pages
-import AdminDashboard from "./screens/admin/AdminDashboard";
-import AdminUsers from "./screens/admin/AdminUsers";
-import AdminCompetitions from "./screens/admin/AdminCompetitions";
-import AdminInstitutions from "./screens/admin/AdminInstitutions";
-import AdminCompanies from "./screens/admin/AdminCompanies";
-import AdminMentors from "./screens/admin/AdminMentors";
-import AdminSettings from "./screens/admin/AdminSettings";
-import AdminLMS from "./screens/admin/AdminLMS";
-import AdminJobs from "./screens/admin/AdminJobs";
-import AdminNotifications from "./screens/admin/AdminNotifications";
-import AdminQueries from "./screens/admin/AdminQueries";
-import AdminManagement from "./screens/admin/AdminManagement";
-import AdminEvents from "./screens/admin/AdminEvents";
-import AdminPackages from "./screens/admin/AdminPackages";
-import AdminSubscriptions from "./screens/admin/AdminSubscriptions";
-import AdminPayments from "./screens/admin/AdminPayments";
-import AdminAdvertisements from "./screens/admin/AdminAdvertisements";
-import AdminFeaturedItems from "./screens/admin/AdminFeaturedItems";
-import AdminLeads from "./screens/admin/AdminLeads";
-import AdminReports from "./screens/admin/AdminReports";
-import AdminApplications from "./screens/admin/AdminApplications";
-import AdminBookings from "./screens/admin/AdminBookings";
-import AdminPageEditor from "./screens/admin/AdminPageEditor";
-import AdminAccessRequests from "./screens/admin/AdminAccessRequests";
-import RequestSubAdminAccess from "./screens/RequestSubAdminAccess";
+const AdminDashboard = lazy(() => import("./screens/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./screens/admin/AdminUsers"));
+const AdminCompetitions = lazy(() => import("./screens/admin/AdminCompetitions"));
+const AdminInstitutions = lazy(() => import("./screens/admin/AdminInstitutions"));
+const AdminCompanies = lazy(() => import("./screens/admin/AdminCompanies"));
+const AdminMentors = lazy(() => import("./screens/admin/AdminMentors"));
+const AdminSettings = lazy(() => import("./screens/admin/AdminSettings"));
+const AdminLMS = lazy(() => import("./screens/admin/AdminLMS"));
+const AdminJobs = lazy(() => import("./screens/admin/AdminJobs"));
+const AdminNotifications = lazy(() => import("./screens/admin/AdminNotifications"));
+const AdminQueries = lazy(() => import("./screens/admin/AdminQueries"));
+const AdminManagement = lazy(() => import("./screens/admin/AdminManagement"));
+const AdminEvents = lazy(() => import("./screens/admin/AdminEvents"));
+const AdminPackages = lazy(() => import("./screens/admin/AdminPackages"));
+const AdminSubscriptions = lazy(() => import("./screens/admin/AdminSubscriptions"));
+const AdminPayments = lazy(() => import("./screens/admin/AdminPayments"));
+const AdminAdvertisements = lazy(() => import("./screens/admin/AdminAdvertisements"));
+const AdminFeaturedItems = lazy(() => import("./screens/admin/AdminFeaturedItems"));
+const AdminLeads = lazy(() => import("./screens/admin/AdminLeads"));
+const AdminReports = lazy(() => import("./screens/admin/AdminReports"));
+const AdminApplications = lazy(() => import("./screens/admin/AdminApplications"));
+const AdminBookings = lazy(() => import("./screens/admin/AdminBookings"));
+const AdminPageEditor = lazy(() => import("./screens/admin/AdminPageEditor"));
+const AdminAccessRequests = lazy(() => import("./screens/admin/AdminAccessRequests"));
+const RequestSubAdminAccess = lazy(() => import("./screens/RequestSubAdminAccess"));
 
 // Institute Pages
-import InstituteDashboard from "./screens/institute/InstituteDashboard";
-import InstituteNotices from "./screens/institute/InstituteNotices";
-import InstituteBlogs from "./screens/institute/InstituteBlogs";
-import RoleWorkspace from "./screens/role/RoleWorkspace";
-import EventsWorkspace from "./screens/role/EventsWorkspace";
-import ModuleAIWorkspace from "./screens/role/ModuleAIWorkspace";
+const InstituteDashboard = lazy(() => import("./screens/institute/InstituteDashboard"));
+const InstituteNotices = lazy(() => import("./screens/institute/InstituteNotices"));
+const InstituteBlogs = lazy(() => import("./screens/institute/InstituteBlogs"));
+const RoleWorkspace = lazy(() => import("./screens/role/RoleWorkspace"));
+const EventsWorkspace = lazy(() => import("./screens/role/EventsWorkspace"));
+const ModuleAIWorkspace = lazy(() => import("./screens/role/ModuleAIWorkspace"));
 import LegalPage from "./screens/LegalPage";
 
 import ComingSoonPage from "./screens/ComingSoonPage";
 
-const queryClient = new QueryClient({
+const createQueryClient = () => new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60_000,
@@ -103,14 +105,19 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }) => (
+const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }) => {
+  // Never share a server-rendered user's cache between requests/app instances.
+  const [queryClient] = useState(createQueryClient);
+  return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
+      <PrivateQueryCacheBoundary />
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <ContentProtectionProvider enabled={true} showWarnings={true}>
+            <Suspense fallback={<div role="status" aria-live="polite" className="grid min-h-48 place-items-center p-6 text-muted-foreground">Loading workspace…</div>}>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Index initialCmsSnapshot={initialCmsSnapshot} />} />
@@ -245,11 +252,13 @@ const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </ContentProtectionProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
+};
 
 export default App;

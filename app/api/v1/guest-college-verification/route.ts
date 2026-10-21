@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const respond = (status: number, data: unknown, code?: string, message?: string) =>
     jsonApiResponse({ data, error: code ? { code, message: message || "Verification failed." } : null, meta: { requestId } }, status);
 
-  if (getBackendMode() === "neon-staging" && request.headers.get("origin") !== new URL(request.url).origin) {
+  if (getBackendMode() !== "legacy" && request.headers.get("origin") !== new URL(request.url).origin) {
     return respond(403, null, "CROSS_ORIGIN_WRITE_DENIED", "Submit verification from this website.");
   }
 

@@ -1,3 +1,5 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { postSignedCheckoutForm } from "@/lib/payments/browser-checkout";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +16,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import type { RequestProof } from "@/lib/server/neon-module-access";
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 async function stagingRequest(url: string, init?: RequestInit) {
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
   const payload = await response.json().catch(() => null);
@@ -61,20 +63,8 @@ const moduleWorkspacePath = (value: string) => ({
   mentor: "/mentor",
 }[canonicalModuleKey(value)] || "/dashboard");
 
-const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) => {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = checkoutUrl;
-  for (const [name, value] of Object.entries(fields)) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = value;
-    form.appendChild(input);
-  }
-  document.body.appendChild(form);
-  form.submit();
-};
+const postToCheckout = (checkoutUrl: string, fields: Record<string, string>) =>
+  postSignedCheckoutForm({ checkoutUrl, checkoutFields: fields });
 
 const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;

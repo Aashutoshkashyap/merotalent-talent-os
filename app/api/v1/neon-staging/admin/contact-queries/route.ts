@@ -11,7 +11,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const fields = "id,name,email,subject,message,status,assigned_to,response,responded_at,created_at";
 
 function stagingOnly(): boolean {
-  try { return getBackendMode() === "neon-staging"; } catch { return false; }
+  try { return getBackendMode() !== "legacy"; } catch { return false; }
 }
 function failure(error: unknown): Response {
   if (error instanceof NeonAuthorizationError) return NextResponse.json({ error: error.code }, { status: error.status });

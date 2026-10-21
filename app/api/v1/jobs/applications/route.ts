@@ -25,7 +25,7 @@ const updateSchema = z.object({
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
 
     if (isStaging) {
       const actor = await getAuthenticatedApplicationUser(request);
@@ -116,7 +116,7 @@ export async function GET(request: Request) {
       meta: { requestId, count: applications?.length || 0 },
     });
   } catch (err: any) {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       if (err instanceof NeonAuthorizationError) {
         return jsonApiResponse({ data: null, error: { code: err.code, message: err.message }, meta: { requestId } }, err.status);
       }
@@ -144,7 +144,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
     const body = await readAdminJsonBody(request);
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) {
@@ -232,7 +232,7 @@ export async function PATCH(request: Request) {
     }
     return jsonApiResponse({ data: { ...data, emailStatus }, error: null, meta: { requestId } });
   } catch (error) {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       if (error instanceof NeonAuthorizationError) {
         return jsonApiResponse({ data: null, error: { code: error.code, message: error.message }, meta: { requestId } }, error.status);
       }

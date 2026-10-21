@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
       const rows = await queryRows<{ institute_id: string }>(`
         SELECT institute_id

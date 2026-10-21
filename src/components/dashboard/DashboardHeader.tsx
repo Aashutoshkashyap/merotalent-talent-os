@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -173,7 +174,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   </div>
                   <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{n.message}</p>
                   </button>
-                  {process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" && n.read &&
+                  {isNeonClientRuntime() && n.read &&
                     <button type="button" className="mt-1 text-[10px] text-[#0073e6] underline" onClick={() => void markAsUnread(n.id)}>Mark unread</button>}
                 </div>
               ))}

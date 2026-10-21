@@ -11,6 +11,59 @@ const provider = () => ({ createCheckout:vi.fn(async () => ({ status:"pending",c
   checkoutFields:{ product_code:"test" } })) }) as unknown as EsewaV2PaymentProvider;
 
 describe("Neon checkout authorization and retry", () => {
+  it('rejects a different provider transaction code even when the redirect signature is valid',async()=>{
+    const row={id:targetId,user_id:actor.userId,entity_type:'mentor_booking',entity_id:targetId,
+      provider_reference:targetId,amount:10,currency:'NPR',status:'pending'};
+    const query=vi.fn(async()=>({rows:[row]}));
+    const adapter={verifyRedirectPayload:vi.fn(()=>true),lookupStatus:vi.fn(async()=>({status:'successful',transactionId:'provider-code'}))} as unknown as EsewaV2PaymentProvider;
+    await expect(new NeonCheckoutService(adapter).verifyReturn({reference:targetId,signedPayload:{
+      transaction_uuid:targetId,total_amount:'10.00',status:'COMPLETE',transaction_code:'different-signed-code',
+      signed_field_names:'transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names',
+    }},{query} as unknown as Pick<PoolClient,'query'>)).rejects.toMatchObject({code:'PROVIDER_TRANSACTION_MISMATCH'});
+    expect(query).toHaveBeenCalledOnce();
+  });
+  it('accepts a valid signed grouped amount but still waits for authoritative completion',async()=>{
+    const row={id:targetId,user_id:actor.userId,entity_type:'mentor_booking',entity_id:targetId,
+      provider_reference:targetId,amount:1000,currency:'NPR',status:'pending',expires_at:new Date(Date.now()+60000)};
+    const query=vi.fn(async()=>({rows:[row]}));
+    const lookupStatus=vi.fn(async()=>({status:'pending',transactionId:'fixture'}));
+    const adapter={lookupStatus,verifyRedirectPayload:vi.fn(()=>true)} as unknown as EsewaV2PaymentProvider;
+    expect(await new NeonCheckoutService(adapter).verifyReturn({reference:targetId,signedPayload:{
+      transaction_uuid:targetId,total_amount:'1,000.0',status:'COMPLETE',
+      signed_field_names:'transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names',
+    }},{query} as unknown as Pick<PoolClient,'query'>)).toMatchObject({status:'pending'});
+    expect(lookupStatus).toHaveBeenCalledWith({reference:targetId,amount:1000,strict:true});
+    expect(query).toHaveBeenCalledOnce();
+  });
+  it.each(['pending','refunded'])('never fulfills %s provider state',async status=>{
+    const row={id:targetId,user_id:actor.userId,entity_type:'mentor_booking',entity_id:targetId,
+      provider_reference:targetId,amount:10,currency:'NPR',status:'pending',expires_at:new Date(Date.now()+60000)};
+    const query=vi.fn(async(sql:string)=>({rows:sql.startsWith('SELECT')?[row]:[],rowCount:1}));
+    const adapter={lookupStatus:vi.fn(async()=>({status,transactionId:'fixture'}))} as unknown as EsewaV2PaymentProvider;
+    expect(await new NeonCheckoutService(adapter).verifyReturn({reference:targetId},{query} as unknown as Pick<PoolClient,'query'>)).toMatchObject({status:'pending'});
+    expect(query.mock.calls.some(([sql])=>sql.includes("SET status='confirmed'")||sql.includes('INSERT INTO public.event_tickets'))).toBe(false);
+    if(status==='pending')expect(query.mock.calls).toHaveLength(1);
+    else expect(query.mock.calls.some(([sql])=>sql.includes("reconciliation_status='disputed'"))).toBe(true);
+  });
+  it('does not mutate a checkout when provider verification fails',async()=>{
+    const row={id:targetId,user_id:actor.userId,entity_type:'mentor_booking',entity_id:targetId,provider_reference:targetId,amount:10,currency:'NPR',status:'pending'};
+    const query=vi.fn(async()=>({rows:[row]}));
+    const adapter={lookupStatus:vi.fn(async()=>{throw Error('provider unavailable');})} as unknown as EsewaV2PaymentProvider;
+    await expect(new NeonCheckoutService(adapter).verifyReturn({reference:targetId},{query} as unknown as Pick<PoolClient,'query'>)).rejects.toThrow('provider unavailable');
+    expect(query).toHaveBeenCalledOnce();
+  });
+  it('completed checkout replay does not issue another booking or call the gateway',async()=>{
+    const row={id:targetId,user_id:actor.userId,entity_type:'mentor_booking',entity_id:targetId,provider_reference:targetId,amount:10,currency:'NPR',status:'successful'};
+    const query=vi.fn(async()=>({rows:[row]})),lookupStatus=vi.fn();
+    expect(await new NeonCheckoutService({lookupStatus} as unknown as EsewaV2PaymentProvider).verifyReturn({reference:targetId},{query} as unknown as Pick<PoolClient,'query'>)).toEqual({status:'successful',duplicate:true});
+    expect(lookupStatus).not.toHaveBeenCalled();expect(query).toHaveBeenCalledOnce();
+  });
+  it('rejects a signed response replayed against a different checkout before status lookup',async()=>{
+    const query=vi.fn(),lookupStatus=vi.fn();
+    const adapter={lookupStatus,verifyRedirectPayload:vi.fn(()=>true)} as unknown as EsewaV2PaymentProvider;
+    await expect(new NeonCheckoutService(adapter).verifyReturn({reference:targetId,signedPayload:{transaction_uuid:actor.userId,signed_field_names:'transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names'}},{query} as unknown as Pick<PoolClient,'query'>)).rejects.toMatchObject({code:'INVALID_PROVIDER_SIGNATURE'});
+    expect(query).not.toHaveBeenCalled();expect(lookupStatus).not.toHaveBeenCalled();
+  });
   it("records delayed successful provider evidence for an already expired checkout without activating services",async()=>{
     const row={id:targetId,user_id:actor.userId,entity_type:"mentor_booking",entity_id:targetId,
       provider_reference:targetId,amount:10,currency:"NPR",status:"expired",expires_at:new Date(Date.now()-1000)};

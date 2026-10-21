@@ -20,7 +20,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { requireNeonStaging } from "./backend-mode";
+import { requireNeonBackend } from "./backend-mode";
 import { getNeonConfig } from "@/lib/neon/neon-config";
 
 import { ServerConfigurationError } from "./server-configuration-error";
@@ -32,7 +32,7 @@ import { ServerConfigurationError } from "./server-configuration-error";
 let _s3Client: S3Client | undefined;
 
 function getS3Client(): S3Client {
-  requireNeonStaging();
+  requireNeonBackend();
   // Reject a production-branch storage endpoint even when staging mode is set.
   getNeonConfig();
   if (_s3Client) return _s3Client;
@@ -172,7 +172,7 @@ export async function headObject(
  * Replaces: `getAdminClient().storage.from(bucket).getPublicUrl(path)`
  */
 export function getPublicUrl(bucket: string, path: string): string {
-  requireNeonStaging();
+  requireNeonBackend();
   const endpoint = process.env.AWS_ENDPOINT_URL_S3;
   if (!endpoint) {
     throw new ServerConfigurationError(

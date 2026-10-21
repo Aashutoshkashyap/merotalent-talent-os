@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import dotenv from "dotenv";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import {stagingUatOrigin} from './staging-uat-origin.mjs';
 
 dotenv.config({ path: ".migration.env", quiet: true });
 requireNeonMigrationStaging(process.env.NEON_STAGING_DATABASE_URL);
@@ -10,7 +11,7 @@ const auth = process.env.NEON_AUTH_BASE_URL;
 if (auth !== "https://ep-wispy-credit-azt6tgwj.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth") {
   throw new Error("Refusing UAT: Auth endpoint is not the isolated staging branch.");
 }
-const app = "http://localhost:3210";
+const app = stagingUatOrigin();
 const email = `neon-event-uat-${randomBytes(7).toString("hex")}@example.com`;
 const password = randomBytes(36).toString("base64url");
 const profileId = randomUUID();

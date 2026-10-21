@@ -1,4 +1,6 @@
 "use client";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -72,7 +74,7 @@ const emptyData: StudentActivityData = {
   eventRegistrations: [],
   mentorBookings: [],
 };
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)

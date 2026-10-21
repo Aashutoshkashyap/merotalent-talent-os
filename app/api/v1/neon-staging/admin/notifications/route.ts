@@ -15,7 +15,7 @@ const createSchema = z.object({
   recipients: z.union([z.literal("admins"), z.literal("self"), z.string().regex(/^user:[0-9a-f-]{36}$/i)]),
 }).strict();
 const idSchema = z.object({ id: uuid }).strict();
-const stage = () => { try { return getBackendMode() === "neon-staging"; } catch { return false; } };
+const stage = () => { try { return getBackendMode() !== "legacy"; } catch { return false; } };
 const reply = (body: unknown, status = 200) => NextResponse.json(body, { status, headers });
 const failure = (error: unknown) => error instanceof NeonAuthorizationError
   ? reply({ error: error.code }, error.status)

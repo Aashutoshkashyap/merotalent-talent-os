@@ -1,7 +1,8 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const DEFAULT_SITE_SETTINGS: SiteSettings = {
   site_title: "MeroTalent",

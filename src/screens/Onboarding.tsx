@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +37,7 @@ const ONBOARDING_STEPS = [
 
 const Onboarding = () => {
   const { user, profile, refreshProfile } = useAuth();
-  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isNeonStaging = isNeonClientRuntime();
   const navigate = useNavigate();
   const { toast } = useToast();
   

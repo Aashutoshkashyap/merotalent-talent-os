@@ -2,6 +2,7 @@ import { loadProviderSecret } from "@/lib/server/provider-config-service";
 import { PaymentWebhookError, verifyHmacPaymentWebhook } from "@/lib/server/payment-webhook";
 import { getAdminClient } from "@/lib/server/supabase";
 import { jsonApiResponse } from "@/lib/server/api-response";
+import {getBackendMode} from '@/lib/server/backend-mode';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -9,6 +10,7 @@ export const runtime = "nodejs";
 const durationDays = (pkg: any) => Number(pkg.duration_days) || ({ month: 30, quarter: 90, year: 365, one_time: 30 }[pkg.billing_interval] ?? 30);
 
 export async function POST(request: Request) {
+  if(getBackendMode()!=='legacy')return new Response(null,{status:404});
   const requestId = crypto.randomUUID();
   try {
     const configured = await loadProviderSecret("payment");

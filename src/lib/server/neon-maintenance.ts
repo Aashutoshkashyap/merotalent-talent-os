@@ -1,6 +1,6 @@
 /** Scheduled business transitions on the guarded, isolated Neon database. */
 import type { PoolClient } from "pg";
-import { requireNeonStaging } from "./backend-mode";
+import { getBackendMode, requireNeonBackend } from "./backend-mode";
 import { isValidCronAuthorization } from "./cron-auth";
 import { withTransaction } from "./db";
 
@@ -11,7 +11,7 @@ export class NeonCronAuthorizationError extends Error {
 
 export function requireNeonCron(authorization: string | null,
   environment: Record<string, string | undefined> = process.env) {
-  requireNeonStaging(environment);
+  requireNeonBackend(environment);
   if (!isValidCronAuthorization(authorization, environment.CRON_SECRET)) throw new NeonCronAuthorizationError();
 }
 
@@ -41,7 +41,7 @@ export async function runNeonMaintenance(authorization: string | null,
         'warning','subscription',delivery.channel,'queued','subscription',s.id,'/dashboard/payments',
         CASE WHEN delivery.channel='email' THEN p.email ELSE NULL END,
         jsonb_build_object('maintenance_event','expired','subscription_expiry',s.expiry_date::text,
-          'delivery_environment','neon-staging')
+          'delivery_environment',$1::text)
       FROM public.subscriptions s JOIN public.profiles p ON p.user_id=s.user_id
       CROSS JOIN (VALUES ('dashboard'),('email')) delivery(channel)
       WHERE s.status='expired' AND s.expiry_date<=now() AND s.deleted_at IS NULL
@@ -53,7 +53,7 @@ export async function runNeonMaintenance(authorization: string | null,
             AND n.metadata->>'maintenance_event'='expired'
             AND (n.metadata->>'subscription_expiry'=s.expiry_date::text OR
               (n.metadata->>'subscription_expiry' IS NULL AND n.created_at>=s.expiry_date)))
-      RETURNING id`);
+      RETURNING id`, [getBackendMode(environment)]);
     const expiredJobs = await client.query(`UPDATE public.jobs SET status='expired',is_active=false,updated_at=now()
       WHERE status='published' AND approval_status='approved' AND is_active=true AND deleted_at IS NULL
         AND COALESCE(expires_at,application_deadline)<=now() RETURNING id`);

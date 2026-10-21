@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,7 @@ interface MentorBooking {
 }
 
 export default function AdminBookings() {
-  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isNeonStaging = isNeonClientRuntime();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<MentorBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState("");

@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
@@ -130,7 +131,7 @@ const APP_STATUS_TABS: readonly AppStatusTab[] = [
  * request, not just that filter.
  */
 const UNCLAIMED_WORKSPACE_ID = "unclaimed-workspace";
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

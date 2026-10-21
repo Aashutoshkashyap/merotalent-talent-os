@@ -17,7 +17,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
       return jsonApiResponse({
         data: await listMyCompetitionIds(actor),
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       meta: { requestId },
     });
   } catch (err) {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const status = err instanceof NeonAuthorizationError ? err.status
         : err instanceof NeonSessionUnavailable ? 503 : 503;
       const code = err instanceof NeonAuthorizationError ? err.code : "REGISTRATIONS_UNAVAILABLE";
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       requireSameOrigin(request);
       const actor = await getAuthenticatedApplicationUser(request);
       const result = await registerNeonCompetition(actor, { competitionId, teamName });
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
 
     return jsonApiResponse({ data: data || { success: true }, error: null, meta: { requestId } }, 201);
   } catch (err) {
-    if (getBackendMode() === "neon-staging" && (err instanceof NeonAuthorizationError ||
+    if (getBackendMode() !== "legacy" && (err instanceof NeonAuthorizationError ||
         err instanceof NeonSessionUnavailable)) {
       return jsonApiResponse({ data: null, error: {
         code: err instanceof NeonAuthorizationError ? err.code : "AUTH_UNAVAILABLE",

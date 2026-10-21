@@ -28,6 +28,37 @@ application encryption key, **not** an eSewa merchant secret, Resend key, or AI
 provider key. Enter those provider credentials only through the authenticated
 Super Admin Provider Center after this server setting is ready.
 
+## eSewa reference import (2026-10-21)
+
+The supplied MrValuator `src/lib/esewa.ts` uses `ESEWA_MERCHANT_ID`,
+`ESEWA_SECRET_KEY`, and `ESEWA_ENVIRONMENT=sandbox`; its `.env.example` instead
+names `ESEWA_MERCHANT_CODE` and `ESEWA_BASE_URL`. MeroTalent's canonical operator
+names are `ESEWA_MERCHANT_CODE`, `ESEWA_SECRET_KEY`, and `ESEWA_ENVIRONMENT`.
+`sandbox` normalizes to `uat`; production must be explicit. The legacy merchant-ID
+alias is accepted only when it does not conflict. Optional `ESEWA_BASE_URL` must
+match the selected official gateway; arbitrary endpoints are rejected.
+
+Supply these only through the operator's secret environment, never browser
+variables. `scripts/configure-neon-staging-esewa-uat.mjs` imports them into the
+existing AES-256-GCM Provider Center record on the pinned staging branch only.
+It defaults to a read-only dry run; `--apply-staging` explicitly permits that
+isolated bootstrap. No new payment tables or entitlement model are introduced.
+With no `ESEWA_*` variables, this staging-only helper retains its documented
+published UAT defaults. A partial configured environment never silently falls back.
+
+Production retains the existing enabled/disabled Provider Center control and
+server-only `PROVIDER_CONFIG_ENCRYPTION_KEY` in Vercel Production. Real merchant
+credentials are stored encrypted through that authorized configuration flow;
+the reference archive has no real `.env` to import. Neither an environment import
+nor a successful redirect enables production payments: the independent
+`NEON_PRODUCTION_PAYMENTS_ENABLED` gate remains off until acceptance passes.
+
+The reference signing/form pattern is adapted in `esewa-v2-form.ts`. Its
+signature-only verification is intentionally not copied as settlement authority:
+MeroTalent still requires the status API, exact original order/amount/merchant,
+and atomic idempotent Neon fulfillment. Browser forms use DOM input values instead
+of unescaped HTML interpolation, and only exact official form endpoints are allowed.
+
 ## Rotation warning
 
 Changing this value makes credentials encrypted with the old key unreadable.

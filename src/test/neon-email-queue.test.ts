@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "pg";
 import { dispatchNeonQueuedEmails, neonEmailRecipients, resolveNeonEmailProvider } from "@/lib/server/neon-email-queue";
 import { encryptProviderSecret } from "@/lib/server/secret-store";
+import { neonEmailPolicy, neonEmailRecipientAllowed } from "@/lib/server/neon-delivery-policy";
 
 const environment = { MEROTALENT_BACKEND_MODE: "neon-staging", CRON_SECRET: "isolated-cron-test",
   NEON_STAGING_EMAIL_DELIVERY_ENABLED: "true", NEON_STAGING_EMAIL_TEST_RECIPIENTS: "qa@example.test",
@@ -25,6 +26,28 @@ beforeEach(() => {
 });
 
 describe("Neon controlled staging email queue", () => {
+  it("requires independent production opt-in, paired runtime flags, and an explicit UTC cutoff", async () => {
+    const production = { ...environment, MEROTALENT_BACKEND_MODE: "neon-production",
+      NEXT_PUBLIC_MEROTALENT_BACKEND_MODE: "neon-production" };
+    for (const env of [production, { ...production, NEON_PRODUCTION_EMAIL_DELIVERY_ENABLED: "true" },
+      { ...production, NEON_PRODUCTION_EMAIL_DELIVERY_ENABLED: "true", NEON_PRODUCTION_EMAIL_NOT_BEFORE: "invalid" }]) {
+      expect(await dispatchNeonQueuedEmails(authorization, 25, { environment: env, run, provider }))
+        .toMatchObject({ configured: false, claimed: 0, reason: "production_delivery_disabled" });
+    }
+    expect(transactionStarted).not.toHaveBeenCalled();
+    const enabled = { ...production, NEON_PRODUCTION_EMAIL_DELIVERY_ENABLED: "true",
+      NEON_PRODUCTION_EMAIL_NOT_BEFORE: "2026-10-19T18:00:00Z" };
+    expect(neonEmailPolicy(enabled)).toMatchObject({ enabled: true, recipients: null, environment: "neon-production" });
+    expect(neonEmailRecipientAllowed("actual-user@example.test", enabled)).toBe(true);
+    expect(neonEmailRecipientAllowed("not-an-email", enabled)).toBe(false);
+    expect(await dispatchNeonQueuedEmails(authorization, 25, { environment: enabled, run, provider }))
+      .toMatchObject({ configured: true, sent: 1 });
+    const claim = query.mock.calls.find(([sql]) => sql.startsWith("WITH candidates"));
+    expect(claim?.[1]).toEqual([null, 25, "neon-production", enabled.NEON_PRODUCTION_EMAIL_NOT_BEFORE]);
+    expect(claim?.[0]).toContain("n.metadata->>'delivery_environment'=$3");
+    expect(claim?.[0]).toContain("n.created_at >= $4::timestamptz");
+    expect(() => neonEmailPolicy({ ...enabled, NEXT_PUBLIC_MEROTALENT_BACKEND_MODE: "neon-staging" })).toThrow();
+  });
   it("requires cron authorization before any database or provider call", async () => {
     await expect(dispatchNeonQueuedEmails(null, 25, { environment, run, provider })).rejects.toMatchObject({ name: "NeonCronAuthorizationError" });
     expect(transactionStarted).not.toHaveBeenCalled(); expect(send).not.toHaveBeenCalled();

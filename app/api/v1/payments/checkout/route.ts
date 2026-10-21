@@ -5,6 +5,7 @@ import { loadProviderSecret } from "@/lib/server/provider-config-service";
 import { getPaymentProvider } from "@/lib/server/payment-provider";
 import { getAdminClient } from "@/lib/server/supabase";
 import { jsonApiResponse } from "@/lib/server/api-response";
+import {getBackendMode} from '@/lib/server/backend-mode';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,6 +23,8 @@ const isPlatformAdmin = (roles: readonly string[]) =>
   roles.some((role) => ["super_admin", "superadmin", "admin"].includes(role.toLowerCase()));
 
 export async function POST(request: Request) {
+  // Migrated callers use the scoped Neon checkout endpoint; no legacy writes.
+  if(getBackendMode()!=='legacy')return new Response(null,{status:404});
   const requestId = crypto.randomUUID();
   try {
     const authenticated = await authenticateRequest(request);

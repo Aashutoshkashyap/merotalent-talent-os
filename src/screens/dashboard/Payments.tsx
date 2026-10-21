@@ -1,3 +1,5 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { postSignedCheckoutForm } from "@/lib/payments/browser-checkout";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -49,7 +51,7 @@ type Entitlement = { id: string; module_key: string; entity_type: string; entity
 type Checkout = { id: string; package_id: string; provider_name: string; status: string; expires_at: string | null; created_at: string };
 type CollegeRequest = { id: string; status: string; payment_status: string; entity_id: string | null; college_name: string; request_kind: string };
 type Overview = { plans: Plan[]; scopes: Scope[]; entitlements: Entitlement[]; checkouts: Checkout[];
-  collegeRequests?: CollegeRequest[]; payments?: Transaction[] };
+  collegeRequests?: CollegeRequest[]; payments?: Transaction[]; paymentsAvailable?:boolean };
 
 type PaymentProofRecord = {
   id: string;
@@ -87,7 +89,7 @@ const moduleLabel = (value: string) => ({ college: "College", jobs: "Jobs", ment
 const moduleWorkspacePath = (value: string) => ({ college: "/institute", jobs: "/company", events: "/event-admin", mentor: "/mentor" }[value] ?? "/dashboard");
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat("en-NP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(new Date(value)) : "No expiry";
 const featureLabel = (feature: string) => feature.replaceAll("_", " ").replaceAll(".", " · ");
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const txnStatusColor = (status: string) => {
   switch (status) {
@@ -109,17 +111,7 @@ const txnTypeLabel = (type: string) => {
 };
 
 function postToCheckout(checkoutUrl: string, fields: Record<string, string>) {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = checkoutUrl;
-  form.style.display = "none";
-  Object.entries(fields).forEach(([name, value]) => {
-    const input = document.createElement("input");
-    input.type = "hidden"; input.name = name; input.value = value;
-    form.appendChild(input);
-  });
-  document.body.appendChild(form);
-  form.submit();
+  postSignedCheckoutForm({ checkoutUrl, checkoutFields: fields });
 }
 
 export default function Payments() {
@@ -338,15 +330,24 @@ export default function Payments() {
     .filter((entitlement) => entitlement.status === "active" && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() > Date.now()))
     .map((entitlement) => `${entitlement.module_key}:${entitlement.entity_type}:${entitlement.entity_id}`)), [overview.entitlements]);
   const isScopeActive = useCallback((scope: Scope) => activeEntitlementKeys.has(`${scope.module}:${scope.entityType}:${scope.entityId}`), [activeEntitlementKeys]);
-  const compatibleScopes = useMemo(() => selectedPlan ? overview.scopes.filter((scope) => selectedPlan.module_scope?.includes(scope.module) && !isScopeActive(scope)) : [], [isScopeActive, overview.scopes, selectedPlan]);
+  const compatibleScopes = useMemo(() => selectedPlan ? overview.scopes.filter((scope) => selectedPlan.module_scope?.includes(scope.module) && (isNeonStaging || !isScopeActive(scope))) : [], [isScopeActive, overview.scopes, selectedPlan]);
   const selectedScope = compatibleScopes.find((scope) => scope.id === selectedScopeId);
-  const openPlan = (plan: Plan) => { setSelectedPlan(plan); setSelectedScopeId(overview.scopes.find((scope) => plan.module_scope?.includes(scope.module) && !isScopeActive(scope))?.id ?? ""); };
+  const openPlan = (plan: Plan) => { setSelectedPlan(plan); setSelectedScopeId(overview.scopes.find((scope) => plan.module_scope?.includes(scope.module) && (isNeonStaging || !isScopeActive(scope)))?.id ?? ""); };
 
   const beginCheckout = async () => {
     if (!selectedPlan || !selectedScope) return;
+    if(isNeonStaging&&overview.paymentsAvailable!==true){toast({variant:'destructive',title:'Online payments unavailable',description:'Live payments are disabled. Existing access and transaction history remain available; no charge was created.'});return;}
     if (isNeonStaging) {
-      toast({ variant: "destructive", title: "Renewal checkout unavailable",
-        description: "Use a College access request below. Existing-scope renewal is not yet migrated to Neon staging." });
+      setProcessing(true);
+      try{
+        const response=await fetch('/api/v1/neon-staging/payments/checkout',{method:'POST',credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'assigned_scope',targetId:selectedScope.id,packageId:selectedPlan.id,renewal:true})});
+        const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Renewal checkout is unavailable.');
+        const checkout=payload.data;
+        if(!checkout?.checkoutUrl||!checkout.checkoutFields)throw new Error('Secure checkout is unavailable.');
+        postToCheckout(checkout.checkoutUrl,checkout.checkoutFields);
+      }catch(error){toast({variant:'destructive',title:'Checkout was not started',description:error instanceof Error?error.message:'No access was activated.'});}
+      finally{setProcessing(false);}
       return;
     }
     const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -369,6 +370,7 @@ export default function Payments() {
   };
 
   const beginCollegeRequestCheckout = async (request: CollegeRequest) => {
+    if(isNeonStaging&&overview.paymentsAvailable!==true){toast({variant:'destructive',title:'Online payments unavailable',description:'No charge or paid access was created.'});return;}
     const planId = requestPlanIds[request.id];
     if (!planId) return;
     setProcessing(true);
@@ -520,6 +522,7 @@ export default function Payments() {
         </CardContent>
       </Card>
 
+      {isNeonStaging&&overview.paymentsAvailable===false&&<div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">Online payments are temporarily unavailable. New paid mentor bookings, event registrations and module purchases/renewals are paused. Existing access, free services and transaction history remain available.</div>}
       {/* Module access (entitlements) — shown for all users */}
       {isNeonStaging && !!overview.collegeRequests?.length && (
         <Card className="rounded-3xl border-slate-200/80 shadow-2xs">
@@ -605,9 +608,12 @@ export default function Payments() {
                       ))}
                     </div>
                     {activeOnly ? (
+                      <div className="space-y-2">
                       <Button asChild className="w-full bg-emerald-700 text-white hover:bg-emerald-800">
                         <Link to={moduleWorkspacePath(workspaceModule)}>Active — open workspace</Link>
                       </Button>
+                      {isNeonStaging && <Button className="w-full" variant="outline" onClick={()=>openPlan(plan)}>Review renewal</Button>}
+                      </div>
                     ) : (
                       <Button className="w-full bg-[#071a3d] text-white hover:bg-[#05132d]" disabled={!available} onClick={() => openPlan(plan)}>
                         {available ? "Review & pay with eSewa" : "No matching assigned entity"}

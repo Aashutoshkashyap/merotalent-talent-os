@@ -15,7 +15,7 @@ const failure = (error: unknown) => NextResponse.json({ error: error instanceof 
 const invalid = () => NextResponse.json({ error: "INVALID_BILLING_ACTION" }, { status: 400, headers });
 
 export async function GET(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     requireSuperAdmin(actor);
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

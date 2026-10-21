@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "50", 10)));
     const offset = Math.max(0, parseInt(url.searchParams.get("offset") || "0", 10));
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const repo = new NeonEventsRepository();
       const events = await repo.listPublicEvents({
         search: search || undefined,

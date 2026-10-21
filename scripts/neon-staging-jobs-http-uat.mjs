@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import pg from "pg";
 import { S3Client, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { requireNeonMigrationStaging } from "./require-neon-migration-staging.mjs";
+import {stagingUatOrigin} from './staging-uat-origin.mjs';
 
 dotenv.config({ path: ".migration.env", quiet: true });
 requireNeonMigrationStaging(process.env.NEON_STAGING_DATABASE_URL);
@@ -12,7 +13,7 @@ const auth = process.env.NEON_AUTH_BASE_URL;
 if (auth !== "https://ep-wispy-credit-azt6tgwj.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth") {
   throw new Error("Refusing Jobs UAT: wrong Managed Auth branch.");
 }
-const app = "http://localhost:3210";
+const app = stagingUatOrigin();
 const runId = randomBytes(6).toString("hex");
 const studentId = randomUUID();
 const recruiterId = randomUUID();

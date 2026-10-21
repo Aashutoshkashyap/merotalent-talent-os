@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -23,7 +23,7 @@ const AdminLayout = () => {
   }, [location.pathname, location.search, scrollWorkspaceToTop]);
 
   return (
-    <div className="min-h-[100dvh] w-full overflow-x-hidden bg-white">
+    <div className="min-h-[100dvh] w-full overflow-x-clip bg-white">
       <div className="min-h-[100dvh] w-full bg-white">
         <div className="fixed inset-y-0 left-0 z-40 hidden w-[84px] border-r border-[#173769] bg-[#071a3d] lg:block xl:hidden">
           <AdminSidebar
@@ -73,7 +73,9 @@ const AdminLayout = () => {
                 }
                 className="min-h-full"
               >
-                <Outlet />
+                <Suspense fallback={<div role="status" className="p-6 text-muted-foreground">Loading workspace…</div>}>
+                  <Outlet />
+                </Suspense>
               </motion.div>
             </AnimatePresence>
           </main>

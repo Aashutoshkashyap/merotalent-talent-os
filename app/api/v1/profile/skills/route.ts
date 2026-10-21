@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request).catch(() => null);
 
       const [skills, userSkills] = await Promise.all([
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
 
       if (action === "remove") {

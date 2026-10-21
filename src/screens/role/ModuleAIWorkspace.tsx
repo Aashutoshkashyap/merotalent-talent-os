@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useMemo, useState } from "react";
 import { Bot, LockKeyhole } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 
 type AIScope = { id: string; module: "jobs" | "mentor" | "events"; entityType: "company" | "job" | "mentor" | "event"; entityId: string };
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 const label = (scope: AIScope) => `${({ jobs: "Jobs", mentor: "Mentor", events: "Events" }[scope.module])} · ${scope.entityType} · ${scope.entityId.slice(0, 8)}`;
 
 /** A focused dashboard workspace for assigned module entities, not a global AI settings page. */

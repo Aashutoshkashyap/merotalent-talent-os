@@ -23,7 +23,7 @@ async function image(value:unknown,module:MediaModule,bucket:string){
   try{return await publicObjectUrl(module,path);}catch{return null;}
 }
 export async function GET(request:Request){
-  if(getBackendMode() !== "neon-staging")return new Response(null,{status:404});
+  if(getBackendMode() === "legacy")return new Response(null,{status:404});
   try{
     const actor=await getAuthenticatedApplicationUser(request);requireSuperAdmin(actor);
     const [result]=await queryRows<{allowed:boolean;data:{stats:Record<string,number>;usersList:Row[];jobsList:Row[];

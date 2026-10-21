@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +55,7 @@ const isValidLinkedInProfileUrl = (value: string) => {
 
 const Profile = () => {
   const { user, profile, refreshProfile } = useAuth();
-  const isStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isStaging = isNeonClientRuntime();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);

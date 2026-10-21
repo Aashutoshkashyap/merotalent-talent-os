@@ -29,7 +29,7 @@ export function managedMediaFailure(error:unknown){
     message:known?cause.message:"Media service unavailable."}},{status:known?cause.status:503,headers});
 }
 export async function handleManagedMediaUpload(request:Request){
-  if(getBackendMode()!=="neon-staging")return new Response(null,{status:404});
+  if(getBackendMode() === "legacy")return new Response(null,{status:404});
   try{
     requireSameOrigin(request);
     const actor=await getAuthenticatedApplicationUser(request);
@@ -48,7 +48,7 @@ export async function handleManagedMediaUpload(request:Request){
   }catch(error){return managedMediaFailure(error);}
 }
 export async function handleManagedMediaDownload(request:Request){
-  if(getBackendMode()!=="neon-staging")return new Response(null,{status:404});
+  if(getBackendMode() === "legacy")return new Response(null,{status:404});
   try{
     requireSameOrigin(request);
     const actor=await getAuthenticatedApplicationUser(request);
@@ -57,7 +57,7 @@ export async function handleManagedMediaDownload(request:Request){
   }catch(error){return managedMediaFailure(error);}
 }
 export async function handleManagedMediaDelete(request:Request){
-  if(getBackendMode()!=="neon-staging")return new Response(null,{status:404});
+  if(getBackendMode() === "legacy")return new Response(null,{status:404});
   try{
     requireSameOrigin(request);
     const actor=await getAuthenticatedApplicationUser(request);

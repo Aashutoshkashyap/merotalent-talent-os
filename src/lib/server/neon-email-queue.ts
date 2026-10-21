@@ -4,6 +4,7 @@ import { queryRows, withTransaction } from "./db";
 import { getConfiguredTransactionalEmailProvider, type TransactionalEmailProvider } from "./email-provider";
 import { requireNeonCron, type NeonMaintenanceTransaction } from "./neon-maintenance";
 import { decryptProviderSecret, isSecretStorageConfigured } from "./secret-store";
+import { neonEmailPolicy, type NeonEmailPolicy } from "./neon-delivery-policy";
 
 type EmailRow = QueryResultRow & {
   id: string; title: string; message: string; email_to: string;
@@ -20,12 +21,8 @@ type QueueOptions = { environment?: Environment; run?: NeonMaintenanceTransactio
 
 /** An explicit allowlist plus a staging-origin marker excludes copied messages. */
 export function neonEmailRecipients(environment: Environment = process.env): string[] {
-  if (environment.NEON_STAGING_EMAIL_DELIVERY_ENABLED !== "true") return [];
-  const recipients = (environment.NEON_STAGING_EMAIL_TEST_RECIPIENTS ?? "").split(",")
-    .map(value => value.trim().toLowerCase()).filter(Boolean);
-  if (!recipients.length || recipients.length > 20 ||
-      recipients.some(value => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))) return [];
-  return [...new Set(recipients)];
+  const policy = neonEmailPolicy(environment);
+  return policy.enabled ? policy.recipients ?? [] : [];
 }
 
 export async function resolveNeonEmailProvider(query: typeof queryRows = queryRows,
@@ -49,19 +46,21 @@ export async function resolveNeonEmailProvider(query: typeof queryRows = queryRo
   }
 }
 
-async function claim(client: PoolClient, recipients: string[], limit: number): Promise<EmailRow[]> {
+async function claim(client: PoolClient, policy: NeonEmailPolicy, limit: number): Promise<EmailRow[]> {
   await client.query(`UPDATE public.notifications n SET
       status=CASE WHEN n.delivery_attempt_count>=5 THEN 'failed' ELSE 'queued' END,
       next_delivery_attempt_at=CASE WHEN n.delivery_attempt_count>=5 THEN NULL ELSE now() END,
       metadata=COALESCE(n.metadata,'{}'::jsonb)||jsonb_build_object('delivery_status','worker_interrupted')
     WHERE n.channel='email' AND n.status='processing' AND n.email_delivery_enabled=true
-      AND n.deleted_at IS NULL AND lower(n.email_to)=ANY($1::text[])
-      AND n.metadata->>'delivery_environment'='neon-staging'
-      AND n.last_delivery_attempt_at<now()-interval '15 minutes'`, [recipients]);
+      AND n.deleted_at IS NULL AND ($1::text[] IS NULL OR lower(n.email_to)=ANY($1::text[]))
+      AND n.metadata->>'delivery_environment'=$2 AND n.created_at >= $3::timestamptz
+      AND n.last_delivery_attempt_at<now()-interval '15 minutes'`, [policy.recipients, policy.environment, policy.notBefore]);
   return (await client.query<EmailRow>(`WITH candidates AS (
       SELECT n.id FROM public.notifications n WHERE n.channel='email' AND n.status='queued'
         AND n.email_delivery_enabled=true AND n.deleted_at IS NULL
-        AND lower(n.email_to)=ANY($1::text[]) AND n.metadata->>'delivery_environment'='neon-staging'
+        AND ($1::text[] IS NULL OR lower(n.email_to)=ANY($1::text[]))
+        AND n.metadata->>'delivery_environment'=$3 AND n.created_at >= $4::timestamptz
+        AND n.email_to ~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$'
         AND n.delivery_attempt_count<5 AND COALESCE(n.next_delivery_attempt_at,n.created_at)<=now()
       ORDER BY n.created_at,n.id FOR UPDATE SKIP LOCKED LIMIT $2
     ) UPDATE public.notifications n SET status='processing',
@@ -69,19 +68,20 @@ async function claim(client: PoolClient, recipients: string[], limit: number): P
       FROM candidates WHERE n.id=candidates.id
       RETURNING n.id,n.title,n.message,n.email_to,n.metadata,n.delivery_attempt_count,
         n.last_delivery_attempt_at::text AS last_delivery_attempt_at`,
-  [recipients, limit])).rows;
+  [policy.recipients, limit, policy.environment, policy.notBefore])).rows;
 }
 
 export async function dispatchNeonQueuedEmails(authorization: string | null, limit = 25, options: QueueOptions = {}) {
   const environment = options.environment ?? process.env;
   requireNeonCron(authorization, environment);
   const empty = { configured: false, claimed: 0, sent: 0, failed: 0, retrying: 0, superseded: 0 };
-  const recipients = neonEmailRecipients(environment);
-  if (!recipients.length) return { ...empty, reason: "staging_delivery_disabled" };
+  const policy = neonEmailPolicy(environment);
+  if (!policy.enabled) return { ...empty, reason: policy.environment === "neon-production"
+    ? "production_delivery_disabled" : "staging_delivery_disabled" };
   const provider = options.provider ?? await resolveNeonEmailProvider(options.query, environment);
   if (!provider || provider.name === "unconfigured") return { ...empty, reason: "provider_unavailable" };
   const run = options.run ?? withTransaction;
-  const emails = await run(client => claim(client, recipients, Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit), 100)) : 25));
+  const emails = await run(client => claim(client, policy, Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit), 100)) : 25));
   const result = { ...empty, configured: true, claimed: emails.length };
   for (const email of emails) {
     let delivery: Awaited<ReturnType<TransactionalEmailProvider["send"]>>;

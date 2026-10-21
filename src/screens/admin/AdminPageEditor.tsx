@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +46,7 @@ import { OperationsPage } from "./OperationsUI";
 import { safeExternalUrl } from "@/lib/institutes/public-institutes";
 import { invalidateCmsCache } from "@/hooks/useSiteCMS";
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 async function stagingRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api/v1/neon-staging/admin/${path}`, {
     ...init, credentials: "same-origin", cache: "no-store",

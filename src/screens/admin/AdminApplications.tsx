@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -51,7 +52,7 @@ const readableValue = (value: unknown): string => {
 };
 
 export default function AdminApplications() {
-  const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isNeonStaging = isNeonClientRuntime();
   const { toast } = useToast();
   const [applications, setApplications] = useState<CollegeApp[]>([]);
   const [searchQuery, setSearchQuery] = useState("");

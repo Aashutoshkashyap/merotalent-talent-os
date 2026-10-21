@@ -66,7 +66,7 @@ function failure(cause: unknown) {
 }
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const { id } = await context.params;
@@ -98,7 +98,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }): Promise<Response> {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const { id } = await context.params;

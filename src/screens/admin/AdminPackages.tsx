@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createAdminResource, deleteAdminResource, listAllAdminResource, updateAdminResource } from "@/lib/admin/admin-client";
@@ -101,7 +102,7 @@ export default function AdminPackages() {
   const [formData, setFormData] = useState<PackageFormData>(createEmptyForm);
 
   const fetchPackages = useCallback(async () => {
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    if (isNeonClientRuntime()) {
       try {setPackages(await listAllAdminResource<PackageItem>("packages",{sort_by:"sort_order",sort_direction:"asc"}));}
       catch(error) {toast({variant:"destructive",title:"Unable to load packages",description:error instanceof Error ? error.message : "Try again shortly."});}
       finally {setIsLoading(false);}
@@ -173,7 +174,7 @@ export default function AdminPackages() {
     };
 
     let error;
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    if (isNeonClientRuntime()) {
       try {if(editingPackage) await updateAdminResource("packages",editingPackage.id,payload); else await createAdminResource("packages",payload);}
       catch(cause) {error=cause instanceof Error ? cause : new Error("Unable to save package.");}
     } else if (editingPackage) {
@@ -195,7 +196,7 @@ export default function AdminPackages() {
   };
 
   const handleDelete = async (id: string) => {
-    if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging") {
+    if (isNeonClientRuntime()) {
       try {await deleteAdminResource("packages",id);toast({title:"Package deleted"});void fetchPackages();}
       catch(error) {toast({variant:"destructive",title:"Unable to delete package",description:error instanceof Error ? error.message : "Try again shortly."});}
       return;

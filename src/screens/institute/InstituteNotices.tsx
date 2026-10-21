@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,7 +71,7 @@ const navItems = [
   { path: "/institute/notices", icon: Bell, label: "Notices" },
   { path: "/institutes", icon: Building2, label: "Public listing" },
 ];
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const InstituteNotices = () => {
   const { user } = useAuth();

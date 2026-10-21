@@ -30,7 +30,7 @@ function handleError(cause: unknown) {
 }
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     const { id } = await context.params;
     if (!uuid.test(id)) return fail("INVALID_COLLEGE", 400);
@@ -44,7 +44,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 }
 
 async function write(request: Request, context: { params: Promise<{ id: string }> }, action: "create" | "edit" | "delete") {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const { id } = await context.params;

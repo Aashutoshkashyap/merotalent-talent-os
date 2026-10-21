@@ -48,10 +48,19 @@ describe("provider-independent delivery boundaries", () => {
     const production = getPaymentProvider({ providerName: "esewa", secret: "merchant-secret", publicConfig: { merchant_code: "LIVE-CODE", environment: "production" } }) as EsewaV2PaymentProvider;
     await production.lookupStatus({ reference: "mt-order-2", amount: 1500, fetcher: fetcher as typeof fetch });
     expect(seen[0]).toContain("https://rc.esewa.com.np/api/epay/transaction/status/");
-    expect(seen[1]).toContain("https://epay.esewa.com.np/api/epay/transaction/status/");
+    expect(seen[1]).toContain("https://esewa.com.np/api/epay/transaction/status/");
   });
 
   it("does not create an eSewa adapter without a merchant-issued product code", () => {
     expect(getPaymentProvider({ providerName: "esewa", secret: "merchant-secret", publicConfig: { environment: "uat" } })).not.toBeInstanceOf(EsewaV2PaymentProvider);
+  });
+  it.each([
+    {merchant_code:'EPAYTEST',environment:'production'},
+    {merchant_code:'LIVE-CODE',environment:'invalid'},
+  ])('rejects mixed or invalid provider environment %j',publicConfig=>{
+    expect(getPaymentProvider({providerName:'esewa',secret:'fixture-secret',publicConfig})).not.toBeInstanceOf(EsewaV2PaymentProvider);
+  });
+  it('blocks the published UAT secret even with a production-marked merchant',()=>{
+    expect(getPaymentProvider({providerName:'esewa',secret:'8gBm/:&EnhH.1/q',publicConfig:{merchant_code:'LIVE-CODE',environment:'production'}})).not.toBeInstanceOf(EsewaV2PaymentProvider);
   });
 });

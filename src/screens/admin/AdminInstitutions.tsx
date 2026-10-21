@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createAdminResource, deleteAdminResource, listAllAdminResource, updateAdminResource } from "@/lib/admin/admin-client";
@@ -68,7 +69,7 @@ import {
 
 type InstituteRow = Database["public"]["Tables"]["institutes"]["Row"];
 type Institute = InstituteRow & { payment_verified: boolean };
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 interface InstituteFormData {
   name: string;

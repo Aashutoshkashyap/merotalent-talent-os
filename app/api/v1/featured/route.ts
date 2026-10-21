@@ -46,7 +46,7 @@ interface EventRow {
 export async function GET(): Promise<Response> {
   try {
     const now = new Date().toISOString();
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
 
     // Fetch featured items list
     let featuredRows: FeaturedItemRow[] = [];
@@ -219,7 +219,7 @@ export async function GET(): Promise<Response> {
     });
   } catch (err) {
     console.error("[featured] Unexpected error:", err);
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       return NextResponse.json({ error: "FEATURED_UNAVAILABLE" }, { status: 503,
         headers: { "Cache-Control": "no-store" } });
     }

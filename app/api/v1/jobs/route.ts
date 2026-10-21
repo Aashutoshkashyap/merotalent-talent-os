@@ -15,7 +15,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get("id");
-    const isStaging = getBackendMode() === "neon-staging";
+    const isStaging = getBackendMode() !== "legacy";
 
     if (isStaging) {
       const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

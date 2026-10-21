@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useRef, useState } from "react";
 import { CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 
@@ -217,7 +218,7 @@ export async function uploadSignedCollegeMedia(
   resourceId?: string | null,
 ): Promise<SignedMediaAsset> {
   const processedFile = await compressImage(file, module);
-  if (process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging" &&
+  if (isNeonClientRuntime() &&
       (module === "college_logo" || module === "college_cover") && resourceId) {
     const form = new FormData();
     form.set("kind", module === "college_logo" ? "logo" : "cover");
@@ -234,7 +235,7 @@ export async function uploadSignedCollegeMedia(
     return { bucket: payload.data.bucket || "college-media", path: payload.data.path,
       publicUrl: payload.data.publicUrl, fileName: processedFile.name, contentType: processedFile.type };
   }
-  if(process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging"){
+  if(isNeonClientRuntime()){
     if(!resourceId)throw new Error("Save the listing before uploading its media.");
     const form=new FormData();form.set("module",module);form.set("resourceId",resourceId);form.set("file",processedFile);
     const response=await fetch("/api/v1/neon-staging/media",{method:"POST",credentials:"same-origin",body:form});

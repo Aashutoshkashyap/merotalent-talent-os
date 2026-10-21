@@ -28,7 +28,7 @@ function failure(error: unknown) {
 }
 
 export async function POST(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const length = Number(request.headers.get("content-length"));
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+  if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
   try {
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);

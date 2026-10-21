@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (getBackendMode() === "neon-staging") {
+  if (getBackendMode() !== "legacy") {
     try {
       const { runNeonMaintenance } = await import("@/lib/server/neon-maintenance");
       const data = await runNeonMaintenance(request.headers.get("authorization"));

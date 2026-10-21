@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useState } from "react";
 import { CircleAlert, EyeOff, Loader2, Save } from "lucide-react";
 
@@ -9,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 type ProviderKind = "payment" | "ai" | "email";
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 type Status = { providerName: string | null; enabled: boolean; configured: boolean; secretStorageReady: boolean; publicConfig: Record<string, unknown> };
 type ProviderConfigurationPanelProps = {
   kind: ProviderKind;

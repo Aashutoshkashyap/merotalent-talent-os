@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Chrome, Loader2 } from "lucide-react";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { createLegacyRecoveryClient, submitLegacyRecoveryProof, supportsSourceRecoveryPopup } from "@/lib/auth/legacy-recovery";
+import { createLegacyRecoveryClient, submitLegacyRecoveryProof, supportsSourceRecoveryPopup, sourceRecoveryMarker } from "@/lib/auth/legacy-recovery";
 
 interface ManagedUser { id: string; email?: string; emailVerified: boolean }
 class RecoveryAuthError extends Error {
@@ -38,7 +39,7 @@ export default function LegacyAccountRecovery({ sourceCallback = false }: { sour
   const popupRef = useRef<Window | null>(null);
   const { refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const staging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const staging = isNeonClientRuntime();
 
   const loadManagedSession = async () => {
     const response = await fetch("/api/v1/neon-staging/auth/get-session", { credentials: "same-origin", cache: "no-store" });
@@ -71,9 +72,16 @@ export default function LegacyAccountRecovery({ sourceCallback = false }: { sour
           const client = createLegacyRecoveryClient(true);
           const { data, error: sourceError } = await client.auth.getSession();
           window.history.replaceState({}, "", window.location.pathname);
-          if (sourceError || !data.session || !window.opener) throw new Error("Return to the account-restoration window and try again.");
-          window.opener.postMessage({ type: "merotalent-source-ownership-proof", token: data.session.access_token }, window.location.origin);
-          window.close();
+          window.sessionStorage.removeItem(sourceRecoveryMarker);
+          if (sourceError || !data.session) throw new Error("Return to account restoration and try again.");
+          if (window.opener) {
+            window.opener.postMessage({ type: "merotalent-source-ownership-proof", token: data.session.access_token }, window.location.origin);
+            window.close();
+          } else {
+            // Managed Auth remains in its independent HttpOnly cookie. The
+            // server verifies both live sessions before preserving the old ID.
+            await finishProof(data.session.access_token);
+          }
         } catch (failure) { setError(failure instanceof Error ? failure.message : "Google sign-in failed."); }
         finally { setBusy(false); }
       })();
@@ -140,21 +148,23 @@ export default function LegacyAccountRecovery({ sourceCallback = false }: { sour
   const sourceGoogle = async () => {
     setError("");
     if (!supportsSourceRecoveryPopup(window.location.origin)) {
-      setError("Google account restoration is available on the approved local test address http://localhost:3001.");
+      setError("Google account restoration is unavailable on this address. Use the official MeroTalent website.");
       return;
     }
-    const popup = window.open("", "merotalent-source-recovery", "width=520,height=720");
-    if (!popup) { setError("Allow the sign-in popup and try again."); return; }
-    popupRef.current = popup;
+    setBusy(true);
     try {
+      window.sessionStorage.setItem(sourceRecoveryMarker, String(Date.now()));
       const client = createLegacyRecoveryClient();
       const { data, error: sourceError } = await client.auth.signInWithOAuth({ provider: "google", options: {
-        redirectTo: `${window.location.origin}/account-recovery/source`, skipBrowserRedirect: true } });
+        redirectTo: `${window.location.origin}/auth/callback`, skipBrowserRedirect: true } });
       if (sourceError || !data.url || new URL(data.url).origin !== "https://dtirpilgzlsfryucanlg.supabase.co") {
         throw new Error("Google account verification is unavailable.");
       }
-      popup.location.href = data.url;
-    } catch (failure) { popup.close(); popupRef.current = null; setError(failure instanceof Error ? failure.message : "Google sign-in failed."); }
+      window.location.assign(data.url);
+    } catch (failure) {
+      window.sessionStorage.removeItem(sourceRecoveryMarker);
+      setBusy(false); setError(failure instanceof Error ? failure.message : "Google sign-in failed.");
+    }
   };
 
   return <AuthShell eyebrow="Account restoration" title="Restore your MeroTalent profile"

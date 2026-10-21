@@ -20,7 +20,7 @@ export async function GET(
 
   try {
     const managed = new URL(request.url).searchParams.get("view") === "managed";
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const repo = new NeonRepositories();
       const institute = managed
         ? await repo.getManagedInstitute(await getAuthenticatedApplicationUser(request), id)
@@ -70,7 +70,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
   const description = (body as { description: string }).description.trim();
   try {
-    if (getBackendMode() === "neon-staging") {
+    if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
       const updated = await new NeonRepositories().updateInstituteDescription(actor, id, description);
       return updated

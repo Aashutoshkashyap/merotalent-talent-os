@@ -1,4 +1,6 @@
 "use client";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+
 
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Send } from "lucide-react";
@@ -54,7 +56,7 @@ export default function CollegeApplicationDialog({
   onOpenChange,
 }: CollegeApplicationDialogProps) {
   const { session, user, profile, refreshProfile } = useAuth();
-  const isNeon = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+  const isNeon = isNeonClientRuntime();
   const signedIn = Boolean(session || (isNeon && user));
   const [definition, setDefinition] = useState<ModuleFormDefinition | null>(null);
   const [values, setValues] = useState<FormValues>({ collegeId: instituteId });

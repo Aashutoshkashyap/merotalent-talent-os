@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useCallback, useEffect, useState } from "react";
 import { KeyRound, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ interface EntityAIControlsProps {
 type AIStatus = { configured: boolean; enabled: boolean; providerName: string | null; secretStorageReady: boolean };
 
 const getToken = async () => (await supabase.auth.getSession()).data.session?.access_token;
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 const aiPath = (operation: "byok" | "generate") => isNeonStaging
   ? `/api/v1/neon-staging/ai/${operation}` : `/api/v1/ai/${operation}`;
 const authHeaders = async (): Promise<Record<string, string>> => {

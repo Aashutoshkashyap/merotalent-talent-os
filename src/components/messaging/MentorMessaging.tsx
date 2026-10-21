@@ -1,3 +1,4 @@
+import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,7 +60,7 @@ interface MentorMessagingProps {
   asMentor?: boolean;
 }
 
-const isNeonStaging = process.env.NEXT_PUBLIC_MEROTALENT_BACKEND_MODE === "neon-staging";
+const isNeonStaging = isNeonClientRuntime();
 
 const AttachmentPreview = ({ path, mimeType, conversationId, messageId }: {
   path: string; mimeType?: string | null; conversationId: string; messageId: string;

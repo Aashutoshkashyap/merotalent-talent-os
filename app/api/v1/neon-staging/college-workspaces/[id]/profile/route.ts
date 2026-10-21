@@ -15,7 +15,7 @@ const error = (code: string, status: number) => NextResponse.json({ error: code 
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
-    if (getBackendMode() !== "neon-staging") return new Response(null, { status: 404 });
+    if (getBackendMode() === "legacy") return new Response(null, { status: 404 });
     requireSameOrigin(request);
     const actor = await getAuthenticatedApplicationUser(request);
     const { id } = await context.params;
