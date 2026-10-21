@@ -43,7 +43,7 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
       setStatus(payload.data); setProviderName(payload.data.providerName || defaultProvider); setEnabled(payload.data.enabled);
       const config = payload.data.publicConfig || {};
       setModelOrIdentifier(String(config.model || config.merchant_code || config.from_address || ""));
-      if (config.environment === "uat") setEnvironment("uat");
+      if (config.environment === "uat" || config.environment === "production") setEnvironment(config.environment);
     };
     void load();
   }, [kind, defaultProvider]);
@@ -65,8 +65,8 @@ export function ProviderConfigurationPanel({ kind, title, description, providers
         toast({ variant: "destructive", title: "Enter a valid eSewa merchant code." });
         return;
       }
-      if (environment !== "uat" && environment !== "production") {
-        toast({ variant: "destructive", title: "Choose eSewa UAT or Production." });
+      if (enabled && environment === "production" && merchantCode === "EPAYTEST") {
+        toast({ variant: "destructive", title: "Test merchant code EPAYTEST cannot be enabled in production." });
         return;
       }
     }
