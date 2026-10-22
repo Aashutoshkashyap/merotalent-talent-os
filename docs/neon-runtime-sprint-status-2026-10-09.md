@@ -2856,3 +2856,31 @@ production configuration change or live payment occurred in this continuation.
   No contact message or payment was submitted by the browser check. Phone/tablet
   browser acceptance remains unverified: native browser control reported the
   Mac locked; requested unlock while continuing independent release work.
+
+#### Unlocked responsive browser acceptance — 2026-10-22
+
+- Confirmed `e9a58f3` production deployment
+  `dpl_3ZJLbdtSoL1hYphzHw4XJ4ZdmMLC` READY with matching commit metadata.
+  GitHub run `39797712873` completed SUCCESS. The legacy drift job's missing
+  source-secret warning is a skipped check, not source reconciliation evidence.
+- After owner unlocked the Mac, verified real Chrome iPhone SE 375×667 and
+  iPad Mini 768×1024 viewports: document widths equal viewport widths, header
+  top remains 0 while scrolled, phone sidebar gutter absent, tablet gutter
+  intact. Keyboard opened/closed the phone menu, tabbed through contact fields,
+  and opened the College directory from the tablet menu. No form submitted.
+  Screenshots: `/private/tmp/merotalent-phone-navigation-20261022.png`,
+  `/private/tmp/merotalent-phone-contact-20261022.png`, and
+  `/private/tmp/merotalent-tablet-navigation-20261022.png`.
+- Browser found a genuine route transition defect: navigation from a scrolled
+  page retained the old position and opened the College directory near its
+  footer. Added one shared Router scroll boundary; new PUSH/REPLACE page paths
+  reset instantly while initial load, same-page filters, explicit fragments
+  and POP/history navigation are not overridden. No authorization/data changes.
+- Added five regressions. Full suite 192 files / 968 tests PASS, typecheck PASS,
+  lint 0 errors / 37 existing warnings. Real isolated staging browser: contact
+  section scrollY 3,604 → College directory scrollY 0, header top 0. Browser
+  automation's mobile mouse-dispatch timeout was not counted as a touch test;
+  keyboard navigation was genuinely exercised.
+- Explicit Neon production build, architecture inventory freshness and diff
+  checks PASS on the final revision. Isolated local server was stopped; no
+  synthetic accounts or objects were created for this navigation-only batch.

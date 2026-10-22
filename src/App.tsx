@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { PrivateQueryCacheBoundary } from "@/components/auth/PrivateQueryCacheBoundary";
+import RouteScrollReset from "@/components/navigation/RouteScrollReset";
 import ContentProtectionProvider from "@/providers/ContentProtectionProvider";
 import type { CmsSnapshot } from "@/hooks/useSiteCMS";
 
@@ -115,6 +116,7 @@ const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <RouteScrollReset />
           <ContentProtectionProvider enabled={true} showWarnings={true}>
             <Suspense fallback={<div role="status" aria-live="polite" className="grid min-h-48 place-items-center p-6 text-muted-foreground">Loading workspace…</div>}>
             <Routes>

@@ -24,8 +24,11 @@ Measured checkpoint: 2026-10-22 (Asia/Kathmandu). This is not full acceptance.
 - Public home sticky-header failure was reproduced and repaired by removing
   the unintended overflow scroll container. Placeholder testimonials/contact
   details were removed without editing saved CMS records. Contact/FAQ controls
-  now have accessible names and expanded-state semantics; phone/tablet browser
-  acceptance is still pending, not inferred from class-level regressions.
+  now have accessible names and expanded-state semantics. Real phone 375×667
+  and tablet 768×1024 checks verified width, sticky header and keyboard menu
+  behavior; this is not acceptance of every module's mobile forms. The shared
+  route scroll boundary also prevents new pages opening at the previous page's
+  footer, while leaving filters, fragments and history behavior unchanged.
 
 ## Outstanding gates
 
