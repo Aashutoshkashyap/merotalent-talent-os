@@ -43,7 +43,8 @@ source based on its outdated claim that only database tasks remain.
 ## Performance scope
 
 Runtime direct dependencies: 64 → 62; the unused `xlsx` development dependency
-was also removed. Lockfile package entries: 1,017 → 1,007. The
+was also removed. Lockfile package entries: 1,017 → 1,009 after restoring
+four missing optional WASI dependency entries for clean CI installs. The
 Managed Auth transitive Better Auth package is retained, not claimed removed.
 Ordinary Neon startup constructs zero legacy clients. Profile GET now executes
 one profile/capability query instead of two sequential queries after identity

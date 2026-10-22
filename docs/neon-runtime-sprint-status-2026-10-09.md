@@ -2802,3 +2802,24 @@ production configuration change or live payment occurred in this continuation.
   production build PASS, lint 0 errors / 37 existing warnings, diff check PASS,
   inventory freshness PASS. No historical migration file changed. These checks
   do not establish full production migration or payment acceptance.
+
+#### Clean-install follow-up — 2026-10-22
+
+- Batch `b9f08b0` was pushed and Vercel deployment
+  `dpl_tZDghow2PLaNk1ae5zi5cQ5qLwJq` reached READY. Canonical recovery UI loaded
+  the official branding; unauthenticated profile API remained denied (401).
+- GitHub run `39699493459` failed before tests at `npm ci`: four exact
+  `@emnapi/core` / `@emnapi/runtime` entries required by optional WASI tooling
+  were absent. npm 11.6.2 reproduced no repair; CI's npm 11.19.1 regenerated
+  the missing entries. No dependency override, peer bypass or CI relaxation was
+  retained. Lockfile package entries are now 1,009, not the intermediate 1,007.
+- Added a regression asserting both WASI parents resolve their exact locked
+  dependencies, including optional packages absent on the developer platform.
+  A disposable archive clean install uses npm 11.19.1, matching CI; no source,
+  provider configuration or production data is changed by this correction.
+- Final correction verification: full suite 190 files / 957 tests PASS,
+  typecheck PASS, lint 0 errors / 37 existing warnings; clean `npm ci` PASS in
+  the disposable archive and Linux/x64 npm 11.19.1 lock validation PASS.
+  Explicit-Neon production build, diff and inventory checks PASS. The new
+  regression also passed against the archive's freshly installed dependencies.
+  No existing package version changed during lockfile repair.
