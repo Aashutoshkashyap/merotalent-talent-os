@@ -45,6 +45,7 @@ import {
 import { OperationsPage } from "./OperationsUI";
 import { safeExternalUrl } from "@/lib/institutes/public-institutes";
 import { invalidateCmsCache } from "@/hooks/useSiteCMS";
+import { CONTACT_COMPONENTS, contactComponentKey, isContactSection } from "@/lib/cms/contact-components";
 
 const isNeonStaging = isNeonClientRuntime();
 async function stagingRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -410,12 +411,25 @@ const STANDARD_HOME_SECTIONS = [
   };
 
   const openAddChild = (parentSection: PageSection) => {
+    const contactPreset = isContactSection(parentSection.section_key)
+      ? CONTACT_COMPONENTS.find(item => !sections.some(row => row.parent_id === parentSection.id && row.section_key === contactComponentKey(parentSection.section_key, item.kind)))
+      : undefined;
+    if (isContactSection(parentSection.section_key) && !contactPreset) {
+      toast({ title: "Contact components already exist", description: "Edit or hide their existing cards below. Your content has not been replaced." });
+      return;
+    }
     resetForm();
     setFormData({
       ...emptyForm(),
       parent_id: parentSection.id,
       page: parentSection.page,
-      section_key: `${parentSection.section_key}_item_${Date.now().toString().slice(-4)}`,
+      section_key: isContactSection(parentSection.section_key)
+        ? contactComponentKey(parentSection.section_key, contactPreset!.kind)
+        : `${parentSection.section_key}_item_${Date.now().toString().slice(-4)}`,
+      ...(parentSection.section_key === "testimonials" ? { title: "New testimonial", is_visible: false } : {}),
+      ...(contactPreset ? { title: contactPreset.title,
+        body: contactPreset.kind === "email" ? siteSettings.contact_email : contactPreset.kind === "phone" ? siteSettings.contact_phone : contactPreset.kind === "address" ? siteSettings.contact_address : "",
+        cta_label: contactPreset.kind === "message" ? "Send Message" : "" } : {}),
     });
     setIsDialogOpen(true);
   };
@@ -617,6 +631,7 @@ const STANDARD_HOME_SECTIONS = [
           <p className="text-muted-foreground text-sm">
             Customize heroes, banners, text blocks, favicons, logos, and sub-items across all pages.
           </p>
+          <p className="mt-2 text-muted-foreground text-sm">Use Visible / Hidden to publish or hide a section or item without deleting its saved content. Use Edit to change it and Sub-item to manage individual cards.</p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
@@ -684,6 +699,28 @@ const STANDARD_HOME_SECTIONS = [
                   />
                 </div>
               </div>
+
+              {formData.parent_id && isContactSection(sections.find(row => row.id === formData.parent_id)?.section_key || "") && (
+                <div className="space-y-2">
+                  <Label>Contact component</Label>
+                  <Select value={formData.section_key} onValueChange={key => {
+                    const parent = sections.find(row => row.id === formData.parent_id)!;
+                    const preset = CONTACT_COMPONENTS.find(item => contactComponentKey(parent.section_key, item.kind) === key)!;
+                    setFormData(current => ({ ...current, section_key: key, title: preset.title,
+                      body: preset.kind === "email" ? siteSettings.contact_email : preset.kind === "phone" ? siteSettings.contact_phone : preset.kind === "address" ? siteSettings.contact_address : "",
+                      cta_label: preset.kind === "message" ? "Send Message" : "" }));
+                  }}>
+                    <SelectTrigger aria-label="Contact component"><SelectValue placeholder="Choose a contact component" /></SelectTrigger>
+                    <SelectContent>{CONTACT_COMPONENTS.map(item => {
+                      const key = contactComponentKey(sections.find(row => row.id === formData.parent_id)!.section_key, item.kind);
+                      return <SelectItem key={key} value={key} disabled={sections.some(row => row.parent_id === formData.parent_id && row.section_key === key && row.id !== editingSection?.id)}>{item.title}</SelectItem>;
+                    })}</SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Edit the heading and body below. Use Body for the contact value or form instructions. Each component can be hidden without deleting its content.</p>
+                </div>
+              )}
+              {formData.parent_id && sections.find(row => row.id === formData.parent_id)?.section_key === "testimonials" &&
+                <p className="text-xs text-muted-foreground">Title is the author name, Body is the quote, and Subtitle is role | institution. New testimonials start hidden until you publish them.</p>}
 
               <div className="space-y-2">
                 <Label>Title / Heading *</Label>
@@ -931,7 +968,7 @@ const STANDARD_HOME_SECTIONS = [
                         title="Add sub-item under this section"
                       >
                         <CornerDownRight className="mr-1 h-3 w-3 text-primary" />
-                        Sub-item
+                        {section.section_key === "testimonials" ? "Add testimonial" : isContactSection(section.section_key) ? "Add contact component" : "Sub-item"}
                       </Button>
                       <Button
                         variant="ghost"

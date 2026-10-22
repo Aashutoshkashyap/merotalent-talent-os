@@ -62,7 +62,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
   const [events, setEvents] = useState<OpportunityCardData[]>([]);
   const [courses, setCourses] = useState<OpportunityCardData[]>([]);
   const [collegeUpdates, setCollegeUpdates] = useState<OpportunityCardData[]>([]);
-  const { settings, getSection, getChildSections, hasSectionConfiguration, isSectionVisible, isLoading } = useSiteCMS("home", initialCmsSnapshot);
+  const { settings, sectionVisibility, getSection, getChildSections, hasSectionConfiguration, hasChildSectionConfiguration, isSectionVisible, isLoading } = useSiteCMS("home", initialCmsSnapshot);
 
   const heroSection = getSection("hero_banner");
   const featuredSection = getSection("featured_content") || getSection("latest_news");
@@ -70,6 +70,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
   const aboutSection = getSection("about_us") || getSection("features_grid");
   const testimonialsSection = getSection("testimonials");
   const faqSection = getSection("faq");
+  const contactSection = getSection("contact_form") || getSection("contact_us");
 
   const trustHeading = splitFirstWord(trustSection?.title || "");
   const trustItems = trustSection ? getChildSections(trustSection) : [];
@@ -106,7 +107,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
   const faqItems = faqSection ? getChildSections(faqSection) : [];
   const faqs = faqItems.length > 0
     ? faqItems.map((item) => ({ question: item.title, answer: item.body || item.subtitle || "" }))
-    : undefined;
+    : faqSection && hasChildSectionConfiguration(faqSection) ? [] : undefined;
 
   useEffect(() => {
     const loadOpportunities = async () => {
@@ -369,6 +370,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
           key="testimonials"
           eyebrow={testimonialsSection?.subtitle || undefined}
           title={testimonialsSection?.title || undefined}
+          description={testimonialsSection?.body || undefined}
           testimonials={testimonials}
         />
       ),
@@ -391,15 +393,17 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
     },
     {
       key: "contact_form",
-      order: getSection("contact_form")?.display_order ?? 11,
+      order: contactSection?.display_order ?? 11,
       isVisible: isConfiguredSectionVisible("contact_form", "contact_us"),
-      render: () => <ContactForm key="contact_form" settings={settings} />,
+      render: () => <ContactForm key="contact_form" settings={settings} section={contactSection}
+        components={contactSection ? getChildSections(contactSection) : []}
+        componentVisibility={sectionVisibility} />,
     },
     {
       key: "cta",
       order: getSection("cta")?.display_order ?? 12,
       isVisible: isConfiguredSectionVisible("cta"),
-      render: () => <CTA key="cta" />,
+      render: () => <CTA key="cta" section={getSection("cta")} />,
     },
   ];
 

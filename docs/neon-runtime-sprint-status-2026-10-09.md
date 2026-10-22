@@ -2884,3 +2884,33 @@ production configuration change or live payment occurred in this continuation.
 - Explicit Neon production build, architecture inventory freshness and diff
   checks PASS on the final revision. Isolated local server was stopped; no
   synthetic accounts or objects were created for this navigation-only batch.
+
+#### CMS editing/visibility correction — 2026-10-22
+
+- Owner clarified that sections/components must remain editable and support
+  hide/unhide; removing hardcoded placeholder fallbacks must not silently remove
+  the section. No saved CMS row was deleted by either batch.
+- Restored the enabled testimonial section even with no published items;
+  its heading, introduction and individual testimonials remain controlled by
+  existing CMS records. New testimonial items start hidden for review; no
+  fictional quotes are re-published as real endorsements.
+- Contact now renders its saved section heading, eyebrow and body. Added
+  recognizable contact component choices to the existing Page Editor sub-item
+  workflow: address, phone, email and message form. Titles, values/instructions
+  and submit label are editable; each component's visibility is independent.
+  Duplicates are prevented by the editor; global contact settings remain the
+  fallback until a component is customized, never fabricated contact details.
+- Public visibility metadata includes child identifiers/state, not hidden text.
+  Hidden components cannot reappear from global defaults. An explicitly empty
+  configured FAQ list stays empty instead of resurrecting fallback questions.
+  CTA heading/body/button/destination now use the existing saved section fields.
+- Super Admin transaction authorization, audit logging and hidden-content
+  exclusion remain authoritative; no schema or permission changes. Focused
+  regressions passed 14/14. Real isolated Neon CMS test passed: edit child,
+  hide, verify retained admin content/no public content, unhide and read back
+  the edited value. Test changes were rolled back; production writes zero.
+- Final verification: 192 standard files / 972 tests PASS, isolated CMS test
+  PASS, typecheck PASS, explicit Neon production build PASS, lint 0 errors /
+  37 existing warnings, inventory freshness and diff checks PASS. Scope is the
+  affected home sections/components, not a claim that every static component
+  in every module has been converted into a page-builder field.

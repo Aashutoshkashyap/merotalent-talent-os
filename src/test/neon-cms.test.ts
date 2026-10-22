@@ -32,11 +32,15 @@ describe("Neon CMS policy", () => {
     const query = vi.fn()
       .mockResolvedValueOnce([{ id: "visible", page: "home", section_key: "hero", is_visible: true }])
       .mockResolvedValueOnce([{ section_key: "hero", display_order: 1, is_visible: true },
-        { section_key: "hidden", display_order: 2, is_visible: false }])
+        { section_key: "hidden", display_order: 2, is_visible: false },
+        { section_key: "contact_form_email", parent_id: "contact", display_order: 1, is_visible: false }])
       .mockResolvedValueOnce([{ key: "site_title", value: "MeroTalent" }]);
     const result = await readPublicCms("home", query);
     expect(result.sections.map(row => row.id)).toEqual(["visible"]);
     expect(result.sectionVisibility.hidden.is_visible).toBe(false);
+    expect(result.sectionVisibility.contact_form_email).toMatchObject({ parent_id: "contact", is_visible: false });
+    expect(query.mock.calls[1][0]).not.toContain("AND parent_id IS NULL");
+    expect(query.mock.calls[1][0]).not.toContain("body");
     expect(result.settings.site_title).toBe("MeroTalent");
     expect(query.mock.calls[0][0]).toContain("parent.is_visible=true");
   });

@@ -53,6 +53,20 @@ describe("isolated Neon CMS publication boundary", () => {
       publicState = await readPublicCms("home", query);
       expect(publicState.sections.some(row => row.id === parent.id)).toBe(true);
       expect(publicState.sections.some(row => row.id === child.id)).toBe(true);
+      await saveAdminSection(admin, { page: "home", section_key: `${key}_child`,
+        title: "Edited child", body: "retained@example.test", parent_id: parent.id,
+        display_order: 9001, is_visible: false }, child.id, run);
+      publicState = await readPublicCms("home", query);
+      expect(publicState.sections.some(row => row.id === child.id)).toBe(false);
+      expect(publicState.sectionVisibility[`${key}_child`]).toMatchObject({ parent_id: parent.id, is_visible: false });
+      expect(publicState.sectionVisibility[`${key}_child`]).not.toHaveProperty("body");
+      expect((await readAdminCms(admin, query)).find(row => row.id === child.id)).toMatchObject({
+        title: "Edited child", body: "retained@example.test", is_visible: false });
+      await saveAdminSection(admin, { page: "home", section_key: `${key}_child`,
+        title: "Edited child", body: "retained@example.test", parent_id: parent.id,
+        display_order: 9001, is_visible: true }, child.id, run);
+      expect((await readPublicCms("home", query)).sections.find(row => row.id === child.id))
+        .toMatchObject({ title: "Edited child", body: "retained@example.test" });
       await saveAdminSiteSettings(admin, { site_title: "Staging CMS test" }, run);
       expect((await readPublicCms("home", query)).settings.site_title).toBe("Staging CMS test");
       expect((await readAdminSiteSettings(admin, query)).some(row => row.key === "site_title" &&

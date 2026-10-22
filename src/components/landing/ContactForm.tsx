@@ -5,13 +5,24 @@ import { isNeonClientRuntime } from "@/lib/backend-selection";
 import React, { useState } from "react";
 import { MapPin, Phone, Mail, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { SiteSettings } from "@/hooks/useSiteCMS";
+import type { PageSection, PublicSectionVisibility, SiteSettings } from "@/hooks/useSiteCMS";
+import { contactComponentKey, type ContactComponentKind } from "@/lib/cms/contact-components";
 
 const isNeonStaging = isNeonClientRuntime();
 
-export default function ContactForm({ settings = {} }: { settings?: SiteSettings }) {
-  const email = settings.contact_email || settings.support_email;
-  const phone = settings.contact_phone || settings.support_phone;
+export default function ContactForm({ settings = {}, section, components = [], componentVisibility = {} }: {
+  settings?: SiteSettings;
+  section?: PageSection;
+  components?: PageSection[];
+  componentVisibility?: Record<string, PublicSectionVisibility>;
+}) {
+  const component = (kind: ContactComponentKind) => components.find(row => row.section_key === contactComponentKey(section?.section_key || "contact_form", kind));
+  const visible = (kind: ContactComponentKind) => componentVisibility[contactComponentKey(section?.section_key || "contact_form", kind)]?.is_visible ?? component(kind)?.is_visible ?? true;
+  const email = component("email") ? component("email")!.body : settings.contact_email || settings.support_email;
+  const phone = component("phone") ? component("phone")!.body : settings.contact_phone || settings.support_phone;
+  const address = component("address") ? component("address")!.body : settings.contact_address;
+  const messagePanel = component("message");
+  const description = section ? section.body : "Contact us with questions about courses, events, mentorship or college listings. Share your requirements and our support team will review your inquiry.";
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -64,38 +75,36 @@ export default function ContactForm({ settings = {} }: { settings?: SiteSettings
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-3">
             <span className="text-xs font-extrabold text-[#0073e6] uppercase tracking-widest">
-              CONNECT WITH US
+              {section ? section.subtitle : "CONNECT WITH US"}
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight tracking-tight">
-              Connect with Our Help Desk & Support
+              {section?.title ?? "Connect with Our Help Desk & Support"}
             </h2>
-            <p className="text-sm sm:text-base text-slate-500 font-medium leading-relaxed mt-2 pr-6">
-              Contact us with questions about courses, events, mentorship or college listings. Share your requirements and our support team will review your inquiry.
-            </p>
+            {description && <p className="text-sm sm:text-base text-slate-500 font-medium leading-relaxed mt-2 pr-6">{description}</p>}
           </div>
 
           {/* Only publish contact details configured by MeroTalent. */}
           <div className="flex flex-col gap-4 max-w-md">
             {/* Block 1: Location */}
-            {settings.contact_address && <div className="flex items-center gap-5 p-5 rounded-3xl border border-slate-100 bg-slate-50/50">
+            {visible("address") && address && <div className="flex items-center gap-5 p-5 rounded-3xl border border-slate-100 bg-slate-50/50">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                 <MapPin className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-extrabold text-primary">Our Location</span>
+                <span className="text-sm font-extrabold text-primary">{component("address")?.title ?? "Our Location"}</span>
                 <span className="text-xs sm:text-sm text-slate-500 font-semibold mt-0.5">
-                  {settings.contact_address}
+                  {address}
                 </span>
               </div>
             </div>}
 
             {/* Block 2: Phone */}
-            {phone && <div className="flex items-center gap-5 p-5 rounded-3xl border border-slate-100 bg-slate-50/50">
+            {visible("phone") && phone && <div className="flex items-center gap-5 p-5 rounded-3xl border border-slate-100 bg-slate-50/50">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                 <Phone className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-extrabold text-primary">Phone Number</span>
+                <span className="text-sm font-extrabold text-primary">{component("phone")?.title ?? "Phone Number"}</span>
                 <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} className="text-xs sm:text-sm text-slate-500 font-semibold mt-0.5 break-all">
                   {phone}
                 </a>
@@ -103,12 +112,12 @@ export default function ContactForm({ settings = {} }: { settings?: SiteSettings
             </div>}
 
             {/* Block 3: Email */}
-            {email && <div className="flex items-center gap-5 p-5 rounded-3xl border border-slate-100 bg-slate-50/50">
+            {visible("email") && email && <div className="flex items-center gap-5 p-5 rounded-3xl border border-slate-100 bg-slate-50/50">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                 <Mail className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-extrabold text-primary">Email Address</span>
+                <span className="text-sm font-extrabold text-primary">{component("email")?.title ?? "Email Address"}</span>
                 <a href={`mailto:${email}`} className="text-xs sm:text-sm text-slate-500 font-semibold mt-0.5 break-all">
                   {email}
                 </a>
@@ -118,11 +127,11 @@ export default function ContactForm({ settings = {} }: { settings?: SiteSettings
         </div>
 
         {/* Right Column: Send Us A Message Card */}
-        <div className="bg-gradient-to-br from-slate-50/50 to-primary/5 border border-slate-200/60 rounded-[32px] p-8 sm:p-10 shadow-lg flex flex-col gap-6">
+        {visible("message") && <div className="bg-gradient-to-br from-slate-50/50 to-primary/5 border border-slate-200/60 rounded-[32px] p-8 sm:p-10 shadow-lg flex flex-col gap-6">
           <div className="text-center">
-            <h3 className="text-2xl font-black text-primary">Send us a message</h3>
+            <h3 className="text-2xl font-black text-primary">{messagePanel?.title ?? "Send us a message"}</h3>
             <p className="text-xs sm:text-sm text-slate-500 font-semibold mt-2 leading-relaxed">
-              Fill out the form below to send your inquiry to MeroTalent.
+              {messagePanel ? messagePanel.body : "Fill out the form below to send your inquiry to MeroTalent."}
             </p>
           </div>
 
@@ -207,12 +216,12 @@ export default function ContactForm({ settings = {} }: { settings?: SiteSettings
                     Sending...
                   </>
                 ) : (
-                  "Send Message"
+                  messagePanel?.cta_label || "Send Message"
                 )}
               </button>
             </div>
           </form>
-        </div>
+        </div>}
       </div>
     </section>
   );

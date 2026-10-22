@@ -13,15 +13,16 @@ export interface TestimonialData {
 interface TestimonialsProps {
   eyebrow?: string;
   title?: string;
+  description?: string;
   testimonials?: TestimonialData[];
 }
 
 export default function Testimonials({
-  eyebrow = "Success Stories",
-  title = "Loved by Students & Educators Across Nepal",
+  eyebrow = "Testimonials",
+  title = "Community feedback",
+  description,
   testimonials = [],
 }: TestimonialsProps) {
-  if (!testimonials.length) return null;
   return (
     <section className="py-16 bg-slate-50/60 border-y border-slate-100 w-full">
       <div className="max-w-7xl mx-auto px-6 sm:px-10">
@@ -35,6 +36,7 @@ export default function Testimonials({
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             {title}
           </h2>
+          {description && <p className="mt-4 text-sm text-slate-600">{description}</p>}
         </div>
 
         {/* Testimonials Grid */}

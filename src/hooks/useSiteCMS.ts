@@ -42,6 +42,7 @@ export interface SiteSettings {
 
 export interface PublicSectionVisibility {
   section_key: string;
+  parent_id?: string | null;
   display_order: number;
   is_visible: boolean;
 }
@@ -250,15 +251,20 @@ export function useSiteCMS(page = "home", serverSnapshot?: CmsSnapshot | null) {
   const hasSectionConfiguration = (sectionKey: string): boolean => {
     return Boolean(sectionVisibility[sectionKey]);
   };
+  const hasChildSectionConfiguration = (parent: PageSection): boolean =>
+    Object.values(sectionVisibility).some(section => section.parent_id === parent.id) ||
+    pageSections.some(section => section.parent_id === parent.id);
 
   return {
     sections: pageSections,
     allSections: sections,
+    sectionVisibility,
     settings,
     getSection,
     getChildSections,
     isSectionVisible,
     hasSectionConfiguration,
+    hasChildSectionConfiguration,
     isLoading,
   };
 }

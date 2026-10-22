@@ -39,8 +39,8 @@ export async function readPublicCms(page: string, query: Query = queryRows): Pro
         AND (parent_id IS NULL OR EXISTS (SELECT 1 FROM public.page_sections parent
           WHERE parent.id=page_sections.parent_id AND parent.is_visible=true))
       ORDER BY display_order,id`, [selected]),
-    query<PublicSectionVisibility & QueryResultRow>(`SELECT section_key,display_order,is_visible
-      FROM public.page_sections WHERE page=$1 AND parent_id IS NULL ORDER BY display_order,id`, [selected]),
+    query<PublicSectionVisibility & QueryResultRow>(`SELECT section_key,parent_id,display_order,is_visible
+      FROM public.page_sections WHERE page=$1 ORDER BY display_order,id`, [selected]),
     query<{ key: string; value: string | null } & QueryResultRow>(`SELECT key,value FROM public.site_settings
       WHERE key=ANY($1::text[])`, [[...siteKeys]]),
   ]);
