@@ -19,10 +19,20 @@ describe('no legacy application fallback in Neon mode',()=>{
     const network=vi.fn();vi.stubGlobal('fetch',network);
     try{
       const {supabase}=await import('@/integrations/supabase/client');
-      expect((await supabase.auth.getSession()).data.session).toBeNull();
-      const result=await supabase.from('profiles').select('user_id');expect(result.error).toBeTruthy();expect(result.error?.message).toContain('Legacy application data access is disabled');
+      expect(()=>supabase.auth.getSession()).toThrow('Legacy application data access is disabled');
+      expect(()=>supabase.from('profiles').select('user_id')).toThrow('Legacy application data access is disabled');
       expect(()=>supabase.channel('unexpected')).toThrow('Legacy realtime is disabled');
       expect(network).not.toHaveBeenCalled();
     }finally{vi.unstubAllGlobals();}
+  });
+  it.each(['neon-staging','neon-production'])('Neon mode %s starts without source URL or key and never constructs a legacy SDK',async mode=>{
+    vi.stubEnv('NEXT_PUBLIC_MEROTALENT_BACKEND_MODE',mode);
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL','');vi.stubEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY','');
+    const network=vi.fn();vi.stubGlobal('fetch',network);
+    try {
+      const {supabase}=await import('@/integrations/supabase/client');
+      expect(()=>supabase.storage).toThrow('Legacy application data access is disabled');
+      expect(network).not.toHaveBeenCalled();
+    } finally {vi.unstubAllGlobals();}
   });
 });

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSiteCMS } from "@/hooks/useSiteCMS";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 
 const navLinks = [
   { name: "Jobs", href: "/jobs" },
@@ -44,10 +45,10 @@ const Navbar = () => {
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#eadfd9] bg-[#fffdfb]/92 backdrop-blur-xl">
       <div className="flex h-[68px] w-full items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Merotalent home">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label={`${brand.name} home`}>
           <img
-            src={settings.logo_url || "/logo.png"}
-            alt={settings.site_title || "MeroTalent Logo"}
+            src={settings.logo_url || brand.logo}
+            alt={settings.site_title || brand.name}
             className="h-9 w-auto object-contain rounded-lg"
           />
           <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">

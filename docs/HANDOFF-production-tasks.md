@@ -1,5 +1,11 @@
 # Handoff — production catch-up tasks
 
+> Historical August 2026 Supabase-source handoff, retained for recovery.
+> This is not the current Neon production runbook. Follow
+> [the canonical architecture](architecture/target-architecture.md) and the
+> [execution ledger](neon-runtime-sprint-status-2026-10-09.md); do not replay this
+> SQL bundle or its old credential instructions without target-bound review.
+
 **For:** whoever holds Supabase production credentials for project
 `dtirpilgzlsfryucanlg`, plus GitHub admin on this repository.
 **Status:** all application code is done and merged to `main`. Only the tasks

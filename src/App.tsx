@@ -21,7 +21,7 @@ import Onboarding from "./screens/Onboarding";
 import ResetPassword from "./screens/ResetPassword";
 import PendingApproval from "./screens/auth/PendingApproval";
 import OAuthCallback from "./screens/auth/OAuthCallback";
-import LegacyAccountRecovery from "./screens/auth/LegacyAccountRecovery";
+const LegacyAccountRecovery = lazy(() => import("./screens/auth/LegacyAccountRecovery"));
 
 // Public Pages
 const CoursesPage = lazy(() => import("./screens/courses/CoursesPage"));

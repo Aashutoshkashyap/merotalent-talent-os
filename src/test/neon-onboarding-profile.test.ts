@@ -10,7 +10,7 @@ vi.mock("@/lib/server/neon-session", async original => ({
   getAuthenticatedApplicationUser: actorMock,
 }));
 
-import { PATCH } from "../../app/api/v1/neon-staging/profile/route";
+import { GET, PATCH } from "../../app/api/v1/neon-staging/profile/route";
 
 const endpoint = "https://app.test/api/v1/neon-staging/profile";
 const userId = "4da2dbaa-e1c6-4c29-88ce-6716761985d1";
@@ -39,6 +39,22 @@ describe("Neon onboarding profile completion", () => {
     expect(sql).toContain("l.status='verified'");
     expect(sql).toContain("onboarding_completed=");
     expect(values.slice(0, 2)).toEqual([userId, neonAuthUserId]);
+  });
+
+  it("loads own profile and current capabilities in one private query without exposing internal fields", async () => {
+    queryRowsMock.mockResolvedValueOnce([{ user_id: userId, full_name: "Student One", effective_capabilities: ["college", "jobs"] }]);
+    const response = await GET(new Request(endpoint));
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(body.access.capabilities).toEqual(["college", "jobs"]);
+    expect(body.data).not.toHaveProperty("effective_capabilities");
+    expect(queryRowsMock).toHaveBeenCalledTimes(1);
+    const [sql, params] = queryRowsMock.mock.calls[0];
+    expect(sql).toContain("umc.user_id=p.user_id");
+    expect(sql).toContain("umc.expires_at>now()");
+    expect(sql).toContain("l.status='verified'");
+    expect(params).toEqual([userId, neonAuthUserId]);
   });
 
   it("requires a full name and never accepts a browser-supplied resume path", async () => {

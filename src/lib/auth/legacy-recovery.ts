@@ -1,6 +1,7 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 /** Temporary source ownership proof for migration recovery; no persistent source session. */
 import { createClient } from "@supabase/supabase-js";
+export { supportsSourceRecoveryPopup, sourceRecoveryMarker, isSourceRecoveryCallback } from "./source-recovery-context";
 
 const sourceOrigin = "https://dtirpilgzlsfryucanlg.supabase.co";
 export function createLegacyRecoveryClient(detectSessionInUrl = false) {
@@ -12,27 +13,6 @@ export function createLegacyRecoveryClient(detectSessionInUrl = false) {
   return createClient(sourceOrigin, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl, flowType: "implicit" },
   });
-}
-
-/** These source callback patterns are already approved; never change source OAuth configuration. */
-export function supportsSourceRecoveryPopup(origin: string): boolean {
-  try {
-    const url = new URL(origin);
-    if (url.username || url.password || url.pathname !== "/" || url.search || url.hash) return false;
-    return (url.protocol === "https:" && !url.port && ["www.merotalent.com", "merotalent.com"].includes(url.hostname)) ||
-      (url.protocol === "http:" && url.hostname === "localhost" && ["3000", "3001"].includes(url.port)) ||
-      (url.protocol === "https:" && /^[a-z0-9-]+\.vercel\.app$/.test(url.hostname));
-  } catch { return false; }
-}
-
-export const sourceRecoveryMarker = "merotalent.source-recovery-started";
-/** A popup marker chooses the callback UI only; it is never an identity proof. */
-export function isSourceRecoveryCallback(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const started = Number(window.sessionStorage.getItem(sourceRecoveryMarker));
-    return started > 0 && started <= Date.now() && Date.now() - started < 10 * 60_000;
-  } catch { return false; }
 }
 
 const errors: Record<string, string> = {

@@ -30,6 +30,8 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/brand/BrandMark";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AdminSidebarProps {
@@ -170,12 +172,12 @@ const AdminSidebar = ({
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93c5fd] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071a3d]"
         >
-          <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#2563eb] text-white shadow-[0_10px_24px_rgba(37,99,235,0.4)] ring-1 ring-inset ring-[#60a5fa]/70">
-            <Sparkles className="h-5 w-5" />
+          <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-white shadow-sm">
+            <BrandMark size={36} className="h-9 w-9 object-contain" />
           </span>
           {!compact ? (
             <span className="font-display text-xl font-bold tracking-tight text-white">
-              Mero<span className="text-[#93c5fd]">talent</span>
+              {brand.name}
             </span>
           ) : null}
         </Link>

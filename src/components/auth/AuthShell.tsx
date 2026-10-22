@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { BrandMark } from "@/components/brand/BrandMark";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 import {
   ArrowUpRight,
   BriefcaseBusiness,
@@ -30,12 +32,10 @@ const AuthShell = ({
     <section className="flex min-h-screen flex-col justify-between px-4 py-8 sm:px-8 sm:py-10 lg:px-16 lg:py-12 bg-[#fafbfc] lg:bg-white">
       <div className="mx-auto flex h-full w-full max-w-[480px] flex-1 flex-col justify-between">
         {/* Brand Logo Header */}
-        <Link to="/" className="flex w-fit items-center gap-2.5 transition-transform hover:scale-102" aria-label="Merotalent home">
-          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#0073e6] text-white shadow-md shadow-blue-500/20">
-            <Sparkles className="h-[18px] w-[18px]" />
-          </span>
+        <Link to="/" className="flex w-fit items-center gap-2.5 transition-transform hover:scale-102" aria-label={`${brand.name} home`}>
+          <BrandMark />
           <span className="font-display text-xl font-bold tracking-tight text-[#17162e]">
-            Mero<span className="text-[#0073e6]">talent</span>
+            {brand.name}
           </span>
         </Link>
 

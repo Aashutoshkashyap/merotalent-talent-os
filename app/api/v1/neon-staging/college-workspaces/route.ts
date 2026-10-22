@@ -19,11 +19,18 @@ export async function GET(request: Request): Promise<Response> {
     const workspaces = await queryRows<Record<string, unknown>>(`
       SELECT i.id,i.name,i.short_name,i.description,i.location,i.map_location,i.website,
         i.contact_email,i.contact_phone,i.youtube_url,i.logo_url,i.cover_image_url,i.type,
-        i.owner_user_id,i.courses_offered,i.total_seats,i.available_seats,i.admission_status,
+        i.owner_user_id,i.slug,i.status,i.courses_offered,i.total_seats,i.available_seats,i.admission_status,
         i.chairperson_name,i.chairperson_designation,i.chairperson_message,
         i.principal_name,i.principal_designation,i.principal_message,
-        s.status AS subscription_status,s.payment_status,p.name AS package_name,
-        p.lead_access_mode,s.expiry_date,
+        CASE WHEN effective.active AND NOT COALESCE(current_plan.active,false) THEN 'active'
+          ELSE s.status END AS subscription_status,
+        CASE WHEN effective.active AND NOT COALESCE(current_plan.active,false) THEN 'manual_grant'
+          ELSE s.payment_status END AS payment_status,
+        CASE WHEN effective.active AND NOT COALESCE(current_plan.active,false) THEN 'Granted access'
+          ELSE p.name END AS package_name,
+        CASE WHEN effective.applications THEN 'full' ELSE 'none' END AS lead_access_mode,
+        CASE WHEN effective.active AND NOT COALESCE(current_plan.active,false) THEN effective.expiry_date
+          ELSE s.expiry_date END AS expiry_date,effective.applications AS can_view_applications,
         EXISTS (SELECT 1 FROM public.module_entitlements e
           WHERE e.user_id=$1::uuid AND e.module_key='college' AND e.entity_type='college'
             AND e.entity_id=i.id AND e.status='active' AND e.start_at<=now()
@@ -47,6 +54,23 @@ export async function GET(request: Request): Promise<Response> {
         ORDER BY (s.status IN ('active','trialing') AND s.start_date<=now() AND s.expiry_date>now()) DESC,
           s.expiry_date DESC NULLS LAST LIMIT 1) s ON true
       LEFT JOIN public.packages p ON p.id=s.package_id
+      LEFT JOIN LATERAL (SELECT s.status IN ('active','trialing')
+        AND s.payment_status IN ('success','not_required') AND s.start_date<=now()
+        AND s.expiry_date>now() AND p.is_active AND p.deleted_at IS NULL AS active) current_plan ON true
+      LEFT JOIN LATERAL (
+        SELECT count(*)>0 AS active,CASE WHEN bool_or(e.expires_at IS NULL) THEN NULL
+          ELSE max(e.expires_at) END AS expiry_date,COALESCE(bool_or(
+          e.features->>'college_applications'='true'
+          OR plan.features->>'college_applications'='true'
+          OR EXISTS (SELECT 1 FROM public.entity_feature_grants g
+            WHERE g.user_id=$1::uuid AND g.module_key='college' AND g.entity_type='college'
+              AND g.entity_id=i.id AND g.feature_key='college_applications' AND g.status='active')
+        ),false) AS applications
+        FROM public.module_entitlements e LEFT JOIN public.packages plan ON plan.id=e.package_id
+        WHERE e.user_id=$1::uuid AND e.module_key='college' AND e.entity_type='college'
+          AND e.entity_id=i.id AND e.status='active' AND e.start_at<=now()
+          AND (e.expires_at IS NULL OR e.expires_at>now())
+      ) effective ON true
       WHERE i.deleted_at IS NULL ORDER BY i.name`, [actor.userId]);
     const requests = await queryRows<Record<string, unknown>>(`
       SELECT id,request_kind,status,entity_id,request_data,created_at FROM public.entity_scope_requests

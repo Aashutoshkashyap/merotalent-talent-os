@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import { BrandMark } from "@/components/brand/BrandMark";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -164,12 +166,12 @@ const DashboardSidebar = ({
             className="group flex items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#93c5fd] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071a3d]"
             aria-label={compact ? "MeroTalent home" : undefined}
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#2563eb] shadow-[0_10px_24px_rgba(37,99,235,0.4)] ring-1 ring-inset ring-[#60a5fa]/70 transition-transform group-hover:-rotate-3 group-hover:scale-105">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-white shadow-sm transition-transform group-hover:scale-105">
+              <BrandMark size={36} className="h-9 w-9 object-contain" />
             </div>
             {!compact && (
               <span className="font-display text-xl font-bold tracking-tight text-white">
-                Mero<span className="text-[#93c5fd]">talent</span>
+                {brand.name}
               </span>
             )}
           </Link>

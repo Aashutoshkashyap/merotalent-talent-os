@@ -1,0 +1,3157 @@
+{
+  "method": "Tracked and nonignored text files; Supabase reference line counts plus AST runtime imports. Conservative dispositions are not runtime acceptance.",
+  "excluded": [
+    "node_modules",
+    ".git",
+    "build artifacts",
+    "ignored private credentials/artifacts",
+    "this generated architecture directory"
+  ],
+  "summary": {
+    "ACTIVE": 79,
+    "MIGRATION REQUIRED": 130,
+    "DEAD": 0,
+    "HISTORICAL/RECOVERY": 76,
+    "UNKNOWN": 0
+  },
+  "runtimeImportInventory": {
+    "files": 109,
+    "staticFiles": 102,
+    "dynamicFiles": 7,
+    "groups": {
+      "app/[[...slug]]": 1,
+      "app/api": 39,
+      "src/components": 8,
+      "src/contexts": 1,
+      "src/hooks": 3,
+      "src/integrations": 1,
+      "src/lib": 19,
+      "src/screens": 37
+    },
+    "records": [
+      {
+        "file": "app/[[...slug]]/page.tsx",
+        "group": "app/[[...slug]]",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/cron/maintenance/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/admin/access-matrix/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/admin/auth-users/[id]/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          },
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/admin/auth-users/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          },
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/admin/providers/[kind]/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/advertisements/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/ai/byok/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/ai/generate/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/competitions/registrations/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/competitions/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/courses/[id]/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/courses/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/events/[id]/lifecycle/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/events/[id]/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/events/categories/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/events/my-tickets/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/events/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/featured/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/institutes/[id]/blogs/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "dynamic",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/institutes/[id]/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/institutes/[id]/updates/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "dynamic",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/institutes/applications/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/institutes/directory/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "dynamic",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/institutes/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/jobs/applications/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/jobs/matching/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/jobs/preferences/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/jobs/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/jobs/saved/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/media/download-url/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/media/upload-url/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/mentors/[id]/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/mentors/bookings/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/payments/checkout/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/payments/overview/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/payments/webhook/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/profile/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/profile/skills/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "app/api/v1/submissions/[module]/route.ts",
+        "group": "app/api",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/components/landing/ContactForm.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "dynamic",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/components/media/SignedMediaUploader.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/components/mentors/BookingDialog.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/components/messaging/MentorMessaging.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/components/owner/EntityAIControls.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/components/owner/InstituteProfileEditor.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/components/owner/OwnerStatusActions.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/components/owner/RoleOwnerManagement.tsx",
+        "group": "src/components",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/contexts/AuthContext.tsx",
+        "group": "src/contexts",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          },
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/hooks/useNotifications.ts",
+        "group": "src/hooks",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/hooks/useSiteCMS.ts",
+        "group": "src/hooks",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/hooks/useStudentActivity.ts",
+        "group": "src/hooks",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/integrations/supabase/client.ts",
+        "group": "src/integrations",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          },
+          {
+            "kind": "require",
+            "specifier": "@supabase/supabase-js"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/admin/admin-auth-user-route-utils.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/lib/server/supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/admin/admin-auth-user-service.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/admin/admin-auth-users.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/admin/admin-client.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/admin/profile-hydration.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/ai/ai-generator.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "dynamic",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/auth/legacy-recovery.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/jobs/saved-jobs.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/application-storage.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "dynamic",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/auth.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          },
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/email-queue.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/esewa-settlement.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/events-service.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/guest-college-verification.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/jobs-service.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/media-authorization.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/mentorship-service.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/provider-config-service.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "./supabase"
+          }
+        ]
+      },
+      {
+        "file": "src/lib/server/supabase.ts",
+        "group": "src/lib",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@supabase/supabase-js"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/Onboarding.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/RequestSubAdminAccess.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/ResetPassword.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminAccessMatrix.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminAccessRequests.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminApplications.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminBookings.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminCompanies.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminCompetitions.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminDashboard.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminEvents.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminFeaturedItems.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminInstitutions.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          },
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/types"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminJobs.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminLeads.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminManagement.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminMentors.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminNotifications.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          },
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/types"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminPackages.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminPageEditor.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminPayments.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminQueries.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "dynamic",
+            "specifier": "@/integrations/supabase/client"
+          },
+          {
+            "kind": "dynamic",
+            "specifier": "@/integrations/supabase/client"
+          },
+          {
+            "kind": "dynamic",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminReports.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminRoleManagement.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminSettings.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminSubscriptions.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/AdminUsers.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/admin/ProviderConfigurationPanel.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/auth/OAuthCallback.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/dashboard/Payments.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/dashboard/Profile.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/dashboard/Settings.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/institute/InstituteBlogs.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/institute/InstituteDashboard.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/institute/InstituteNotices.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/role/ModuleAIWorkspace.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      },
+      {
+        "file": "src/screens/role/RoleWorkspace.tsx",
+        "group": "src/screens",
+        "imports": [
+          {
+            "kind": "static",
+            "specifier": "@/integrations/supabase/client"
+          }
+        ]
+      }
+    ]
+  },
+  "records": [
+    {
+      "file": ".env.example",
+      "referenceLines": 8,
+      "disposition": "ACTIVE",
+      "owner": "Platform configuration / inventory",
+      "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Platform / College ingestion",
+      "retirement": "Legacy operator or CI path; verify a Neon counterpart and scope before removal or execution."
+    },
+    {
+      "file": "README.md",
+      "referenceLines": 13,
+      "disposition": "ACTIVE",
+      "owner": "Platform configuration / inventory",
+      "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
+    },
+    {
+      "file": "app/[[...slug]]/page.tsx",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/auth/[...all]/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/cron/maintenance/route.ts",
+      "referenceLines": 7,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/admin/access-matrix/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/admin/auth-users/[id]/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/admin/auth-users/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/admin/providers/[kind]/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/advertisements/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/ai/byok/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/ai/generate/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/competitions/registrations/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/competitions/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/courses/[id]/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/courses/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/events/[id]/lifecycle/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/events/[id]/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/events/categories/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/events/my-tickets/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/events/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/featured/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/institutes/[id]/blogs/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/institutes/[id]/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/institutes/[id]/updates/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/institutes/applications/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/institutes/directory/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/institutes/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/jobs/applications/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/jobs/apply/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/jobs/matching/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/jobs/preferences/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/jobs/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/jobs/saved/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/media/download-url/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/media/upload-url/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/mentors/[id]/route.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/mentors/bookings/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/neon-staging/admin/dashboard/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/payments/checkout/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/payments/overview/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/payments/webhook/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/profile/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/profile/skills/route.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "app/api/v1/submissions/[module]/route.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "docs/DEVELOPMENT_COMPLETION_AUDIT.md",
+      "referenceLines": 9,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/HANDOFF-production-tasks.md",
+      "referenceLines": 17,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-auth-staging-blocker-2026-10-08.md",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-cutover-readiness-gate-2026-10-11.md",
+      "referenceLines": 20,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-database-migration-matrix.md",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-isolated-staging-reconciliation-2026-10-08.json",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-isolated-staging-repair-2026-10-08.md",
+      "referenceLines": 9,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-isolated-staging-storage-reconciliation-2026-10-08.json",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-managed-auth-identity-reconciliation-2026-10-09.md",
+      "referenceLines": 11,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-migration-auth-poc-2026-10-08.md",
+      "referenceLines": 34,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-migration-final-status-2026-10-08.md",
+      "referenceLines": 15,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-migration-readiness-2026-10-08.md",
+      "referenceLines": 24,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-production-cutover-plan.md",
+      "referenceLines": 8,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-production-export-2026-10-08.md",
+      "referenceLines": 23,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-real-data-evidence-audit-2026-10-08.md",
+      "referenceLines": 24,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-real-data-reconciliation-2026-10-08.md",
+      "referenceLines": 10,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-real-production-migration-2026-10-08.md",
+      "referenceLines": 7,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-runtime-dependency-ledger-2026-10-09.md",
+      "referenceLines": 26,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-runtime-handoff-2026-10-08.md",
+      "referenceLines": 14,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-runtime-parity-2026-10-08.md",
+      "referenceLines": 5,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-runtime-sprint-status-2026-10-09.md",
+      "referenceLines": 140,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-runtime-vertical-slice-2026-10-08.md",
+      "referenceLines": 8,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-source-access-and-reconciliation-2026-10-11.md",
+      "referenceLines": 20,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-staging-auth-readiness-2026-10-08.md",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-staging-schema-parity-2026-10-08.md",
+      "referenceLines": 65,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-staging-security-object-classification-2026-10-08.md",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/neon-staging-storage-bucket-parity-2026-10-08.md",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "docs/pending-migrations.sql",
+      "referenceLines": 6,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
+      "file": "next.config.ts",
+      "referenceLines": 3,
+      "disposition": "ACTIVE",
+      "owner": "Platform configuration / inventory",
+      "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
+    },
+    {
+      "file": "package-lock.json",
+      "referenceLines": 24,
+      "disposition": "ACTIVE",
+      "owner": "Dependency management",
+      "retirement": "SDK retained for explicit recovery/legacy code; package removal requires all consumers retired."
+    },
+    {
+      "file": "package.json",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Dependency management",
+      "retirement": "SDK retained for explicit recovery/legacy code; package removal requires all consumers retired."
+    },
+    {
+      "file": "scripts/apply-schema-to-neon.mjs",
+      "referenceLines": 19,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/audit-neon-staging-objects.mjs",
+      "referenceLines": 6,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/backup-neon-production-candidate.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/build-architecture-inventory.mjs",
+      "referenceLines": 7,
+      "disposition": "ACTIVE",
+      "owner": "Platform configuration / inventory",
+      "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
+    },
+    {
+      "file": "scripts/build-pending-migration-bundle.mjs",
+      "referenceLines": 6,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/check-migration-immutability.mjs",
+      "referenceLines": 3,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/check-schema-drift.mjs",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Platform / College ingestion",
+      "retirement": "Legacy operator or CI path; verify a Neon counterpart and scope before removal or execution."
+    },
+    {
+      "file": "scripts/classify-neon-five-record-provenance.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/classify-neon-five-row-deltas.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/classify-neon-source-identities.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/deploy-neon-candidate-preview.mjs",
+      "referenceLines": 4,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/diagnose-neon-row-drift.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/execute-real-migration.mjs",
+      "referenceLines": 24,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/export-supabase-readonly-snapshot.mjs",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/ingest-edusanjal-bulk.mjs",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Platform / College ingestion",
+      "retirement": "Legacy operator or CI path; verify a Neon counterpart and scope before removal or execution."
+    },
+    {
+      "file": "scripts/inventory-supabase-runtime.mjs",
+      "referenceLines": 3,
+      "disposition": "ACTIVE",
+      "owner": "Platform configuration / inventory",
+      "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
+    },
+    {
+      "file": "scripts/migrate-storage-to-neon.mjs",
+      "referenceLines": 22,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/migrate-supabase-to-neon-staging.mjs",
+      "referenceLines": 33,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/migration-preflight.mjs",
+      "referenceLines": 16,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/neon-identity-reconciliation-dry-run.mjs",
+      "referenceLines": 6,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/neon-identity-reconciliation-report.mjs",
+      "referenceLines": 6,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/neon-staging-preflight.mjs",
+      "referenceLines": 3,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/reconcile-neon-all-row-deltas.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/reconcile-neon-source-key-deltas.mjs",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/reconcile-neon-staging-portable-schema.mjs",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/reconcile-neon-staging-storage.mjs",
+      "referenceLines": 12,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/reconcile-neon-staging-views.mjs",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/reconcile-neon-staging.mjs",
+      "referenceLines": 5,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/reconcile-neon-storage-via-readonly-api.mjs",
+      "referenceLines": 4,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/reconcile-neon-via-readonly-api.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/reconcile-snapshot-storage-staging.mjs",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/recovery-integrity.test.mjs",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "scripts/replay-neon-source-only-rows.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/require-supabase-source-readonly.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/resume-neon-staging-schema.mjs",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/seed-esewa-test-credentials.mjs",
+      "referenceLines": 14,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Platform / College ingestion",
+      "retirement": "Legacy operator or CI path; verify a Neon counterpart and scope before removal or execution."
+    },
+    {
+      "file": "scripts/seed-test-users.mjs",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Platform / College ingestion",
+      "retirement": "Legacy operator or CI path; verify a Neon counterpart and scope before removal or execution."
+    },
+    {
+      "file": "scripts/source-auth-snapshot.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "scripts/sql/neon-staging-college-subscription-scope-validation.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed isolated staging forward SQL; preserve provenance and target guards."
+    },
+    {
+      "file": "scripts/sql/neon-staging-guest-verification-send-identity.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed isolated staging forward SQL; preserve provenance and target guards."
+    },
+    {
+      "file": "scripts/staging-timestamp-drift.test.mjs",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "scripts/supabase-readonly-auth-inventory.mjs",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/supabase-readonly-management-api.mjs",
+      "referenceLines": 5,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "scripts/verify-neon-production-storage.mjs",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Platform configuration / inventory",
+      "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
+    },
+    {
+      "file": "scripts/write-neon-staging-schema-audit.mjs",
+      "referenceLines": 5,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
+    },
+    {
+      "file": "src/components/institutes/InstituteImage.tsx",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/landing/ContactForm.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/media/SignedMediaUploader.tsx",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/mentors/BookingDialog.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/messaging/MentorMessaging.tsx",
+      "referenceLines": 16,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/owner/EntityAIControls.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/owner/InstituteProfileEditor.tsx",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/owner/OwnerStatusActions.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/components/owner/RoleOwnerManagement.tsx",
+      "referenceLines": 5,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/contexts/AuthContext.tsx",
+      "referenceLines": 17,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/contexts/auth-client-authority-contract.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/hooks/site-cms-visibility-contract.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/hooks/useNotifications.ts",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/hooks/useSiteCMS.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/hooks/useStudentActivity.ts",
+      "referenceLines": 7,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/integrations/supabase/client.ts",
+      "referenceLines": 9,
+      "disposition": "ACTIVE",
+      "owner": "Backend boundary",
+      "retirement": "Fail closed in Neon; legacy-only factories retained pending compatibility retirement."
+    },
+    {
+      "file": "src/integrations/supabase/types.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Schema contracts",
+      "retirement": "Replace structural types only after schema parity; imports do not imply network traffic."
+    },
+    {
+      "file": "src/lib/admin/admin-auth-bootstrap-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/admin/admin-auth-user-route-utils.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/admin/admin-auth-user-service.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/admin/admin-auth-users.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/admin/admin-auth-users.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/admin/admin-client.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/admin/admin-resources.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/admin/central-module-assignment-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/admin/live-supabase-security-contract.test.ts",
+      "referenceLines": 3,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/admin/neon-billing-client.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/admin/oauth-people-visibility-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/admin/profile-hydration.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/admin/publication-and-footer-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/admin/super-admin-request-visibility-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/ai/ai-generator.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/auth/legacy-recovery.ts",
+      "referenceLines": 5,
+      "disposition": "ACTIVE",
+      "owner": "Identity recovery",
+      "retirement": "Remove only after proof-based historical-account recovery is completed or explicitly dispositioned."
+    },
+    {
+      "file": "src/lib/auth/workspace-path-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/db/schema-contract.test.ts",
+      "referenceLines": 3,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/forms/database-submission-guards-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/forms/free-tier-access-hardening-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/forms/guest-application-security-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/forms/rbac-hardening-contract.test.ts",
+      "referenceLines": 4,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/institutes/admin-institute-form.test.ts",
+      "referenceLines": 3,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/institutes/college-application-status-contract.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/institutes/college-application-status.ts",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/institutes/college-directory-ingestion.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/institutes/directory-search.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/institutes/phase2-college-workspace-contract.test.ts",
+      "referenceLines": 3,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/institutes/public-institutes.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/institutes/public-source-policy.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/jobs/jobs-client.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/jobs/saved-jobs.ts",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/neon/neon-auth.ts",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/neon/neon-realtime.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/public-discovery.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/entitlement-authorization-model.test.ts",
+      "referenceLines": 5,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/event-attachment-record-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/guest-college-verification-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/mentor-availability-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/phase3-scoped-workflow-policy-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/phase5-platform-admin-grant-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/phase5-trigger-rpc-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/phase6-provider-ai-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/phase7-entitlement-contract.test.ts",
+      "referenceLines": 3,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/provider-configuration-transaction-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/security/release-hardening-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/application-storage.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/auth.ts",
+      "referenceLines": 5,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/db.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/email-queue.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/email-queue.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/esewa-settlement.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/events-service.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/guest-college-verification.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/jobs-service.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/media-authorization.ts",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/mentorship-service.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/module-access-checkout-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/neon-admin-directory.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/neon-authorization.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/neon-college-admissions.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/neon-college-leads.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/neon-identity-link.ts",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/paid-reservation-release-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/payment-proof-reconciliation-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/provider-config-service.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/provider-config-service.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/source-auth-snapshot.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/source-snapshot-delta-plan.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/storage.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/lib/server/supabase-source-readonly-contract.test.ts",
+      "referenceLines": 5,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/server/supabase.ts",
+      "referenceLines": 16,
+      "disposition": "ACTIVE",
+      "owner": "Backend boundary",
+      "retirement": "Fail closed in Neon; legacy-only factories retained pending compatibility retirement."
+    },
+    {
+      "file": "src/lib/server/unified-transaction-ledger-contract.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/lib/student/profile-readiness.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/screens/Onboarding.tsx",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/RequestSubAdminAccess.tsx",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/ResetPassword.tsx",
+      "referenceLines": 7,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminAccessMatrix.tsx",
+      "referenceLines": 9,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminAccessRequests.tsx",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminApplications.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminBookings.tsx",
+      "referenceLines": 4,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminCompanies.tsx",
+      "referenceLines": 7,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminCompetitions.tsx",
+      "referenceLines": 6,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminDashboard.tsx",
+      "referenceLines": 12,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminEvents.tsx",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminFeaturedItems.tsx",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminInstitutions.tsx",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminJobs.tsx",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminLeads.tsx",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminManagement.tsx",
+      "referenceLines": 5,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminMentors.tsx",
+      "referenceLines": 5,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminNotifications.tsx",
+      "referenceLines": 8,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminPackages.tsx",
+      "referenceLines": 5,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminPageEditor.tsx",
+      "referenceLines": 7,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminPayments.tsx",
+      "referenceLines": 7,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminQueries.tsx",
+      "referenceLines": 6,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminReports.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminRoleManagement.tsx",
+      "referenceLines": 10,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminSettings.tsx",
+      "referenceLines": 5,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminSubscriptions.tsx",
+      "referenceLines": 3,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/AdminUsers.tsx",
+      "referenceLines": 12,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/admin/ProviderConfigurationPanel.test.tsx",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/screens/admin/ProviderConfigurationPanel.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/auth/LegacyAccountRecovery.tsx",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/auth/OAuthCallback.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/dashboard/Payments.tsx",
+      "referenceLines": 12,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/dashboard/Profile.tsx",
+      "referenceLines": 12,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/dashboard/Settings.tsx",
+      "referenceLines": 5,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/institute/InstituteBlogs.tsx",
+      "referenceLines": 6,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/institute/InstituteDashboard.tsx",
+      "referenceLines": 9,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/institute/InstituteNotices.tsx",
+      "referenceLines": 6,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/role/ModuleAIWorkspace.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/screens/role/RoleWorkspace.tsx",
+      "referenceLines": 2,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
+      "file": "src/test/admin-auth-user-invite-route.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/admin-auth.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/architecture-retirement.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/job-applicant-review-route.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/jobs-recruitment-architecture.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/mentorship-architecture.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-admin-billing-ui.test.tsx",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-admin-directory.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-auth-refresh.test.tsx",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-esewa-return.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-featured-route.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-guest-verification-route.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-identity-link.test.ts",
+      "referenceLines": 6,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-legacy-fallback-denial.test.ts",
+      "referenceLines": 9,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-maintenance-route.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-public-institute-directory.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-synthetic-auth-poc.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/provider-config-route.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/signed-media-uploader.test.ts",
+      "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/student-profile-submission-route.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "supabase/config.toml",
+      "referenceLines": 4,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260806090000_modular_platform_backend.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260806093000_secure_admin_auth_user_access.sql",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260810110000_secure_college_directory_and_applications.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260822120000_admin_delete_policies.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260822130000_reconcile_page_sections_columns.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260826113000_guest_applications_and_approved_module_access.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260910113000_harden_live_supabase_security.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20260910130000_phase1_access_governance_and_entity_scopes.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/20261007180000_fix_live_database_lint_errors.sql",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/migrations/README.md",
+      "referenceLines": 4,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "supabase/seed_admins.sql",
+      "referenceLines": 2,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
+      "file": "tsconfig.json",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Platform configuration / inventory",
+      "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
+    }
+  ]
+}

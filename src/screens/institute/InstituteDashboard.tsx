@@ -70,6 +70,8 @@ interface InstituteData {
   cover_image_url?: string | null;
   type: string | null;
   is_verified: boolean | null;
+  status?: string | null;
+  slug?: string | null;
   owner_user_id: string | null;
   courses_offered: unknown;
   total_seats: number | null;
@@ -437,7 +439,7 @@ const InstituteDashboard = () => {
         const workspaces = payload.data.workspaces as Array<InstituteData & {
           subscription_active: boolean; subscription_status: string | null; payment_status: string | null;
           package_name: string | null; lead_access_mode: string | null; expiry_date: string | null;
-          effectively_verified: boolean;
+          effectively_verified: boolean; can_view_applications: boolean;
         }>;
         const requests = payload.data.requests as CollegeScopeRequest[];
         setScopeRequests(requests);
@@ -457,8 +459,10 @@ const InstituteDashboard = () => {
           const [noticesResult, leadsResult] = await Promise.allSettled([
             fetch(`/api/v1/neon-staging/college-workspaces/${selected.id}/notices`, { credentials: "same-origin", cache: "no-store" })
               .then(async response => { if (!response.ok) throw new Error("Notices unavailable"); return (await response.json()).data as NoticePreview[]; }),
-            fetch(`/api/v1/neon-staging/institutes/${selected.id}/applications`, { credentials: "same-origin", cache: "no-store" })
-              .then(async response => { if (!response.ok) throw new Error("Applications unavailable"); return (await response.json()).data as ApplicationPreview[]; }),
+            selected.can_view_applications
+              ? fetch(`/api/v1/neon-staging/institutes/${selected.id}/applications`, { credentials: "same-origin", cache: "no-store" })
+                .then(async response => { if (!response.ok) throw new Error("Applications unavailable"); return (await response.json()).data as ApplicationPreview[]; })
+              : Promise.resolve([] as ApplicationPreview[]),
           ]);
           const notices = noticesResult.status === "fulfilled" ? noticesResult.value : [];
           const leads = leadsResult.status === "fulfilled" ? leadsResult.value : [];
@@ -847,9 +851,9 @@ const InstituteDashboard = () => {
     { path: "/institute#applications", icon: Users, label: "Applications", anchor: true },
     { path: "/institute#subscription", icon: CreditCard, label: "Subscription", anchor: true },
     { path: "/dashboard/payments", icon: CreditCard, label: "Payments" },
-    { path: "/institute/notices", icon: Bell, label: "Notices", disabled: !access?.can_post_notices },
+    { path: `/institute/notices?college=${activeInstitute.id}`, icon: Bell, label: "Notices", disabled: !access?.can_post_notices },
     { path: `/institute/blogs?college=${activeInstitute.id}`, icon: FileText, label: "College blog", disabled: !access?.can_edit_profile },
-    { path: "/institutes", icon: Building2, label: "Public listing" },
+    { path: `/institutes/${encodeURIComponent(activeInstitute.slug || activeInstitute.id)}`, icon: Building2, label: "Public listing" },
   ];
   const canAccessApplications = subscription.active && ["read_only", "full"].includes(subscription.leadAccessMode);
   const canEditOwnedProfile = access?.can_edit_profile === true;
@@ -944,7 +948,7 @@ const InstituteDashboard = () => {
                   <h1 className="font-semibold">{activeInstitute.name}</h1>
                   <div className="flex items-center gap-2">
                     <Badge className={activeInstitute.is_verified ? "border-0 bg-[#dff5ec] text-[#28725a] hover:bg-[#dff5ec]" : "border-0 bg-[#fff1e8] text-[#c84f08] hover:bg-[#fff1e8]"}>
-                      {activeInstitute.is_verified ? "Verified" : "Unclaimed / Pending"}
+                      {activeInstitute.is_verified ? "Verified" : activeInstitute.status === "approved" ? "Approved listing" : "Unclaimed / Pending"}
                     </Badge>
                     <span className="text-sm text-muted-foreground">{activeInstitute.type}</span>
                   </div>
@@ -1173,7 +1177,7 @@ const InstituteDashboard = () => {
                   </Button>
                   {access?.can_post_notices && (
                     <Button asChild className="rounded-xl bg-[#c2410c] hover:bg-[#9a3412]">
-                      <Link to="/institute/notices?new=1">
+                      <Link to={`/institute/notices?college=${activeInstitute.id}&new=1`}>
                         <Bell className="mr-2 h-4 w-4" />
                         Post Notice
                       </Link>
@@ -1203,7 +1207,7 @@ const InstituteDashboard = () => {
                     </Link>
                   </Button>
                   <Button asChild variant="outline" className="rounded-xl border-[#eadfd7] hover:border-[#fdba74] hover:bg-[#fff8f3]">
-                    <Link to="/institutes">
+                    <Link to={`/institutes/${encodeURIComponent(activeInstitute.slug || activeInstitute.id)}`}>
                       <Building2 className="mr-2 h-4 w-4" />
                       View public listing
                     </Link>

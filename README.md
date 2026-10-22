@@ -22,7 +22,8 @@ and platform administration into one responsive web application.
 - Next.js App Router
 - React + TypeScript
 - Tailwind CSS and Radix UI
-- Supabase Auth, Postgres, Storage, RLS, and Edge Functions
+- Neon PostgreSQL, branch-bound Neon Managed Auth and Neon Object Storage
+- Explicit server-side role/capability/entity authorization and durable notifications
 - TanStack Query, React Hook Form, Zod, Framer Motion, and Recharts
 
 ## Local development
@@ -52,7 +53,16 @@ working offline will not block you. Prefer `npm` for installs; a `bun install`
 resolves a different dependency tree and leaves `.next/types` inconsistent with
 the pinned Next version, which surfaces as unrelated `tsc` errors.
 
-Copy `.env.example` and configure the public browser variables:
+The canonical architecture and safe environment ownership are documented in
+[docs/architecture/target-architecture.md](docs/architecture/target-architecture.md)
+and [backend-ownership.md](docs/architecture/backend-ownership.md). Neon mode must
+be explicitly configured with matching browser/server selection and the approved
+branch tuple; missing configuration must not silently fall back to Supabase.
+Supabase remains a legacy source/proof-recovery dependency, not the target runtime.
+Older migration handoffs are historical and must not be blindly replayed.
+
+The following public configuration is for the retained legacy/recovery path,
+not a requirement for ordinary Neon browser startup:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
@@ -60,7 +70,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SUPABASE_PROJECT_ID=
 ```
 
-Server routes additionally require the unprefixed Supabase variables. Keep
+Legacy routes/operator tools additionally require the unprefixed Supabase variables. Keep
 `SUPABASE_SECRET_KEY`, database connection strings, and `CRON_SECRET` in the
 local/Vercel secret manager only; never expose them through `NEXT_PUBLIC_*`.
 Set `AUTH_INVITE_REDIRECT_URL` to the exact allowlisted production password
@@ -78,8 +88,9 @@ Read [provider-secret storage](docs/provider-secret-storage.md) before setting
 or rotating it in Vercel; rotation makes secrets encrypted by the prior key
 unreadable until they are replaced.
 
-Apply every SQL file in `supabase/migrations` in timestamp order before enabling
-sign-ups against a new Supabase project. The modular platform migration adds
+Do not replay the historical `supabase/migrations` directory indiscriminately:
+it includes deliberately excluded test fixtures. Use the reviewed source-bound
+Neon migration and append-only history checks instead. The modular platform history records
 RBAC permissions, subscriptions, college applications, mentor bookings, jobs,
 events, leads, payments, notifications, advertisements, featured content,
 auditing, generated-form submissions, private media buckets, and maintenance.

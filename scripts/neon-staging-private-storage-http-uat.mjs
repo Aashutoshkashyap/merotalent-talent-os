@@ -14,7 +14,14 @@ const auth = "https://ep-wispy-credit-azt6tgwj.neonauth.c-3.ap-southeast-1.aws.n
 const endpoint = "https://br-frosty-haze-azsnybmr.storage.c-3.ap-southeast-1.aws.neon.tech";
 if (process.env.NEON_AUTH_BASE_URL !== auth || process.env.AWS_ENDPOINT_URL_S3 !== endpoint) throw new Error("UNEXPECTED_STAGING_TARGET");
 const app = stagingUatOrigin();
-const db = new pg.Client({ connectionString: process.env.NEON_STAGING_DATABASE_URL, connectionTimeoutMillis: 30000 });
+const database = new URL(process.env.NEON_STAGING_DATABASE_URL);
+database.searchParams.set("sslmode", "verify-full");
+const createClient = () => {
+  const client = new pg.Client({ connectionString: database.href, connectionTimeoutMillis: 30000, query_timeout: 30000 });
+  client.on("error", () => console.error(JSON.stringify({ result: "STAGING_CONNECTION_LOST", productionWrites: 0 })));
+  return client;
+};
+let db = createClient();
 const s3 = new S3Client({ endpoint, region: process.env.AWS_REGION, forcePathStyle: true,
   credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY } });
 const runId = randomBytes(6).toString("hex"), accounts = [], objects = [], checks = [];
@@ -24,10 +31,21 @@ let connected = false;
 const check = (ok,name) => { checks.push({name,pass:!!ok}); if (!ok) throw new Error(name); };
 const cookieOf = response => response.headers.getSetCookie().map(value=>value.split(";",1)[0]).join("; ");
 async function request(path, { method="GET", account=null, body=null, form=null, origin=app }={}) {
-  const response = await fetch(`${app}${path}`, { method, cache:"no-store", signal:AbortSignal.timeout(45000),
-    headers: { ...(account ? {cookie:account.cookie}:{}), ...(body ? {"content-type":"application/json"}:{}),
-      ...(method!=="GET"?{origin}:{}) }, ...(form?{body:form}:body?{body:JSON.stringify(body)}:{}) });
-  return {status:response.status,json:await response.json().catch(()=>null),headers:response.headers};
+  // Retry only reads (including the explicit signed-download operation), never
+  // uploads, deletes, application submission, or payment/fulfillment mutations.
+  const readOnly = method === "GET" || path === "/api/v1/media/download-url";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(`${app}${path}`, { method, cache:"no-store", signal:AbortSignal.timeout(45000),
+        headers: { ...(account ? {cookie:account.cookie}:{}), ...(body ? {"content-type":"application/json"}:{}),
+          ...(method!=="GET"?{origin}:{}) }, ...(form?{body:form}:body?{body:JSON.stringify(body)}:{}) });
+      const result = {status:response.status,json:await response.json().catch(()=>null),headers:response.headers};
+      if (readOnly && response.status === 503 && attempt === 0) continue;
+      return result;
+    } catch (error) {
+      if (!readOnly || attempt !== 0) throw error;
+    }
+  }
 }
 async function createAccount(label) {
   const email = `storage-${label}-${runId}@example.com`, password = randomBytes(32).toString("base64url");
@@ -239,6 +257,11 @@ try {
   if(connected) {
     const ids=accounts.map(account=>account.userId), subjects=accounts.map(account=>account.subject);
     try {
+      // Human/browser/network checks can outlive an idle database socket.
+      // Cleanup uses a fresh connection and only this run's exact fixture IDs.
+      await db.end().catch(()=>undefined);
+      db = createClient();
+      await db.connect();
       await db.query("BEGIN");
       await db.query(`DELETE FROM public.neon_application_events WHERE recipient_user_id=ANY($1::uuid[])`,[ids]);
       await db.query(`DELETE FROM public.notifications WHERE recipient_id=ANY($1::uuid[])`,[ids]);

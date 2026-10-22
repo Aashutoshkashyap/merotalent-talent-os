@@ -37,6 +37,12 @@ export function getPool(): Pool {
       connectionTimeoutMillis: 10_000,
       allowExitOnIdle: true,
     });
+    // pg removes failed idle clients itself. Handle the event so compute sleep
+    // or a dropped idle socket cannot become an uncaught process-level error.
+    // Do not log the error object: it may carry connection details or SQL.
+    pool.on("error", () => {
+      console.error(JSON.stringify({ event: "neon_idle_connection_removed", retryWrites: false }));
+    });
     poolTarget = databaseUrl;
   }
   return pool;

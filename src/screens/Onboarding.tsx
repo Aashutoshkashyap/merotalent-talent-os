@@ -1,4 +1,6 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { BrandMark } from "@/components/brand/BrandMark";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Sparkles, Loader2, User, MapPin, Briefcase, GraduationCap, 
+  Loader2, User, MapPin, Briefcase, GraduationCap,
   Linkedin, FileText, X, CheckCircle, ArrowRight, ArrowLeft 
 } from "lucide-react";
 
@@ -444,9 +446,9 @@ const Onboarding = () => {
           <div className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full border-[42px] border-white/10" />
           <div className="relative flex items-center gap-2.5">
             <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-white text-primary shadow-lg shadow-orange-950/10">
-              <Sparkles className="h-[18px] w-[18px]" />
+              <BrandMark size={32} className="h-8 w-8 object-contain" />
             </span>
-            <span className="font-display text-xl font-bold tracking-tight">Merotalent</span>
+            <span className="font-display text-xl font-bold tracking-tight">{brand.name}</span>
           </div>
 
           <div className="relative mt-8 hidden lg:block">

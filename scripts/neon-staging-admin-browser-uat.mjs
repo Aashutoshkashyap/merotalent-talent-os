@@ -18,7 +18,14 @@ const endpoint = "https://br-frosty-haze-azsnybmr.storage.c-3.ap-southeast-1.aws
 const projectId = "summer-sky-63693897", branchId = "br-frosty-haze-azsnybmr";
 if (process.env.NEON_AUTH_BASE_URL !== auth || process.env.AWS_ENDPOINT_URL_S3 !== endpoint ||
     process.env.NEON_STAGING_BRANCH_ID !== branchId) throw new Error("UNEXPECTED_ISOLATED_STAGING_TARGET");
-const db = new pg.Client({ connectionString: process.env.NEON_STAGING_DATABASE_URL, connectionTimeoutMillis: 10000 });
+const database = new URL(process.env.NEON_STAGING_DATABASE_URL);
+database.searchParams.set("sslmode", "verify-full");
+const createClient = () => {
+  const client = new pg.Client({ connectionString: database.href, connectionTimeoutMillis: 15000, query_timeout: 30000 });
+  client.on("error", () => console.error(JSON.stringify({ result: "STAGING_CONNECTION_LOST", productionWrites: 0 })));
+  return client;
+};
+let db = createClient();
 const s3 = new S3Client({ endpoint, region: process.env.AWS_REGION, forcePathStyle: true,
   credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY } });
 const runId = randomBytes(6).toString("hex"), accounts = [];
@@ -78,6 +85,45 @@ const handler = async (req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ready, syntheticAccounts: accounts.length, fixtureNames: names, credentialsPrinted: false })); return;
   }
+  if (url.pathname === "/verify-college-access" && ready) {
+    const account = accounts.find(value => value.kind === "college");
+    const checks = [];
+    const verify = (pass, name) => { checks.push({ name, pass: !!pass }); check(pass, "COLLEGE_ACCESS_REGRESSION"); };
+    try {
+      const current = await appRequest(account, "/api/v1/neon-staging/college-workspaces");
+      const rows = current.json?.data?.workspaces;
+      verify(current.status === 200 && collegeIds.every(id => rows?.some(row => row.id === id)), "both assigned colleges visible");
+      for (const id of collegeIds) {
+        const row = rows.find(value => value.id === id);
+        verify(row.subscription_active && row.can_view_applications && row.lead_access_mode === "full",
+          "manual entitlement exposes effective lead access");
+        verify(row.package_name === "Granted access" && row.payment_status === "manual_grant" && row.status === "approved",
+          "manual access and approved listing labelled truthfully");
+        verify((await appRequest(account, `/api/v1/neon-staging/institutes/${id}/applications`)).status === 200,
+          "assigned college lead API allowed");
+      }
+      await db.query("UPDATE public.module_entitlements SET features='{}'::jsonb WHERE user_id=$1::uuid", [account.userId]);
+      const noFeature = await appRequest(account, "/api/v1/neon-staging/college-workspaces");
+      verify(noFeature.json?.data?.workspaces.every(row => !row.can_view_applications && row.lead_access_mode === "none"),
+        "missing feature hidden in workspace");
+      verify((await appRequest(account, `/api/v1/neon-staging/institutes/${collegeIds[0]}/applications`)).status === 403,
+        "missing feature denied by actual lead API");
+      await db.query("UPDATE public.module_entitlements SET expires_at=now()-interval '1 second' WHERE user_id=$1::uuid", [account.userId]);
+      const expired = await appRequest(account, "/api/v1/neon-staging/college-workspaces");
+      verify(expired.json?.data?.workspaces.every(row => !row.subscription_active && !row.can_view_applications),
+        "expired entitlement denies workspace and leads");
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ result: "PASS", checks, productionWrites: 0 }));
+    } catch {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ result: "FAIL", checks, productionWrites: 0 }));
+    } finally {
+      await db.query(`UPDATE public.module_entitlements SET expires_at=now()+interval '14 days',
+        features='{"profile_editing":true,"media_management":true,"lead_viewing":true,"college_applications":true}'::jsonb
+        WHERE user_id=$1::uuid`, [account.userId]);
+    }
+    return;
+  }
   if (url.pathname !== "/open" || !ready) { res.writeHead(ready ? 404 : 503); res.end("UAT setup is not ready."); return; }
   const college = url.searchParams.get("role") === "college";
   const account = accounts.find(value => value.kind === (college ? "college" : "admin"));
@@ -120,6 +166,9 @@ async function cleanup() {
         } catch { success = false; }
       }
       try {
+        await db.end().catch(() => undefined);
+        db = createClient();
+        await db.connect();
         await db.query("BEGIN");
         await db.query("DELETE FROM public.payment_proofs WHERE payment_id IN (SELECT id FROM public.payments WHERE user_id=ANY($1::uuid[]))", [ids]);
         await db.query("DELETE FROM public.payment_checkout_sessions WHERE user_id=ANY($1::uuid[])", [ids]);

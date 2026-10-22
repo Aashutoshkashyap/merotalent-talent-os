@@ -5,6 +5,7 @@ import { Search, Briefcase, Sparkles, Menu, X, User as UserIcon } from "lucide-r
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 
 interface HeaderNavProps {
   onSearch?: (query: string) => void;
@@ -103,7 +104,7 @@ export default function HeaderNav({
           className="flex items-center gap-2 hover:opacity-90 transition-opacity"
           aria-label="MeroTalent home"
         >
-          <img src="/logo.png" alt="MeroTalent Logo" className="h-8 w-auto object-contain rounded-lg" />
+          <img src={brand.logo} alt={brand.name} className="h-8 w-auto object-contain rounded-lg" />
           <span className="hidden text-xl font-black text-slate-900 tracking-tight sm:inline">
             Mero<span className="text-[#0073e6]">Talent</span>
           </span>

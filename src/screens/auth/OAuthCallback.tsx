@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,8 +10,8 @@ import {
 import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
 import { supabase } from "@/integrations/supabase/client";
 import { isNeonClientRuntime } from "@/lib/backend-selection";
-import { isSourceRecoveryCallback } from "@/lib/auth/legacy-recovery";
-import LegacyAccountRecovery from "./LegacyAccountRecovery";
+import { isSourceRecoveryCallback } from "@/lib/auth/source-recovery-context";
+const LegacyAccountRecovery = lazy(() => import("./LegacyAccountRecovery"));
 
 type AccessContext = {
   account_status?: unknown;

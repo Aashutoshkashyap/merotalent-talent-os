@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "@/index.css";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,8 +17,8 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: "Merotalent — Talent meets opportunity",
-    template: "%s | Merotalent",
+    default: brand.title,
+    template: `%s | ${brand.name}`,
   },
   description:
     "Discover competitions, jobs, courses and mentorship across Nepal and South Asia. Build a proof-of-skill profile and get discovered.",
@@ -29,9 +30,10 @@ export const metadata: Metadata = {
     "courses",
     "skill-based hiring",
   ],
-  metadataBase: new URL("https://www.merotalent.com"),
+  metadataBase: new URL(brand.origin),
+  icons: { icon: brand.logo, apple: brand.logo },
   openGraph: {
-    title: "Merotalent — Talent meets opportunity",
+    title: brand.title,
     description:
       "A performance-first talent ecosystem for Nepal and South Asia.",
     type: "website",
@@ -41,7 +43,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0073e6",
+  themeColor: brand.themeColor,
 };
 
 export default function RootLayout({

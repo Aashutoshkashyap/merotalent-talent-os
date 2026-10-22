@@ -2738,3 +2738,67 @@ production configuration change or live payment occurred in this continuation.
   warnings, diff check PASS. Fresh read-only production provider check confirms
   eSewa remains disabled, environment production, original ciphertext present.
   No genuine UAT settlement or production merchant decryptability is claimed.
+
+#### Architecture enforcement and workflow acceptance — 2026-10-22
+
+- Began clean on local/remote main `6e9a064`; canonical inspection found READY
+  deployment `dpl_J2qbqqfhNVmhkoqtU2duaJcGuj6c`. Sensitive production mode/payment
+  environment values are not readable even through per-variable retrieval; their
+  presence is not proof of their contents. No environment or production data was
+  changed by this batch. Older August handoffs are historical, not migration authority.
+- Added the six requested architecture documents and deterministic per-file
+  legacy inventory. AST import inventory: 109 files (102 static / 7 dynamic).
+  Full tracked-text inventory: 79 ACTIVE, 130 MIGRATION REQUIRED, 76
+  HISTORICAL/RECOVERY, 0 UNKNOWN; removed DEAD candidates are listed with proof.
+  CI verifies inventory freshness. Classifications do not prove all compatibility
+  branches are production-reachable or fully retired.
+- Removed unreferenced ComingSoonPage, self-hosted Better Auth draft and unused
+  authentication adapter; removed their two exclusive direct dependencies and
+  unused `xlsx` dev dependency (exports already use tested SpreadsheetML). All
+  source SQL, recovery, ledger, snapshot and rollback assets were retained.
+- Neon client mode no longer requires source env variables or instantiates a
+  legacy SDK. Any ordinary legacy data/session/realtime use fails locally;
+  dedicated source-ownership recovery remains separate. Added denial regressions.
+- Fixed College manual access: scoped current features, not package existence,
+  determine lead display; approved listing differs from paid verification;
+  manual access no longer displays a nonexistent pending subscription. Notices
+  and public-listing links preserve the selected College. Actual staging HTTP
+  assertions: 10/10 across two colleges, allowed leads, feature removal/403 and
+  expiry. Browser verified correct labels/links; no entitlement gate weakened.
+- Fixed false logout on transient profile refresh failure: 503/network errors do
+  not clear an already hydrated user; authoritative 401/403/404 still clear it.
+  Invalid/missing profile responses never fabricate a linked account. Added tests.
+- Profile capability read moved into the authorized own-profile SQL statement:
+  two sequential queries become one, preserving scope and expiry. Explicit
+  private/no-store response. Idle pg pool failures are handled with a bounded
+  redacted event; no automatic write retry was introduced.
+- Explicit-Neon build measurements: App dynamic entry 674,331 → 424,772 raw
+  bytes; 194,782 → 127,604 gzip bytes (34.5% less). This excludes framework and
+  later route chunks, not a measured CWV or total-page speedup. Source recovery
+  UI and its SDK are lazy-loaded; pure popup-marker routing remains lightweight,
+  and original proof/identity-link rules are unchanged. Conditional legacy SDK
+  loading remains a fail-closed compatibility boundary, not a second backend.
+  Lockfile packages 1,017 → 1,007; runtime direct dependencies 64 → 62.
+- Real isolated staging checks: Jobs 63/63, Mentors/Events 60/60; private storage
+  155/155 across resumes, experience/training files, payment proofs, chat and
+  event attachments. Verified actual bytes, anonymous/cross-user/path denial,
+  expiry, Super Admin access and reference-safe deletion. No provider settlement
+  was simulated. Matrix cleanup PASS: 4 disposable accounts / 7 objects removed.
+- Real browser profile save persisted in Neon and survived reload; evidence
+  `/private/tmp/merotalent-architecture-profile-20261022.png`. Exact-run crash
+  recovery removed the previous browser fixture's 2 accounts; current browser
+  harness cleanup also PASS (2 accounts). No real source accounts were selected.
+- Canonical brand constants and official PNG mark now cover public metadata,
+  favicon metadata, public nav/footer, AuthShell, onboarding and both dashboard
+  sidebars. Existing CSS/type scale retained; comprehensive remaining page-style
+  conversion and mobile/dark visual acceptance are not claimed complete.
+- Captured-source identity check (2026-10-20 snapshot, NOT fresh source): 107
+  users, 108 identities, 1 verified link, 104 eligible for proof recovery,
+  2 unresolved, 0 collisions. No identity linked by email or capabilities added.
+- Dedicated source read-only configuration is still absent. Production payments
+  remain subject to the original disabled/undecryptable-merchant and genuine
+  provider settlement gates. No production charge or merchant change occurred.
+- Final standard suite: 190 files / 956 tests PASS, typecheck PASS, explicit-Neon
+  production build PASS, lint 0 errors / 37 existing warnings, diff check PASS,
+  inventory freshness PASS. No historical migration file changed. These checks
+  do not establish full production migration or payment acceptance.

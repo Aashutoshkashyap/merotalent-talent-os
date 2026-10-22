@@ -49,7 +49,13 @@ export async function GET(request: Request) {
   try {
     const actor = await getAuthenticatedApplicationUser(request);
     const rows = await queryRows<Record<string, unknown>>(
-      `SELECT ${publicFields} FROM public.profiles p
+      `SELECT ${publicFields}, COALESCE((
+         SELECT array_agg(DISTINCT mc.module_key)
+         FROM public.user_module_capabilities umc
+         JOIN public.module_capabilities mc ON mc.id=umc.capability_id
+         WHERE umc.user_id=p.user_id AND umc.status='active' AND mc.is_active
+           AND (umc.expires_at IS NULL OR umc.expires_at>now())
+       ),ARRAY[]::text[]) AS effective_capabilities FROM public.profiles p
        WHERE p.user_id=$1::uuid AND p.account_status='active' AND p.deleted_at IS NULL
          AND EXISTS (
            SELECT 1 FROM public.neon_application_accounts a
@@ -60,12 +66,7 @@ export async function GET(request: Request) {
       [actor.userId, actor.neonAuthUserId],
     );
     if (!rows[0]) return NextResponse.json({ error: "PROFILE_NOT_FOUND" }, { status: 404 });
-    const capabilities = await queryRows<{ module_key: string }>(`
-      SELECT DISTINCT mc.module_key FROM public.user_module_capabilities umc
-      JOIN public.module_capabilities mc ON mc.id=umc.capability_id
-      WHERE umc.user_id=$1::uuid AND umc.status='active' AND mc.is_active
-        AND (umc.expires_at IS NULL OR umc.expires_at>now())`, [actor.userId]);
-    const profile = rows[0];
+    const { effective_capabilities: capabilities, ...profile } = rows[0];
     if (typeof profile.avatar_url === "string" && profile.avatar_url.includes("/profile_avatar/")) {
       try {
         assertMediaObjectPath({ module: "profile_avatar", resourceId: null, path: profile.avatar_url }, actor.userId);
@@ -74,8 +75,8 @@ export async function GET(request: Request) {
     }
     return NextResponse.json({ data: profile, access: {
       roles: actor.roles, permissions: actor.permissions,
-      capabilities: capabilities.map((row) => row.module_key),
-    } });
+      capabilities: Array.isArray(capabilities) ? capabilities : [],
+    } }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return failure(error); }
 }
 

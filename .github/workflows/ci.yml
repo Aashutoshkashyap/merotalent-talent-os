@@ -37,6 +37,9 @@ jobs:
       - name: Migrations are append-only
         run: node scripts/check-migration-immutability.mjs
 
+      - name: Architecture inventory is current
+        run: node scripts/build-architecture-inventory.mjs --check
+
       - name: Typecheck
         run: npm run typecheck
 

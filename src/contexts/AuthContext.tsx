@@ -1,6 +1,6 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoredGuestCollegeApplicationToken } from "@/lib/forms/guest-college-application";
 import { invalidateStudentActivityCache } from "@/lib/student/activity-cache";
@@ -103,6 +103,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     if (!res.ok) {
       const failure = await res.json().catch(() => null);
+      // A service/network outage is not evidence of logout or lost ownership.
+      // Preserve existing UI state; every protected server operation still
+      // verifies the current session/account/entitlement independently.
+      if (![401, 403, 404].includes(res.status)) {
+        throw new Error("Account information is temporarily unavailable. Please retry.");
+      }
       stagingHydrationErrorRef.current = typeof failure?.error === "string" ? failure.error : null;
       setUser(null); setSession(null); setProfile(null); setRoles([]); setPermissions([]); setCapabilities([]);
       return false;
@@ -110,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     stagingHydrationErrorRef.current = null;
     const json = await res.json();
     const data = json.data as Profile | undefined;
-    if (!data?.user_id) return false;
+    if (!data?.user_id) throw new Error("Account information is temporarily unavailable. Please retry.");
     setUser({
       id: data.user_id, email: data.email, app_metadata: {}, user_metadata: { full_name: data.full_name },
       aud: "authenticated", created_at: new Date().toISOString(),

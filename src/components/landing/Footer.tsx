@@ -6,6 +6,7 @@ import { MapPin, Mail, Phone, Facebook, Twitter, Linkedin, Instagram } from "luc
 
 import { useSiteCMS } from "@/hooks/useSiteCMS";
 import { safeExternalUrl } from "@/lib/institutes/public-institutes";
+import { MEROTALENT_BRAND as brand } from "@/lib/brand";
 
 export default function Footer() {
   const { settings } = useSiteCMS();
@@ -27,8 +28,8 @@ export default function Footer() {
           <div className="flex flex-col gap-3">
             <Link to="/" className="inline-flex items-center gap-2.5">
               <img
-                src={settings.logo_url || "/logo.png"}
-                alt={settings.site_title || "MeroTalent Logo"}
+                src={settings.logo_url || brand.logo}
+                alt={settings.site_title || brand.name}
                 className="h-9 w-auto object-contain rounded-lg"
               />
               <span className="text-2xl font-black text-slate-900 tracking-tight">
@@ -77,7 +78,7 @@ export default function Footer() {
 
         {/* Bottom Copyright Bar */}
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500">
-          <p>© {new Date().getFullYear()} MeroTalent. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {brand.name}. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-6">
             <Link to="/terms" className="hover:text-[#0073e6] transition-colors">
               Terms of Service
