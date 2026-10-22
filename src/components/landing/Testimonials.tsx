@@ -10,30 +10,6 @@ export interface TestimonialData {
   institution: string;
 }
 
-const TESTIMONIALS_DATA: TestimonialData[] = [
-  {
-    id: "test-1",
-    quote: "MeroTalent helped me transition from a college student at Pulchowk to a full-time software developer at Yarsa Labs. The hackathons and projects gave me real industry skills.",
-    author: "Aman Shakya",
-    role: "Software Engineer",
-    institution: "Pulchowk Campus, IOE",
-  },
-  {
-    id: "test-2",
-    quote: "Finding expert academic guidance used to be difficult in Dhulikhel. Through MeroTalent's mentor board, I connected with senior developers who guided my final year project.",
-    author: "Ritu Shrestha",
-    role: "CS Graduate",
-    institution: "Kathmandu University",
-  },
-  {
-    id: "test-3",
-    quote: "As a tech recruiter, MeroTalent has streamlined our university hiring process in Nepal. We can easily verify student skills based on hackathon outcomes.",
-    author: "Sanjay Adhikari",
-    role: "HR Lead",
-    institution: "Logpoint Nepal",
-  },
-];
-
 interface TestimonialsProps {
   eyebrow?: string;
   title?: string;
@@ -43,8 +19,9 @@ interface TestimonialsProps {
 export default function Testimonials({
   eyebrow = "Success Stories",
   title = "Loved by Students & Educators Across Nepal",
-  testimonials = TESTIMONIALS_DATA,
+  testimonials = [],
 }: TestimonialsProps) {
+  if (!testimonials.length) return null;
   return (
     <section className="py-16 bg-slate-50/60 border-y border-slate-100 w-full">
       <div className="max-w-7xl mx-auto px-6 sm:px-10">

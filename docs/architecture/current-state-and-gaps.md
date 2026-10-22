@@ -21,6 +21,11 @@ Measured checkpoint: 2026-10-22 (Asia/Kathmandu). This is not full acceptance.
 - Fresh real Jobs and Mentor/Event HTTP checks passed on disposable staging
   sessions, including persistence and denial cases. See the execution ledger for
   exact results. They do not prove all browser forms or production workflows.
+- Public home sticky-header failure was reproduced and repaired by removing
+  the unintended overflow scroll container. Placeholder testimonials/contact
+  details were removed without editing saved CMS records. Contact/FAQ controls
+  now have accessible names and expanded-state semantics; phone/tablet browser
+  acceptance is still pending, not inferred from class-level regressions.
 
 ## Outstanding gates
 

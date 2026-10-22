@@ -31,6 +31,7 @@ export const SearchBar: React.FC<{
       <Search className="absolute left-4 w-[18px] h-[18px] text-slate-400 pointer-events-none" />
       <input
         type="text"
+        aria-label={placeholder}
         value={val}
         onChange={(e) => setVal(e.target.value)}
         placeholder={placeholder}

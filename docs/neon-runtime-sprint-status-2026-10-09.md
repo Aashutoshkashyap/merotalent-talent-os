@@ -2823,3 +2823,36 @@ production configuration change or live payment occurred in this continuation.
   Explicit-Neon production build, diff and inventory checks PASS. The new
   regression also passed against the archive's freshly installed dependencies.
   No existing package version changed during lockfile repair.
+
+#### Public content and sticky navigation continuation — 2026-10-22
+
+- Lockfile correction `d632f89` is on remote main. GitHub CI run `39701336114`
+  completed SUCCESS (both jobs); Vercel `dpl_Grba74VRqHqMcaGX3HBdBzX7zNbr`
+  reached READY, canonical recovery HTTP 200 and unauthenticated profile HTTP
+  401. Fresh read-only production payment inspection: eSewa disabled,
+  environment production, zero writes.
+- Live browser reproduced the public home header moving to top -962px after
+  scrollY 962. Replaced the ancestor overflow scroll container with horizontal
+  clipping; local staging browser now reports top 0 at the same scroll position.
+  Small-screen home no longer reserves a desktop sidebar gutter. Sidebar role
+  labels remain on one line without shrinking the global font scale.
+- Removed hardcoded testimonial fallback records; explicitly published CMS
+  testimonials remain supported. Replaced invented contact numbers/address
+  with the same existing CMS contact/support settings used by the footer. No
+  saved content or production rows were deleted. FAQ contact action now uses
+  its configured URL; unsafe schemes fall back to the contact form.
+- Corrected fallback FAQ claims about free paid services and alleged university
+  partnerships. Contact acknowledgments say inquiry received, not email sent;
+  removed an unsupported 24-hour response promise. Preserved the existing
+  contact persistence endpoint and authorization architecture.
+- Contact controls have associated labels/autocomplete; FAQ buttons expose
+  expanded state and controlled panels without clipping long answers. Contact
+  accents use the existing primary design token, not copied red template colors.
+  Added six component/structure regressions, including CMS content preservation,
+  missing settings, safe links and keyboard-operable native accordion buttons.
+- Final local verification: 191 files / 963 tests PASS, typecheck PASS, explicit
+  Neon production build PASS, lint 0 errors / 37 existing warnings, diff check
+  PASS. Local contact screenshot: `/private/tmp/merotalent-public-contact-20261022.png`.
+  No contact message or payment was submitted by the browser check. Phone/tablet
+  browser acceptance remains unverified: native browser control reported the
+  Mac locked; requested unlock while continuing independent release work.

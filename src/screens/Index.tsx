@@ -62,7 +62,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
   const [events, setEvents] = useState<OpportunityCardData[]>([]);
   const [courses, setCourses] = useState<OpportunityCardData[]>([]);
   const [collegeUpdates, setCollegeUpdates] = useState<OpportunityCardData[]>([]);
-  const { getSection, getChildSections, hasSectionConfiguration, isSectionVisible, isLoading } = useSiteCMS("home", initialCmsSnapshot);
+  const { settings, getSection, getChildSections, hasSectionConfiguration, isSectionVisible, isLoading } = useSiteCMS("home", initialCmsSnapshot);
 
   const heroSection = getSection("hero_banner");
   const featuredSection = getSection("featured_content") || getSection("latest_news");
@@ -384,7 +384,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
           title={faqSection?.title || undefined}
           contactBody={faqSection?.body || undefined}
           contactLabel={faqSection?.cta_label || undefined}
-          contactUrl={faqSection?.cta_url || undefined}
+          contactUrl={faqSection?.cta_url || (settings.contact_email || settings.support_email ? `mailto:${settings.contact_email || settings.support_email}` : "#contact")}
           items={faqs}
         />
       ),
@@ -393,7 +393,7 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
       key: "contact_form",
       order: getSection("contact_form")?.display_order ?? 11,
       isVisible: isConfiguredSectionVisible("contact_form", "contact_us"),
-      render: () => <ContactForm key="contact_form" />,
+      render: () => <ContactForm key="contact_form" settings={settings} />,
     },
     {
       key: "cta",
@@ -409,9 +409,9 @@ export default function Index({ initialCmsSnapshot }: { initialCmsSnapshot?: Cms
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-white font-sans text-slate-900">
-      <SidebarNav activeRole="talent" activeNavId="home" onHoverChange={setIsSidebarExpanded} />
-      <div className="flex min-h-screen flex-1 flex-col transition-all duration-300 ease-in-out" style={{ marginLeft: isSidebarExpanded ? "292px" : "72px" }}>
+    <div className="flex min-h-screen overflow-x-clip bg-white font-sans text-slate-900">
+      <div className="hidden sm:block"><SidebarNav activeRole="talent" activeNavId="home" onHoverChange={setIsSidebarExpanded} /></div>
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ease-in-out sm:ml-[var(--sidebar-width)]" style={{ "--sidebar-width": isSidebarExpanded ? "292px" : "72px" } as React.CSSProperties}>
         <HeaderNav />
         <main className="flex-1 bg-gradient-to-b from-slate-50/50 via-white to-slate-50/30 pb-0">
           {activeSections.map((s) => s.render())}

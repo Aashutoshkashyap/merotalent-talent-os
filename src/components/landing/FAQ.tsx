@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { ChevronUp, ChevronDown, Phone } from "lucide-react";
+import React, { useId, useState } from "react";
+import { ChevronUp, ChevronDown, ArrowUpRight } from "lucide-react";
+import { safeExternalUrl } from "@/lib/institutes/public-institutes";
 
 export interface FAQItem {
   question: string;
@@ -11,19 +12,19 @@ export interface FAQItem {
 const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What is MeroTalent?",
-    answer: "MeroTalent is Nepal's premier educational ecosystem connecting students, universities, mentors, and employers. We focus on proof-of-skills, helping students showcase their practical projects, courses, and hackathon accomplishments.",
+    answer: "MeroTalent connects students and professionals with college listings, jobs, mentors, events and partner courses in Nepal.",
   },
   {
     question: "Is MeroTalent free for students?",
-    answer: "Yes, students can browse courses, register for events and hackathons, and connect with academic mentors completely for free.",
+    answer: "Browsing public opportunities is free. Mentor sessions, events and partner courses may have a fee, shown before checkout. Paid access is confirmed only after payment verification.",
   },
   {
     question: "How can I become a mentor on MeroTalent?",
-    answer: "You can sign up as a Mentor by clicking on the Mentor option on the side navigation bar and filling in your credentials and areas of academic/industry expertise.",
+    answer: "Complete your profile and request Mentor module access with the required supporting documents. Access follows the applicable approval and subscription requirements.",
   },
   {
-    question: "Which colleges are partnered with MeroTalent?",
-    answer: "We are currently partnering with top universities and campuses across Nepal, including Tribhuvan University (IOE Pulchowk, Thapathali), Kathmandu University, and Pokhara University.",
+    question: "Where can I find colleges on MeroTalent?",
+    answer: "Browse the Institutes directory for published college listings and available application information. A directory listing does not itself imply a partnership or paid verification.",
   },
 ];
 
@@ -42,11 +43,14 @@ export default function FAQ({
   title = "Frequently asked questions",
   contactTitle = "Still have a question?",
   contactBody = "Can't find the answer to your question? Send us an email and we'll get back to you as soon as possible!",
-  contactLabel = "Send email",
-  contactUrl = "mailto:hello@merotalent.com",
+  contactLabel = "Contact support",
+  contactUrl = "#contact",
   items = FAQ_ITEMS,
 }: FAQProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0); // Default open first item like Dataly
+  const accordionId = useId();
+  const contactHref = /^(?:mailto:|tel:)[^\s<>]+$/i.test(contactUrl) || /^\/(?!\/)/.test(contactUrl) || contactUrl === "#contact"
+    ? contactUrl : safeExternalUrl(contactUrl) || "#contact";
 
   const toggleOpen = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -76,24 +80,10 @@ export default function FAQ({
             <p className="text-xs sm:text-sm text-slate-500 font-semibold leading-relaxed">
               {contactBody}
             </p>
-            <div className="flex flex-col gap-2 pt-2 border-t border-slate-200/60">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Direct Hotline</span>
-              <p className="text-xs sm:text-sm font-extrabold text-[#0073e6]">
-                Contact us at:
-              </p>
-              <div className="flex flex-col gap-2 mt-1">
-                {["9801010802", "9801010803", "9801010804", "9801010805"].map((phone) => (
-                  <a
-                    key={phone}
-                    href={`tel:${phone}`}
-                    className="inline-flex items-center gap-2.5 px-4 py-2 bg-white hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-300 rounded-xl text-xs sm:text-sm font-extrabold text-slate-700 hover:text-[#0073e6] shadow-3xs transition-all active:scale-98"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-[#0073e6]" />
-                    <span>{phone}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
+            <a href={contactHref} className="inline-flex items-center gap-2.5 px-4 py-3 bg-white hover:bg-blue-50/80 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">
+              <ArrowUpRight aria-hidden="true" className="w-4 h-4" />
+              {contactLabel}
+            </a>
           </div>
         </div>
 
@@ -107,6 +97,9 @@ export default function FAQ({
                 className="rounded-2xl border border-slate-200 bg-[#f8fafc]/50 p-6 flex flex-col transition-all duration-300 shadow-2xs hover:border-[#0073e6]"
               >
                 <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  aria-controls={`${accordionId}-${index}`}
                   onClick={() => toggleOpen(index)}
                   className="w-full flex items-center justify-between text-left font-extrabold text-[#1e293b] hover:text-[#0073e6] transition-colors"
                 >
@@ -116,9 +109,9 @@ export default function FAQ({
                   </div>
                 </button>
                 <div
-                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    isOpen ? "max-h-[220px] mt-4 pt-4 border-t border-slate-200/50" : "max-h-0"
-                  }`}
+                  id={`${accordionId}-${index}`}
+                  hidden={!isOpen}
+                  className="mt-4 pt-4 border-t border-slate-200/50"
                 >
                   <p className="text-xs sm:text-sm text-slate-500 font-semibold leading-relaxed">
                     {item.answer}

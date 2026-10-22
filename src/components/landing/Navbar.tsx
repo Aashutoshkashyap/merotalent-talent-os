@@ -53,7 +53,7 @@ const Navbar = () => {
           />
           <span className="font-display text-lg font-bold tracking-tight text-[#17162e]">
             {settings.site_title ? settings.site_title.split(" - ")[0] : (
-              <>Mero<span className="text-[#071a3d]">talent</span></>
+              <>Mero<span className="text-[#071a3d]">Talent</span></>
             )}
           </span>
         </Link>
