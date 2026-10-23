@@ -11,6 +11,27 @@ const provider = () => ({ createCheckout:vi.fn(async () => ({ status:"pending",c
   checkoutFields:{ product_code:"test" } })) }) as unknown as EsewaV2PaymentProvider;
 
 describe("Neon checkout authorization and retry", () => {
+  it.each([1.1, 12.34, 1500])('accepts an authoritative two-decimal price %s', async amount => {
+    const adapter = provider();
+    const query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT true AS allowed')) return { rows: [{ allowed: true }] };
+      if (sql.includes('SELECT b.student_id')) return { rows: [{ student_id: actor.userId, amount,
+        currency: 'NPR', status: 'pending', payment_status: 'pending', service_price: amount, service_currency: 'NPR' }] };
+      if (sql.includes('INSERT INTO public.payment_checkout_sessions')) return { rows: [{ id: targetId }] };
+      return { rows: [] };
+    });
+    await new NeonCheckoutService(adapter).initiate(actor, 'mentor_booking', targetId, 'http://localhost:3210',
+      { query } as unknown as Pick<PoolClient, 'query'>);
+    expect(adapter.createCheckout).toHaveBeenCalledOnce();
+  });
+  it('rejects a fractional-paisa authoritative price before creating payment', async () => {
+    const adapter = provider();
+    const query = vi.fn(async (sql: string) => ({ rows: sql.includes('SELECT true AS allowed') ? [{ allowed: true }]
+      : [{ student_id: actor.userId, amount: 1.001, currency: 'NPR', status: 'pending', payment_status: 'pending', service_price: 1.001, service_currency: 'NPR' }] }));
+    await expect(new NeonCheckoutService(adapter).initiate(actor, 'mentor_booking', targetId, 'http://localhost:3210',
+      { query } as unknown as Pick<PoolClient, 'query'>)).rejects.toMatchObject({ code: 'INVALID_PRICE' });
+    expect(adapter.createCheckout).not.toHaveBeenCalled();
+  });
   it('rejects a different provider transaction code even when the redirect signature is valid',async()=>{
     const row={id:targetId,user_id:actor.userId,entity_type:'mentor_booking',entity_id:targetId,
       provider_reference:targetId,amount:10,currency:'NPR',status:'pending'};

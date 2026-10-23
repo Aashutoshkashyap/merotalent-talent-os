@@ -26,7 +26,9 @@ export function classifyIdentityRecovery({ sourceActive, profilePresent, identit
   if (!sourceActive) reasons.push("SOURCE_ACCOUNT_INACTIVE");
   if (!profilePresent) reasons.push("TARGET_PROFILE_MISSING");
   if (!normalizedIdentities.length) reasons.push("SOURCE_IDENTITY_PROOF_UNAVAILABLE");
-  if (accounts.length === 0) reasons.push("TARGET_APPLICATION_ACCOUNT_MISSING");
+  // The verified dual-session linker can create this anchor under the locked
+  // original profile. Its absence is not ownership and is not a recovery ban.
+  const anchorNeedsProof = accounts.length === 0;
   if (accounts.length > 1) reasons.push("TARGET_APPLICATION_ACCOUNT_AMBIGUOUS");
 
   const account = accounts[0];
@@ -38,7 +40,8 @@ export function classifyIdentityRecovery({ sourceActive, profilePresent, identit
   }
 
   const result = reasons.length === 0
-    ? { status: "ELIGIBLE_FOR_PROOF_BASED_RECOVERY", recoveryTested: false, reasonCodes: ["DUAL_SESSION_CHALLENGE_REQUIRED"] }
+    ? { status: "ELIGIBLE_FOR_PROOF_BASED_RECOVERY", recoveryTested: false, reasonCodes: ["DUAL_SESSION_CHALLENGE_REQUIRED",
+        ...(anchorNeedsProof ? ["TARGET_ANCHOR_CREATED_ONLY_AFTER_VERIFIED_PROOF"] : [])] }
     : { status: "UNRESOLVED", recoveryTested: false, reasonCodes: reasons };
   return {...result, attempted: attemptCount > 0 ? true : null, verified:false,linked:false};
 }

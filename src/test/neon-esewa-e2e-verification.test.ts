@@ -393,6 +393,8 @@ describe("Neon eSewa End-to-End Payment & Provider Verification", () => {
             issuedTickets.push(params);
             return { rowCount: 1 };
           }
+          if (sql.includes('SELECT n.id,n.recipient_id')) return { rows: [] };
+          if (sql.includes('INSERT INTO public.notifications') || sql.includes('INSERT INTO public.audit_logs')) return { rowCount: 1 };
           if (sql.includes("UPDATE public.payments SET status=$2")) {
             paymentUpdated = true;
             return { rowCount: 1 };
@@ -560,6 +562,8 @@ describe("Neon eSewa End-to-End Payment & Provider Verification", () => {
             paymentFailed = true;
             return { rowCount: 1 };
           }
+          if (sql.includes('SELECT n.id,n.recipient_id')) return { rows: [] };
+          if (sql.includes('INSERT INTO public.notifications') || sql.includes('INSERT INTO public.audit_logs')) return { rowCount: 1 };
           throw new Error(`Unexpected query: ${sql}`);
         }),
       } as unknown as PoolClient;

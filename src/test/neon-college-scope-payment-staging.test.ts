@@ -80,6 +80,12 @@ describe("isolated College scope payment activation", () => {
       expect(settled.status).toBe("successful");
       expect("activation" in settled ? settled.activation : null).toMatchObject({ activated: true, duplicate: false });
       expect((await service.verifyReturn({ reference }, client)).duplicate).toBe(true);
+      // Real staging SQL, but deliberately injected provider state: this is
+      // atomic fulfillment/receipt evidence, NOT genuine eSewa settlement.
+      expect((await client.query(`SELECT id FROM public.audit_logs WHERE entity_id=$1
+        AND action='esewa_payment_verified'`, [reference])).rowCount).toBe(1);
+      expect((await client.query(`SELECT id FROM public.notifications WHERE entity_id=$1::uuid
+        AND category='payment' AND channel='email' AND metadata->>'payment_status'='success'`, [reference])).rowCount).toBe(1);
       const entitlement = await client.query(`SELECT id FROM public.module_entitlements WHERE payment_id=$1::uuid
         AND user_id=$2::uuid AND entity_id=$3::uuid AND status='active'`, [reference, actor.userId, college.id]);
       expect(entitlement.rowCount).toBe(1);

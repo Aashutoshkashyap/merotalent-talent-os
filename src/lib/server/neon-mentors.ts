@@ -209,7 +209,7 @@ export class NeonMentorsRepository {
       if (conflict.rows.length) throw new NeonAuthorizationError(403, "SLOT_TAKEN", "This time is already booked.");
 
       const amount = service.price;
-      if(amount>0)requireNeonPaidInitiation();
+      if(amount>0)requireNeonPaidInitiation(actor.userId);
       const currency = service.currency;
       const initialStatus = amount === 0 ? "confirmed" : "pending";
       const paymentStatus = amount === 0 ? "not_required" : "pending";

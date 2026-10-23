@@ -35,4 +35,19 @@ describe("Supabase production inventory source gate", () => {
     }] });
     await expect(verifyReadOnlySource({ query }, role)).rejects.toThrow("read-only privileges");
   });
+
+  it("rejects incomplete SELECT coverage or filtering that could falsely suggest source parity", async () => {
+    const validRow = { database_name: "postgres", role_name: role, transaction_read_only: "on",
+      rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false,
+      can_create_database_objects: false, can_create_schema_objects: false, can_mutate_tables: false,
+      can_mutate_sequences: false, can_execute_security_definer: false, missing_table_select: false,
+      row_filter_unverified: false, users_exist: true, identities_exist: true, can_read_users: true, can_read_identities: true };
+    const query = vi.fn().mockResolvedValue({ rows: [validRow] });
+    await expect(verifyReadOnlySource({ query }, role)).resolves.toBeUndefined();
+    for (const change of [{ missing_table_select: true }, { row_filter_unverified: true }, { row_filter_unverified: undefined }]) {
+      query.mockResolvedValue({ rows: [{ ...validRow, ...change }] });
+      await expect(verifyReadOnlySource({ query }, role)).rejects.toThrow("read-only privileges");
+    }
+    expect(query.mock.calls[0][0]).toContain("pg_policy");
+  });
 });

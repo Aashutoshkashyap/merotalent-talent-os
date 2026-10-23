@@ -256,6 +256,13 @@ try {
     body: { attendeeCount: 2, participants: [{ fullName: "Student One" }, { fullName: "Student Two" }] } });
   check(free.status === 201 && free.value?.data?.isFree === true, "free event registration confirmed");
   const ownTickets = await request("/api/v1/events/my-tickets", { signedIn: true });
+  if (ownTickets.status !== 200 || ownTickets.value?.data?.filter(t => t.event?.id === freeEventId).length !== 2) {
+    const evidence = (await db.query(`SELECT r.status,r.payment_status,
+      (SELECT count(*)::int FROM public.event_tickets t WHERE t.registration_id=r.id) AS tickets
+      FROM public.event_registrations r WHERE r.event_id=$1::uuid AND r.user_id=$2::uuid`,[freeEventId,studentId])).rows;
+    console.error(JSON.stringify({ticketReadDiagnostic:{httpStatus:ownTickets.status,errorCode:ownTickets.value?.error?.code??null,
+      ticketRows:Array.isArray(ownTickets.value?.data)?ownTickets.value.data.length:null,registrations:evidence}}));
+  }
   check(ownTickets.status === 200 && ownTickets.value?.data?.filter(t => t.event?.id === freeEventId).length === 2,
     "student sees two real free-event passes");
   check((await request(`/api/v1/events/${freeEventId}/register`, { method: "POST", signedIn: true,

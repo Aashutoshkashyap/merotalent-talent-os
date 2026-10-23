@@ -18,6 +18,7 @@ const runId = randomBytes(6).toString("hex");
 const studentId = randomUUID();
 const recruiterId = randomUUID();
 const checks = [];
+const disposableManagedSubjects = [];
 const db = new pg.Client({ connectionString: process.env.NEON_STAGING_DATABASE_URL, connectionTimeoutMillis: 10000 });
 let companyId = null;
 let jobId = null;
@@ -45,6 +46,9 @@ async function signup(kind) {
     redirect: "manual", signal: AbortSignal.timeout(30000),
   });
   check(response.ok, `${kind} isolated Managed Auth signup`);
+  const created = await response.clone().json();
+  check(typeof created.user?.id === 'string' && /^[0-9a-f-]{36}$/i.test(created.user.id), `${kind} disposable subject recorded`);
+  disposableManagedSubjects.push(created.user.id);
   const cookie = cookieOf(response);
   check(!!cookie, `${kind} session cookie issued`);
   const sessionResponse = await fetch(`${auth}/get-session`, { headers: { cookie }, cache: "no-store" });
@@ -443,5 +447,12 @@ try {
     } catch { await db.query("ROLLBACK").catch(() => undefined);
       console.error("Synthetic Jobs fixture cleanup needs manual review."); process.exitCode = 1; }
     await db.end().catch(() => undefined);
+  }
+  for (const subject of disposableManagedSubjects) {
+    try {
+      execFileSync('npx',['--yes','neon@8.8.0','neon-auth','user','delete',subject,
+        '--project-id','summer-sky-63693897','--branch','br-frosty-haze-azsnybmr'],
+      {stdio:['ignore','pipe','pipe'],timeout:30000});
+    } catch { console.error(JSON.stringify({cleanup:'DISPOSABLE_MANAGED_SUBJECT_REVIEW_REQUIRED'})); process.exitCode=1; }
   }
 }

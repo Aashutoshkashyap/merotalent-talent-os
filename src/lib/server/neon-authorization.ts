@@ -2,7 +2,7 @@ import type { QueryResultRow } from "pg";
 import { queryRows } from "./db";
 
 export class NeonAuthorizationError extends Error {
-  constructor(readonly status: 400 | 401 | 403 | 404 | 409 | 503, readonly code: string, message: string) {
+  constructor(readonly status: 400 | 401 | 403 | 404 | 409 | 429 | 503, readonly code: string, message: string) {
     super(message);
     this.name = "NeonAuthorizationError";
   }

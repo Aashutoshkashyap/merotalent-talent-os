@@ -169,7 +169,7 @@ export class NeonModuleAccess {
   }
 
   async submit(actor: NeonActor, input: ModuleAccessInput) {
-    requireNeonPaidInitiation();
+    requireNeonPaidInitiation(actor.userId);
     validateInput(input);
     return this.run(async client => {
       const profile = await assertActor(client, actor);

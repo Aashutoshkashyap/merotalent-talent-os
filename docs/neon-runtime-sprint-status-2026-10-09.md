@@ -2981,3 +2981,67 @@ production configuration change or live payment occurred in this continuation.
   remaining build-tool advisories/visual standardization. No migration-complete
   claim, source retirement, payment enablement or real charge is authorized by
   the successful constraint operation.
+
+#### Acceptance continuation from b03510f — 2026-10-23
+
+- Single current evidence matrix: `docs/neon-acceptance-matrix-2026-10-23.md`.
+  Includes all five actual paid products' UI → route → server pricing → provider
+  → callback → fulfillment paths, external gates, exact dependency findings and
+  acceptance levels. None is promoted to genuinely settled by mocked tests.
+- Fixed decimal NPR prices rejected by float equality; fractional paisa denied.
+  Added payer-owned status recovery route/button using the existing authoritative
+  verifier, both-ledger ownership, same-origin/session checks, advisory locking,
+  no client assertions and private/no-store responses. Fixed actual Next empty-
+  POST-stream behavior found through real staging HTTP. New paid initiation stays
+  paused; existing verification is separate. Shared atomic receipt handling
+  reuses payment-trigger dashboard notices, publishes durable events, queues
+  policy-scoped email and records verification audit, with duplicate protection.
+- New critical Next16.3.8 advisories found in fresh audit: upgraded framework and
+  aligned lint config to same-major16.4.2. Full findings 11 → 10, critical1 → 0.
+  Remaining3moderate/7high CSS/glob findings are documented with paths, actual
+  versions, reachability and major-upgrade requirements; no forced override,
+  audit suppression or incompatible lint downgrade. React18 deprecation is not
+  confused with a failed build or silently upgraded major.
+- Source gate now proves complete SELECT/unfiltered RLS coverage, not merely
+  absence of writes. Lossless PostgreSQL-text row fingerprints preserve numeric
+  and timestamp precision and duplicates, normalize comparison timezone, and no
+  longer overwrite old evidence. Source URL/host/role remain absent; no owner
+  credential substituted, source writes zero, fresh parity NOT claimed.
+- Read-only actual production identity inventory against20October snapshot:
+  107source users/108identities,1verified link,106needing ownership recovery,
+  no collisions/broken links/target-only anchors. Missing anchors may be created
+  only after existing dual-session proof. Technical eligibility is not recovered
+  ownership. QA still unverified; no role/link/account bulk creation performed.
+- Actual staging College browser saved text profile (independent DB readback),
+  switched both scopes;10realAPI authorization/expiry checks passed. Native file
+  picker blocked by extension file-URL permission; browser later detached.
+  Jobs/mentor/storage HTTP failures and partial passing evidence are retained in
+  the matrix; not counted as full acceptance. eSewa UAT hosted page reached for
+  EPAYTEST/NPR10 but CAPTCHA free quota exhausted and LOGIN disabled. Production
+  credentials/payment gate unchanged; no real payment or settlement claim.
+- Standard final suite200files/1007testsPASS; focused payment33testsPASS;
+  isolated real College payment/renewal SQL1PASS (injected provider, rolled back),
+  UAT diagnostic2PASS, typecheckPASS, lint0errors/37existingwarnings. Existing
+  backup/restore and validated CHECK evidence preserved, not needlessly replayed.
+- Next concrete task: finish production-built isolated HTTP acceptance and the
+  fresh source/identity/provider gates above; verify the release evidence below.
+  No migration-complete or legacy-source-retirement claim.
+
+- Subsequent owner directive authorizes live validation instead of waiting for
+  provider UAT CAPTCHA. Owner replaced the live secret through authenticated
+  Provider Center; fresh server read shows encrypted/decryptable, not the former
+  decryption error. No credential in source/logs/reports. Added exact-owner-only
+  live initiation gate across booking, registration, module enrollment, checkout
+  and billing availability; malformed/missing/foreign IDs denied, normal identity,
+  entity and authoritative pricing checks retained. Production public flag stays
+  false; verified owner ID configured server-only, effective on next deployment.
+  Provider enablement and actual wallet/payment confirmation remain owner actions.
+- Final expanded suite201files/1014testsPASS; focused live/payment43PASS;
+  production-built staging Jobs65/65 and mentor/event60/60 HTTP checks PASS.
+  Includes actual persisted application, recruiter scope/price denial, private
+  bytes, free ticket issuance, notifications/SSE and invalidated session denial.
+  Earlier failed dev/HTTP attempts remain recorded, not silently relabelled.
+- Private Object Storage HTTP155/155PASS on final retry, cleanupPASS; exact
+  bytes, role/entity/owner denial, replacement, deletion and anonymous access
+  exercised. Final production build/typecheck/clean install/diff PASS; lint remains
+  0errors/37warnings. No real settlement or public payment activation implied.

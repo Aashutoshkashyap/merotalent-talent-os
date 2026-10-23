@@ -1,6 +1,7 @@
 import { authenticateRequest } from "@/lib/server/auth";
 import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
 import { getBackendMode } from "@/lib/server/backend-mode";
+import { neonPaidInitiationAllowed } from '@/lib/server/neon-paid-initiation';
 import { getAdminClient } from "@/lib/server/supabase";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { queryRows } from "@/lib/server/db";
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
   try {
     if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
-      const paymentsAvailable=(getBackendMode()!=='neon-production'||process.env.NEON_PRODUCTION_PAYMENTS_ENABLED==='true')
+      const paymentsAvailable=neonPaidInitiationAllowed(actor.userId)
         && await stagingEsewaProvider().then(()=>true).catch(()=>false);
       const repo = new NeonPaymentsRepository();
       const [payments, plans, checkouts, scopes, entitlements, collegeRequests] = await Promise.all([

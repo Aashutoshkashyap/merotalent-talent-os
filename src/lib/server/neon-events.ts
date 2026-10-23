@@ -209,7 +209,7 @@ export class NeonEventsRepository {
       const unitPrice = tier?.price ?? event.ticket_price ?? 0;
       const totalAmount = unitPrice * ticketQty;
       const isFree = totalAmount === 0;
-      if(!isFree)requireNeonPaidInitiation();
+      if(!isFree)requireNeonPaidInitiation(actor.userId);
       const status = isFree ? "confirmed" : "pending";
       const paymentStatus = isFree ? "not_required" : "pending";
 

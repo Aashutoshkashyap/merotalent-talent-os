@@ -8,10 +8,10 @@
     "this generated architecture directory"
   ],
   "summary": {
-    "ACTIVE": 80,
+    "ACTIVE": 81,
     "MIGRATION REQUIRED": 130,
     "DEAD": 0,
-    "HISTORICAL/RECOVERY": 76,
+    "HISTORICAL/RECOVERY": 77,
     "UNKNOWN": 0
   },
   "runtimeImportInventory": {
@@ -1614,6 +1614,13 @@
       "retirement": "Historical evidence, not authority to replay old production SQL."
     },
     {
+      "file": "docs/neon-acceptance-matrix-2026-10-23.md",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Historical evidence, not authority to replay old production SQL."
+    },
+    {
       "file": "docs/neon-auth-staging-blocker-2026-10-08.md",
       "referenceLines": 2,
       "disposition": "HISTORICAL/RECOVERY",
@@ -3141,6 +3148,13 @@
     },
     {
       "file": "src/test/neon-maintenance-route.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-payment-recheck-ui.test.tsx",
       "referenceLines": 1,
       "disposition": "ACTIVE",
       "owner": "Regression suite",

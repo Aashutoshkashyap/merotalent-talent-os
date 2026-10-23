@@ -62,6 +62,26 @@ export async function verifyReadOnlySource(client, expectedRole) {
         WHERE n.nspname IN ('auth', 'public', 'storage') AND p.prosecdef
           AND has_function_privilege(current_user, p.oid, 'EXECUTE')
       ) AS can_execute_security_definer,
+      EXISTS (
+        SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname IN ('public','auth','storage') AND c.relkind IN ('r','p')
+          AND NOT has_table_privilege(current_user,c.oid,'SELECT')
+      ) AS missing_table_select,
+      EXISTS (
+        SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname IN ('public','auth','storage') AND c.relkind IN ('r','p') AND c.relrowsecurity
+          AND (NOT EXISTS (
+            SELECT 1 FROM pg_policy p WHERE p.polrelid=c.oid AND p.polcmd IN ('r','*') AND p.polpermissive
+              AND (0=ANY(p.polroles) OR EXISTS (SELECT 1 FROM pg_roles pr WHERE pr.oid=ANY(p.polroles)
+                AND pg_has_role(current_user,pr.oid,'USAGE')))
+              AND (p.polqual IS NULL OR pg_get_expr(p.polqual,p.polrelid)='true')
+          ) OR EXISTS (
+            SELECT 1 FROM pg_policy p WHERE p.polrelid=c.oid AND p.polcmd IN ('r','*') AND NOT p.polpermissive
+              AND (0=ANY(p.polroles) OR EXISTS (SELECT 1 FROM pg_roles pr WHERE pr.oid=ANY(p.polroles)
+                AND pg_has_role(current_user,pr.oid,'USAGE')))
+              AND p.polqual IS NOT NULL AND pg_get_expr(p.polqual,p.polrelid)<>'true'
+          ))
+      ) AS row_filter_unverified,
       to_regclass('auth.users') IS NOT NULL AS users_exist,
       to_regclass('auth.identities') IS NOT NULL AS identities_exist,
       (has_column_privilege(current_user, 'auth.users', 'id', 'SELECT')
@@ -78,6 +98,7 @@ export async function verifyReadOnlySource(client, expectedRole) {
     || row.rolcreaterole || row.rolreplication || row.rolbypassrls
     || row.can_create_database_objects || row.can_create_schema_objects || row.can_mutate_tables
     || row.can_mutate_sequences || row.can_execute_security_definer
+    || row.missing_table_select !== false || row.row_filter_unverified !== false
     || !row.users_exist || !row.identities_exist || !row.can_read_users || !row.can_read_identities) {
     throw new Error("Refusing source inventory: project role or read-only privileges could not be verified.");
   }

@@ -11,8 +11,11 @@ describe("identity recovery classification", () => {
 
   it("does not mistake an email/provider record or missing target account for ownership", () => {
     const result = classifyIdentityRecovery({ sourceActive: true, profilePresent: true, identityTypes: ["email"], candidates: [] });
-    expect(result.status).toBe("UNRESOLVED");
-    expect(result.reasonCodes).toContain("TARGET_APPLICATION_ACCOUNT_MISSING");
+    expect(result.status).toBe("ELIGIBLE_FOR_PROOF_BASED_RECOVERY");
+    expect(result.reasonCodes).toContain("TARGET_ANCHOR_CREATED_ONLY_AFTER_VERIFIED_PROOF");
+    expect(result).toMatchObject({ verified: false, linked: false, recoveryTested: false, attempted: null });
+    expect(classifyIdentityRecovery({ sourceActive: false, profilePresent: true, identityTypes: ["email"], candidates: [] }).status).toBe("UNRESOLVED");
+    expect(classifyIdentityRecovery({ sourceActive: true, profilePresent: false, identityTypes: ["email"], candidates: [] }).status).toBe("UNRESOLVED");
   });
 
   it("keeps collisions and unverified links out of the automatic recovery path", () => {

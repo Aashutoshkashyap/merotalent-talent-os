@@ -12,6 +12,7 @@ import { decryptProviderSecret } from "./secret-store";
 import { prepareNeonModuleAccessCheckout, activateVerifiedNeonModuleAccess } from "./neon-module-access";
 import {prepareAssignedScopeRenewal,activateVerifiedAssignedScope} from './neon-assigned-scope-renewal';
 import {requireNeonPaidInitiation} from './neon-paid-initiation';
+import { recordNeonPaymentReceipt } from './neon-payment-receipt';
 
 type Client = Pick<PoolClient, "query">;
 type Kind = "mentor_booking" | "event_registration" | "college_scope_request" | "module_access_request" | "assigned_scope";
@@ -54,7 +55,10 @@ function deny(code: string, message: string, status: 400 | 403 | 404 | 409 | 503
 
 function money(value: unknown): number {
   const amount = Number(value);
-  if (!Number.isSafeInteger(Math.round(amount * 100)) || amount <= 0 || Math.round(amount * 100) !== amount * 100) {
+  // Decimal PostgreSQL prices such as 1.10 are not exactly representable as
+  // binary floats. Permit representation noise, never a fractional paisa.
+  if (!Number.isSafeInteger(Math.round(amount * 100)) || amount <= 0 ||
+      Math.abs(Math.round(amount * 100) - amount * 100) > 1e-7) {
     deny("INVALID_PRICE", "The published price is invalid.", 409);
   }
   return amount;
@@ -63,10 +67,30 @@ function money(value: unknown): number {
 export class NeonCheckoutService {
   constructor(private readonly configuredProvider?: EsewaV2PaymentProvider) {}
 
+  /** Recovery for a lost/temporarily pending return, never a new charge.
+   * The payer must own both ledgers. Serialize repeated checks without waiting
+   * behind an in-flight provider request; all fulfillment stays in verifyReturn.
+   */
+  async recheckOwnPayment(actor: NeonActor, reference: string, transactionClient?: Client) {
+    const run = async (db: Client) => {
+      const owned = (await db.query(`SELECT c.provider_reference
+        FROM public.payment_checkout_sessions c JOIN public.payments p
+          ON p.id::text=c.provider_reference AND p.user_id=c.user_id AND p.deleted_at IS NULL
+        WHERE c.provider_reference=$2 AND c.user_id=$1::uuid AND c.provider_name='esewa'
+        LIMIT 1`, [actor.userId, reference])).rows[0];
+      if (!owned) deny("CHECKOUT_NOT_FOUND", "Checkout not found.", 404);
+      const lock = (await db.query<{ acquired: boolean }>(`SELECT pg_try_advisory_xact_lock(
+        hashtextextended($1::text,0)) AS acquired`, [`esewa-recheck:${reference}`])).rows[0];
+      if (!lock?.acquired) throw new NeonAuthorizationError(429, "VERIFICATION_IN_PROGRESS", "A payment check is already in progress.");
+      return this.verifyReturn({ reference }, db);
+    };
+    return transactionClient ? run(transactionClient) : withTransaction(run);
+  }
+
   async initiate(actor: NeonActor, kind: Kind, targetId: string, origin: string, transactionClient?: Client,
     selectedPackageId?: string, renewal = false) {
     // Disable new paid checkout independently of verification of existing returns.
-    requireNeonPaidInitiation();
+    requireNeonPaidInitiation(actor.userId);
     const provider = this.configuredProvider ?? await stagingEsewaProvider();
     const run = async (db: Client) => {
       const linked = (await db.query<{ allowed: boolean }>(`SELECT true AS allowed
@@ -282,6 +306,7 @@ export class NeonCheckoutService {
         if(!payment.rowCount)deny('PAYMENT_CHANGED','Renewal payment cannot be settled.',409);
         const activation=status==='successful'?await activateVerifiedAssignedScope(db,{userId:locked.user_id,
           assignmentId:locked.entity_id,packageId:locked.package_id,paymentId:input.reference}):{activated:false};
+        await recordNeonPaymentReceipt(db,input.reference);
         return {status,duplicate:false,activation};
       }
       if (locked.entity_type === "module_access_request") {
@@ -308,6 +333,7 @@ export class NeonCheckoutService {
         [locked.entity_id,input.reference,paymentStatus,locked.user_id,locked.package_id]);
         const activation=paymentStatus === "success"?await activateVerifiedNeonModuleAccess(db,locked.entity_id)
           :{activated:false,reason:"payment_not_verified"};
+        await recordNeonPaymentReceipt(db,input.reference);
         return {status,duplicate:false,activation};
       }
       if (locked.entity_type === "college_scope_request") {
@@ -340,6 +366,7 @@ export class NeonCheckoutService {
         const activation = paymentStatus === "success"
           ? await activateVerifiedCollegeScope(db, locked.entity_id)
           : { activated: false, reason: "payment_not_verified" };
+        await recordNeonPaymentReceipt(db,input.reference);
         return { status, duplicate: false, activation };
       }
       if (status === "successful") {
@@ -388,6 +415,7 @@ export class NeonCheckoutService {
           ...(expired && verified.status === "successful" ? { reconciliation: "late_success_needs_review" } : {}) }),
         locked.user_id, locked.entity_id]);
       if (!paymentUpdate.rowCount) deny("PAYMENT_CHANGED", "Payment can no longer be settled.", 409);
+      await recordNeonPaymentReceipt(db,input.reference);
       return { status, duplicate: false };
     };
     return transactionClient ? run(transactionClient) : withTransaction(run);

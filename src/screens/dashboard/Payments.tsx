@@ -123,6 +123,7 @@ export default function Payments() {
   const [loading, setLoading] = useState(true);
   const [txnLoading, setTxnLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedScopeId, setSelectedScopeId] = useState("");
   const [requestPlanIds, setRequestPlanIds] = useState<Record<string, string>>({});
@@ -163,6 +164,25 @@ export default function Payments() {
       toast({ variant: "destructive", title: "Billing is unavailable", description: error instanceof Error ? error.message : "Please try again." });
     } finally { setLoading(false); }
   }, [toast]);
+
+  const recheckPayment = async (reference: string) => {
+    setCheckingPayment(reference);
+    try {
+      const response = await fetch(`/api/v1/neon-staging/payments/${encodeURIComponent(reference)}/verify`, {
+        method: "POST", credentials: "same-origin", cache: "no-store",
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error("eSewa verification is temporarily unavailable. Your payment has not been marked successful. Please retry later.");
+      const result = payload.data;
+      toast({ title: result.manualReview ? "Payment needs review" : result.status === "successful" ? "Payment verified" : "Payment status checked",
+        description: result.manualReview ? "Provider evidence was recorded for administrator review; no additional access was granted."
+          : result.status === "pending" ? "eSewa has not confirmed settlement yet. No paid access was activated."
+          : `Verified status: ${result.status}.` });
+      await load();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Payment check unavailable", description: error instanceof Error ? error.message : "Please retry later." });
+    } finally { setCheckingPayment(null); }
+  };
 
   const loadTransactions = useCallback(async () => {
     if (isNeonStaging) { setTxnLoading(false); return; }
@@ -486,6 +506,13 @@ export default function Payments() {
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="text-lg font-black text-slate-900">{txn.currency} {Number(txn.amount).toLocaleString()}</span>
+                      {isNeonStaging && txn.gateway === "esewa" && txn.status === "pending" && (
+                        <Button variant="outline" size="sm" disabled={checkingPayment !== null}
+                          onClick={() => void recheckPayment(txn.id)}>
+                          {checkingPayment === txn.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Check eSewa status
+                        </Button>
+                      )}
                       {txn.status !== "success" && !proof && (
                         <Button
                           variant="outline"

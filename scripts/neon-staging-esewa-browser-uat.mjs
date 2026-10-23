@@ -57,6 +57,8 @@ async function cleanup() {
     await db.query("DELETE FROM public.notifications WHERE recipient_id=ANY($1::uuid[]) OR sender_id=ANY($1::uuid[])", [[studentId, ownerId]]);
     await db.query("DELETE FROM public.mentor_bookings WHERE student_id=$1::uuid", [studentId]);
     await db.query("DELETE FROM public.event_registrations WHERE user_id=$1::uuid", [studentId]);
+    await db.query(`DELETE FROM public.audit_logs WHERE action='esewa_payment_verified' AND entity_type='payments'
+      AND entity_id IN (SELECT id::text FROM public.payments WHERE user_id=$1::uuid)`, [studentId]);
     await db.query("DELETE FROM public.payments WHERE user_id=$1::uuid", [studentId]);
     await db.query("DELETE FROM public.events WHERE id=$1::uuid", [eventId ?? null]);
     await db.query("DELETE FROM public.mentor_services WHERE mentor_id=$1::uuid", [mentorId ?? null]);
@@ -128,6 +130,25 @@ try {
   server = createServer(async (req,res) => {
     try {
     const url = new URL(req.url, "http://localhost:3222");
+    if (!['localhost:3222','127.0.0.1:3222'].includes(req.headers.host) || req.method !== 'GET') {
+      res.writeHead(403); res.end('Local read-only harness required.'); return;
+    }
+    if (url.pathname === '/recheck') {
+      const checks = [];
+      for (const fixture of fixtures) {
+        const reference = fixture.checkout.session.provider_reference;
+        const path = `${app}/api/v1/neon-staging/payments/${reference}/verify`;
+        const response = await fetch(path, { method:'POST', headers:{cookie,origin:app}, signal:AbortSignal.timeout(30000) });
+        const value = await response.json();
+        const unauthenticated = await fetch(path, { method:'POST', headers:{origin:app} });
+        const forged = await fetch(path, { method:'POST', headers:{cookie,origin:app,'content-type':'application/json'},body:JSON.stringify({status:'success'}) });
+        const persisted = (await pool.query('SELECT status FROM public.payments WHERE id=$1::uuid',[reference])).rows[0];
+        checks.push({kind:fixture.kind,httpStatus:response.status,status:value.data?.status??null,
+          unauthenticatedDenied:unauthenticated.status===401,clientAssertionDenied:forged.status===422,persistedStatus:persisted?.status});
+      }
+      res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'});
+      res.end(JSON.stringify({checks,productionWrites:0})); return;
+    }
     if(url.pathname==='/diagnostic'){
       res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'});
       res.end(JSON.stringify({requests:fixtures.map(f=>({kind:f.kind,...diagnoseEsewaUatRequest(f.checkout,f.generatedAt,app)})),productionWrites:0}));return;
