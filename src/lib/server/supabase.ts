@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ServerConfigurationError } from "./server-configuration-error";
 import {getBackendMode} from './backend-mode';
 export { ServerConfigurationError } from "./server-configuration-error";
@@ -64,6 +64,10 @@ export function getAdminClient(): SupabaseClient {
     return cachedAdminClient.client;
   }
 
+  // Keep the synchronous compatibility API, but never evaluate the recovery/
+  // legacy SDK on an ordinary Neon server path. The backend guard above must
+  // run before this require, including when a cached legacy client exists.
+  const { createClient } = require("@supabase/supabase-js") as typeof import("@supabase/supabase-js");
   const client = createClient(url, secretKey, {
     auth: serverAuthOptions,
     global: { headers: { "X-Client-Info": "merotalent-server-admin" } },
@@ -80,7 +84,10 @@ export function getUserClient(accessToken: string): SupabaseClient {
     );
   }
 
-  return createClient(getSupabaseUrl(), getPublishableKey(), {
+  const url = getSupabaseUrl();
+  const key = getPublishableKey();
+  const { createClient } = require("@supabase/supabase-js") as typeof import("@supabase/supabase-js");
+  return createClient(url, key, {
     auth: serverAuthOptions,
     global: {
       headers: {

@@ -1,4 +1,4 @@
-/** AST inventory of actual Supabase runtime imports, excluding tests and comments. */
+/** AST import inventory; distinguish erased types from runtime-loading edges. */
 import fs from "node:fs/promises";
 import path from "node:path";
 import ts from "typescript";
@@ -23,7 +23,12 @@ for (const file of [...await walk("app"), ...await walk("src")]) {
   function visit(node) {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier
       && ts.isStringLiteral(node.moduleSpecifier) && /supabase/i.test(node.moduleSpecifier.text)) {
-      matches.push({ kind: "static", specifier: node.moduleSpecifier.text });
+      const clause = ts.isImportDeclaration(node) ? node.importClause : undefined;
+      const bindings = clause?.namedBindings;
+      const typeOnly = ts.isExportDeclaration(node) ? node.isTypeOnly : !!clause &&
+        (clause.isTypeOnly || !clause.name && !!bindings && ts.isNamedImports(bindings) &&
+          bindings.elements.length > 0 && bindings.elements.every(item => item.isTypeOnly));
+      matches.push({ kind: "static", specifier: node.moduleSpecifier.text, typeOnly });
     }
     if (ts.isCallExpression(node) && node.arguments.length === 1
       && ts.isStringLiteral(node.arguments[0]) && /supabase/i.test(node.arguments[0].text)) {
@@ -39,5 +44,8 @@ const groups = Object.fromEntries([...new Set(records.map(record => record.group
   .map(group => [group, records.filter(record => record.group === group).length]));
 console.log(JSON.stringify({ files: records.length,
   staticFiles: records.filter(record => record.imports.some(item => item.kind === "static")).length,
+  staticRuntimeFiles: records.filter(record => record.imports.some(item => item.kind === "static" && !item.typeOnly)).length,
+  typeOnlyFiles: records.filter(record => record.imports.every(item => item.kind === "static" && item.typeOnly)).length,
   dynamicFiles: records.filter(record => record.imports.some(item => item.kind === "dynamic")).length,
+  requireFiles: records.filter(record => record.imports.some(item => item.kind === "require")).length,
   groups, records }, null, 2));

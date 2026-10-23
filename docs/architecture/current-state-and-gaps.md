@@ -44,6 +44,25 @@ Measured checkpoint: 2026-10-22 (Asia/Kathmandu). This is not full acceptance.
 | Visual/performance acceptance | Shared primitives improved; remaining hardcoded page styles still require desktop/mobile verification; no Lighthouse/CWV result because DevTools tools are unavailable |
 | Final release/rollback | Reconcile source after a verified write freeze, preserve restore assets, verify each deployed role/workflow before source retirement |
 
+### Production integrity follow-up — 2026-10-22/23
+
+- Actual production inspection found 21 historical NOT VALID CHECKs, unlike the
+  already validated staging database. Their definitions exactly matched the
+  reviewed staging evidence and all had zero violating rows. After a fresh
+  encrypted dump/readback/local restore (100 tables / 2,198 rows, matching row
+  and schema fingerprints), bounded forward validation succeeded. A subsequent
+  independent read found zero unvalidated constraints. No business/source rows
+  were changed. This is target integrity evidence, not fresh source parity.
+- Server-side legacy factories now load their SDK only after explicit legacy
+  selection. Neon rejects calls before SDK evaluation, source configuration or
+  cached client access. Proof-based account recovery remains intact.
+- Patch updates fix the observed Vitest/Vite, brace-expansion and undici
+  advisories. Full dependency audit findings fell from 15 to 10; seven are also
+  present in the production installation through the retained Auth UI/Tailwind
+  dependency chain. These are CSS/glob tooling findings, not evidence that the
+  application invokes those parsers on untrusted requests. They are not marked
+  resolved; no forced Tailwind major upgrade or audit suppression was applied.
+
 August `HANDOFF-production-tasks.md` and `pending-migrations.sql` are historical
 source artifacts. Do not apply that old bundle to Neon or replay it against the
 source based on its outdated claim that only database tasks remain.

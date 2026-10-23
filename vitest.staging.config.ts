@@ -11,6 +11,6 @@ export default defineConfig({
     include: ["src/test/neon-*-staging.test.ts", "src/test/neon-modules-e2e.test.ts"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: { "@": path.resolve(import.meta.dirname, "./src") },
   },
 });

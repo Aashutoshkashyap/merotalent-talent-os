@@ -11,6 +11,12 @@ Dispositions: ACTIVE means intentionally retained; MIGRATION REQUIRED means
 caller-by-caller retirement evidence is still required; DEAD means proven unused;
 HISTORICAL/RECOVERY means preserve; UNKNOWN means investigate before deleting.
 Conservative file classification does not prove every conditional branch is live.
+The AST inventory now explicitly labels erased type imports. At this checkpoint
+109 files contain import references: 102 static-reference files, 97 with a
+non-type static edge, three containing only type edges, seven dynamic-import
+files, and two conditional-require files. These categories overlap; none is a
+count of live production network calls. Server SDK construction is now lazy as
+well as the existing browser denial boundary and recovery split.
 
 ## Executed removals
 

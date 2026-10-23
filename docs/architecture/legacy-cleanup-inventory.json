@@ -8,7 +8,7 @@
     "this generated architecture directory"
   ],
   "summary": {
-    "ACTIVE": 79,
+    "ACTIVE": 80,
     "MIGRATION REQUIRED": 130,
     "DEAD": 0,
     "HISTORICAL/RECOVERY": 76,
@@ -17,7 +17,10 @@
   "runtimeImportInventory": {
     "files": 109,
     "staticFiles": 102,
+    "staticRuntimeFiles": 97,
+    "typeOnlyFiles": 3,
     "dynamicFiles": 7,
+    "requireFiles": 2,
     "groups": {
       "app/[[...slug]]": 1,
       "app/api": 39,
@@ -35,7 +38,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -45,7 +49,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -55,7 +60,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -65,11 +71,13 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           },
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -79,11 +87,13 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           },
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -93,7 +103,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -103,7 +114,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -113,7 +125,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -123,7 +136,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -133,7 +147,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -143,7 +158,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -153,7 +169,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -163,7 +180,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -173,7 +191,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -183,7 +202,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -193,7 +213,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -203,7 +224,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -213,7 +235,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -223,7 +246,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -243,7 +267,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -263,7 +288,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -283,7 +309,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -293,7 +320,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -303,7 +331,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -313,7 +342,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -323,7 +353,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -333,7 +364,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -343,7 +375,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -353,7 +386,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -363,7 +397,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -373,7 +408,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -383,7 +419,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -393,7 +430,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -403,7 +441,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -413,7 +452,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -423,7 +463,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -433,7 +474,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -453,7 +495,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -463,7 +506,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -473,7 +517,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -483,7 +528,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -493,7 +539,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -503,7 +550,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -513,7 +561,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -523,11 +572,13 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           },
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -537,7 +588,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -547,7 +599,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -557,7 +610,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -567,7 +621,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           },
           {
             "kind": "require",
@@ -581,7 +636,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/lib/server/supabase"
+            "specifier": "@/lib/server/supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -591,7 +647,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           }
         ]
       },
@@ -601,7 +658,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           }
         ]
       },
@@ -611,7 +669,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -621,7 +680,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -641,7 +701,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": false
           }
         ]
       },
@@ -651,7 +712,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -671,11 +733,13 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           },
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -685,7 +749,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -695,7 +760,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -705,7 +771,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -715,7 +782,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -725,7 +793,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -735,7 +804,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@supabase/supabase-js"
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
           }
         ]
       },
@@ -745,7 +815,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -755,7 +826,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "./supabase"
+            "specifier": "./supabase",
+            "typeOnly": false
           }
         ]
       },
@@ -765,6 +837,15 @@
         "imports": [
           {
             "kind": "static",
+            "specifier": "@supabase/supabase-js",
+            "typeOnly": true
+          },
+          {
+            "kind": "require",
+            "specifier": "@supabase/supabase-js"
+          },
+          {
+            "kind": "require",
             "specifier": "@supabase/supabase-js"
           }
         ]
@@ -775,7 +856,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -785,7 +867,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -795,7 +878,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -805,7 +889,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -815,7 +900,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -825,7 +911,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -835,7 +922,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -845,7 +933,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -855,7 +944,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -865,7 +955,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -875,7 +966,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -885,7 +977,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -895,11 +988,13 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           },
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/types"
+            "specifier": "@/integrations/supabase/types",
+            "typeOnly": true
           }
         ]
       },
@@ -909,7 +1004,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -919,7 +1015,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -929,7 +1026,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -939,7 +1037,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -949,11 +1048,13 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           },
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/types"
+            "specifier": "@/integrations/supabase/types",
+            "typeOnly": true
           }
         ]
       },
@@ -963,7 +1064,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -973,7 +1075,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -983,7 +1086,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1011,7 +1115,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1021,7 +1126,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1031,7 +1137,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1041,7 +1148,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1051,7 +1159,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1061,7 +1170,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1071,7 +1181,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1081,7 +1192,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1091,7 +1203,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1101,7 +1214,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1111,7 +1225,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1121,7 +1236,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1131,7 +1247,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1141,7 +1258,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       },
@@ -1151,7 +1269,8 @@
         "imports": [
           {
             "kind": "static",
-            "specifier": "@/integrations/supabase/client"
+            "specifier": "@/integrations/supabase/client",
+            "typeOnly": false
           }
         ]
       }
@@ -1622,7 +1741,7 @@
     },
     {
       "file": "docs/neon-runtime-sprint-status-2026-10-09.md",
-      "referenceLines": 140,
+      "referenceLines": 142,
       "disposition": "HISTORICAL/RECOVERY",
       "owner": "Migration operator",
       "retirement": "Historical evidence, not authority to replay old production SQL."
@@ -1804,7 +1923,7 @@
     },
     {
       "file": "scripts/inventory-supabase-runtime.mjs",
-      "referenceLines": 3,
+      "referenceLines": 2,
       "disposition": "ACTIVE",
       "owner": "Platform configuration / inventory",
       "retirement": "Retain documented boundaries, recovery sources and build contracts; not evidence of fallback traffic."
@@ -2630,7 +2749,7 @@
     },
     {
       "file": "src/lib/server/supabase.ts",
-      "referenceLines": 16,
+      "referenceLines": 18,
       "disposition": "ACTIVE",
       "owner": "Backend boundary",
       "retirement": "Fail closed in Neon; legacy-only factories retained pending compatibility retirement."
@@ -2938,7 +3057,7 @@
     },
     {
       "file": "src/test/architecture-retirement.test.ts",
-      "referenceLines": 1,
+      "referenceLines": 2,
       "disposition": "ACTIVE",
       "owner": "Regression suite",
       "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
@@ -3030,6 +3149,13 @@
     {
       "file": "src/test/neon-public-institute-directory.test.ts",
       "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-server-sdk-boundary.test.ts",
+      "referenceLines": 6,
       "disposition": "ACTIVE",
       "owner": "Regression suite",
       "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."

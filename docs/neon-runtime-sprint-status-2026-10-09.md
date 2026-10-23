@@ -2914,3 +2914,70 @@ production configuration change or live payment occurred in this continuation.
   37 existing warnings, inventory freshness and diff checks PASS. Scope is the
   affected home sections/components, not a claim that every static component
   in every module has been converted into a page-builder field.
+
+#### Release closure and production CHECK validation — 2026-10-22/23
+
+- Reverified local/remote main `16c9c6d75330aac689c37fe7d4eb2b9c247094ba`,
+  clean initial working tree, GitHub run `39806451369` complete SUCCESS in both
+  jobs, and canonical Vercel deployment `dpl_qo1JXyDwiyu68XxzrBvnW3AZGLdT`
+  READY with that exact commit. The legacy drift job is not source-parity proof.
+  Available one-hour production error-log query returned no records.
+- `src/lib/server/supabase.ts` no longer eagerly evaluates the legacy SDK when
+  imported by ordinary Neon server routes. Synchronous compatibility factories
+  load it only after authoritative backend/configuration checks. New module-load
+  regressions verify staging, production and inconsistent-selection denial with
+  no SDK evaluation. Historical source-proof recovery is preserved unchanged.
+- `scripts/inventory-supabase-runtime.mjs` now distinguishes type-only static
+  edges from loadable edges and reports conditional requires. Regenerated the
+  existing per-file inventory: 80 ACTIVE, 130 MIGRATION REQUIRED, 76 historical/
+  recovery, zero confirmed dead leftovers or UNKNOWN. All 109 import-reference
+  files remain conservatively classified; this is not 109 live source callers.
+- Updated Vitest/mocker 4.1.10 → 4.1.12, resolved Vite 8.3.5, undici 7.30.1,
+  brace-expansion 1.1.21 / 5.0.12. Previous exact-version-only overrides missed
+  newer vulnerable patch releases; same-major range overrides now cover them.
+  No Next/Tailwind major upgrade, forced install or audit suppression. Lockfile
+  entries 1,009 → 1,005; clean npm 11.19.1 installation PASS. Full audit 15 → 10
+  findings; omit-dev audit still has seven CSS/glob-chain findings, retained as
+  outstanding work. Native-binding/WASI lock coverage remains regression tested.
+- Actual pinned Neon production read: 107 profiles, one verified identity link,
+  one active application account, production eSewa disabled. Approved source
+  read-only URL/host/role are absent from available local configuration. No
+  administrator credential was substituted and no identity was linked by email.
+- Actual production—not merely staging—had 21 unvalidated CHECK constraints.
+  Fresh encrypted backup/readback/private local restore PASS: 100 tables, 2,198
+  rows, matching application row/schema fingerprints, remote writes zero.
+  Archive SHA256 `0a675d9725005fbdd7f41c3505db85992572928ab422ecfbd5dc5e9b1cd5336e`;
+  private restore evidence `production-candidate-restore-20261022161345678.json`.
+  Excludes global ACL/passwords, Auth control plane and live object restoration.
+- Added `scripts/production-constraint-validation.mjs` and guarded operator
+  `scripts/validate-neon-production-constraints.mjs`: exact production host,
+  reviewed staging definition hashes, fresh verified encrypted backup, private
+  artifacts, bounded statement/lock timeouts, no data repair or new constraints.
+  Actual read-only preflight: all 21 matched / zero violations. Applied only
+  VALIDATE metadata changes; independent read and repeat dry-run confirmed zero
+  unvalidated constraints. Business/source row writes zero. Eight new safety
+  tests cover unknown/altered metadata, incomplete review and stale/bad backups.
+- Existing production owner session loaded Super Admin overview, college
+  application names and applicant-detail fields. Provider Center explicitly
+  showed the old merchant secret cannot decrypt and remains blocked. No form,
+  invitation, role, application, CMS or payment was submitted by these checks.
+- Explicit-Neon production build PASS. App dynamic entry: three chunks,
+  425,636 raw / 128,536 gzip bytes, no legacy Auth SDK marker. This is a scoped
+  current measurement, not a speed improvement or whole-page/CWV claim. The
+  Chrome DevTools performance connector remains unavailable.
+- Final retry exposed memory-pressure timeouts when the full AST scan ran inside
+  a parallel test worker. The regression now consumes the independently freshness-
+  checked inventory, and Vitest uses two workers; assertions/timeouts unchanged.
+  Existing Next guide was consulted; test config uses `import.meta.dirname`.
+- Final bounded-worker retry: 194 files / 985 tests PASS; previously timed-out
+  recovery, billing and navigation cases passed without relaxing assertions or
+  timeouts. Typecheck PASS, build PASS, clean install PASS; lint 0 errors / 37
+  existing warnings plus changed-file lint PASS. Inventory freshness and diff
+  checks PASS. No source reconciliation or genuine settlement is implied.
+- Remaining acceptance: fresh approved read-only source reconciliation;
+  historical users' ownership recovery; complete authenticated production
+  workflow/file/notification acceptance; provider-hosted genuine UAT settlement;
+  legitimate decryptable production merchant configuration/registration; and
+  remaining build-tool advisories/visual standardization. No migration-complete
+  claim, source retirement, payment enablement or real charge is authorized by
+  the successful constraint operation.
