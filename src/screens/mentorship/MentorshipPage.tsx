@@ -6,6 +6,7 @@ import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Users, Clock, ArrowRight, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import BookingDialog from "@/components/mentors/BookingDialog";
+import DirectoryLoadError from "@/components/landing/DirectoryLoadError";
 
 interface MentorItem {
   id: string;
@@ -70,6 +71,7 @@ export default function MentorshipPage() {
   }, []);
 
   const fetchMentors = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/v1/mentors");
       const json = await res.json();
@@ -216,7 +218,8 @@ export default function MentorshipPage() {
           ))}
         </div>
 
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && loadError && <DirectoryLoadError message={loadError} onRetry={() => void fetchMentors()} />}
+        {!isLoading && !loadError && filtered.length === 0 && (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
             <Users className="mx-auto mb-3 h-9 w-9 text-slate-400" />
             <p className="font-bold text-slate-700">No approved mentors found</p>

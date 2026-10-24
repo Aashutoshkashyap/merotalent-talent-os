@@ -3045,3 +3045,21 @@ production configuration change or live payment occurred in this continuation.
   bytes, role/entity/owner denial, replacement, deletion and anonymous access
   exercised. Final production build/typecheck/clean install/diff PASS; lint remains
   0errors/37warnings. No real settlement or public payment activation implied.
+
+### 24 October — live module navigation/recovery batch
+
+- Preserved the pending BookingDialog saved-profile fix. Added Neon-compatible
+  College dashboard submission and event-pass loading/navigation, real public
+  Post/toggle/sign-out/search actions, and working retry/error states for public
+  Jobs, Mentors, Competitions and Events. Shared role-workspace requests are
+  bounded and do not blindly retry ambiguous writes. No schema or access changes.
+- Full changed-file/behavior evidence and browser scope are in the existing
+  `neon-acceptance-matrix-2026-10-23.md`, 24 October section. Six new regression
+  files: **21 focused cases PASS**; final **207 files / 1,035 tests PASS**,
+  typecheck, production build, diff PASS; lint **0 errors / 36 warnings**.
+- Restored the owner-authorized temporary mentoring price to NPR 0 through UI;
+  read-only SQL confirms it. The two recorded NPR 10 attempts remain failed with
+  expired checkout and no paid timestamp; no settlement claim or new charge.
+- Next: verify the released controls in the authenticated browser, then continue
+  the existing acceptance matrix. Read-only source access and ownership recovery
+  remain independent external gates; no new parity or migration-complete claim.

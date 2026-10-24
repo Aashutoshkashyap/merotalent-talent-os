@@ -8,7 +8,7 @@
     "this generated architecture directory"
   ],
   "summary": {
-    "ACTIVE": 81,
+    "ACTIVE": 82,
     "MIGRATION REQUIRED": 130,
     "DEAD": 0,
     "HISTORICAL/RECOVERY": 77,
@@ -3107,6 +3107,13 @@
     {
       "file": "src/test/neon-auth-refresh.test.tsx",
       "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-booking-profile-ui.test.tsx",
+      "referenceLines": 2,
       "disposition": "ACTIVE",
       "owner": "Regression suite",
       "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."

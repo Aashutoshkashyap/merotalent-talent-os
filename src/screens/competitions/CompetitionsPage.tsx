@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
+import DirectoryLoadError from "@/components/landing/DirectoryLoadError";
 import { Trophy, Clock, ArrowRight } from "lucide-react";
 
 interface CompetitionItem {
@@ -76,6 +77,7 @@ export default function CompetitionsPage() {
   }, [hash, competitions]);
 
   const fetchCompetitions = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/v1/competitions");
       const json = await res.json();
@@ -205,7 +207,8 @@ export default function CompetitionsPage() {
           ))}
         </div>
 
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && loadError && <DirectoryLoadError message={loadError} onRetry={() => void fetchCompetitions()} />}
+        {!isLoading && !loadError && filtered.length === 0 && (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
             <Trophy className="mx-auto mb-3 h-9 w-9 text-slate-400" />
             <p className="font-bold text-slate-700">No published competitions found</p>

@@ -20,6 +20,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface RoleOption {
   id: string;
@@ -99,6 +100,10 @@ export default function SidebarNav({
   const [currentRole, setCurrentRole] = useState(activeRole);
   const [currentNav, setCurrentNav] = useState(activeNavId);
   const [isHovered, setIsHovered] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [signOutError, setSignOutError] = useState(false);
+  const { user, signOut, roles = [], capabilities = [] } = useAuth();
+  const expanded = isHovered || isPinned;
   const navigate = useNavigate();
 
   const handleRoleSelect = (id: string) => {
@@ -125,7 +130,7 @@ export default function SidebarNav({
 
   const handleMouseLeave = () => {
     setIsHovered(false);
-    onHoverChange?.(false);
+    onHoverChange?.(isPinned);
   };
 
   return (
@@ -133,13 +138,17 @@ export default function SidebarNav({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="fixed left-0 top-0 bottom-0 flex z-40 select-none bg-white border-r border-slate-200/80 transition-all duration-300 ease-in-out shadow-[4px_0_20px_rgba(0,0,0,0.04)] h-screen"
-      style={{ width: isHovered ? "292px" : "72px" }}
+      style={{ width: expanded ? "292px" : "72px" }}
     >
       {/* Panel A: Left Role Rail */}
       <div className="w-[72px] bg-white border-r border-slate-100 flex flex-col items-center justify-between py-4 flex-shrink-0 h-full">
         <div className="flex flex-col items-center gap-3 w-full">
           {/* Top Toggle Switch */}
           <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls="public-desktop-navigation"
+            onClick={() => { const pinned = !isPinned; setIsPinned(pinned); onHoverChange?.(pinned || isHovered); }}
             className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors border border-slate-200/60 active:scale-95"
             title="Toggle Navigation"
           >
@@ -162,29 +171,34 @@ export default function SidebarNav({
         </div>
 
         {/* Bottom Logout Action */}
-        <Link
-          to="/login"
-          title="Logout"
+        {user ? <button
+          type="button"
+          title="Sign out"
+          onClick={async () => { setSignOutError(false); try { await signOut(); navigate("/"); } catch { setSignOutError(true); } }}
           className="w-10 h-10 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"
         >
           <LogOut className="w-5 h-5" />
-        </Link>
+        </button> : <Link to="/login" title="Sign in" className="w-10 h-10 rounded-xl text-slate-400 hover:text-blue-600 flex items-center justify-center"><LogOut className="w-5 h-5" /></Link>}
+        {signOutError && <p role="alert" className="px-1 text-xs text-red-600">Sign out failed. Try again.</p>}
       </div>
 
       {/* Panel B: Wide Navigation Panel */}
       <div
+        id="public-desktop-navigation"
+        aria-hidden={!expanded}
+        style={{ visibility: expanded ? "visible" : "hidden" }}
         className={`bg-white flex flex-col py-5 px-4 border-r border-slate-100 overflow-hidden transition-all duration-300 ease-in-out h-full ${
-          isHovered ? "w-[220px] opacity-100" : "w-0 opacity-0 pointer-events-none p-0 border-none"
+          expanded ? "w-[220px] opacity-100" : "w-0 opacity-0 pointer-events-none p-0 border-none"
         }`}
       >
         {/* VIEW 1: TALENT ROLE */}
         {currentRole === "talent" && (
           <div className="flex flex-col h-full gap-3">
             {/* + Post Button */}
-            <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#eaf4ff] hover:bg-[#dbeafe] border border-blue-200/80 text-[#0073e6] font-bold text-sm rounded-full transition-all duration-200 shadow-sm active:scale-[0.98] flex-shrink-0">
+            <Link to={roles.includes("admin") ? "/admin" : "/request-access"} className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#eaf4ff] hover:bg-[#dbeafe] border border-blue-200/80 text-[#0073e6] font-bold text-sm rounded-full transition-all duration-200 shadow-sm active:scale-[0.98] flex-shrink-0">
               <Plus className="w-4 h-4" />
               <span>Post</span>
-            </button>
+            </Link>
 
             {/* Navigation list matching reference image */}
             <nav className="flex-1 flex flex-col gap-1 overflow-y-auto pr-1">
@@ -245,7 +259,7 @@ export default function SidebarNav({
                 </p>
               </div>
               <Link
-                to="/signup?role=mentor"
+                to={user ? roles.includes("mentor") || capabilities.includes("mentor") ? "/mentor" : "/request-access" : "/signup?role=mentor"}
                 className="w-full py-2.5 bg-[#0073e6] hover:bg-[#0062c4] text-white font-bold text-xs rounded-full shadow-sm hover:shadow-md transition-all active:scale-95 text-center mt-1"
               >
                 + Be a Mentor

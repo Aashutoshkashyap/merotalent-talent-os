@@ -205,3 +205,54 @@ confirm merchant return-domain requirements and complete genuine server-verified
 settlement/one-time fulfillment through the owner-authorized controlled live flow
 (sandbox remains independently blocked), then authorize public activation. Production and
 sandbox credentials/configurations must remain separate.
+
+## 24 October — live navigation and recovery corrections
+
+- Started from deployed/remote `e3b7d64`, canonical deployment
+  `dpl_7RJVmBYqmC1DxzWefM5FvND1J9xd` READY; GitHub CI success independently read.
+  Preserved the in-progress mentor profile-readiness fix and its regression tests.
+- Browser-confirmed broken controls: public Post and navigation toggle had no
+  handlers, Logout only navigated to login, global search had no default action;
+  the event-pass route stayed loading without a legacy session. College dashboard
+  submission also required a legacy session despite an authenticated Neon user.
+- Fixed `SidebarNav.tsx` Post/access navigation, pinned keyboard toggle, hidden
+  collapsed controls, actual sign-out/error recovery; `HeaderNav.tsx` global search
+  now opens the Jobs directory and `JobsPage.tsx` applies its URL query.
+- `dashboard/Colleges.tsx` uses the existing authenticated Neon admissions route,
+  server-owned applicant/profile, saved-profile gate and activity invalidation.
+  `MyTickets.tsx`/`events-client.ts` use same-origin session cookies in Neon, retain
+  legacy bearer support, finish loading when signed out and expose a real retry.
+  Event passes are linked from the dashboard sidebar.
+- Jobs, Mentors, Competitions and Events directories now distinguish failed reads
+  from legitimate empty results and offer a working Try again action through
+  `DirectoryLoadError.tsx`. No automatic write/payment retries were added.
+- Shared `role-workspaces-client.ts` bounds requests at 30 seconds, handles nested
+  API errors and malformed responses, and warns that a timed-out write may have
+  persisted: refresh/check saved state before retrying. No authorization weakening.
+- `BookingDialog.tsx` shows saved-profile requirements for Neon users without a
+  legacy session, rechecks readiness before advancement/submission and keeps saved
+  contact fields read-only. Checkout unavailability no longer calls live eSewa a
+  sandbox. Server payment, pricing and entitlement guards are unchanged.
+- Browser read/navigation evidence: public Jobs/application review, Events,
+  Competitions, Mentors, Colleges; student dashboard, College list, Jobs details
+  and application entry, Competitions, Mentors, sessions and profile; Super Admin
+  People, Jobs, Competitions, Mentors, Institutions, Applications, Bookings,
+  Packages, Payments, Advertisements, Featured, Reports, Notifications, Support,
+  Access requests, CMS and Settings. Route entry is not proof of every mutation.
+  No production applications, new bookings or grants were created for this sweep.
+- Six added regression files cover 21 cases: literal internal targets against the
+  actual route tree, navigation/search/sign-out, four directory failure/retry paths,
+  mentor saved-profile checks, College cookie-auth submit/denial, event-pass cookie
+  auth/retry/logout, shared workspace error/timeout behavior.
+- Final local evidence: **207 files / 1,035 tests PASS**, focused **21/21 PASS**,
+  production-mode build PASS, typecheck PASS, lint **0 errors / 36 warnings**,
+  diff check PASS. Initial concurrent typecheck/build encountered generated-type
+  churn; the independent post-build typecheck passed. Inventory regenerated.
+- Owner reports live payment works; authoritative evidence read for the two
+  controlled NPR 10 attempts is still **failed payment / expired checkout / no
+  paid timestamp**, not genuine COMPLETE settlement. No additional charge or
+  payment activation was performed. The approved temporary service price was
+  restored through authenticated UI to **NPR 0**, confirmed independently in SQL
+  and the refreshed mentor workspace. Existing payment records were preserved.
+- Source reconciliation, unresolved identity ownership and the prior full
+  migration acceptance exceptions remain open; this is not migration completion.

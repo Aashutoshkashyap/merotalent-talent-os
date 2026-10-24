@@ -46,6 +46,8 @@ import {
   type InstituteCategory,
 } from "@/lib/institutes/public-institutes";
 import { ExternalLink, Globe2 } from "lucide-react";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { invalidateStudentActivityCache } from "@/lib/student/activity-cache";
 
 type Level = "+2" | "Bachelors" | "Masters";
 const PAGE_SIZE = 6;
@@ -142,7 +144,7 @@ export default function Colleges() {
 
   const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !session) {
+    if (!user || (!isNeonClientRuntime() && !session)) {
       toast({ variant: "destructive", title: "Authentication required", description: "Please sign in to apply." });
       return;
     }
@@ -158,8 +160,19 @@ export default function Colleges() {
 
     setIsSubmitting(true);
     try {
-      await submitAuthenticatedModuleForm({
-        accessToken: session.access_token,
+      if (isNeonClientRuntime()) {
+        if (!selectedCollege) throw new Error("Select a college before applying.");
+        const response = await fetch(`/api/v1/neon-staging/institutes/${selectedCollege.id}/applications`, {
+          method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ programInterest: targetProgram, intake: level,
+            message: `Previous school: ${previousSchool} (${previousGpa})\nTemporary Address: ${tempAddress}\nPermanent Address: ${permAddress}` }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.data?.id) throw new Error(result?.error === "PROFILE_INCOMPLETE"
+          ? "Complete your saved profile before applying." : "Your application could not be submitted. Check admissions availability and try again.");
+        invalidateStudentActivityCache(user.id);
+      } else await submitAuthenticatedModuleForm({
+        accessToken: session!.access_token,
         module: "college_application",
         values: {
           collegeId: selectedCollege?.id,

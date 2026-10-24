@@ -9,6 +9,7 @@ import { Calendar, MapPin, ArrowRight, Sparkles, Tag, Users, Layers } from "luci
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchPublicEvents, fetchEventCategories, type EventDetail, type EventCategory } from "@/lib/events/events-client";
 import EventRegistrationModal from "@/components/events/EventRegistrationModal";
+import DirectoryLoadError from "@/components/landing/DirectoryLoadError";
 
 export default function EventsPage() {
   const { session, user } = useAuth();
@@ -175,9 +176,7 @@ export default function EventsPage() {
             Loading upcoming events...
           </div>
         ) : loadError ? (
-          <div className="rounded-2xl border border-dashed border-red-200 p-10 text-center text-sm text-red-600">
-            {loadError}
-          </div>
+          <DirectoryLoadError message={loadError} onRetry={() => void loadData()} />
         ) : filteredEvents.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 p-12 text-center">
             <h3 className="text-lg font-bold text-slate-800">No events found</h3>

@@ -3,11 +3,12 @@ import { isNeonClientRuntime } from "@/lib/backend-selection";
 
 
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PublicPageLayout from "@/components/landing/PublicPageLayout";
 import { Briefcase, MapPin, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import JobApplicationWizard from "@/components/jobs/JobApplicationWizard";
+import DirectoryLoadError from "@/components/landing/DirectoryLoadError";
 
 interface JobItem {
   id: string;
@@ -85,7 +86,13 @@ export default function JobsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All Jobs");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
+  const setSearchQuery = (query: string) => setSearchParams((current) => {
+    const next = new URLSearchParams(current);
+    if (query) next.set("q", query); else next.delete("q");
+    return next;
+  }, { replace: true });
   const [sortBy, setSortBy] = useState("newest");
   const [workMode, setWorkMode] = useState("all");
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
@@ -95,6 +102,7 @@ export default function JobsPage() {
   }, []);
 
   const fetchJobs = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/v1/jobs");
       if (!res.ok) throw new Error("Failed to load jobs.");
@@ -240,7 +248,8 @@ export default function JobsPage() {
           ))}
         </div>
 
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && loadError && <DirectoryLoadError message={loadError} onRetry={() => void fetchJobs()} />}
+        {!isLoading && !loadError && filtered.length === 0 && (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
             <Briefcase className="mx-auto mb-3 h-9 w-9 text-slate-400" />
             <p className="font-bold text-slate-700">No published jobs found</p>

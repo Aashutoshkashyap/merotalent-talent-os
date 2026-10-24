@@ -67,6 +67,7 @@ const DashboardSidebar = ({
   const userNavItems = [
     { icon: User, label: "My Profile", href: "/dashboard/profile" },
     { icon: Calendar, label: "My Sessions", href: "/dashboard/sessions" },
+    { icon: Award, label: "My Event Passes", href: "/dashboard/tickets" },
     { icon: Activity, label: "My Activity", href: "/dashboard/activity" },
     { icon: CreditCard, label: "Payments", href: "/dashboard/payments" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },

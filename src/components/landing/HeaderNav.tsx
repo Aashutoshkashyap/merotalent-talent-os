@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Search, Briefcase, Sparkles, Menu, X, User as UserIcon } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveWorkspacePath } from "@/lib/auth/workspace-path";
 import { MEROTALENT_BRAND as brand } from "@/lib/brand";
@@ -17,10 +17,13 @@ export const SearchBar: React.FC<{
   onSearch?: (val: string) => void;
 }> = ({ placeholder = "Search Opportunities", onSearch }) => {
   const [val, setVal] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch?.(val);
+    const query = val.trim();
+    if (onSearch) onSearch(query);
+    else if (query) navigate(`/jobs?q=${encodeURIComponent(query)}`);
   };
 
   return (

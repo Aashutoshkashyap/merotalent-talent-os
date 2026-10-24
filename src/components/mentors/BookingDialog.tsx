@@ -155,8 +155,20 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
   const availableDays = mentor.availability?.days ?? [];
   const durationMinutes = selectedService?.duration_minutes ?? Number(duration);
   const estimatedAmount = selectedService?.price ?? mentor.hourlyRate * (durationMinutes / 60);
+  const profileIncomplete = Boolean(user && missingStudentProfileFields("mentor_booking", profile, user.email).length);
+
+  const requireCompleteProfile = () => {
+    if (!profileIncomplete) return true;
+    toast({
+      variant: "destructive",
+      title: "Complete your profile",
+      description: "Save the missing details in My Profile, then select I’ve updated it before continuing.",
+    });
+    return false;
+  };
 
   const handleNext = () => {
+    if (!requireCompleteProfile()) return;
     if (step === 1 && servicesError) {
       toast({
         variant: "destructive",
@@ -216,6 +228,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
       return;
     }
 
+    if (!requireCompleteProfile()) return;
     setIsProcessing(true);
     setFieldErrors({});
     try {
@@ -237,7 +250,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
           const checkout = await checkoutResponse.json();
           onSubmitted?.(payload.data.id);
           if (!checkoutResponse.ok || !checkout.data?.checkoutUrl || !checkout.data?.checkoutFields) {
-            toast({ title: "Booking pending payment", description: "Your booking was saved, but eSewa sandbox checkout is unavailable. No payment was taken or confirmed." });
+            toast({ title: "Booking pending payment", description: "Your booking was saved, but eSewa checkout is unavailable. No payment was taken or confirmed. You can retry from Payments." });
             resetForm(); onClose(); return;
           }
           postToCheckout(checkout.data.checkoutUrl, checkout.data.checkoutFields);
@@ -336,7 +349,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
             {step === 3 && "Review your session details and complete payment"}
           </DialogDescription>
         </DialogHeader>
-        {session && <StudentProfileRequirement module="mentor_booking" profile={profile} email={user?.email} onRefresh={refreshProfile} />}
+        {user && <StudentProfileRequirement module="mentor_booking" profile={profile} email={user.email} onRefresh={refreshProfile} />}
 
         {step === 1 && (
           <div className="space-y-4">
@@ -422,22 +435,22 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="booking-full-name">Full name</Label>
-                <Input id="booking-full-name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} readOnly={Boolean(session)} />
+                <Input id="booking-full-name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} readOnly={Boolean(user)} />
                 {fieldErrors.fullName?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.fullName[0]}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="booking-email">Email</Label>
-                <Input id="booking-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} readOnly={Boolean(session)} />
+                <Input id="booking-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} readOnly={Boolean(user)} />
                 {fieldErrors.email?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.email[0]}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="booking-phone">Phone *</Label>
-                <Input id="booking-phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="e.g. 9801010802" readOnly={Boolean(session)} />
+                <Input id="booking-phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="e.g. 9801010802" readOnly={Boolean(user)} />
                 {fieldErrors.phone?.[0] && <p className="text-xs font-semibold text-destructive">{fieldErrors.phone[0]}</p>}
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="booking-address">Address *</Label>
-                <Input id="booking-address" placeholder="e.g. Kathmandu, Nepal" value={address} onChange={(event) => setAddress(event.target.value)} readOnly={Boolean(session)} />
+                <Input id="booking-address" placeholder="e.g. Kathmandu, Nepal" value={address} onChange={(event) => setAddress(event.target.value)} readOnly={Boolean(user)} />
               </div>
             </div>
 

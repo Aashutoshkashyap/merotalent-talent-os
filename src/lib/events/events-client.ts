@@ -199,11 +199,11 @@ export async function registerForEventApi(
   return json.data;
 }
 
-export async function fetchMyTickets(token: string): Promise<DigitalTicket[]> {
+export async function fetchMyTickets(token?: string): Promise<DigitalTicket[]> {
   const res = await fetch("/api/v1/events/my-tickets", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "same-origin",
+    cache: "no-store",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error?.message || "Failed to load tickets.");
