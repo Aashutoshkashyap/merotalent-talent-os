@@ -53,6 +53,25 @@ the reference archive has no real `.env` to import. Neither an environment impor
 nor a successful redirect enables production payments: the independent
 `NEON_PRODUCTION_PAYMENTS_ENABLED` gate remains off until acceptance passes.
 
+### Checkout release gate versus provider configuration
+
+Provider Center's **Configured — active** describes the encrypted provider, not
+permission for every customer to start live checkout. A nonempty
+`NEON_PRODUCTION_PAYMENT_VALIDATION_USER_ID` restricts all paid initiation to that
+exact verified application account, even when `NEON_PRODUCTION_PAYMENTS_ENABLED`
+is true. Invalid validation IDs fail closed. Public activation requires an
+explicit operator decision, the public flag set to `true`, and the owner-only
+validation restriction cleared, followed by deployment. Do not clear the
+restriction as a side effect of saving a merchant credential.
+
+The authenticated, non-cached `/api/v1/payments/availability` endpoint reports the
+effective checkout mode and readiness for the current user without returning
+merchant settings, credentials or the designated validation identity. Mentors,
+event tickets, module enrollment, College requests and renewals use this same
+preflight. Checkout still repeats authorization, pricing and payment-gate checks;
+an available response is neither a payment nor an entitlement. Provider Center
+shows checkout access separately from provider readiness.
+
 The reference signing/form pattern is adapted in `esewa-v2-form.ts`. Its
 signature-only verification is intentionally not copied as settlement authority:
 MeroTalent still requires the status API, exact original order/amount/merchant,

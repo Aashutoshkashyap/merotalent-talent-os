@@ -1,5 +1,6 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
-import { postSignedCheckoutForm } from "@/lib/payments/browser-checkout";
+import { paymentErrorMessage, postSignedCheckoutForm, requireAvailableNeonPayment } from "@/lib/payments/browser-checkout";
+import type { PaymentAvailability } from "@/lib/payments/payment-availability";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -51,7 +52,8 @@ type Entitlement = { id: string; module_key: string; entity_type: string; entity
 type Checkout = { id: string; package_id: string; provider_name: string; status: string; expires_at: string | null; created_at: string };
 type CollegeRequest = { id: string; status: string; payment_status: string; entity_id: string | null; college_name: string; request_kind: string };
 type Overview = { plans: Plan[]; scopes: Scope[]; entitlements: Entitlement[]; checkouts: Checkout[];
-  collegeRequests?: CollegeRequest[]; payments?: Transaction[]; paymentsAvailable?:boolean };
+  collegeRequests?: CollegeRequest[]; payments?: Transaction[]; paymentsAvailable?:boolean;
+  paymentAvailability?: PaymentAvailability };
 
 type PaymentProofRecord = {
   id: string;
@@ -356,13 +358,13 @@ export default function Payments() {
 
   const beginCheckout = async () => {
     if (!selectedPlan || !selectedScope) return;
-    if(isNeonStaging&&overview.paymentsAvailable!==true){toast({variant:'destructive',title:'Online payments unavailable',description:'Live payments are disabled. Existing access and transaction history remain available; no charge was created.'});return;}
     if (isNeonStaging) {
       setProcessing(true);
       try{
+        await requireAvailableNeonPayment();
         const response=await fetch('/api/v1/neon-staging/payments/checkout',{method:'POST',credentials:'same-origin',
           headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'assigned_scope',targetId:selectedScope.id,packageId:selectedPlan.id,renewal:true})});
-        const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Renewal checkout is unavailable.');
+        const payload=await response.json();if(!response.ok)throw new Error(paymentErrorMessage(payload,'Renewal checkout is unavailable.'));
         const checkout=payload.data;
         if(!checkout?.checkoutUrl||!checkout.checkoutFields)throw new Error('Secure checkout is unavailable.');
         postToCheckout(checkout.checkoutUrl,checkout.checkoutFields);
@@ -390,18 +392,18 @@ export default function Payments() {
   };
 
   const beginCollegeRequestCheckout = async (request: CollegeRequest) => {
-    if(isNeonStaging&&overview.paymentsAvailable!==true){toast({variant:'destructive',title:'Online payments unavailable',description:'No charge or paid access was created.'});return;}
     const planId = requestPlanIds[request.id];
     if (!planId) return;
     setProcessing(true);
     try {
+      await requireAvailableNeonPayment();
       const response = await fetch("/api/v1/neon-staging/payments/checkout", {
         method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind: "college_scope_request", targetId: request.id, packageId: planId,
           renewal: request.status === "approved" && request.payment_status === "success" }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Checkout could not be created.");
+      if (!response.ok) throw new Error(paymentErrorMessage(payload, "Checkout could not be created."));
       const checkout = payload.data as { checkoutUrl?: string; checkoutFields?: Record<string, string> };
       if (!checkout.checkoutUrl || !checkout.checkoutFields) throw new Error("eSewa checkout is unavailable.");
       postToCheckout(checkout.checkoutUrl, checkout.checkoutFields);
@@ -549,7 +551,7 @@ export default function Payments() {
         </CardContent>
       </Card>
 
-      {isNeonStaging&&overview.paymentsAvailable===false&&<div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">Online payments are temporarily unavailable. New paid mentor bookings, event registrations and module purchases/renewals are paused. Existing access, free services and transaction history remain available.</div>}
+      {isNeonStaging&&overview.paymentsAvailable===false&&<div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">{overview.paymentAvailability?.message || 'Online payments are temporarily unavailable. Existing access, free services and transaction history remain available.'}</div>}
       {/* Module access (entitlements) — shown for all users */}
       {isNeonStaging && !!overview.collegeRequests?.length && (
         <Card className="rounded-3xl border-slate-200/80 shadow-2xs">

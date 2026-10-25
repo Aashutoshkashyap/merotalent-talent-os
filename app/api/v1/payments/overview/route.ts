@@ -1,13 +1,12 @@
 import { authenticateRequest } from "@/lib/server/auth";
 import { adminApiErrorResponse } from "@/lib/admin/admin-route-utils";
 import { getBackendMode } from "@/lib/server/backend-mode";
-import { neonPaidInitiationAllowed } from '@/lib/server/neon-paid-initiation';
+import { getNeonPaymentAvailability } from '@/lib/server/neon-payment-availability';
 import { getAdminClient } from "@/lib/server/supabase";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { queryRows } from "@/lib/server/db";
 import { NeonPaymentsRepository } from "@/lib/server/neon-payments";
 import { getAuthenticatedApplicationUser } from "@/lib/server/neon-session";
-import {stagingEsewaProvider} from '@/lib/server/neon-checkout';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,8 +21,8 @@ export async function GET(request: Request) {
   try {
     if (getBackendMode() !== "legacy") {
       const actor = await getAuthenticatedApplicationUser(request);
-      const paymentsAvailable=neonPaidInitiationAllowed(actor.userId)
-        && await stagingEsewaProvider().then(()=>true).catch(()=>false);
+      const paymentAvailability = await getNeonPaymentAvailability(actor.userId);
+      const paymentsAvailable = paymentAvailability.available;
       const repo = new NeonPaymentsRepository();
       const [payments, plans, checkouts, scopes, entitlements, collegeRequests] = await Promise.all([
         repo.listOwnPayments(actor),
@@ -56,7 +55,7 @@ export async function GET(request: Request) {
           ORDER BY r.created_at DESC LIMIT 30`, [actor.userId]),
       ]);
       return jsonApiResponse({
-        data: { plans, scopes, entitlements, collegeRequests, checkouts, payments, paymentsAvailable },
+        data: { plans, scopes, entitlements, collegeRequests, checkouts, payments, paymentsAvailable, paymentAvailability },
         error: null,
         meta: { requestId },
       });

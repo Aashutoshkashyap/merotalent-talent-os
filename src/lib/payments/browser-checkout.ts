@@ -3,6 +3,28 @@ export interface BrowserCheckoutResponse {
   checkoutFields: Record<string, string>;
 }
 
+/** Handles both the legacy envelope and the Neon error-code/message response. */
+export function paymentErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== 'object') return fallback;
+  const value = payload as { message?: unknown; error?: unknown };
+  if (typeof value.message === 'string' && value.message) return value.message;
+  if (value.error && typeof value.error === 'object' && 'message' in value.error &&
+      typeof value.error.message === 'string' && value.error.message) return value.error.message;
+  return fallback;
+}
+
+/** Fresh preflight before saving a paid reservation or uploading access proofs.
+ * Checkout repeats every server-side check; this is not authorization to pay.
+ */
+export async function requireAvailableNeonPayment(): Promise<void> {
+  const response = await fetch('/api/v1/payments/availability', { credentials: 'same-origin', cache: 'no-store' });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.data?.available !== true) {
+    throw new Error(paymentErrorMessage(payload,
+      typeof payload?.data?.message === 'string' ? payload.data.message : 'Payment readiness could not be checked. Please retry.'));
+  }
+}
+
 export const postSignedCheckoutForm = ({ checkoutUrl, checkoutFields }: BrowserCheckoutResponse) => {
   // Port the reference's auto-submitting POST form without interpolating HTML.
   // Treat the API response as untrusted: never POST signed fields to another host.
@@ -51,7 +73,7 @@ export async function startEsewaCheckout(
   const checkoutUrl = payload?.data?.checkoutUrl;
   const checkoutFields = payload?.data?.checkoutFields;
   if (!response.ok || typeof checkoutUrl !== "string" || !checkoutFields || typeof checkoutFields !== "object") {
-    throw new Error(payload?.error?.message || "eSewa checkout could not be started.");
+    throw new Error(paymentErrorMessage(payload, "eSewa checkout could not be started."));
   }
   postSignedCheckoutForm({ checkoutUrl, checkoutFields });
 }

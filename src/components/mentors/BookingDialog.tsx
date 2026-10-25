@@ -1,6 +1,6 @@
 "use client";
 import { isNeonClientRuntime } from "@/lib/backend-selection";
-import { postSignedCheckoutForm } from "@/lib/payments/browser-checkout";
+import { paymentErrorMessage, postSignedCheckoutForm, requireAvailableNeonPayment } from "@/lib/payments/browser-checkout";
 
 
 import { useEffect, useState } from "react";
@@ -234,6 +234,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
     try {
       if (staging) {
         if (!selectedService) throw new Error("Choose an available mentor service.");
+        if (Number(selectedService.price) > 0) await requireAvailableNeonPayment();
         const start = new Date(`${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}:00`);
         const end = new Date(start.getTime() + selectedService.duration_minutes * 60_000);
         const response = await fetch("/api/v1/mentors/book", { method: "POST",
@@ -241,7 +242,7 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
           body: JSON.stringify({ mentorId: mentor.id, mentorServiceId: selectedService.id,
             scheduledStart: start.toISOString(), scheduledEnd: end.toISOString(), topic, notes }) });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error?.message || "Booking failed.");
+        if (!response.ok) throw new Error(paymentErrorMessage(payload, "Booking failed."));
         if (Number(selectedService.price) > 0) {
           const checkoutResponse = await fetch("/api/v1/neon-staging/payments/checkout", {
             method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
@@ -250,7 +251,8 @@ const BookingDialog = ({ isOpen, onClose, onSubmitted, mentor }: BookingDialogPr
           const checkout = await checkoutResponse.json();
           onSubmitted?.(payload.data.id);
           if (!checkoutResponse.ok || !checkout.data?.checkoutUrl || !checkout.data?.checkoutFields) {
-            toast({ title: "Booking pending payment", description: "Your booking was saved, but eSewa checkout is unavailable. No payment was taken or confirmed. You can retry from Payments." });
+            toast({ title: "Booking pending payment", description: paymentErrorMessage(checkout,
+              "Your booking was saved, but checkout could not start. No payment was taken or confirmed.") });
             resetForm(); onClose(); return;
           }
           postToCheckout(checkout.data.checkoutUrl, checkout.data.checkoutFields);

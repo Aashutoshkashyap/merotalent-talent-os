@@ -1,5 +1,5 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
-import { postSignedCheckoutForm } from "@/lib/payments/browser-checkout";
+import { paymentErrorMessage, postSignedCheckoutForm, requireAvailableNeonPayment } from "@/lib/payments/browser-checkout";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,7 @@ const isNeonStaging = isNeonClientRuntime();
 async function stagingRequest(url: string, init?: RequestInit) {
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
   const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(payload?.message || payload?.error || "The request failed.");
+  if (!response.ok) throw new Error(paymentErrorMessage(payload, "The request failed. Please retry."));
   return payload.data;
 }
 
@@ -284,6 +284,7 @@ export default function RequestSubAdminAccess() {
 
     try {
       if (isNeonStaging) {
+        await requireAvailableNeonPayment();
         const existing = accessRequests.find(request => request.status === "pending");
         let requestId = existing?.id;
         if (!requestId) {

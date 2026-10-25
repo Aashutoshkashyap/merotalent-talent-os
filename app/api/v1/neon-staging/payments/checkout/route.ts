@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       body.packageId, body.renewal === true);
     return NextResponse.json({ data }, { status: data.reused ? 200 : 201, headers });
   } catch (error) {
-    if (error instanceof NeonAuthorizationError) return NextResponse.json({ error: error.code }, { status: error.status, headers });
+    if (error instanceof NeonAuthorizationError) return NextResponse.json({ error: error.code, message: error.message }, { status: error.status, headers });
     if (error instanceof NeonSessionUnavailable) return NextResponse.json({ error: "AUTH_UNAVAILABLE" }, { status: 503, headers });
     return NextResponse.json({ error: "CHECKOUT_UNAVAILABLE" }, { status: 503, headers });
   }

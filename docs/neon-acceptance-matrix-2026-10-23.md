@@ -256,3 +256,29 @@ sandbox credentials/configurations must remain separate.
   and the refreshed mentor workspace. Existing payment records were preserved.
 - Source reconciliation, unresolved identity ownership and the prior full
   migration acceptance exceptions remain open; this is not migration completion.
+
+## 25 October — consistent module checkout readiness
+
+- Browser verified the production eSewa provider reports `configured_active`,
+  with storage ready, credentials configured, enabled adapter and delivery true.
+  The separate production owner-validation gate remains configured; Provider
+  Center previously did not display it. Production ledger still contains the two
+  failed NPR 10 mentor attempts and one manual subscription record (`testing`),
+  not a server-verified successful eSewa settlement.
+- Added the authenticated/no-store `payments/availability` route and shared
+  `neon-payment-availability.ts`, reusing the actual initiation gate and decrypted
+  checkout provider. Billing overview and Super Admin provider health use that
+  same status. Owner-only validation, explicit release pause and provider failure
+  are now distinguished without exposing designated identity/merchant secrets.
+- BookingDialog, EventRegistrationModal, RequestSubAdminAccess and Payments
+  preflight paid operations using fresh readiness. Free bookings remain usable;
+  a blocked checkout does not save a paid reservation or upload request proofs.
+  Renewals no longer reject from a stale dashboard availability boolean.
+- Checkout errors retain the safe server message rather than becoming a generic
+  unavailable/sandbox message or `[object Object]`. Provider Center now explains
+  effective checkout access separately from its enabled merchant configuration.
+- Focused regression suite: **9 files / 60 tests PASS**; full suite **210 files /
+  1,053 tests PASS**; typecheck, production build and diff check PASS; lint
+  **0 errors / 36 pre-existing warnings**. Release evidence follows execution.
+  Public enablement requires the owner's
+  explicit decision; no real charge or new settlement is claimed by these checks.

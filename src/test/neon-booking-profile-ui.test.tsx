@@ -73,4 +73,35 @@ describe("Neon mentor booking saved-profile boundary", () => {
     expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Complete your profile" }));
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+
+  it('checks paid readiness before creating a reservation and preserves the actual restriction message', async () => {
+    mocks.profile = { ...mocks.profile, phone: '9800000000', location: 'Test City' };
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => new Response(JSON.stringify(input.endsWith('/availability')
+      ? { data: { available: false, message: 'Public checkout has not been enabled.' } }
+      : { data: { services: [service] } }), { status: 200 })));
+    render(view());
+    await chooseSession();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.change(screen.getByLabelText('What would you like to discuss?'), { target: { value: 'Career planning' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to Pay' }));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ description: 'Public checkout has not been enabled.' })));
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).not.toHaveBeenCalledWith('/api/v1/mentors/book', expect.anything());
+  });
+
+  it('keeps free bookings usable without a paid checkout readiness check', async () => {
+    mocks.profile = { ...mocks.profile, phone: '9800000000', location: 'Test City' };
+    const freeService = { ...service, price: 0 };
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => new Response(JSON.stringify(input === '/api/v1/mentors/book'
+      ? { data: { id: 'free-booking' } } : { data: { services: [freeService] } }), { status: 200 })));
+    render(view());
+    await chooseSession();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.change(screen.getByLabelText('What would you like to discuss?'), { target: { value: 'Career planning' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm.*Session/i }));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Free session confirmed' })));
+    expect(fetch).not.toHaveBeenCalledWith('/api/v1/payments/availability', expect.anything());
+  });
 });

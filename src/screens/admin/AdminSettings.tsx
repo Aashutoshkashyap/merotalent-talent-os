@@ -17,6 +17,7 @@ import { OperationsPage } from "./OperationsUI";
 import { supabase } from "@/integrations/supabase/client";
 import { ProviderConfigurationPanel } from "./ProviderConfigurationPanel";
 import { invalidateCmsCache } from "@/hooks/useSiteCMS";
+import type { PaymentAvailability } from "@/lib/payments/payment-availability";
 
 const isNeonStaging = isNeonClientRuntime();
 
@@ -54,7 +55,7 @@ interface ProviderHealth {
   secretStorageReady: boolean;
   deliveryAvailable: boolean;
 }
-interface ProviderStatus { payment: ProviderHealth; email: ProviderHealth; ai: ProviderHealth; }
+interface ProviderStatus { payment: ProviderHealth; email: ProviderHealth; ai: ProviderHealth; checkout?: PaymentAvailability; }
 
 const providerHealthLabel: Record<ProviderHealthState, string> = {
   not_configured: "Not configured",
@@ -295,6 +296,11 @@ const AdminSettings = () => {
         </TabsContent>
 
         <TabsContent value="providers" className="space-y-4">
+          {providerStatus?.checkout && <div role="status" className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+            <p className="font-bold">{providerStatus.checkout.mode === 'owner_validation' ? 'Owner-only live validation' : 'Payment checkout readiness'}</p>
+            <p className="mt-1">{providerStatus.checkout.message}</p>
+            <p className="mt-1">Enabling the provider does not override the production checkout release gate.</p>
+          </div>}
           <ProviderConfigurationPanel kind="payment" title="eSewa payment" description="Configure the eSewa merchant secret and non-secret merchant settings. Redirects and return URLs never activate a subscription by themselves." providers={["esewa"]} onSaved={loadProviderStatus} />
           <ProviderConfigurationPanel kind="ai" title="AI provider" description="Enable platform AI drafts for entitled module administrators. Raw keys are encrypted and never returned." providers={["openai-compatible"]} onSaved={loadProviderStatus} />
           <ProviderConfigurationPanel kind="email" title="Transactional email provider" description="Resend is the supported transactional email adapter. Delivery remains unavailable until its credentials and sender address are configured." providers={["resend"]} onSaved={loadProviderStatus} />
@@ -361,6 +367,12 @@ const AdminSettings = () => {
               ] satisfies Array<{ name: string; health?: ProviderHealth }>).map(({ name, health }) => {
                 return <div key={String(name)} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-bold text-slate-900">{name}</p><p className={`mt-1 text-xs font-semibold ${health?.deliveryAvailable ? "text-emerald-700" : "text-amber-700"}`}>{health ? providerHealthLabel[health.status] : "Checking server configuration…"}</p><p className="mt-2 text-xs text-slate-500">{providerHealthDescription(health)}</p></div>;
               })}
+              {providerStatus?.checkout && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-bold text-slate-900">Checkout access</p>
+                <p className="mt-1 text-sm font-semibold">{providerStatus.checkout.mode === 'owner_validation'
+                  ? 'Owner-only live validation' : providerStatus.checkout.available ? 'Available' : 'Paused'}</p>
+                <p className="mt-2 text-sm text-slate-600">{providerStatus.checkout.message}</p>
+              </div>}
             </CardContent>
           </Card>
           <Card className="border-border/50 rounded-2xl shadow-2xs">

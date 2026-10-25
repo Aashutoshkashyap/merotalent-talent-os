@@ -27,7 +27,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { registerForEventApi, type EventDetail, type EventTicketType, type EventProgram } from "@/lib/events/events-client";
-import { postSignedCheckoutForm, startEsewaCheckout } from "@/lib/payments/browser-checkout";
+import { paymentErrorMessage, postSignedCheckoutForm, requireAvailableNeonPayment, startEsewaCheckout } from "@/lib/payments/browser-checkout";
 import TicketPassCard from "./TicketPassCard";
 
 interface EventRegistrationModalProps {
@@ -191,6 +191,7 @@ export default function EventRegistrationModal({
 
     setIsSubmitting(true);
     try {
+      if (staging && !isFree) await requireAvailableNeonPayment();
       const participantsPayload = isTeamTicket
         ? teamMembers
         : Array.from({ length: quantity }, (_, idx) => ({
@@ -230,7 +231,8 @@ export default function EventRegistrationModal({
           const checkout = await checkoutResponse.json();
           onSuccess?.();
           if (!checkoutResponse.ok || !checkout.data?.checkoutUrl || !checkout.data?.checkoutFields) {
-            toast({ title: "Registration pending payment", description: "Your registration was saved, but eSewa sandbox checkout is unavailable. No payment was taken and no paid ticket was issued." });
+            toast({ title: "Registration pending payment", description: paymentErrorMessage(checkout,
+              "Your registration was saved, but checkout could not start. No payment was taken and no paid ticket was issued.") });
             return;
           }
           postSignedCheckoutForm({ checkoutUrl: checkout.data.checkoutUrl, checkoutFields: checkout.data.checkoutFields });

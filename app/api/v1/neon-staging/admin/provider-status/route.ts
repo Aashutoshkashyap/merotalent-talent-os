@@ -3,6 +3,7 @@ import { getBackendMode } from "@/lib/server/backend-mode";
 import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/server/neon-session";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { getNeonProviderStatus, providerHealth } from "@/lib/server/neon-provider-config";
+import { getNeonPaymentAvailability } from "@/lib/server/neon-payment-availability";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,8 +16,10 @@ export async function GET(request: Request): Promise<Response> {
       getNeonProviderStatus(actor, "payment"), getNeonProviderStatus(actor, "email"),
       getNeonProviderStatus(actor, "ai"),
     ]);
+    const checkout = await getNeonPaymentAvailability(actor.userId);
     return NextResponse.json({ data: {
       payment: providerHealth(payment, "esewa"),
+      checkout,
       email: providerHealth(email, "resend"),
       ai: providerHealth(ai, "openai-compatible"),
     } }, { headers: { "Cache-Control": "private, no-store" } });
