@@ -285,3 +285,20 @@ sandbox credentials/configurations must remain separate.
 - Stopped the initial CLI upload before a deployment was created: it included a
   1 GB local staging build cache. Added explicit `.vercelignore` exclusions for
   local builds, credentials and research captures before retrying the release.
+- Owner subsequently explicitly authorized **live checkout for all users** after
+  being told that no genuine eSewa success was recorded in the live ledger. Set
+  Vercel Production `NEON_PRODUCTION_PAYMENTS_ENABLED=true` and removed only the
+  temporary `NEON_PRODUCTION_PAYMENT_VALIDATION_USER_ID` variable. Merchant
+  credentials, provider enablement, pricing, authorization and fulfillment guards
+  were not changed. The preceding deployment remains an owner-gated rollback.
+- App commits `0641d9f` / `0fa2115` are pushed; CI run `40165141102` passed both
+  schema-drift and full typecheck/lint/test/build jobs. Production redeployment
+  `dpl_5SxrrL9tDNoHR8dqGznsQC4QknB5` is READY with canonical www/apex aliases,
+  serving `0fa2115f0a5b2ebe54d827e0252aecf0e1446577` with the new release settings.
+- Authenticated production browser GET `/api/v1/payments/availability` now returns
+  `available:true, mode:public, reason:available`. Provider Center displays
+  available checkout and an enabled Production merchant with the secret masked;
+  student history loads without the unavailable/disabled banner. Anonymous GET
+  remains **401** with `Cache-Control: private, no-store`. Canonical Payments
+  route **200**. No booking, ticket, entitlement, charge or settlement was created
+  during these production checks. Full real-payment acceptance is not implied.

@@ -3063,3 +3063,20 @@ production configuration change or live payment occurred in this continuation.
 - Next: verify the released controls in the authenticated browser, then continue
   the existing acceptance matrix. Read-only source access and ownership recovery
   remain independent external gates; no new parity or migration-complete claim.
+
+### 25 October — module checkout availability release
+
+- Shared authenticated/no-store checkout readiness now distinguishes the enabled
+  provider from owner-only validation, a paused release and provider failure.
+  Paid mentor/event/enrollment/College/renewal callers retain server authorization,
+  authoritative prices and verification-only fulfillment; free bookings still work.
+- Owner explicitly authorized public live checkout after disclosure that the
+  recorded NPR 10 attempts were failed, not verified settlements. Updated only
+  the public release flag and cleared the temporary exact-owner restriction.
+  Production runtime now proves `available:true, mode:public`; Provider Center
+  and student history browser checks pass without an unavailable banner.
+- **210 files / 1,053 tests PASS**, focused **60 PASS**, typecheck/build/diff PASS,
+  lint **0 errors / 36 warnings**; GitHub CI `40165141102` PASS. App commit
+  `0fa2115` is live via READY deployment `dpl_5SxrrL9tDNoHR8dqGznsQC4QknB5`.
+  Existing rollback and settlement safeguards remain. No real charge, new
+  entitlement, provider settlement or migration-completion claim was made.
