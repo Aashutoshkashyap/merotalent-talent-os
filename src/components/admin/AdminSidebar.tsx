@@ -46,6 +46,7 @@ const primaryItems = [
   { icon: BookOpen, label: "Partner courses", href: "https://learn.merotalent.com", external: true },
   { icon: BriefcaseBusiness, label: "Jobs", href: "/admin/jobs" },
   { icon: Trophy, label: "Competitions", href: "/admin/competitions" },
+  { icon: CalendarDays, label: "Events & tickets", href: "/admin/events" },
   { icon: GraduationCap, label: "Mentors", href: "/admin/mentors" },
   { icon: Building2, label: "Institutions", href: "/admin/institutions" },
   { icon: FileText, label: "Applications", href: "/admin/applications" },

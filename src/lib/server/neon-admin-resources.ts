@@ -171,6 +171,8 @@ async function validateRelationships(client: PoolClient, definition: AdminResour
     validation("available_seats", "Available seats cannot exceed total seats.");
   if (resource === "jobs" && row.salary_min != null && row.salary_max != null && Number(row.salary_min)>Number(row.salary_max))
     validation("salary_max", "Maximum salary must be at least minimum salary.");
+  if(resource==="competitions" && row.start_date && row.end_date && new Date(String(row.end_date))<=new Date(String(row.start_date)))
+    validation("end_date","End date must follow the start date.");
   if (["events","advertisements"].includes(resource) && new Date(String(row.end_date))<=new Date(String(row.start_date)))
     validation("end_date", "End date must follow the start date.");
   if (resource === "events" && ((row.organizer_type !== "user" && !row.organizer_id) ||

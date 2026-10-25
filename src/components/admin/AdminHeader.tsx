@@ -54,6 +54,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
       ["people users talent", "/admin/users"],
       ["jobs opportunities hiring", "/admin/jobs"],
       ["competitions challenges", "/admin/competitions"],
+      ["events tickets registrations", "/admin/events"],
       ["partner courses redirects", "/admin/lms"],
       ["mentors sessions", "/admin/mentors"],
       ["institutions colleges", "/admin/institutions"],

@@ -9,6 +9,7 @@ import { NeonRoleWorkspaces } from "@/lib/server/neon-role-workspaces";
 import { NeonEventsRepository } from "@/lib/server/neon-events";
 import { NeonCheckoutService } from "@/lib/server/neon-checkout";
 import { expireNeonPurchaseHolds } from "@/lib/server/neon-purchase-expiry";
+import { NeonMentorsRepository } from "@/lib/server/neon-mentors";
 import type { NeonActor } from "@/lib/server/neon-authorization";
 import type { EsewaV2PaymentProvider } from "@/lib/server/payment-provider";
 
@@ -96,6 +97,24 @@ describe("isolated temporary purchases, governance and group inventory",()=>{
       expect(await expireNeonPurchaseHolds(db,expiryEvent)).toMatchObject({checkouts:1});
       expect((await db.query(`SELECT status,payment_status FROM public.event_registrations WHERE id=$1::uuid`,[held.id])).rows[0]).toEqual({status:'cancelled',payment_status:'failed'});
       expect((await db.query(`SELECT id FROM public.event_tickets WHERE registration_id=$1::uuid`,[held.id])).rowCount).toBe(0);
+      const mentorOwner=(await db.query(`SELECT p.user_id FROM public.profiles p WHERE p.user_id<>$1::uuid
+        AND p.deleted_at IS NULL AND p.account_status='active'
+        AND NOT EXISTS(SELECT 1 FROM public.mentors m WHERE m.user_id=p.user_id) LIMIT 1`,[actor.userId])).rows[0];
+      expect(mentorOwner).toBeDefined();
+      await db.query(`UPDATE public.profiles SET full_name='Isolated verified buyer',phone='9800000000' WHERE user_id=$1::uuid`,[actor.userId]);
+      const mentorId=randomUUID(),serviceId=randomUUID();
+      await db.query(`INSERT INTO public.mentors(id,user_id,headline,is_available,approval_status,commission_rate)
+        VALUES($1::uuid,$2::uuid,'Isolated group mentor',true,'approved',15)`,[mentorId,mentorOwner.user_id]);
+      await db.query(`INSERT INTO public.mentor_services(id,mentor_id,title,session_type,duration_minutes,capacity,price,currency,is_active)
+        VALUES($1::uuid,$2::uuid,'Isolated NPR 10 group session','group',60,2,10,'NPR',true)`,[serviceId,mentorId]);
+      const mentors=new NeonMentorsRepository(),start=new Date(Date.now()+2*86400000).toISOString(),end=new Date(Date.parse(start)+3600000).toISOString();
+      const booking=await mentors.bookMentorSession(actor,{mentorId,mentorServiceId:serviceId,scheduledStart:start,scheduledEnd:end,topic:'Isolated settlement'},db);
+      const mentorCheckout=await checkout.initiate(actor,'mentor_booking',booking.id,'http://localhost:3210',db);
+      await checkout.verifyReturn({reference:mentorCheckout.session.provider_reference},db);
+      expect((await db.query(`SELECT commission_amount::float AS commission_amount,payout_amount::float AS payout_amount,payout_status FROM public.payments WHERE id=$1::uuid`,
+        [mentorCheckout.session.provider_reference])).rows[0]).toEqual({commission_amount:1.5,payout_amount:8.5,payout_status:'pending'});
+      expect((await checkout.verifyReturn({reference:mentorCheckout.session.provider_reference},db)).duplicate).toBe(true);
+      expect((await db.query(`SELECT id FROM public.payments WHERE parent_payment_id=$1::uuid`,[mentorCheckout.session.provider_reference])).rowCount).toBe(0);
       providerState='pending';
     }finally{await db.query('ROLLBACK').catch(()=>{});db.release();await getPool().end();}
   },120000);

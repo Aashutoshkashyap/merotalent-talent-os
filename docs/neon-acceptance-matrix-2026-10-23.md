@@ -318,3 +318,29 @@ No changes to ordinary job/application prices, external partnered-course redirec
 historical source evidence, identity mappings or merchant secrets. No schema
 migration required. The existing rollback assets and unresolved source/ownership
 reconciliation gates remain in force.
+
+Production evidence for this batch: `e78f337`, READY Vercel
+`dpl_5W22byWFrfCveTuhWTbktry9MaCy`, CI `40169059826` PASS. Fifteen offers are
+persisted; all nine preexisting plan rows have identical before/after SHA256
+`1c3d5aa6ab883fbfafedb54ae3f033e86596b022ee66678e17950182bf72ca49`.
+The actual request form displays NPR 10/24h for Jobs and NPR 20/24h for Events
++ Jobs. No proof or financial transaction was fabricated to test submission.
+
+Resend message `01a171c0-2054-7144-8f6f-168895233d24` (configuration confirmation)
+was observed **Delivered** in its authenticated dashboard, from the existing
+verified noreply sender, 25 October 12:14 Nepal. Purchase/renewal email delivery
+is not inferred from that unrelated message.
+
+All four example ticket categories are saved at NPR 10 on the existing non-public
+test event, with actual SQL verification. The event was not published; its server
+status is completed even though historical lifecycle metadata said draft. No
+public event or genuine paid ticket purchase is claimed. The subsequent browser
+fixes preserve the old competition table/registrations, migrate its admin CRUD
+and add the missing Events entry rather than replacing competitions with events.
+
+The isolated application settlement fixture verifies 24-hour module activation,
+per-member group passes, inventory release, duplicate callback safety and a
+15% mentor commission/earnings split; it never contacts a real payment gateway.
+Existing source/identity acceptance and six dependency advisory findings remain
+open. Full financial acceptance still needs legitimate applicant proof and a
+human-completed wallet transaction, followed by actual request review/assignment.

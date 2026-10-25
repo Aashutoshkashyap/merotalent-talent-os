@@ -3132,3 +3132,44 @@ production configuration change or live payment occurred in this continuation.
   updated temporary-purchase case rerun alone after correcting the duplicate
   registration expectation. Overlapping earlier fixture runs timed out on shared
   rows; serial reruns passed. No synthetic fixtures committed to production.
+- App commit `e78f33761642507b7639c0e0ba0ab85e39a60ea7` is pushed, CI
+  `40169059826` PASS and production `dpl_5W22byWFrfCveTuhWTbktry9MaCy` READY.
+  Authenticated production Packages setup created 15 offers; a fresh read proved
+  all nine historical package rows unchanged (SHA256
+  `1c3d5aa6ab883fbfafedb54ae3f033e86596b022ee66678e17950182bf72ca49`).
+  Browser selection proves Jobs alone NPR 10 /24h, Events+Jobs NPR 20 /24h.
+- Fresh configuration confirmation email is **Delivered** in Resend, not merely
+  queued/accepted: message `01a171c0-2054-7144-8f6f-168895233d24`, from the existing
+  verified `noreply@merotalent.com`, 25 October 12:14 Nepal. This verifies this
+  configuration email, not an unperformed payment receipt.
+- Browser-created Early Bird, Regular, Group Booking and Silver Tier records are
+  NPR 10 on the existing non-public `MeroTalent Test Career Event`. Group stock
+  is five groups with 2–4 members, one group/order; individual stock ten each.
+  Read-only SQL verified rows. Event remains non-public (server status completed;
+  old UI lifecycle metadata said draft), not a fabricated new public event.
+- Browser acceptance exposed the still-legacy Competitions administration page
+  and missing Events navigation entry. Added its declarative Neon admin resource,
+  authoritative organizer fields, safe cancellation instead of destructive
+  deletion, real load/retry controls and Events & tickets navigation. Historical
+  competition records/registrations are preserved. Terminal event labels now
+  reflect server status rather than stale lifecycle metadata.
+- Further isolated checks cover default free/trial, expiry and restored access;
+  the temporary-purchase fixture additionally verifies NPR 10 mentor settlement
+  split 1.50/8.50 at a 15% rate and no payout transfer. Fixtures roll back.
+- Dependency audit still reports six findings (three high via Zod/Neon Auth,
+  three moderate via build-time selector parsing). No dependency changed in this
+  batch; a forced Zod/Auth or Tailwind major upgrade is not labelled resolved.
+  Keep this risk and the genuine wallet/approval/browser acceptance gaps open.
+- Follow-up competition fix verification: **215 files / 1,072 tests PASS**, plus
+  six terminal-lifecycle label cases PASS; focused UI tests prove Neon listing,
+  no Supabase invocation and actionable retry. Current typecheck/build/diff pass,
+  lint stays 0 errors /36 warnings. Updated competition SQL creates draft records
+  with server-owned organizer fields and cancels without deleting registrations;
+  the isolated staging regression passed. Updated mentor settlement fixture and
+  College free/trial cases passed independently; selected staging total is 17.
+- Read-only production aggregate finds no payment with the combined successful
+  eSewa checkout, successful ledger, paid timestamp, transaction ID and recorded
+  authoritative provider-success evidence. Therefore genuine settlement remains
+  **unverified**, even though public initiation and email delivery work. A real
+  applicant must provide legitimate proof and complete the wallet confirmation;
+  no new credential is requested in chat and no charge was initiated by the agent.

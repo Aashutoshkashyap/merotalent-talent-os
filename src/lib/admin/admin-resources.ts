@@ -9,6 +9,7 @@ export const ADMIN_RESOURCE_NAMES = [
   "jobs",
   "job-applications",
   "events",
+  "competitions",
   "event-registrations",
   "college-applications",
   "mentor-bookings",
@@ -102,6 +103,25 @@ const commonStatusFilter: AdminFilterDefinition = {
 };
 
 const resources = {
+  competitions: {
+    resource:"competitions",table:"competitions",
+    select:"id,title,description,organizer_id,organizer_type,type,format,start_date,end_date,registration_deadline,max_participants,prize_pool,status,is_team_based,cover_image,created_at,updated_at",
+    searchColumn:"title",sortColumns:["title","created_at","updated_at","start_date","status"],defaultSort:"created_at",
+    filters:{status:commonStatusFilter},deletable:false,
+    fields:{
+      title:text({create:true,update:true,requiredOnCreate:true,maxLength:240}),
+      description:text({create:true,update:true,nullable:true,maxLength:20000}),
+      type:text({create:true,update:true,values:["hackathon","quiz","coding","case_study","design","project"]}),
+      format:text({create:true,update:true,values:["online","offline","hybrid"]}),
+      status:text({create:true,update:true,values:["draft","upcoming","ongoing","completed","cancelled"]}),
+      start_date:timestamp({create:true,update:true,nullable:true}),end_date:timestamp({create:true,update:true,nullable:true}),
+      registration_deadline:timestamp({create:true,update:true,nullable:true}),
+      max_participants:{kind:"integer",create:true,update:true,nullable:true,min:1,max:1000000},
+      prize_pool:text({create:true,update:true,nullable:true,maxLength:1000}),
+      is_team_based:{kind:"boolean",create:true,update:true},
+      cover_image:{kind:"url",create:true,update:true,nullable:true},
+    },
+  },
   companies: {
     resource: "companies",
     table: "companies",

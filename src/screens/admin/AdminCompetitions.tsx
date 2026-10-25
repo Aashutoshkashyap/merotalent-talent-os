@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { createAdminResource, updateAdminResource, listAllAdminResource } from "@/lib/admin/admin-client";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +57,7 @@ const AdminCompetitions = () => {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError,setLoadError]=useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
@@ -74,11 +78,13 @@ const AdminCompetitions = () => {
     banner_url: "",
   });
 
-  useEffect(() => {
-    fetchCompetitions();
-  }, []);
-
-  const fetchCompetitions = async () => {
+  const fetchCompetitions = useCallback(async () => {
+    if(isNeonClientRuntime()){
+      setIsLoading(true);setLoadError("");
+      try {setCompetitions(await listAllAdminResource<Competition>("competitions",{sort_by:"created_at",sort_direction:"desc"}));}
+      catch(error){setLoadError(error instanceof Error ? error.message : "Please retry.");}
+      finally{setIsLoading(false);}return;
+    }
     const { data, error } = await supabase
       .from("competitions")
       .select("*")
@@ -89,7 +95,8 @@ const AdminCompetitions = () => {
     }
     setCompetitions(data || []);
     setIsLoading(false);
-  };
+  },[toast]);
+  useEffect(()=>{void fetchCompetitions();},[fetchCompetitions]);
 
   const handleAIGenerate = async () => {
     if (!newCompetition.title.trim()) {
@@ -143,6 +150,17 @@ const AdminCompetitions = () => {
       organizer_type: "admin",
     };
 
+    if(isNeonClientRuntime()){
+      try {
+        const {organizer_id:_owner,organizer_type:_type,...fields}=payload;
+        if(editingCompetition)await updateAdminResource("competitions",editingCompetition.id,fields);
+        else await createAdminResource("competitions",{...fields,status:"draft"});
+        toast({title:editingCompetition ? "Competition updated" : "Competition created as a draft"});
+        resetForm();await fetchCompetitions();
+      }catch(error){toast({variant:"destructive",title:"Competition could not be saved",description:error instanceof Error ? error.message : "Please retry."});}
+      finally{setIsCreating(false);}return;
+    }
+
     let error;
     if (editingCompetition) {
       const result = await supabase.from("competitions").update(payload).eq("id", editingCompetition.id);
@@ -173,6 +191,10 @@ const AdminCompetitions = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if(isNeonClientRuntime()){
+      if(!window.confirm("Cancel this competition? Its record and registrations will be preserved."))return;
+      await updateStatus(id,"cancelled");return;
+    }
     if (!window.confirm("Are you sure you want to permanently delete this competition?")) return;
     const { error } = await supabase.from("competitions").delete().eq("id", id);
     if (error) {
@@ -196,7 +218,7 @@ const AdminCompetitions = () => {
       max_participants: comp.max_participants ? comp.max_participants.toString() : "",
       prize_pool: comp.prize_pool || "",
       is_team_based: (comp as any).is_team_based ?? false,
-      banner_url: (comp as any).banner_url || "",
+      banner_url: (comp as any).cover_image || (comp as any).banner_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -220,6 +242,11 @@ const AdminCompetitions = () => {
   };
 
   const updateStatus = async (id: string, status: string) => {
+    if(isNeonClientRuntime()){
+      try {await updateAdminResource("competitions",id,{status});toast({title:"Competition status updated"});await fetchCompetitions();}
+      catch(error){toast({variant:"destructive",title:"Status could not be updated",description:error instanceof Error ? error.message : "Please retry."});}
+      return;
+    }
     const { error } = await supabase
       .from("competitions")
       .update({ status })
@@ -485,6 +512,10 @@ const AdminCompetitions = () => {
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
+                    <div className="mt-2 flex justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={()=>openEdit(comp)} aria-label={`Edit ${comp.title}`}><Pencil className="mr-1 h-3 w-3" />Edit</Button>
+                      {isNeonClientRuntime() && comp.status!=="cancelled" && <Button size="sm" variant="outline" onClick={()=>void handleDelete(comp.id)}>Cancel</Button>}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -493,11 +524,12 @@ const AdminCompetitions = () => {
 
           {filteredCompetitions.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              {isLoading ? "Loading competitions..." : "No competitions found. Create one to get started!"}
+              {isLoading ? "Loading competitions..." : loadError ? <div role="alert">{loadError}<Button className="ml-3" variant="outline" onClick={()=>void fetchCompetitions()}>Retry</Button></div> : "No competitions found. Create one to get started!"}
             </div>
           )}
         </CardContent>
       </Card>
+      <Button variant="outline" asChild><Link to="/admin/events">Manage ticketed events and categories</Link></Button>
     </OperationsPage>
   );
 };

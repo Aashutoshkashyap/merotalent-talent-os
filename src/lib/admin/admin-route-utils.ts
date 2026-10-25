@@ -165,6 +165,10 @@ export const applyAdminServerFields = (
   operation: "create" | "update",
 ) => {
   const now = new Date().toISOString();
+  if (definition.resource === "competitions" && operation === "create") {
+    payload.organizer_id=actorUserId;payload.organizer_type="admin";
+    if (!payload.status) payload.status="draft";
+  }
   if (definition.resource === "user-permissions" && operation === "create") {
     payload.granted_by = actorUserId;
   }

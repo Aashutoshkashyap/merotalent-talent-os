@@ -1,5 +1,6 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 import EventTicketManager from "@/components/events/EventTicketManager";
+import { displayedEventLifecycle } from "@/lib/events/lifecycle-display";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -727,7 +728,7 @@ export default function AdminEvents() {
                             : "bg-amber-50 text-amber-800 border-amber-200"
                         }`}
                       >
-                        {item.lifecycle_status || item.status}
+                        {displayedEventLifecycle(item)}
                       </Badge>
                     </TableCell>
 

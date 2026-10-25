@@ -25,6 +25,12 @@ describe("Neon declarative Super Admin resources",()=>{
     }
     expect(run).not.toHaveBeenCalled();
   });
+  it("allows Super Admin competition fields without client-controlled ownership or destructive deletion",()=>{
+    const definition=neonAdminDefinition("competitions");
+    expect(definition.deletable).toBe(false);
+    expect(sanitizeAdminWrite(definition,"create",{title:"Real challenge",type:"hackathon",format:"online",status:"draft"})).toMatchObject({title:"Real challenge",status:"draft"});
+    expect(()=>sanitizeAdminWrite(definition,"create",{title:"Forged",organizer_id:actor.userId})).toThrow();
+  });
   it("rejects arbitrary filters and keeps search text in parameters",async()=>{
     const query=vi.fn().mockResolvedValueOnce([{allowed:true}]).mockResolvedValueOnce([{count:"0"}]).mockResolvedValueOnce([]);
     await expect(listNeonAdminResource(actor,"jobs",new URLSearchParams({search:"%' OR true --"}),query)).resolves.toMatchObject({data:[],meta:{total:0}});

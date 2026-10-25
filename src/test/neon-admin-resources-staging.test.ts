@@ -65,6 +65,11 @@ describe("isolated Neon generic Super Admin content management",()=>{
       const event=await saveNeonAdminResource(actor,"events",{organizer_user_id:actor.userId,title:`Staging event ${suffix}`,start_date:start,end_date:end,
         status:"published",lifecycle_status:"published",is_multi_program:true,terms_and_conditions:"Staging terms",registration_open_at:null,registration_close_at:null},undefined,run);
       expect(event).toMatchObject({approval_status:"approved",is_active:true,is_multi_program:true,terms_and_conditions:"Staging terms"});
+      const competition=await saveNeonAdminResource(actor,"competitions",{title:`Isolated competition ${randomUUID()}`,type:"hackathon",format:"online",status:"draft"},undefined,run);
+      const savedCompetition=(await client.query(`SELECT organizer_id,organizer_type,status FROM public.competitions WHERE id=$1::uuid`,[competition.id])).rows[0];
+      expect(savedCompetition).toMatchObject({organizer_id:actor.userId,organizer_type:"admin",status:"draft"});
+      await saveNeonAdminResource(actor,"competitions",{status:"cancelled"},String(competition.id),run);
+      expect((await client.query(`SELECT status FROM public.competitions WHERE id=$1::uuid`,[competition.id])).rows[0].status).toBe("cancelled");
       const program=await createNeonAdminEventChild(actor,String(event.id),"programs",{title:"Staging session",start_time:start,end_time:end,venue:"Kathmandu",capacity:10,speaker_or_organizer:null},run);
       expect((await listNeonAdminEventChildren(actor,String(event.id),"programs",query)).some(row=>row.id===program.id)).toBe(true);
       const ticket=await createNeonAdminEventChild(actor,String(event.id),"tickets",{name:"Individual",ticket_kind:"individual",price:0,currency:"NPR",total_quantity:10,
