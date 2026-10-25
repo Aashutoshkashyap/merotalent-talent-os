@@ -37,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { accessPlanCovers } from "@/lib/payments/access-plans";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import {
   dashboardSurface,
@@ -352,9 +353,9 @@ export default function Payments() {
     .filter((entitlement) => entitlement.status === "active" && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() > Date.now()))
     .map((entitlement) => `${entitlement.module_key}:${entitlement.entity_type}:${entitlement.entity_id}`)), [overview.entitlements]);
   const isScopeActive = useCallback((scope: Scope) => activeEntitlementKeys.has(`${scope.module}:${scope.entityType}:${scope.entityId}`), [activeEntitlementKeys]);
-  const compatibleScopes = useMemo(() => selectedPlan ? overview.scopes.filter((scope) => selectedPlan.module_scope?.includes(scope.module) && (isNeonStaging || !isScopeActive(scope))) : [], [isScopeActive, overview.scopes, selectedPlan]);
+  const compatibleScopes = useMemo(() => selectedPlan ? overview.scopes.filter((scope) => accessPlanCovers(selectedPlan, [scope.module]) && (isNeonStaging || !isScopeActive(scope))) : [], [isScopeActive, overview.scopes, selectedPlan]);
   const selectedScope = compatibleScopes.find((scope) => scope.id === selectedScopeId);
-  const openPlan = (plan: Plan) => { setSelectedPlan(plan); setSelectedScopeId(overview.scopes.find((scope) => plan.module_scope?.includes(scope.module) && (isNeonStaging || !isScopeActive(scope)))?.id ?? ""); };
+  const openPlan = (plan: Plan) => { setSelectedPlan(plan); setSelectedScopeId(overview.scopes.find((scope) => accessPlanCovers(plan, [scope.module]) && (isNeonStaging || !isScopeActive(scope)))?.id ?? ""); };
 
   const beginCheckout = async () => {
     if (!selectedPlan || !selectedScope) return;
@@ -567,7 +568,7 @@ export default function Payments() {
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <Select value={requestPlanIds[request.id] || ""} onValueChange={value => setRequestPlanIds(current => ({ ...current, [request.id]: value }))}>
                       <SelectTrigger className="max-w-xs"><SelectValue placeholder="Choose a College plan" /></SelectTrigger>
-                      <SelectContent>{overview.plans.filter(plan => plan.module_scope?.includes("college") && Number(plan.price) > 0).map(plan =>
+                      <SelectContent>{overview.plans.filter(plan => accessPlanCovers(plan, ["college"]) && Number(plan.price) > 0).map(plan =>
                         <SelectItem key={plan.id} value={plan.id}>{plan.name} · {plan.currency} {Number(plan.price).toLocaleString("en-NP")}</SelectItem>)}</SelectContent>
                     </Select>
                     <Button disabled={!requestPlanIds[request.id] || processing} onClick={() => void beginCollegeRequestCheckout(request)}>
@@ -596,7 +597,7 @@ export default function Payments() {
                   <p className="mt-1 text-xs text-slate-500">{moduleLabel(entitlement.module_key)} · {entitlement.source.replaceAll("_", " ")} · expires {formatDate(entitlement.expires_at)}</p>
                 </div>
                 <Badge className={entitlement.status === "active" && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() > Date.now()) ? "w-fit bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : "w-fit bg-slate-200 text-slate-700 hover:bg-slate-200"}>
-                  {entitlement.status}
+                  {entitlement.status === "active" && entitlement.expires_at && new Date(entitlement.expires_at).getTime() <= Date.now() ? "expired" : entitlement.status}
                 </Badge>
               </div>
             ))
@@ -607,7 +608,7 @@ export default function Payments() {
       </Card>
 
       {/* Available packages — only show for admin/entity-scoped users, not students */}
-      {!isStudentView && !isNeonStaging && (
+      {((isNeonStaging && overview.scopes.length > 0) || (!isNeonStaging && !isStudentView)) && (
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-black tracking-tight text-slate-900">Available service packages</h2>
@@ -616,8 +617,8 @@ export default function Payments() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {loading ? (
               <p className="text-sm text-slate-500">Loading packages…</p>
-            ) : overview.plans.map((plan) => {
-              const matchingScopes = overview.scopes.filter((scope) => plan.module_scope?.includes(scope.module));
+            ) : overview.plans.filter(plan => !isNeonStaging || overview.scopes.some(scope => accessPlanCovers(plan, [scope.module]))).map((plan) => {
+              const matchingScopes = overview.scopes.filter((scope) => accessPlanCovers(plan, [scope.module]));
               const available = matchingScopes.some((scope) => !isScopeActive(scope));
               const activeOnly = matchingScopes.length > 0 && !available;
               const workspaceModule = matchingScopes[0]?.module || plan.module_scope?.[0] || "";

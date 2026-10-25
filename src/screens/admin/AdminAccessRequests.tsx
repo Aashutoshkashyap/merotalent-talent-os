@@ -18,11 +18,12 @@ import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
 import { listAdminResource } from "@/lib/admin/admin-client";
 import { ShieldCheck, Clock, Loader2, UserCheck, Inbox } from "lucide-react";
+import { paymentErrorMessage } from "@/lib/payments/browser-checkout";
 const isNeonStaging = isNeonClientRuntime();
 async function stagingRequest(url: string, init?: RequestInit) {
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "The request failed.");
+  if (!response.ok) throw new Error(paymentErrorMessage(payload, "The request failed."));
   return payload.data;
 }
 
@@ -37,6 +38,8 @@ interface AccessRequest {
   decision_note?: string | null;
   college_name?: string;
   payment_status?: string;
+  amount_due?: number; amount_paid?: number; currency?: string; payment_provider?: string;
+  transaction_reference?: string; activated_at?: string; expires_at?: string; paid_at?: string;
   applicant_phone?: string | null;
   requested_entity_scopes?: Array<{ module_key: string; proof?: { fileName: string } }>;
   reason: string;
@@ -393,6 +396,16 @@ export default function AdminAccessRequests() {
                         {req.organization && <p className="mt-1 text-[10px] text-muted-foreground">{req.organization}</p>}
                         {req.college_name && <p className="mt-1 text-xs font-semibold">College: {req.college_name}</p>}
                         {isNeonStaging && <p className="mt-1 text-xs">Payment: {req.payment_status?.replaceAll("_", " ") || "not started"}</p>}
+                        {isNeonStaging && <details className="mt-2 text-xs"><summary className="cursor-pointer font-semibold">Request and payment preview</summary>
+                          <p className="mt-2 break-all">Request: {req.id} · Account: {req.user_id}</p>
+                          <p>Requested role: delegated module administrator</p><p>Approval: {req.status}</p>
+                          <p>Amount due: {req.currency || "NPR"} {Number(req.amount_due || 0).toLocaleString()} · Paid: {req.currency || "NPR"} {req.payment_status === "success" ? Number(req.amount_paid || 0).toLocaleString() : "0"}</p>
+                          <p>Provider: {req.payment_provider || "not started"} · Reference: {req.transaction_reference || "not assigned"}</p>
+                          <p>Paid: {req.paid_at ? new Date(req.paid_at).toLocaleString() : "not confirmed"}</p>
+                          <p>Activation: {req.activated_at ? new Date(req.activated_at).toLocaleString() : "awaiting payment, approval or scope"}</p>
+                          <p>Expiry: {req.expires_at ? new Date(req.expires_at).toLocaleString() : "not activated"}</p>
+                          <p className="whitespace-pre-wrap">{req.reason}</p>
+                        </details>}
                         {isNeonStaging && req.requested_entity_scopes?.filter(scope => scope.proof).map(scope => (
                           <button key={scope.module_key} type="button" className="mt-1 block text-xs underline" onClick={() => {
                             void stagingRequest(`/api/v1/neon-staging/module-access/proofs?requestId=${req.id}&module=${scope.module_key}`)

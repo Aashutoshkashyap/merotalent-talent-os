@@ -4,11 +4,12 @@ import type { PoolClient, QueryResultRow } from "pg";
 import { z } from "zod";
 import { withTransaction } from "./db";
 import { NeonAuthorizationError, requireEntityAccess, requireModuleCapability, type EntityType, type NeonActor } from "./neon-authorization";
-import { neonAdminDefinition } from "./neon-admin-resources";
+import { neonAdminDefinition, ticketSchema } from "./neon-admin-resources";
 import { sanitizeAdminWrite, AdminResourceValidationError } from "@/lib/admin/admin-resource-service";
 import { assertMediaObjectPath } from "./media-policy";
 import { headObject } from "./storage";
 import { appendNotificationEvent } from "./neon-application-events";
+import { queueNeonReservationEmail } from "./neon-reservation-email";
 
 type Client = Pick<PoolClient, "query">;
 type Run = <T>(operation: (client: PoolClient) => Promise<T>) => Promise<T>;
@@ -84,6 +85,42 @@ const fields: Record<string, readonly string[]> = {
 };
 export class NeonRoleWorkspaces {
   constructor(private readonly run: Run = withTransaction) {}
+  async ticketConfiguration(actor: NeonActor, eventId: string, raw?: unknown, ticketId?: string) {
+    if (!uuid.test(eventId) || (ticketId !== undefined && !uuid.test(ticketId))) fail(400,"INVALID_EVENT","Choose a valid event and ticket.");
+    const payload = raw === undefined ? undefined : ticketSchema.parse(raw);
+    if (payload && (payload.max_team_size<payload.min_team_size || payload.max_per_order<payload.min_per_order ||
+      (payload.ticket_kind !== "individual" && (payload.min_per_order !== 1 || payload.max_per_order !== 1)) ||
+      (payload.sales_start_at && payload.sales_end_at && new Date(payload.sales_end_at)<=new Date(payload.sales_start_at))))
+      fail(400,"INVALID_TICKET","Review ticket sale dates, team size and purchase limits. Group orders contain one group.");
+    return this.run(async client => {
+      await identity(client,actor);
+      await guard(client,actor,"events","event",eventId,"event_management");
+      const event = await client.query(`SELECT id FROM public.events WHERE id=$1::uuid AND deleted_at IS NULL FOR UPDATE`,[eventId]);
+      if (!event.rowCount) fail(404,"EVENT_NOT_FOUND","Event unavailable.");
+      if (!payload) return (await client.query(`SELECT t.*,
+        COALESCE((SELECT sum(r.ticket_quantity)::int FROM public.event_registrations r WHERE r.ticket_type_id=t.id
+          AND r.status NOT IN ('cancelled','refunded') AND r.deleted_at IS NULL),0) AS reserved_quantity
+        FROM public.event_ticket_types t WHERE event_id=$1::uuid AND deleted_at IS NULL ORDER BY price,id`,[eventId])).rows;
+      if (ticketId) {
+        const existing = await client.query<{ticket_kind:string}>(`SELECT id,ticket_kind FROM public.event_ticket_types WHERE id=$1::uuid AND event_id=$2::uuid AND deleted_at IS NULL FOR UPDATE`,[ticketId,eventId]);
+        if (!existing.rowCount) fail(404,"TICKET_NOT_FOUND","Ticket unavailable for this event.");
+        const reserved = (await client.query<{ count: number }>(`SELECT COALESCE(sum(ticket_quantity),0)::int AS count
+          FROM public.event_registrations WHERE ticket_type_id=$1::uuid AND status NOT IN ('cancelled','refunded') AND deleted_at IS NULL`,[ticketId])).rows[0]?.count ?? 0;
+        if (payload.total_quantity != null && payload.total_quantity<reserved) fail(409,"INVENTORY_RESERVED","Quantity cannot be lower than existing reservations. Let pending checkouts expire first.");
+        if (reserved>0 && existing.rows[0].ticket_kind!==payload.ticket_kind) fail(409,"INVENTORY_RESERVED","The pricing unit cannot change after bookings. Create another tier instead.");
+      }
+      // Schema-validated keys only; event_id, ownership, sold counts and approval are never client-settable.
+      const keys=Object.keys(payload), values=Object.values(payload);
+      const row = ticketId ? (await client.query(`UPDATE public.event_ticket_types SET ${keys.map((key,index)=>`"${key}"=$${index+3}`).join(",")},updated_at=now()
+        WHERE id=$1::uuid AND event_id=$2::uuid RETURNING *`,[ticketId,eventId,...values])).rows[0]
+        : (await client.query(`INSERT INTO public.event_ticket_types(event_id,${keys.map(key=>`"${key}"`).join(",")})
+          VALUES($1::uuid,${keys.map((_,index)=>`$${index+2}`).join(",")}) RETURNING *`,[eventId,...values])).rows[0];
+      await client.query(`INSERT INTO public.audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
+        VALUES($1::uuid,$2,'event_ticket_types',$3::text,jsonb_build_object('event_id',$4::uuid))`,
+      [actor.userId,ticketId ? "update_event_ticket" : "create_event_ticket",row.id,eventId]);
+      return row;
+    });
+  }
   async events(actor: NeonActor, requestedId?: string) {
     if (requestedId && !uuid.test(requestedId)) fail(400, "INVALID_WORKSPACE", "Select a valid event.");
     return this.run(async client => {
@@ -322,6 +359,8 @@ export class NeonRoleWorkspaces {
       [recipient, `Your ${workflow.replaceAll("_", " ")} is now ${next.replaceAll("_", " ")}.`, workflow, id,
         workflow === "event_registration" ? "/dashboard/competitions" : "/dashboard/mentorship"])).rows[0];
       await appendNotificationEvent(client, recipient, notification.id);
+      if (next === "confirmed" || next === "cancelled" || next === "completed")
+        await queueNeonReservationEmail(client,workflow === "mentor_booking" ? "mentor" : "event",id,next);
       await client.query(`INSERT INTO public.audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
         VALUES($1::uuid,'owner_status_changed',$2,$3::text,jsonb_build_object('from',$4::text,'to',$5::text))`, [actor.userId, table, id, row.status, next]);
       return updated;

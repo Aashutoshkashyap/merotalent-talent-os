@@ -84,10 +84,10 @@ export default function EventRegistrationModal({
     return true;
   });
 
-  const isTeamTicket = selectedTicketType?.ticket_kind === "team";
+  const isTeamTicket = selectedTicketType?.ticket_kind === "team" || selectedTicketType?.ticket_kind === "group";
   const unitPrice = selectedTicketType ? Number(selectedTicketType.price) : Number(event.ticket_price || 0);
-  const totalAmount = unitPrice * quantity;
-  const isFree = totalAmount === 0 || event.event_type === "free";
+  const totalAmount = unitPrice * (isTeamTicket ? 1 : quantity);
+  const isFree = totalAmount === 0;
 
   const handleNextToDetails = () => {
     if (isTeamTicket && selectedTicketType) {
@@ -207,6 +207,7 @@ export default function EventRegistrationModal({
         programId: selectedProgramId,
         ticketTypeId: selectedTicketType?.id || null,
         attendeeCount: isTeamTicket ? teamMembers.length : quantity,
+        ticketQuantity: isTeamTicket ? 1 : quantity,
         teamName: isTeamTicket ? teamName : null,
         participants: participantsPayload,
         customResponses,
@@ -342,9 +343,12 @@ export default function EventRegistrationModal({
                           {tt.description && (
                             <p className="text-xs text-slate-500 max-w-md">{tt.description}</p>
                           )}
-                          {tt.ticket_kind === "team" && (
+                          {!!tt.eligibility_rules?.benefits?.length && <p className="text-xs text-slate-600">Includes: {tt.eligibility_rules.benefits.join(" · ")}</p>}
+                          {(tt.sales_start_at || tt.sales_end_at) && <p className="text-xs text-slate-600">Sale: {tt.sales_start_at ? new Date(tt.sales_start_at).toLocaleString() : "Now"} – {tt.sales_end_at ? new Date(tt.sales_end_at).toLocaleString() : "Until sold out"}</p>}
+                          {tt.total_quantity != null && <p className="text-xs text-slate-600">{Math.max(0,tt.total_quantity-(tt.quantity_sold || 0))} remaining</p>}
+                          {(tt.ticket_kind === "team" || tt.ticket_kind === "group") && (
                             <p className="text-[11px] font-semibold text-blue-600">
-                              Team Size: {tt.min_team_size} - {tt.max_team_size} members
+                              Group price includes {tt.min_team_size}–{tt.max_team_size} members (one group per order)
                             </p>
                           )}
                         </div>

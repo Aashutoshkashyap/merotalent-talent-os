@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {NeonAuthorizationError} from './neon-authorization';
 import {NeonCheckoutService} from './neon-checkout';
 import {decodeEsewaRedirect} from './payment-provider';
+import {scheduleNeonEmailDelivery} from './neon-email-dispatch';
 
 /** Shared canonical/compatibility callback: no legacy database fallback. */
 export async function handleNeonEsewaReturn(request: Request) {
@@ -24,6 +25,7 @@ export async function handleNeonEsewaReturn(request: Request) {
   }
   try{
     await new NeonCheckoutService().verifyReturn({reference,signedPayload:payload});
+    scheduleNeonEmailDelivery();
     return NextResponse.redirect(new URL(`/dashboard/payments?checkout=${encodeURIComponent(reference)}`,url.origin),{headers:{'cache-control':'no-store'}});
   }catch(error){
     if(error instanceof NeonAuthorizationError)return NextResponse.json({error:error.code},{status:error.status,headers:{'cache-control':'no-store'}});

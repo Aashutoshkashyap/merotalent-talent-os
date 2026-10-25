@@ -13,6 +13,8 @@ import { prepareNeonModuleAccessCheckout, activateVerifiedNeonModuleAccess } fro
 import {prepareAssignedScopeRenewal,activateVerifiedAssignedScope} from './neon-assigned-scope-renewal';
 import {requireNeonPaidInitiation} from './neon-paid-initiation';
 import { recordNeonPaymentReceipt } from './neon-payment-receipt';
+import { mentorSettlement } from "../payments/mentor-settlement";
+import { queueNeonReservationEmail } from "./neon-reservation-email";
 
 type Client = Pick<PoolClient, "query">;
 type Kind = "mentor_booking" | "event_registration" | "college_scope_request" | "module_access_request" | "assigned_scope";
@@ -104,18 +106,21 @@ export class NeonCheckoutService {
       let amount: number;
       let currency: string;
       let packageId: string | null = null;
+      let settlement: ReturnType<typeof mentorSettlement> | undefined;
       if (kind === "mentor_booking") {
         const row = (await db.query<{
           student_id: string; amount: number; currency: string; status: string; payment_status: string;
-          service_price: number; service_currency: string;
+          service_price: number; service_currency: string; commission_rate:number;
         }>(`SELECT b.student_id,b.amount::float AS amount,b.currency,b.status,b.payment_status,
-            s.price::float AS service_price,s.currency AS service_currency
+            s.price::float AS service_price,s.currency AS service_currency,m.commission_rate::float AS commission_rate
           FROM public.mentor_bookings b JOIN public.mentor_services s ON s.id=b.mentor_service_id
+          JOIN public.mentors m ON m.id=b.mentor_id
           WHERE b.id=$1::uuid AND b.deleted_at IS NULL FOR UPDATE OF b`, [targetId])).rows[0];
         if (!row || row.student_id !== actor.userId) deny("BOOKING_NOT_FOUND", "Booking not found.", 404);
         if (row.status !== "pending" || row.payment_status !== "pending") deny("BOOKING_NOT_PAYABLE", "Booking is not awaiting payment.", 409);
         if (Number(row.amount) !== Number(row.service_price) || row.currency !== row.service_currency) deny("PRICE_CHANGED", "The booking price no longer matches its service.", 409);
         amount = money(row.service_price); currency = row.service_currency;
+        settlement=mentorSettlement(amount,Number(row.commission_rate ?? 0));
       } else if (kind === "event_registration") {
         const row = (await db.query<{
           user_id: string; total_amount: number; ticket_quantity: number; status: string; payment_status: string;
@@ -163,6 +168,7 @@ export class NeonCheckoutService {
           JOIN public.packages p ON p.id=$2::uuid AND p.is_active AND p.deleted_at IS NULL
             AND p.is_publicly_selectable AND p.package_kind='paid'
             AND p.module_scope @> ARRAY['college']::text[]
+            AND (p.features->>'exact_module_scope' IS DISTINCT FROM 'true' OR cardinality(p.module_scope)=1)
           WHERE r.id=$1::uuid AND r.module_key='college' AND r.entity_type='college'
           FOR UPDATE OF r`, [targetId, selectedPackageId])).rows[0];
         if (!row || row.user_id !== actor.userId) deny("REQUEST_NOT_FOUND", "College request not found.", 404);
@@ -211,7 +217,8 @@ export class NeonCheckoutService {
         (id,user_id,payment_type,reference_id,amount,currency,status,payment_method,gateway,metadata)
         VALUES ($1::uuid,$2::uuid,$3,$4::uuid,$5,$6,'pending','esewa','esewa',$7::jsonb)`, [
         reference, actor.userId, kind === "mentor_booking" ? "mentor_booking" : kind === "event_registration" ? "event_ticket" : kind === 'assigned_scope' ? 'module_subscription' : "module_access_request",
-        targetId, amount, currency, JSON.stringify({ source: "neon_staging_checkout" })]);
+        targetId, amount, currency, JSON.stringify({ source: "neon_staging_checkout",
+          ...(settlement ? {mentor_commission_rate:settlement.rate,mentor_commission_amount:settlement.commission,mentor_earnings_amount:settlement.earnings} : {}) })]);
       const session = (await db.query<CheckoutRow>(`INSERT INTO public.payment_checkout_sessions
         (user_id,package_id,entity_type,entity_id,provider_name,provider_reference,amount,currency,status,expires_at)
         VALUES ($1::uuid,$7::uuid,$2,$3::uuid,'esewa',$4,$5,$6,'pending',now()+interval '5 minutes')
@@ -312,6 +319,7 @@ export class NeonCheckoutService {
       if (locked.entity_type === "module_access_request") {
         const target=(await db.query<{id:string}>(`SELECT r.id FROM public.sub_admin_requests r
           JOIN public.packages p ON p.id=$3::uuid AND p.package_kind='paid' AND p.module_scope @> r.requested_modules
+            AND (p.features->>'exact_module_scope' IS DISTINCT FROM 'true' OR cardinality(p.module_scope)=cardinality(r.requested_modules))
           WHERE r.id=$1::uuid AND r.user_id=$2::uuid AND r.package_id=p.id AND p.price=$4 AND p.currency=$5
             AND r.status IN ('pending','approved') FOR UPDATE OF r`,
         [locked.entity_id,locked.user_id,locked.package_id,locked.amount,locked.currency])).rows[0];
@@ -341,6 +349,7 @@ export class NeonCheckoutService {
           SELECT r.id,r.status FROM public.entity_scope_requests r
           JOIN public.packages p ON p.id=$3::uuid AND p.package_kind='paid'
             AND p.module_scope @> ARRAY['college']::text[]
+            AND (p.features->>'exact_module_scope' IS DISTINCT FROM 'true' OR cardinality(p.module_scope)=1)
           WHERE r.id=$1::uuid AND r.user_id=$2::uuid AND r.module_key='college'
             AND r.entity_type='college' AND r.package_id=p.id AND p.price=$4
             AND p.currency=$5 FOR UPDATE OF r`,
@@ -377,15 +386,15 @@ export class NeonCheckoutService {
               AND amount=$4 AND currency=$5 RETURNING id`, [locked.entity_id,input.reference,locked.user_id,locked.amount,locked.currency]);
           if (!changed.rowCount) deny("BOOKING_CHANGED", "Booking can no longer be fulfilled.", 409);
         } else {
-          const changed = await db.query<{ ticket_quantity: number; event_id: string; ticket_type_id: string | null;
+          const changed = await db.query<{ ticket_quantity: number; attendee_count?: number; event_id: string; ticket_type_id: string | null;
             form_data: { participants?: Array<{ fullName?: string; email?: string }> } }>(`UPDATE public.event_registrations
             SET status='confirmed',payment_status='success',payment_id=$2::uuid,updated_at=now()
             WHERE id=$1::uuid AND user_id=$3::uuid AND status='pending' AND payment_status='pending'
-              AND total_amount=$4 RETURNING ticket_quantity,event_id,ticket_type_id,form_data`, [
+              AND total_amount=$4 RETURNING ticket_quantity,attendee_count,event_id,ticket_type_id,form_data`, [
             locked.entity_id,input.reference,locked.user_id,locked.amount]);
           const registration = changed.rows[0];
           if (!registration) deny("REGISTRATION_CHANGED", "Registration can no longer be fulfilled.", 409);
-          for (let i = 0; i < registration.ticket_quantity; i++) {
+          for (let i = 0; i < Math.max(registration.attendee_count ?? 0,registration.ticket_quantity); i++) {
             const attendee = registration.form_data?.participants?.[i];
             await db.query(`INSERT INTO public.event_tickets
               (ticket_number,registration_id,event_id,ticket_type_id,user_id,attendee_name,attendee_email,qr_token,status)
@@ -405,6 +414,9 @@ export class NeonCheckoutService {
       // booking/registration. Change the entity first; fire those triggers only
       // after our guarded fulfillment and ticket issuance have succeeded.
       const paymentUpdate = await db.query(`UPDATE public.payments SET status=$2,gateway_transaction_id=$3,
+          commission_amount=CASE WHEN $2='success' AND payment_type='mentor_booking' THEN COALESCE((metadata->>'mentor_commission_amount')::numeric,commission_amount) ELSE commission_amount END,
+          payout_amount=CASE WHEN $2='success' AND payment_type='mentor_booking' THEN COALESCE((metadata->>'mentor_earnings_amount')::numeric,payout_amount) ELSE payout_amount END,
+          payout_status=CASE WHEN $2='success' AND payment_type='mentor_booking' AND metadata ? 'mentor_commission_rate' THEN 'pending' ELSE payout_status END,
           paid_at=CASE WHEN $2='success' THEN now() ELSE NULL END,
           failed_at=CASE WHEN $2='success' THEN NULL ELSE now() END,updated_at=now(),
           metadata=metadata || $4::jsonb
@@ -416,6 +428,8 @@ export class NeonCheckoutService {
         locked.user_id, locked.entity_id]);
       if (!paymentUpdate.rowCount) deny("PAYMENT_CHANGED", "Payment can no longer be settled.", 409);
       await recordNeonPaymentReceipt(db,input.reference);
+      await queueNeonReservationEmail(db,locked.entity_type === "mentor_booking" ? "mentor" : "event",locked.entity_id,
+        status === "successful" ? "confirmed" : "cancelled",false);
       return { status, duplicate: false };
     };
     return transactionClient ? run(transactionClient) : withTransaction(run);

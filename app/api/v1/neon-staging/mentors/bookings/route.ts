@@ -5,6 +5,7 @@ import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/s
 import { NeonMentorsRepository, type BookSessionInput } from "@/lib/server/neon-mentors";
 import { requireSameOrigin } from "@/lib/server/neon-session";
 import { z } from "zod";
+import { scheduleNeonEmailDelivery } from "@/lib/server/neon-email-dispatch";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
 
     const repo = new NeonMentorsRepository();
     const result = await repo.bookMentorSession(actor, parsed.data as BookSessionInput);
+    scheduleNeonEmailDelivery();
 
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {

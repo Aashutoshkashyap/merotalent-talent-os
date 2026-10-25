@@ -3,6 +3,7 @@ import { getBackendMode } from "@/lib/server/backend-mode";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { NeonModuleAccess, type ModuleAccessInput } from "@/lib/server/neon-module-access";
 import { getAuthenticatedApplicationUser, requireSameOrigin } from "@/lib/server/neon-session";
+import { scheduleNeonEmailDelivery } from "@/lib/server/neon-email-dispatch";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,7 +33,9 @@ export async function POST(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some(key =>
       !["draftId", "modules", "packageId", "collegeId", "reason", "organization", "proofs"].includes(key)))
       return reply({ error: "INVALID_REQUEST" }, 400);
-    return reply({ data: await service.submit(actor, body as ModuleAccessInput) }, 201);
+    const data = await service.submit(actor, body as ModuleAccessInput);
+    scheduleNeonEmailDelivery();
+    return reply({ data }, 201);
   } catch (error) { return failure(error); }
 }
 
@@ -45,7 +48,9 @@ export async function PATCH(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body) || typeof body.requestId !== "string" ||
       typeof body.approve !== "boolean" || (body.note !== undefined && typeof body.note !== "string") ||
       Object.keys(body).some(key => !["requestId", "approve", "note"].includes(key))) return reply({ error: "INVALID_DECISION" }, 400);
-    return reply({ data: await service.decide(actor, body.requestId, body.approve, body.note) });
+    const data = await service.decide(actor, body.requestId, body.approve, body.note);
+    scheduleNeonEmailDelivery();
+    return reply({ data });
   } catch (error) { return failure(error); }
 }
 

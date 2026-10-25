@@ -18,6 +18,7 @@ export async function prepareAssignedScopeRenewal(db:Client,userId:string,assign
       AND mc.is_active AND (umc.expires_at IS NULL OR umc.expires_at>now())
       AND profile.account_status='active' AND profile.deleted_at IS NULL
       AND p.is_active AND p.is_publicly_selectable AND p.deleted_at IS NULL AND p.package_kind='paid'
+      AND (p.features->>'exact_module_scope' IS DISTINCT FROM 'true' OR cardinality(p.module_scope)=1)
     FOR SHARE OF a,umc,mc,profile,p`,[assignmentId,userId,packageId])).rows[0];
   if(!row)deny('RENEWAL_SCOPE_REQUIRED');
   const types=Object.hasOwn(entities,row.module_key)?entities[row.module_key]:null;

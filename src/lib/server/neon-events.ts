@@ -13,6 +13,9 @@ import {
   type NeonQueryExecutor,
 } from "./neon-authorization";
 import { appendNotificationEvent } from "./neon-application-events";
+import { calculateTicketOrder } from "../events/ticket-order";
+import { expireNeonPurchaseHolds } from "./neon-purchase-expiry";
+import { queueNeonReservationEmail } from "./neon-reservation-email";
 
 export interface PublicEventRow extends QueryResultRow {
   id: string;
@@ -57,11 +60,16 @@ export interface EventRegistrationInput {
   eventId: string;
   ticketTypeId?: string | null;
   ticketQuantity?: number;
+  attendeeCount?: number;
+  programId?: string | null;
+  teamName?: string | null;
   participants?: Array<{
     fullName: string;
     email?: string;
     phone?: string;
     college?: string;
+    studentId?: string;
+    roleInTeam?: string;
   }>;
   customResponses?: Record<string, unknown>;
 }
@@ -153,9 +161,10 @@ export class NeonEventsRepository {
 
       const ticketRows = input.ticketTypeId ? await client.query<{
         id: string; price: number; currency: string; min_per_order: number; max_per_order: number;
+        ticket_kind: string; min_team_size: number; max_team_size: number; program_id: string | null;
         total_quantity: number | null; sales_start_at: Date | null; sales_end_at: Date | null;
       }>(`SELECT id,price::float AS price,currency,min_per_order,max_per_order,
-            total_quantity,sales_start_at,sales_end_at
+            total_quantity,sales_start_at,sales_end_at,ticket_kind,min_team_size,max_team_size,program_id
           FROM public.event_ticket_types
           WHERE id=$1::uuid AND event_id=$2::uuid AND is_active=true AND deleted_at IS NULL
           LIMIT 1 FOR UPDATE`, [input.ticketTypeId, event.id]) : { rows: [] };
@@ -174,6 +183,26 @@ export class NeonEventsRepository {
           (tier.sales_end_at && new Date(tier.sales_end_at).getTime() < Date.now()))) {
         throw new NeonAuthorizationError(403, "TICKET_UNAVAILABLE", "This ticket type is not on sale for the selected quantity.");
       }
+      let order: ReturnType<typeof calculateTicketOrder>;
+      try { order = calculateTicketOrder(tier ?? { price: Number(event.ticket_price ?? 0), min_per_order: 1, max_per_order: 10 },
+        ticketQty,input.attendeeCount,input.participants,input.teamName); }
+      catch (error) { throw new NeonAuthorizationError(400,"INVALID_TICKET_ORDER",error instanceof Error ? error.message : "Invalid ticket order."); }
+      const programId = input.programId ?? tier?.program_id ?? null;
+      if (tier?.program_id && programId !== tier.program_id) throw new NeonAuthorizationError(400,"INVALID_PROGRAM","Choose the ticket's program.");
+      if (programId && !(await client.query(`SELECT id FROM public.event_programs WHERE id=$1::uuid AND event_id=$2::uuid
+        AND deleted_at IS NULL AND status IN ('scheduled','ongoing') FOR SHARE`, [programId,event.id])).rowCount)
+        throw new NeonAuthorizationError(400,"INVALID_PROGRAM","Choose an available program for this event.");
+      // Expired payment holds cannot indefinitely consume stock. The event row lock serializes new orders.
+      await expireNeonPurchaseHolds(client,event.id);
+      const existing = await client.query<EventRegistrationRow & { ticket_type_id:string|null;attendee_count:number }>(`
+        SELECT * FROM public.event_registrations WHERE event_id=$1::uuid AND user_id=$2::uuid
+          AND status NOT IN ('cancelled','refunded') AND deleted_at IS NULL LIMIT 1 FOR UPDATE`, [input.eventId,actor.userId]);
+      if (existing.rows[0]) {
+        const prior=existing.rows[0];
+        if (prior.status==='pending' && prior.payment_status==='pending' && prior.ticket_type_id===(tier?.id ?? null) &&
+          prior.ticket_quantity===ticketQty && prior.attendee_count===order.attendees) return prior;
+        throw new NeonAuthorizationError(409,"ALREADY_REGISTERED","A registration already exists. Complete its payment or review your tickets before creating another.");
+      }
       if (tier?.total_quantity !== null && tier?.total_quantity !== undefined) {
         const soldTier = await client.query<{ count: number }>(`
           SELECT COALESCE(SUM(ticket_quantity),0)::int AS count FROM public.event_registrations
@@ -186,28 +215,18 @@ export class NeonEventsRepository {
       // Check capacity
       if (event.capacity && event.capacity > 0) {
         const soldRows = await client.query<{ count: number }>(`
-          SELECT COALESCE(SUM(ticket_quantity), 0)::int AS count
+          SELECT COALESCE(SUM(GREATEST(COALESCE(attendee_count,0),ticket_quantity)), 0)::int AS count
           FROM public.event_registrations
           WHERE event_id = $1::uuid AND status NOT IN ('cancelled', 'refunded')
             AND deleted_at IS NULL`, [input.eventId]);
         const currentSold = soldRows.rows[0]?.count ?? 0;
-        if (currentSold + ticketQty > event.capacity) {
+        if (currentSold + order.attendees > event.capacity) {
           throw new NeonAuthorizationError(403, "CAPACITY_EXCEEDED", "Not enough remaining tickets for this event.");
         }
       }
 
-      // Check existing user registration
-      const existing = await client.query<{ id: string }>(`
-        SELECT id FROM public.event_registrations
-        WHERE event_id = $1::uuid AND user_id = $2::uuid AND status NOT IN ('cancelled', 'refunded')
-          AND deleted_at IS NULL LIMIT 1`, [input.eventId, actor.userId]);
-
-      if (existing.rows.length > 0) {
-        throw new NeonAuthorizationError(403, "ALREADY_REGISTERED", "You have already registered for this event.");
-      }
-
       const unitPrice = tier?.price ?? event.ticket_price ?? 0;
-      const totalAmount = unitPrice * ticketQty;
+      const totalAmount = order.amount;
       const isFree = totalAmount === 0;
       if(!isFree)requireNeonPaidInitiation(actor.userId);
       const status = isFree ? "confirmed" : "pending";
@@ -218,15 +237,17 @@ export class NeonEventsRepository {
         ticketTypeId: tier?.id ?? null,
         customResponses: input.customResponses ?? {},
         registeredAt: new Date().toISOString(),
+        pricingUnit: tier?.ticket_kind === "team" || tier?.ticket_kind === "group" ? "group" : "attendee",
+        unitPrice, attendeeCount: order.attendees,
       };
 
       const regInsert = await client.query<EventRegistrationRow>(`
         INSERT INTO public.event_registrations (
           event_id, user_id, ticket_type_id, status, payment_status, ticket_quantity,
-          total_amount, form_data, registered_at
+          total_amount, form_data, registered_at,attendee_count,team_name,program_id
         ) VALUES (
           $1::uuid, $2::uuid, $3::uuid, $4, $5, $6,
-          $7, $8::jsonb, now()
+          $7, $8::jsonb, now(),$9,$10,$11::uuid
         ) RETURNING id, event_id, user_id, status, payment_status, ticket_quantity,
                     total_amount::float AS total_amount, payment_id, form_data, registered_at`, [
         event.id,
@@ -237,13 +258,18 @@ export class NeonEventsRepository {
         ticketQty,
         totalAmount,
         JSON.stringify(formData),
+        order.attendees,input.teamName?.trim() || null,programId,
       ]);
 
       const registration = regInsert.rows[0];
+      for (const participant of input.participants ?? []) await client.query(`INSERT INTO public.event_participants
+        (registration_id,full_name,email,phone,college,student_id,role_in_team)
+        VALUES($1::uuid,$2,$3,$4,$5,$6,$7)`, [registration.id,participant.fullName.trim(),participant.email || null,
+        participant.phone || null,participant.college || null,participant.studentId || null,participant.roleInTeam || "attendee"]);
 
       if (isFree) {
         // Free registrations receive passes immediately. Paid passes await verified payment.
-        for (let i = 0; i < ticketQty; i++) {
+        for (let i = 0; i < order.attendees; i++) {
           const attendee = input.participants?.[i];
           const ticketNumber = `MT-${crypto.randomUUID()}`;
           await client.query(`INSERT INTO public.event_tickets
@@ -267,6 +293,7 @@ export class NeonEventsRepository {
       ]);
 
       await appendNotificationEvent(client, actor.userId, notif.rows[0].id);
+      await queueNeonReservationEmail(client,"event",registration.id,isFree ? "confirmed" : "pending");
 
       return registration;
     };
@@ -336,7 +363,13 @@ export class NeonEventsRepository {
     const ticketTypes = await this.db.query<Record<string, unknown>>(`
       SELECT id, program_id, name, description, ticket_kind,
              min_team_size, max_team_size, price::float AS price, currency,
-             total_quantity, quantity_sold, min_per_order, max_per_order,
+             total_quantity, COALESCE((SELECT sum(r.ticket_quantity)::int FROM public.event_registrations r
+               WHERE r.ticket_type_id=event_ticket_types.id AND r.deleted_at IS NULL
+                 AND r.status NOT IN ('cancelled','refunded') AND (r.payment_status IN ('success','not_required')
+                   OR (r.status='pending' AND (r.registered_at>now()-interval '15 minutes' OR EXISTS(
+                     SELECT 1 FROM public.payment_checkout_sessions c WHERE c.entity_type='event_registration'
+                       AND c.entity_id=r.id AND c.status IN ('initiated','pending') AND c.expires_at>now()))))),0) AS quantity_sold,
+             min_per_order, max_per_order,
              sales_start_at, sales_end_at, eligibility_rules, is_active, display_order
       FROM public.event_ticket_types
       WHERE event_id = $1::uuid AND deleted_at IS NULL

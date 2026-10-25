@@ -15,6 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Pencil, Trash2, Loader2, Package as PackageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OperationsPage } from "./OperationsUI";
+import { accessValidityLabel } from "@/lib/payments/access-plans";
+import { paymentErrorMessage } from "@/lib/payments/browser-checkout";
 
 interface PackageItem {
   id: string;
@@ -98,6 +100,7 @@ export default function AdminPackages() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPackage, setEditingPackage] = useState<PackageItem | null>(null);
+  const [configuringOffers, setConfiguringOffers] = useState(false);
 
   const [formData, setFormData] = useState<PackageFormData>(createEmptyForm);
 
@@ -118,6 +121,18 @@ export default function AdminPackages() {
   },[toast]);
 
   useEffect(()=>{void fetchPackages();},[fetchPackages]);
+
+  const configureTestOffers = async () => {
+    setConfiguringOffers(true);
+    try {
+      const response = await fetch("/api/v1/admin/temporary-access-offers", { method: "POST", credentials: "same-origin" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(paymentErrorMessage(payload, "Could not configure test offers."));
+      toast({ title: "Temporary offers configured", description: `${payload.data.created} offers added. Existing plans and history were preserved. NPR 10 per module, 24 hours; approval still required.` });
+      await fetchPackages();
+    } catch (error) { toast({ variant: "destructive", title: "Configuration failed", description: error instanceof Error ? error.message : "Try again." }); }
+    finally { setConfiguringOffers(false); }
+  };
 
   const handleSubmit = async () => {
     if (!formData.code.trim() || !formData.name.trim()) {
@@ -263,7 +278,10 @@ export default function AdminPackages() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Subscription Packages</h1>
-          <p className="text-muted-foreground">Configure college & mentor subscription plans</p>
+          <p className="text-muted-foreground">Configure module access plans. Payment never replaces Super Admin approval.</p>
+          {isNeonClientRuntime() && <Button className="mt-3" variant="outline" disabled={configuringOffers} onClick={() => void configureTestOffers()}>
+            {configuringOffers ? "Configuring…" : "Add temporary NPR 10 / 24-hour offers"}
+          </Button>}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); else setIsDialogOpen(open); }}>
           <DialogTrigger asChild>
@@ -518,7 +536,7 @@ export default function AdminPackages() {
                 <TableCell>
                   <p className="capitalize">{pkg.lead_access_mode.replaceAll("_", " ")}</p>
                   <p className="text-xs text-muted-foreground">
-                    {pkg.duration_days ? `${pkg.duration_days} days` : pkg.billing_interval.replaceAll("_", " ")}
+                    {pkg.duration_days ? accessValidityLabel(pkg.duration_days) : pkg.billing_interval.replaceAll("_", " ")}
                   </p>
                 </TableCell>
                 <TableCell className="font-semibold">NPR {pkg.price}</TableCell>

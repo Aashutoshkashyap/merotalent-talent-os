@@ -394,6 +394,7 @@ describe("Neon eSewa End-to-End Payment & Provider Verification", () => {
             return { rowCount: 1 };
           }
           if (sql.includes('SELECT n.id,n.recipient_id')) return { rows: [] };
+          if (sql.includes('SELECT p.reference_id,p.status')) return { rows: [] };
           if (sql.includes('INSERT INTO public.notifications') || sql.includes('INSERT INTO public.audit_logs')) return { rowCount: 1 };
           if (sql.includes("UPDATE public.payments SET status=$2")) {
             paymentUpdated = true;
@@ -563,6 +564,7 @@ describe("Neon eSewa End-to-End Payment & Provider Verification", () => {
             return { rowCount: 1 };
           }
           if (sql.includes('SELECT n.id,n.recipient_id')) return { rows: [] };
+          if (sql.includes('SELECT p.reference_id,p.status')) return { rows: [] };
           if (sql.includes('INSERT INTO public.notifications') || sql.includes('INSERT INTO public.audit_logs')) return { rowCount: 1 };
           throw new Error(`Unexpected query: ${sql}`);
         }),

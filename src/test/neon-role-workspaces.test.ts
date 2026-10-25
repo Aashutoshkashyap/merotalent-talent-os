@@ -34,6 +34,11 @@ function fixture(options: { features?: string[]; capability?: boolean; linked?: 
 }
 
 describe("scoped Neon operational workspaces", () => {
+  it("denies ticket configuration after entitlement expiry and refuses forged tier fields",async()=>{
+    await expect(fixture({capability:false}).service.ticketConfiguration(actor,entityId)).rejects.toMatchObject({code:"MODULE_CAPABILITY_REQUIRED"});
+    await expect(fixture({features:["lead_viewing"]}).service.ticketConfiguration(actor,entityId)).rejects.toMatchObject({code:"ENTITY_ACCESS_REQUIRED"});
+    await expect(fixture().service.ticketConfiguration(actor,entityId,{name:"Forged",quantity_sold:999})).rejects.toThrow();
+  });
   it("returns multiple assigned company choices and scopes each snapshot to the requested company", async () => {
     const { service, calls } = fixture();
     const result = await service.snapshot(actor, "company", otherId);

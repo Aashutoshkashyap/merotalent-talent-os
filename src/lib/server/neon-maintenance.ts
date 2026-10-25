@@ -3,6 +3,7 @@ import type { PoolClient } from "pg";
 import { getBackendMode, requireNeonBackend } from "./backend-mode";
 import { isValidCronAuthorization } from "./cron-auth";
 import { withTransaction } from "./db";
+import { expireNeonPurchaseHolds } from "./neon-purchase-expiry";
 
 export type NeonMaintenanceTransaction = <T>(operation: (client: PoolClient) => Promise<T>) => Promise<T>;
 export class NeonCronAuthorizationError extends Error {
@@ -35,11 +36,11 @@ export async function runNeonMaintenance(authorization: string | null,
     // The expiry timestamp distinguishes successive renewals of the same row.
     // Both channels are durable; sending still requires the staging delivery gate.
     const notifications = await client.query(`INSERT INTO public.notifications
-      (recipient_id,title,message,type,category,channel,status,entity_type,entity_id,action_url,email_to,metadata)
+      (recipient_id,title,message,type,category,channel,status,entity_type,entity_id,action_url,email_to,email_delivery_enabled,metadata)
       SELECT s.user_id,'Subscription expired',
         'Your MeroTalent subscription has expired. Renew it to restore premium access.',
         'warning','subscription',delivery.channel,'queued','subscription',s.id,'/dashboard/payments',
-        CASE WHEN delivery.channel='email' THEN p.email ELSE NULL END,
+        CASE WHEN delivery.channel='email' THEN p.email ELSE NULL END,delivery.channel='email',
         jsonb_build_object('maintenance_event','expired','subscription_expiry',s.expiry_date::text,
           'delivery_environment',$1::text)
       FROM public.subscriptions s JOIN public.profiles p ON p.user_id=s.user_id
@@ -62,10 +63,34 @@ export async function runNeonMaintenance(authorization: string | null,
         AND deleted_at IS NULL AND end_date<=now() RETURNING id`);
     const expiredAds = await client.query(`UPDATE public.advertisements SET status='expired',is_active=false,updated_at=now()
       WHERE status IN ('scheduled','active') AND deleted_at IS NULL AND end_date<=now() RETURNING id`);
-    const expiredCheckouts = await client.query(`UPDATE public.payment_checkout_sessions
-      SET status='expired',completed_at=COALESCE(completed_at,now()),updated_at=now()
-      WHERE provider_name='esewa' AND status IN ('initiated','pending') AND expires_at IS NOT NULL
-        AND expires_at<=now() RETURNING id`);
+    const holds = await expireNeonPurchaseHolds(client);
+    await client.query(`INSERT INTO public.notifications(recipient_id,title,message,type,category,channel,status,
+      entity_type,entity_id,action_url,email_to,email_delivery_enabled,metadata)
+      SELECT e.user_id,'Module access expires soon',concat('Your ',e.module_key,' access expires at ',e.expires_at,
+        '. Review renewal at https://www.merotalent.com/dashboard/payments.'),
+        'info','subscription',delivery.channel,'queued','module_entitlement',e.id,'/dashboard/payments',
+        CASE WHEN delivery.channel='email' THEN p.email END,delivery.channel='email',
+        jsonb_build_object('maintenance_event','expiring','delivery_environment',$1::text)
+      FROM public.module_entitlements e JOIN public.profiles p ON p.user_id=e.user_id
+      CROSS JOIN (VALUES ('dashboard'),('email')) delivery(channel)
+      WHERE e.status='active' AND e.expires_at>now() AND e.expires_at<=now()+interval '24 hours'
+        AND p.account_status='active' AND p.deleted_at IS NULL
+        AND (delivery.channel='dashboard' OR p.email ~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$')
+        AND NOT EXISTS(SELECT 1 FROM public.notifications n WHERE n.entity_type='module_entitlement' AND n.entity_id=e.id
+          AND n.channel=delivery.channel AND n.metadata->>'maintenance_event'='expiring')`, [getBackendMode(environment)]);
+    await client.query(`INSERT INTO public.notifications(recipient_id,title,message,type,category,channel,status,
+      entity_type,entity_id,action_url,email_to,email_delivery_enabled,metadata)
+      SELECT e.user_id,'Module access expired',concat('Your ',e.module_key,' access expired at ',e.expires_at,
+        '. Renew at https://www.merotalent.com/dashboard/payments. Payment history and your public listing remain available.'),
+        'warning','subscription',delivery.channel,'queued','module_entitlement',e.id,'/dashboard/payments',
+        CASE WHEN delivery.channel='email' THEN p.email END,delivery.channel='email',
+        jsonb_build_object('maintenance_event','expired','delivery_environment',$1::text)
+      FROM public.module_entitlements e JOIN public.profiles p ON p.user_id=e.user_id
+      CROSS JOIN (VALUES ('dashboard'),('email')) delivery(channel)
+      WHERE e.status='expired' AND e.expires_at<=now() AND p.account_status='active' AND p.deleted_at IS NULL
+        AND (delivery.channel='dashboard' OR p.email ~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$')
+        AND NOT EXISTS(SELECT 1 FROM public.notifications n WHERE n.entity_type='module_entitlement' AND n.entity_id=e.id
+          AND n.channel=delivery.channel AND n.metadata->>'maintenance_event'='expired')`, [getBackendMode(environment)]);
     const guestChallenges = await client.query(`DELETE FROM public.guest_college_verifications
       WHERE expires_at<now()-interval '7 days' RETURNING id`);
     const guestSends = await client.query(`DELETE FROM public.guest_college_verification_sends
@@ -81,7 +106,9 @@ export async function runNeonMaintenance(authorization: string | null,
       expired_jobs: expiredJobs.rowCount ?? 0,
       completed_events: completedEvents.rowCount ?? 0,
       expired_advertisements: expiredAds.rowCount ?? 0,
-      expired_checkouts: expiredCheckouts.rowCount ?? 0,
+      expired_checkouts: holds.checkouts,
+      released_event_reservations: holds.registrations,
+      released_mentor_reservations: holds.bookings,
       notifications_enqueued: notifications.rowCount ?? 0,
       upload_intents_removed: 0,
       guestVerification: { guest_challenges_removed: guestChallenges.rowCount ?? 0,

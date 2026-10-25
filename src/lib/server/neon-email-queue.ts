@@ -1,7 +1,7 @@
 /** Lease-bound transactional email delivery for isolated Neon staging. */
 import type { PoolClient, QueryResultRow } from "pg";
 import { queryRows, withTransaction } from "./db";
-import { getConfiguredTransactionalEmailProvider, type TransactionalEmailProvider } from "./email-provider";
+import { getConfiguredTransactionalEmailProvider, getTransactionalEmailProvider, type TransactionalEmailProvider } from "./email-provider";
 import { requireNeonCron, type NeonMaintenanceTransaction } from "./neon-maintenance";
 import { decryptProviderSecret, isSecretStorageConfigured } from "./secret-store";
 import { neonEmailPolicy, type NeonEmailPolicy } from "./neon-delivery-policy";
@@ -27,11 +27,17 @@ export function neonEmailRecipients(environment: Environment = process.env): str
 
 export async function resolveNeonEmailProvider(query: typeof queryRows = queryRows,
   environment: Environment = process.env): Promise<TransactionalEmailProvider | null> {
-  if (!isSecretStorageConfigured(environment)) return null;
   const [row] = await query<ProviderRow>(`SELECT provider_name,is_enabled,public_config,
     secret_ciphertext,secret_iv,secret_tag FROM public.provider_configurations
     WHERE provider_kind='email' LIMIT 1`);
-  if (!row?.is_enabled || row.provider_name !== "resend" ||
+  // An explicit Provider Center row (including disabled or broken) takes precedence.
+  // Only absent configuration may reuse the existing server-side Resend adapter.
+  if (!row) {
+    if (!environment.EMAIL_FROM?.includes("@")) return null;
+    const provider = getTransactionalEmailProvider(environment);
+    return provider.name === "unconfigured" ? null : provider;
+  }
+  if (!isSecretStorageConfigured(environment) || !row.is_enabled || row.provider_name !== "resend" ||
       !row.secret_ciphertext || !row.secret_iv || !row.secret_tag) return null;
   try {
     const provider = getConfiguredTransactionalEmailProvider({ providerName: row.provider_name,

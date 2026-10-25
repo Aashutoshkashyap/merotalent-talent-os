@@ -5,6 +5,7 @@ import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { getAuthenticatedApplicationUser, requireSameOrigin } from "@/lib/server/neon-session";
 import { NeonRoleWorkspaces } from "@/lib/server/neon-role-workspaces";
 import { AdminResourceValidationError } from "@/lib/admin/admin-resource-service";
+import { scheduleNeonEmailDelivery } from "@/lib/server/neon-email-dispatch";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 const service = new NeonRoleWorkspaces();
@@ -48,6 +49,8 @@ export async function PATCH(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body) || !["event_registration", "mentor_booking"].includes(body.workflow) ||
       typeof body.id !== "string" || typeof body.status !== "string" || Object.keys(body).some(key => !["workflow", "id", "status"].includes(key)))
       return reply({ error: "INVALID_WORKFLOW" }, 400);
-    return reply({ data: await service.transition(actor, body.workflow, body.id, body.status) });
+    const data = await service.transition(actor, body.workflow, body.id, body.status);
+    scheduleNeonEmailDelivery();
+    return reply({ data });
   } catch (error) { return failure(error); }
 }

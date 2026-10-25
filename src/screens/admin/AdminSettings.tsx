@@ -55,7 +55,8 @@ interface ProviderHealth {
   secretStorageReady: boolean;
   deliveryAvailable: boolean;
 }
-interface ProviderStatus { payment: ProviderHealth; email: ProviderHealth; ai: ProviderHealth; checkout?: PaymentAvailability; }
+interface ProviderStatus { payment: ProviderHealth; email: ProviderHealth; ai: ProviderHealth; checkout?: PaymentAvailability;
+  emailDelivery?: {configured:boolean;enabled:boolean;source:string;notBefore:string|null}; }
 
 const providerHealthLabel: Record<ProviderHealthState, string> = {
   not_configured: "Not configured",
@@ -296,6 +297,11 @@ const AdminSettings = () => {
         </TabsContent>
 
         <TabsContent value="providers" className="space-y-4">
+          {providerStatus?.emailDelivery && <div role="status" className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+            <p className="font-bold">Transactional email delivery</p>
+            <p className="mt-1">{providerStatus.emailDelivery.configured && providerStatus.emailDelivery.enabled ? "Resend delivery enabled" : "Email delivery not ready"} · Configuration: {providerStatus.emailDelivery.source.replaceAll("_"," ")}</p>
+            <p className="mt-1">Provider acceptance is recorded per notification; queued does not mean delivered. Historical messages before the activation cutoff are excluded.</p>
+          </div>}
           {providerStatus?.checkout && <div role="status" className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
             <p className="font-bold">{providerStatus.checkout.mode === 'owner_validation' ? 'Owner-only live validation' : 'Payment checkout readiness'}</p>
             <p className="mt-1">{providerStatus.checkout.message}</p>

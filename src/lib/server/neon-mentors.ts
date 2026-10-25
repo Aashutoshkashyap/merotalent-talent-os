@@ -3,6 +3,8 @@
  * Enforces active profiles, verified identity links, privacy boundaries, and atomic booking transactions.
  */
 import type { PoolClient, QueryResultRow } from "pg";
+import { mentorSlotAvailable } from "../payments/mentor-settlement";
+import { queueNeonReservationEmail } from "./neon-reservation-email";
 import { queryRows, withTransaction } from "./db";
 import {
   NeonAuthorizationError,
@@ -198,15 +200,18 @@ export class NeonMentorsRepository {
         }
       }
 
-      // Locking the mentor serializes competing bookings for this mentor. Group capacity is
-      // not offered here yet; reserving the whole interval avoids overselling a shared slot.
-      const conflict = await client.query<{ id: string }>(`
-        SELECT id FROM public.mentor_bookings
+      // The mentor row lock serializes capacity checks. Only identical group slots share capacity.
+      const conflict = await client.query<{ id: string; mentor_service_id:string;student_id:string;scheduled_start:Date;scheduled_end:Date }>(`
+        SELECT id,mentor_service_id,student_id,scheduled_start,scheduled_end FROM public.mentor_bookings
         WHERE mentor_id=$1::uuid AND deleted_at IS NULL
           AND status NOT IN ('cancelled','declined','no_show')
           AND scheduled_start<$3::timestamptz AND scheduled_end>$2::timestamptz
-        LIMIT 1`, [mentor.id, input.scheduledStart, input.scheduledEnd]);
-      if (conflict.rows.length) throw new NeonAuthorizationError(403, "SLOT_TAKEN", "This time is already booked.");
+          AND (payment_status<>'pending' OR created_at>now()-interval '15 minutes' OR EXISTS(
+            SELECT 1 FROM public.payment_checkout_sessions c WHERE c.entity_type='mentor_booking'
+              AND c.entity_id=mentor_bookings.id AND c.status IN ('initiated','pending') AND c.expires_at>now()))`, [mentor.id, input.scheduledStart, input.scheduledEnd]);
+      if (!mentorSlotAvailable({serviceId:service.id,sessionType:service.session_type,capacity:service.capacity,
+        studentId:actor.userId,start:input.scheduledStart,end:input.scheduledEnd},conflict.rows))
+        throw new NeonAuthorizationError(403, "SLOT_TAKEN", "This time is already booked or the group is full.");
 
       const amount = service.price;
       if(amount>0)requireNeonPaidInitiation(actor.userId);
@@ -259,8 +264,8 @@ export class NeonMentorsRepository {
         VALUES ($1::uuid, $2, $3, 'mentor_booking', false)
         RETURNING id`, [
         actor.userId,
-        `Session Booked with Mentor`,
-        `Your mentorship session for "${input.topic}" is scheduled for ${start.toLocaleString()}.`,
+        initialStatus === "confirmed" ? "Mentorship session confirmed" : "Mentorship payment pending",
+        `Your mentorship session for "${input.topic}" at ${start.toLocaleString()} is ${initialStatus === "confirmed" ? "confirmed" : "reserved pending verified payment"}.`,
       ]);
       await appendNotificationEvent(client, actor.userId, menteeNotif.rows[0].id);
 
@@ -273,6 +278,7 @@ export class NeonMentorsRepository {
         `You have a new booking request for "${input.topic}" on ${start.toLocaleString()}.`,
       ]);
       await appendNotificationEvent(client, mentor.user_id, mentorNotif.rows[0].id);
+      await queueNeonReservationEmail(client,"mentor",booking.id,initialStatus === "confirmed" ? "confirmed" : "pending");
 
       return booking;
     };
@@ -372,9 +378,10 @@ export class NeonMentorsRepository {
     const run = async (client: Pick<PoolClient, "query">) => {
       await assertRoleWorkspaceIdentity(client, actor);
       const [booking] = (await client.query<{ id: string; mentor_id: string; student_id: string;
-        mentor_user_id: string; status: string; payment_status: string; duration_minutes: number }>(`
+        mentor_user_id: string; status: string; payment_status: string; duration_minutes: number;
+        mentor_service_id:string;session_type:string;capacity:number }>(`
         SELECT b.id,b.mentor_id,b.student_id,m.user_id AS mentor_user_id,b.status,b.payment_status,
-          s.duration_minutes FROM public.mentor_bookings b
+          s.duration_minutes,b.mentor_service_id,s.session_type,s.capacity FROM public.mentor_bookings b
         JOIN public.mentors m ON m.id=b.mentor_id
         JOIN public.mentor_services s ON s.id=b.mentor_service_id
         WHERE b.id=$1::uuid AND b.deleted_at IS NULL LIMIT 1 FOR UPDATE OF b`, [bookingId])).rows;
@@ -383,19 +390,20 @@ export class NeonMentorsRepository {
         await requireRoleWorkspaceAccess(client, actor, "mentor", "mentor", booking.mentor_id, "booking_management");
       }
       if (!["pending", "confirmed"].includes(booking.status) ||
-          !["pending", "not_required"].includes(booking.payment_status)) {
+          !["pending", "not_required", "success"].includes(booking.payment_status)) {
         throw new NeonAuthorizationError(403, "RESCHEDULE_UNAVAILABLE", "This booking cannot be rescheduled here.");
       }
       if (end.getTime() - start.getTime() !== booking.duration_minutes * 60_000) {
         throw new NeonAuthorizationError(400, "INVALID_DURATION", "Keep the published service duration.");
       }
       await client.query(`SELECT id FROM public.mentors WHERE id=$1::uuid FOR UPDATE`, [booking.mentor_id]);
-      const conflict = await client.query(`SELECT id FROM public.mentor_bookings
+      const conflict = await client.query(`SELECT id,mentor_service_id,student_id,scheduled_start,scheduled_end FROM public.mentor_bookings
         WHERE mentor_id=$1::uuid AND id<>$2::uuid AND deleted_at IS NULL
           AND status NOT IN ('cancelled','declined','no_show')
-          AND scheduled_start<$4::timestamptz AND scheduled_end>$3::timestamptz LIMIT 1`,
+          AND scheduled_start<$4::timestamptz AND scheduled_end>$3::timestamptz`,
       [booking.mentor_id, booking.id, newStart, newEnd]);
-      if (conflict.rows.length) throw new NeonAuthorizationError(403, "SLOT_TAKEN", "This time is already booked.");
+      if (!mentorSlotAvailable({serviceId:booking.mentor_service_id,sessionType:booking.session_type,capacity:booking.capacity,
+        studentId:booking.student_id,start:newStart,end:newEnd},conflict.rows)) throw new NeonAuthorizationError(403, "SLOT_TAKEN", "This time is already booked or the group is full.");
       const updated = await client.query<Record<string, unknown>>(`UPDATE public.mentor_bookings
         SET scheduled_start=$2::timestamptz,scheduled_end=$3::timestamptz,
           notes=COALESCE($4,notes),updated_at=now()
@@ -473,6 +481,8 @@ export class NeonMentorsRepository {
       VALUES($1::uuid,'Mentorship session updated',$2,'info','mentor_booking','dashboard','queued','mentor_booking',$3::uuid,'/dashboard/mentorship') RETURNING id`,
     [recipient, `Your mentorship session has been ${action}.`, bookingId])).rows[0];
     await appendNotificationEvent(client, recipient, notification.id);
+    if (action === "rescheduled" || action === "cancelled" || action === "completed")
+      await queueNeonReservationEmail(client,"mentor",bookingId,action);
     await client.query(`INSERT INTO public.audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
       VALUES($1::uuid,'mentor_booking_changed','mentor_bookings',$2::text,jsonb_build_object('action',$3::text))`, [actor.userId, bookingId, action]);
   }

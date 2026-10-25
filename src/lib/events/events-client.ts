@@ -40,6 +40,7 @@ export interface EventTicketType {
   max_per_order: number;
   sales_start_at?: string | null;
   sales_end_at?: string | null;
+  eligibility_rules?: { benefits?: string[] };
   is_active: boolean;
   display_order: number;
 }
@@ -173,6 +174,7 @@ export async function registerForEventApi(
     programId?: string | null;
     ticketTypeId?: string | null;
     attendeeCount?: number;
+    ticketQuantity?: number;
     teamName?: string | null;
     participants?: Array<{
       fullName: string;

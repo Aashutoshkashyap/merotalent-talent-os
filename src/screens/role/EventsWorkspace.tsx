@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EventEditor, type OwnerEventRecord, type RoleOwnerSnapshot } from "@/components/owner/RoleOwnerManagement";
 import OwnerStatusActions from "@/components/owner/OwnerStatusActions";
 import { requestRoleWorkspace } from "@/lib/neon/role-workspaces-client";
+import EventTicketManager from "@/components/events/EventTicketManager";
 
 interface EventWorkspaceState {
   entityOptions: Array<{ id: string; label: string }>;
@@ -59,6 +60,7 @@ export default function EventsWorkspace() {
           <p className="mt-5 text-sm text-slate-600">{data.subscription?.package_name || "Assigned module access"}{data.subscription?.expires_at ? ` · Expires ${date(data.subscription.expires_at)}` : ""}</p>
           <p className="mt-3 whitespace-pre-wrap text-sm">{event.description}</p>
         </section>
+        {data.capabilities.profile && <section className="rounded-2xl border p-5"><h2 className="mb-4 text-xl font-semibold">Ticket categories and inventory</h2><EventTicketManager eventId={event.id} /></section>}
         <section className="rounded-2xl border p-5">
           <h2 className="text-xl font-semibold">Registrations</h2>
           {!data.capabilities.registrations ? <p className="mt-3 text-sm text-slate-600">Registration access is not included in your current entitlement.</p> : data.snapshot.eventRegistrations.length === 0 ? <p className="mt-3 text-sm text-slate-600">No registrations for this event yet.</p> : <div className="mt-4 grid gap-3 md:grid-cols-2">{data.snapshot.eventRegistrations.map(registration => <article key={registration.id} className="rounded-xl border p-4">

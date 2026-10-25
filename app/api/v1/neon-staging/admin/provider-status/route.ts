@@ -4,6 +4,8 @@ import { getAuthenticatedApplicationUser, NeonSessionUnavailable } from "@/lib/s
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { getNeonProviderStatus, providerHealth } from "@/lib/server/neon-provider-config";
 import { getNeonPaymentAvailability } from "@/lib/server/neon-payment-availability";
+import { resolveNeonEmailProvider } from "@/lib/server/neon-email-queue";
+import { neonEmailPolicy } from "@/lib/server/neon-delivery-policy";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,10 +19,15 @@ export async function GET(request: Request): Promise<Response> {
       getNeonProviderStatus(actor, "ai"),
     ]);
     const checkout = await getNeonPaymentAvailability(actor.userId);
+    const emailProvider = await resolveNeonEmailProvider();
+    const emailPolicy = neonEmailPolicy();
     return NextResponse.json({ data: {
       payment: providerHealth(payment, "esewa"),
       checkout,
       email: providerHealth(email, "resend"),
+      emailDelivery: { configured: Boolean(emailProvider), enabled: emailPolicy.enabled,
+        source: email.configured ? "provider_center" : emailProvider ? "server_environment" : "unconfigured",
+        notBefore: emailPolicy.notBefore },
       ai: providerHealth(ai, "openai-compatible"),
     } }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {

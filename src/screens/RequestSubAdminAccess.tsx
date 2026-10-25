@@ -1,4 +1,5 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
+import { accessPlanCovers, accessValidityLabel } from "@/lib/payments/access-plans";
 import { paymentErrorMessage, postSignedCheckoutForm, requireAvailableNeonPayment } from "@/lib/payments/browser-checkout";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,6 +16,7 @@ import { ShieldAlert, Sparkles, ArrowLeft, Loader2, Send, Clock3, X } from "luci
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import type { RequestProof } from "@/lib/server/neon-module-access";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const isNeonStaging = isNeonClientRuntime();
 async function stagingRequest(url: string, init?: RequestInit) {
@@ -51,6 +53,7 @@ interface AccessPlan {
   currency: string;
   duration_days: number | null;
   module_scope: string[];
+  features?: Record<string, unknown>;
 }
 
 const canonicalModuleKey = (value: string) => ({ job: "jobs", event: "events", institution: "college", mentor: "mentor" }[value] || value);
@@ -106,6 +109,7 @@ export default function RequestSubAdminAccess() {
   const [activeEntitlementModules, setActiveEntitlementModules] = useState<Set<string>>(new Set());
   const [isLoadingRequests, setIsLoadingRequests] = useState(Boolean(user));
   const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null);
+  const [paymentReview, setPaymentReview] = useState<{ requestId: string; plan: AccessPlan; modules: string[]; entity: string; reason: string } | null>(null);
 
   useEffect(() => {
     if (profile?.phone) setPhone(current => current || profile.phone || "");
@@ -143,10 +147,7 @@ export default function RequestSubAdminAccess() {
     return () => { active = false; };
   }, []);
 
-  const compatiblePlans = accessPlans.filter((plan) => {
-    const scopes = Array.isArray(plan.module_scope) ? plan.module_scope : [];
-    return selectedModules.length > 0 && selectedModules.every((module) => scopes.includes(canonicalModuleKey(module)));
-  });
+  const compatiblePlans = accessPlans.filter(plan => accessPlanCovers(plan, selectedModules.map(canonicalModuleKey)));
 
   useEffect(() => {
     if (!compatiblePlans.some((plan) => plan.id === selectedPlanId)) {
@@ -309,10 +310,10 @@ export default function RequestSubAdminAccess() {
           throw new Error("Complete or cancel your pending request before selecting another plan or module.");
         }
         await loadMyRequests();
-        const checkout = await stagingRequest("/api/v1/neon-staging/payments/checkout", { method: "POST",
-          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "module_access_request", targetId: requestId, packageId: selectedPlanId }) });
-        toast({ title: "Request saved", description: "Opening eSewa to complete the required payment…" });
-        postToCheckout(checkout.checkoutUrl, checkout.checkoutFields);
+        const plan = accessPlans.find(item => item.id === selectedPlanId);
+        if (!plan || !requestId) throw new Error("Reload to review the saved request and plan.");
+        setPaymentReview({ requestId, plan, modules: selectedModules, entity: selectedCollege?.name || organization, reason });
+        toast({ title: "Request saved", description: "Review your order, then continue to eSewa. Approval remains pending." });
         return;
       }
       const proofsSummary = Object.entries(proofDocs)
@@ -401,10 +402,18 @@ export default function RequestSubAdminAccess() {
 
   const continueRequestPayment = async (request: AccessRequestStatus) => {
     if (!request.package_id) return;
+    const plan = accessPlans.find(item => item.id === request.package_id);
+    if (!plan) { toast({ title: "Plan unavailable", description: "The original plan is unavailable. Contact support before starting a different request." }); return; }
+    setPaymentReview({ requestId: request.id, plan, modules: request.requested_modules, entity: request.organization || "Awaiting assignment", reason: "Saved access request" });
+  };
+
+  const payReviewedRequest = async () => {
+    if (!paymentReview) return;
     setIsSubmitting(true);
     try {
+      await requireAvailableNeonPayment();
       const checkout = await stagingRequest("/api/v1/neon-staging/payments/checkout", { method: "POST",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "module_access_request", targetId: request.id, packageId: request.package_id }) });
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "module_access_request", targetId: paymentReview.requestId, packageId: paymentReview.plan.id }) });
       postToCheckout(checkout.checkoutUrl, checkout.checkoutFields);
     } catch (error) { toast({ variant: "destructive", title: "Payment could not be started", description: errorMessage(error) }); }
     finally { setIsSubmitting(false); }
@@ -420,6 +429,23 @@ export default function RequestSubAdminAccess() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <Navbar />
+      <Dialog open={Boolean(paymentReview)} onOpenChange={open => !open && !isSubmitting && setPaymentReview(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Review administrative access payment</DialogTitle>
+            <DialogDescription>Your request is saved. Verified payment and Super Admin approval are separate requirements.</DialogDescription></DialogHeader>
+          {paymentReview && <div className="space-y-3 text-sm">
+            <p className="break-all">Request: {paymentReview.requestId}</p>
+            <p>Modules: {paymentReview.modules.join(", ")}</p><p>Entity: {paymentReview.entity}</p>
+            <p>{paymentReview.reason}</p><p className="font-semibold">{paymentReview.plan.name}</p>
+            <p>{paymentReview.plan.currency} {Number(paymentReview.plan.price).toLocaleString()} total for {paymentReview.modules.length} module(s)</p>
+            <p>Validity: {accessValidityLabel(paymentReview.plan.duration_days)} from verified payment. Renewals extend existing access.</p>
+            <p>Payment: not confirmed · Administrative approval: separate review</p>
+            <p>Failed or cancelled payment does not delete your request. Return here to retry.</p>
+          </div>}
+          <DialogFooter><Button variant="outline" disabled={isSubmitting} onClick={() => setPaymentReview(null)}>Pay later</Button>
+            <Button disabled={isSubmitting} onClick={() => void payReviewedRequest()}>{isSubmitting ? "Opening…" : "Continue to eSewa"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-24 sm:py-28">
         <div className="mb-6 flex items-center justify-between">
@@ -575,7 +601,7 @@ export default function RequestSubAdminAccess() {
                             className={`rounded-xl border p-3 text-left transition ${selectedPlanId === plan.id ? "border-[#071a3d] bg-white ring-1 ring-[#071a3d]" : "border-amber-200 bg-white/70 hover:border-amber-300"}`}
                           >
                             <span className="block text-sm font-bold text-slate-900">{plan.name}</span>
-                            <span className="mt-1 block text-xs text-slate-600">{plan.currency} {Number(plan.price).toLocaleString()} · {plan.duration_days || 30} days</span>
+                            <span className="mt-1 block text-xs text-slate-600">{plan.currency} {Number(plan.price).toLocaleString()} total · {accessValidityLabel(plan.duration_days)} from verified payment{plan.features?.temporary_test === true ? ` · Temporary testing offer (${selectedModules.length} module${selectedModules.length === 1 ? "" : "s"})` : ""}</span>
                           </button>
                         ))}
                       </div>

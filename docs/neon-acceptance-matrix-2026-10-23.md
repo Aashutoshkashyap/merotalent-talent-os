@@ -302,3 +302,19 @@ sandbox credentials/configurations must remain separate.
   remains **401** with `Cache-Control: private, no-store`. Canonical Payments
   route **200**. No booking, ticket, entitlement, charge or settlement was created
   during these production checks. Full real-payment acceptance is not implied.
+
+## 25 October — temporary purchases, governance, ticketing and delivery
+
+| Workflow | Implemented / automated evidence | Remaining acceptance |
+|---|---|---|
+| Module test pricing | Existing package system, additive idempotent Super Admin operation; four single-module NPR 10 plans plus transparent exact bundles totalling NPR 20/30/40. One-day duration, explicit temporary names. Historic plans preserved. | Production setup and fresh browser/catalog evidence appended below after release. |
+| Request → payment → approval | Saved request, review summary, immediate payment step, private proof ownership, server plan total, separate financial/admin preview and notifications; payment alone grants nothing. | Real new request plus owner-completed wallet payment and subsequent approval cannot be claimed from mock settlement. |
+| Expiry / renewal | Paid-at-based initial validity, additive existing renewal model, duplicate callback guard, scoped renewal UI, server expiry checks, reminder/expiry email queue; free/trial/manual grants preserved. | Real elapsed-time and genuine paid renewal acceptance remain separate from rollback tests/time-controlled checks. |
+| Event tickets | Authorized organizer and Super Admin create/edit tier configuration, inventory/windows/benefits and one whole-group price. Separate attendee count, persisted participants, per-member passes, pending order reuse and expiry release. | No public event was invented or published for this verification. Actual owner event and wallet completion required for production ticket settlement. |
+| Mentor sessions | Exact-slot group capacity, verified-payment confirmation, failed/expired reservation release, snapshotted commission/earnings and payout-record safeguards. Existing cancellation/refund authorization retained. | Genuine paid booking, reschedule/completion and payout business acceptance still require real records and owner actions; no money transfer performed. |
+| Email | Existing Resend environment fallback only when Provider Center has no row; disabled/broken explicit configuration remains fail-closed. Durable receipts, request/approval notices, booking emails, expiry messages and post-response leased dispatch. Production enablement has a fresh historical-replay cutoff. | A queue row is not delivery. Fresh production provider acceptance/delivery evidence is recorded below only when observed. |
+
+No changes to ordinary job/application prices, external partnered-course redirects,
+historical source evidence, identity mappings or merchant secrets. No schema
+migration required. The existing rollback assets and unresolved source/ownership
+reconciliation gates remain in force.

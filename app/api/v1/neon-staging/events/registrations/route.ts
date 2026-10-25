@@ -4,6 +4,7 @@ import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { getAuthenticatedApplicationUser, NeonSessionUnavailable, requireSameOrigin } from "@/lib/server/neon-session";
 import { NeonEventsRepository, type EventRegistrationInput } from "@/lib/server/neon-events";
 import { z } from "zod";
+import { scheduleNeonEmailDelivery } from "@/lib/server/neon-email-dispatch";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -42,13 +43,16 @@ export async function POST(request: Request) {
     const body: unknown = await request.json().catch(() => null);
     const parsed = z.object({ eventId: z.string().uuid(), ticketTypeId: z.string().uuid().nullable().optional(),
       ticketQuantity: z.number().int().min(1).max(10).optional(),
+      attendeeCount: z.number().int().min(1).max(100).optional(),
+      teamName: z.string().trim().max(200).nullable().optional(),programId: z.string().uuid().nullable().optional(),
       participants: z.array(z.object({ fullName: z.string().trim().min(1).max(200),
-        email: z.string().email().optional(), phone: z.string().max(30).optional(), college: z.string().max(200).optional() })).max(10).optional(),
+        email: z.string().email().optional(), phone: z.string().max(30).optional(), college: z.string().max(200).optional() })).max(100).optional(),
       customResponses: z.record(z.string(), z.unknown()).optional() }).strict().safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "INVALID_REGISTRATION" }, { status: 422 });
 
     const repo = new NeonEventsRepository();
     const result = await repo.registerForEvent(actor, parsed.data as EventRegistrationInput);
+    scheduleNeonEmailDelivery();
 
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {

@@ -3,6 +3,7 @@ import { getBackendMode } from "@/lib/server/backend-mode";
 import { NeonAuthorizationError } from "@/lib/server/neon-authorization";
 import { NeonCheckoutService } from "@/lib/server/neon-checkout";
 import { getAuthenticatedApplicationUser, NeonSessionUnavailable, requireSameOrigin } from "@/lib/server/neon-session";
+import { scheduleNeonEmailDelivery } from "@/lib/server/neon-email-dispatch";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,6 +34,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference) || await hasPayload(request))
       return NextResponse.json({ error: "INVALID_VERIFICATION" }, { status: 422, headers });
     const result = await new NeonCheckoutService().recheckOwnPayment(actor, reference);
+    scheduleNeonEmailDelivery();
     return NextResponse.json({ data: result }, { headers });
   } catch (error) {
     if (error instanceof NeonAuthorizationError) return NextResponse.json({ error: error.code }, { status: error.status, headers });

@@ -5,6 +5,7 @@
 import { authenticateRequest, ApiAuthError } from "@/lib/server/auth";
 import { jsonApiResponse } from "@/lib/server/api-response";
 import { getBackendMode } from "@/lib/server/backend-mode";
+import { scheduleNeonEmailDelivery } from "@/lib/server/neon-email-dispatch";
 import { getAdminClient } from "@/lib/server/supabase";
 import {
   rescheduleMentorBooking,
@@ -175,16 +176,19 @@ export async function PATCH(request: Request) {
         const durationMinutes = body.durationMinutes ? Number(body.durationMinutes) : 60;
         const newEnd = new Date(new Date(newStart).getTime() + durationMinutes * 60000).toISOString();
         const result = await repo.rescheduleBooking(actor, body.bookingId, newStart, newEnd, body.reason);
+        scheduleNeonEmailDelivery();
         return jsonApiResponse({ data: result, error: null, meta: { requestId } }, 200);
       }
 
       if (action === "cancel") {
         const result = await repo.cancelBooking(actor, body.bookingId, body.reason);
+        scheduleNeonEmailDelivery();
         return jsonApiResponse({ data: result, error: null, meta: { requestId } }, 200);
       }
 
       if (action === "complete") {
         const result = await repo.completeBooking(actor, body.bookingId);
+        scheduleNeonEmailDelivery();
         return jsonApiResponse({ data: result, error: null, meta: { requestId } }, 200);
       }
 

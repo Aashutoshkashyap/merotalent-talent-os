@@ -1,4 +1,5 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
+import EventTicketManager from "@/components/events/EventTicketManager";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -137,6 +138,7 @@ export default function AdminEvents() {
     max_team_size: "4",
     min_per_order: "1",
     max_per_order: "10",
+    description: "",sales_start_at: "",sales_end_at: "",benefits: "",
   });
 
   const [managingRegistrationsEvent, setManagingRegistrationsEvent] = useState<EventItem | null>(null);
@@ -465,6 +467,7 @@ export default function AdminEvents() {
       max_team_size: "4",
       min_per_order: "1",
       max_per_order: "10",
+      description: "",sales_start_at: "",sales_end_at: "",benefits: "",
     });
   };
 
@@ -479,8 +482,12 @@ export default function AdminEvents() {
         total_quantity: newTicketType.total_quantity ? parseInt(newTicketType.total_quantity, 10) : null,
         min_team_size: parseInt(newTicketType.min_team_size, 10) || 1,
         max_team_size: parseInt(newTicketType.max_team_size, 10) || 1,
-        min_per_order: parseInt(newTicketType.min_per_order, 10) || 1,
-        max_per_order: parseInt(newTicketType.max_per_order, 10) || 10,
+        min_per_order: newTicketType.ticket_kind === "individual" ? parseInt(newTicketType.min_per_order, 10) || 1 : 1,
+        max_per_order: newTicketType.ticket_kind === "individual" ? parseInt(newTicketType.max_per_order, 10) || 10 : 1,
+        description: newTicketType.description.trim() || null,
+        sales_start_at: newTicketType.sales_start_at ? new Date(newTicketType.sales_start_at).toISOString() : null,
+        sales_end_at: newTicketType.sales_end_at ? new Date(newTicketType.sales_end_at).toISOString() : null,
+        eligibility_rules: { benefits: newTicketType.benefits.split("\n").map(item => item.trim()).filter(Boolean) },
         is_active: true,
       };
       if(isNeonStaging) await createNeonAdminEventPanel(managingTicketsEvent.id,"tickets",payload);
@@ -1091,11 +1098,11 @@ export default function AdminEvents() {
                 Ticket Tiers & Pricing: {managingTicketsEvent.title}
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Configure Free, Early Bird, General, VIP, or Team passes with quantities and limits.
+                Configure Early Bird, Regular, Silver, VIP or Group tiers. Individual prices are per attendee; group prices cover one complete group. Use NPR 10 only for tiers explicitly designated for temporary payment testing.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 mt-3">
+            {isNeonStaging ? <EventTicketManager eventId={managingTicketsEvent.id} /> : <div className="space-y-4 mt-3">
               <div className="rounded-2xl border p-4 bg-slate-50/50 space-y-3">
                 <span className="text-xs font-bold uppercase text-slate-700">Add New Ticket Tier</span>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -1129,7 +1136,7 @@ export default function AdminEvents() {
                     value={newTicketType.total_quantity}
                     onChange={(e) => setNewTicketType({ ...newTicketType, total_quantity: e.target.value })}
                   />
-                  {newTicketType.ticket_kind === "team" && (
+                  {newTicketType.ticket_kind !== "individual" && (
                     <>
                       <Input
                         type="number"
@@ -1146,6 +1153,16 @@ export default function AdminEvents() {
                     </>
                   )}
                 </div>
+                <label className="block text-sm">Description<Input value={newTicketType.description} onChange={e => setNewTicketType({...newTicketType,description:e.target.value})} /></label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="text-sm">Sale starts (local time)<Input type="datetime-local" value={newTicketType.sales_start_at} onChange={e => setNewTicketType({...newTicketType,sales_start_at:e.target.value})} /></label>
+                  <label className="text-sm">Sale ends (local time)<Input type="datetime-local" value={newTicketType.sales_end_at} onChange={e => setNewTicketType({...newTicketType,sales_end_at:e.target.value})} /></label>
+                  {newTicketType.ticket_kind === "individual" && <>
+                    <label className="text-sm">Minimum tickets per order<Input type="number" min="1" max="10" value={newTicketType.min_per_order} onChange={e => setNewTicketType({...newTicketType,min_per_order:e.target.value})} /></label>
+                    <label className="text-sm">Maximum tickets per order<Input type="number" min="1" max="10" value={newTicketType.max_per_order} onChange={e => setNewTicketType({...newTicketType,max_per_order:e.target.value})} /></label>
+                  </>}
+                </div>
+                <label className="block text-sm">Benefits (one per line)<Textarea value={newTicketType.benefits} onChange={e => setNewTicketType({...newTicketType,benefits:e.target.value})} /></label>
                 <Button onClick={handleAddTicketType} size="sm" className="bg-[#0073e6] hover:bg-[#0062c4] text-xs font-bold">
                   <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Ticket Tier
                 </Button>
@@ -1167,7 +1184,7 @@ export default function AdminEvents() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div>}
           </DialogContent>
         </Dialog>
       )}

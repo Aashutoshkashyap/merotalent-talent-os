@@ -3080,3 +3080,55 @@ production configuration change or live payment occurred in this continuation.
   `0fa2115` is live via READY deployment `dpl_5SxrrL9tDNoHR8dqGznsQC4QknB5`.
   Existing rollback and settlement safeguards remain. No real charge, new
   entitlement, provider settlement or migration-completion claim was made.
+
+### 25 October — temporary purchases and product lifecycle
+
+- Additive configuration through Super Admin Packages: `temporaryAccessOffers`
+  and `/api/v1/admin/temporary-access-offers` create exact-scope bundles for all
+  15 nonempty College/Events/Jobs/Mentor selections. Stored price is NPR 10 per
+  module (10/20/30/40), stored duration one day (24 hours); existing Dashain,
+  complimentary/default-free records are never updated. Repeat setup is a no-op.
+  No schema migration or legacy migration edit is needed; the package model
+  already has duration, feature, scope and public-selection fields.
+- `access-plans.ts`, module access, College activation and assigned renewal
+  enforce exact scope for these bundles, preserving historical bundle behavior.
+  `RequestSubAdminAccess` saves the owned request and opens a review/payment step;
+  it preserves pending requests for retry. Verified payment never approves a
+  request or assigns an entity. `AdminAccessRequests` has an expanded financial
+  preview; `Payments` exposes Neon scope renewal and calculates expired labels.
+- `EventTicketManager`, event ticket-configuration route and role-workspace
+  service use existing identity/capability/entity/entitlement guards. Early Bird,
+  Regular, Group and Silver are configurable names, not invented product prices.
+  Group price covers one group; attendee count is separate from charged units.
+  Registration persists participants and program/team data, validates group/order
+  bounds, and issues one pass/member only when free or authoritatively paid.
+  Public stock is derived from real reservations; matching pending retries reuse
+  their order. `neon-purchase-expiry` releases expired/unpaid holds (including
+  orphan holds), preserving late-success/manual-reconciliation safeguards.
+- Mentor group slots can share only the same service and exact time interval up
+  to configured capacity, with repeat-student protection. Commission and mentor
+  earnings are snapshotted at checkout and recorded on verified success; the
+  existing payout recorder cannot silently change that split. No payout is sent.
+- `neon-access-notifications`, `neon-reservation-email`, payment receipts and
+  maintenance reuse durable notifications and existing Resend. Payment/approval
+  notices have separate idempotency keys; expiry reminders and expiry emails are
+  queued. Post-response `after` dispatch plus lease-bound retries avoid waiting
+  for daily cron. Provider acceptance is not labelled inbox delivery.
+- Production email had no Provider Center row; read-only SQL confirmed it. The
+  existing encrypted Vercel Resend/from/cron variables were present. Added only
+  delivery enablement plus cutoff `2026-10-25T06:17:56.334Z`, excluding historical
+  queue replay. Merchant configuration and payment release settings unchanged.
+- Targeted standard tests and rollback-only Neon tests verify actual SQL,
+  preserved plans, two-module NPR 20 pricing, separate approval/assignment,
+  precise paid-at +24-hour activation, group pass issuance, duplicate return
+  protection, pending/expired hold handling and notification persistence.
+  Injected provider COMPLETE responses remain application tests, not settlement.
+- Release/browser/provider evidence will be appended after execution. Real
+  wallet confirmation is an owner action; no new financial settlement or full
+  migration acceptance is claimed. Existing source/identity recovery gates remain.
+- Final standard verification: **214 files / 1,069 tests PASS**, typecheck,
+  production build and diff PASS; lint **0 errors / 36 existing warnings**.
+  Selected isolated Neon checks: **16 tests PASS across eight files**, with the
+  updated temporary-purchase case rerun alone after correcting the duplicate
+  registration expectation. Overlapping earlier fixture runs timed out on shared
+  rows; serial reruns passed. No synthetic fixtures committed to production.

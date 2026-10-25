@@ -74,7 +74,7 @@ interface Payment extends QueryResultRow {
   id:string;user_id:string;payment_type:string;reference_id:string|null;amount:string;currency:string;
   gateway:string|null;payment_method:string|null;status:string;reconciliation_status:string|null;
   verification_note:string|null;payout_status:string|null;payout_reference:string|null;payout_amount:string|null;
-  commission_amount:string|null;
+  commission_amount:string|null;metadata?:Record<string,unknown>|null;
 }
 const money=(value:number)=>{
   if(!Number.isFinite(value)||value<0||value>100000000||Math.abs(value*100-Math.round(value*100))>0.00001)
@@ -90,7 +90,7 @@ async function lockedPayment(client: PoolClient,id:string) {
   if(!uuid.test(id))fail(400,"INVALID_PAYMENT_ID","Select a valid transaction.");
   const row=(await client.query<Payment>(`SELECT id,user_id,payment_type,reference_id,amount,currency,gateway,
     payment_method,status,reconciliation_status,verification_note,payout_status,payout_reference,payout_amount,
-    commission_amount FROM public.payments WHERE id=$1::uuid AND deleted_at IS NULL FOR UPDATE`,[id])).rows[0];
+    commission_amount,metadata FROM public.payments WHERE id=$1::uuid AND deleted_at IS NULL FOR UPDATE`,[id])).rows[0];
   if(!row)fail(404,"PAYMENT_NOT_FOUND","Transaction unavailable.");
   return row;
 }
@@ -167,6 +167,9 @@ export async function recordNeonMentorPayout(actor:NeonActor,input:{id:string;am
     if(payment.payment_type!=="mentor_booking"||payment.status!=="success"||!payment.reference_id)
       fail(409,"PAYOUT_PAYMENT_UNVERIFIED","Payouts require a successful mentor-booking payment.");
     if(payout+commission!==money(Number(payment.amount)))fail(409,"PAYOUT_AMOUNT_MISMATCH","Payout plus commission must equal the verified gross payment.");
+    if(payment.metadata?.mentor_commission_rate !== undefined &&
+      (commission!==money(Number(payment.commission_amount)) || payout!==money(Number(payment.payout_amount))))
+      fail(409,"PAYOUT_COMMISSION_MISMATCH","Payout must preserve the commission and mentor earnings recorded at checkout.");
     const booking=(await client.query<{mentor_user_id:string}>(`SELECT m.user_id AS mentor_user_id FROM public.mentor_bookings b
       JOIN public.mentors m ON m.id=b.mentor_id WHERE b.id=$1::uuid AND b.student_id=$2::uuid
       AND b.amount=$3 AND b.currency=$4 AND b.payment_status='success' AND b.payment_id=$5::uuid

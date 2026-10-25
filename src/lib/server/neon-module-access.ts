@@ -8,6 +8,7 @@ import { validateManagedMediaBytes } from "./neon-managed-media";
 import { createPresignedDownloadUrl, deleteObject, headObject, uploadObject } from "./storage";
 import { appendNotificationEvent } from "./neon-application-events";
 import {requireNeonPaidInitiation} from './neon-paid-initiation';
+import { notifyNeonAccessRequest } from "./neon-access-notifications";
 
 type Client = Pick<PoolClient, "query">;
 type Run = <T>(operation: (client: PoolClient) => Promise<T>) => Promise<T>;
@@ -66,7 +67,9 @@ async function planForModules(client: Client, packageId: string, requested: stri
     duration_days: number | null; billing_interval: string }>(`
     SELECT id,price::float AS price,currency,features,duration_days,billing_interval FROM public.packages
     WHERE id=$1::uuid AND is_active AND is_publicly_selectable AND deleted_at IS NULL
-      AND package_kind='paid' AND module_scope @> $2::text[] FOR SHARE`, [packageId, requested])).rows[0];
+      AND package_kind='paid' AND module_scope @> $2::text[]
+      AND (features->>'exact_module_scope' IS DISTINCT FROM 'true' OR cardinality(module_scope)=cardinality($2::text[]))
+      FOR SHARE`, [packageId, requested])).rows[0];
   if (!plan || !Number.isFinite(plan.price) || plan.price <= 0 || Math.round(plan.price * 100) !== plan.price * 100)
     fail(409, "PLAN_UNAVAILABLE", "This public paid plan does not cover all requested modules.");
   return plan;
@@ -94,8 +97,8 @@ export async function activateVerifiedNeonModuleAccess(client: Client, requestId
   if (row.payment_status !== "success" || !row.payment_id || !row.package_id)
     return { activated: false, reason: "awaiting_payment" };
   const plan = await planForModules(client, row.package_id, row.requested_modules);
-  const verified = (await client.query<{ id: string; paid_at: Date }>(`
-    SELECT p.id,p.paid_at FROM public.payments p JOIN public.profiles profile ON profile.user_id=p.user_id
+  const verified = (await client.query<{ id: string; paid_at: Date | string }>(`
+    SELECT p.id,p.paid_at::text AS paid_at FROM public.payments p JOIN public.profiles profile ON profile.user_id=p.user_id
     WHERE p.id=$1::uuid AND p.user_id=$2::uuid AND p.reference_id=$3::uuid
       AND p.payment_type='module_access_request' AND p.status='success' AND p.deleted_at IS NULL
       AND p.amount=$4 AND p.currency=$5 AND profile.account_status='active' AND profile.deleted_at IS NULL
@@ -122,14 +125,13 @@ export async function activateVerifiedNeonModuleAccess(client: Client, requestId
       WHERE payment_id=$1::uuid AND module_key=$2 AND entity_type=$3 AND entity_id=$4::uuid`,
     [row.payment_id, assignment.module_key, assignment.entity_type, assignment.entity_id])).rows[0];
     if (prior) { count++; continue; }
-    const start = new Date(verified.paid_at);
-    const end = new Date(start.getTime() + days * 86_400_000);
     await client.query(`INSERT INTO public.module_entitlements(user_id,module_key,entity_type,entity_id,package_id,
       source,status,start_at,expires_at,features,payment_id,reason)
-      VALUES($1::uuid,$2,$3,$4::uuid,$5::uuid,'ESEWA_PURCHASE','active',$6,$7,$8::jsonb,$9::uuid,
+      VALUES($1::uuid,$2,$3,$4::uuid,$5::uuid,'ESEWA_PURCHASE','active',$6::timestamptz,
+        $6::timestamptz+($7::int*interval '1 day'),$8::jsonb,$9::uuid,
         'Verified payment for approved delegated access request')`,
     [row.user_id, assignment.module_key, assignment.entity_type, assignment.entity_id, plan.id,
-      start, end, JSON.stringify(plan.features ?? {}), row.payment_id]);
+      verified.paid_at, days, JSON.stringify(plan.features ?? {}), row.payment_id]);
     count++;
   }
   return { activated: count > 0, reason: count ? "active" : "awaiting_scope", entitlementCount: count };
@@ -143,7 +145,7 @@ export class NeonModuleAccess {
       const profile = await assertActor(client, actor);
       const options = (await client.query(`SELECT module_key AS id,label,description AS desc FROM public.module_capabilities
         WHERE is_active AND is_requestable AND module_key=ANY($1::text[]) ORDER BY label`, [modules])).rows;
-      const plans = (await client.query(`SELECT id,name,price::float AS price,currency,duration_days,module_scope
+      const plans = (await client.query(`SELECT id,name,description,price::float AS price,currency,duration_days,module_scope,features
         FROM public.packages WHERE is_active AND is_publicly_selectable AND package_kind='paid'
           AND deleted_at IS NULL ORDER BY price,id`)).rows;
       const colleges = (await client.query(`SELECT id,name,location FROM public.institutes
@@ -156,8 +158,15 @@ export class NeonModuleAccess {
     return this.run(async client => {
       await assertActor(client, actor, admin);
       const requests = (await client.query(`SELECT r.*,COALESCE(p.full_name,r.user_name) AS user_name,
-        COALESCE(p.email,r.user_email) AS user_email,p.phone AS applicant_phone,i.name AS college_name
+        COALESCE(p.email,r.user_email) AS user_email,p.phone AS applicant_phone,i.name AS college_name,
+        plan.name AS plan_name,plan.price::float AS amount_due,plan.currency,plan.duration_days,
+        payment.amount::float AS amount_paid,payment.gateway AS payment_provider,
+        payment.gateway_transaction_id AS transaction_reference,payment.paid_at,
+        (SELECT min(start_at) FROM public.module_entitlements e WHERE e.payment_id=r.payment_id) AS activated_at,
+        (SELECT max(expires_at) FROM public.module_entitlements e WHERE e.payment_id=r.payment_id) AS expires_at
         FROM public.sub_admin_requests r LEFT JOIN public.profiles p ON p.user_id=r.user_id
+        LEFT JOIN public.packages plan ON plan.id=r.package_id
+        LEFT JOIN public.payments payment ON payment.id=r.payment_id
         LEFT JOIN public.institutes i ON i.id=CASE WHEN r.requested_entity_scopes->0->>'entity_type'='college'
           AND r.requested_entity_scopes->0->>'entity_id' ~ '^[0-9a-f-]{36}$'
           THEN (r.requested_entity_scopes->0->>'entity_id')::uuid ELSE NULL END
@@ -216,13 +225,7 @@ export class NeonModuleAccess {
       await client.query(`INSERT INTO public.audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
         VALUES($1::uuid,'request_module_access','sub_admin_requests',$2::text,
           jsonb_build_object('modules',$3::text[],'package_id',$4::uuid))`, [actor.userId, row.id, keys, input.packageId]);
-      const notices = (await client.query<{ id: string; recipient_id: string }>(`INSERT INTO public.notifications(recipient_id,title,message,type,category,channel,status,entity_type,entity_id,action_url)
-        SELECT DISTINCT r.user_id,'Module access requested','A user submitted a delegated module access request.',
-          'info','sub_admin_request','dashboard','queued','sub_admin_request',$1::uuid,'/admin/access-requests'
-        FROM public.user_roles r JOIN public.profiles p ON p.user_id=r.user_id
-        WHERE r.role IN ('admin','super_admin') AND p.account_status='active' AND p.deleted_at IS NULL
-        RETURNING id,recipient_id`, [row.id])).rows;
-      for (const notice of notices) await appendNotificationEvent(client, notice.recipient_id, notice.id);
+      await notifyNeonAccessRequest(client,row.id,"submitted");
       return { ...row, existing_request: false };
     });
   }
@@ -292,11 +295,7 @@ export class NeonModuleAccess {
       await client.query(`INSERT INTO public.audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
         VALUES($1::uuid,$2,'sub_admin_requests',$3::text,jsonb_build_object('user_id',$4::uuid,'modules',$5::text[]))`,
       [actor.userId, approve ? "approve_module_access" : "reject_module_access", id, row.user_id, row.requested_modules]);
-      const notification = (await client.query<{ id: string }>(`INSERT INTO public.notifications(recipient_id,title,message,type,category,channel,status,entity_type,entity_id,action_url)
-        VALUES($1::uuid,$2,$3,'info','sub_admin_request','dashboard','queued','sub_admin_request',$4::uuid,'/request-access') RETURNING id`,
-      [row.user_id, approve ? "Module access approved" : "Module access request rejected",
-        approve ? "Your module capability is approved. Entity assignments control private access." : (note.trim() || "Your request was not approved."), id])).rows[0];
-      await appendNotificationEvent(client, row.user_id, notification.id);
+      await notifyNeonAccessRequest(client,id,approve ? "approved" : "rejected");
       return { id, status, duplicate: false, activation };
     });
   }

@@ -302,7 +302,7 @@ export async function listNeonAdminEventChildren(actor: NeonActor, rawId: string
   const statements: Record<string,string>={
     programs: `SELECT id,event_id,title,slug,description,start_time,end_time,venue,capacity,requires_registration,speaker_or_organizer,status,display_order
       FROM public.event_programs WHERE event_id=$1::uuid AND deleted_at IS NULL ORDER BY start_time,id`,
-    tickets: `SELECT id,event_id,program_id,name,description,ticket_kind,min_team_size,max_team_size,price,currency,total_quantity,quantity_sold,min_per_order,max_per_order,sales_start_at,sales_end_at,is_active
+    tickets: `SELECT id,event_id,program_id,name,description,ticket_kind,min_team_size,max_team_size,price,currency,total_quantity,quantity_sold,min_per_order,max_per_order,sales_start_at,sales_end_at,eligibility_rules,is_active
       FROM public.event_ticket_types WHERE event_id=$1::uuid AND deleted_at IS NULL ORDER BY price,id`,
     registrations: `SELECT r.id,r.registration_number,r.team_name,r.status,r.payment_status,r.ticket_quantity,r.attendee_count,r.total_amount,r.registered_at,
       jsonb_build_object('id',p.user_id,'email',p.email,'full_name',p.full_name) AS "user",
@@ -320,9 +320,11 @@ export async function listNeonAdminEventChildren(actor: NeonActor, rawId: string
 
 const programSchema=z.object({title:z.string().trim().min(1).max(240),start_time:z.string().datetime({offset:true}),end_time:z.string().datetime({offset:true}),
   venue:z.string().trim().max(240).nullable(),capacity:z.number().int().min(1).nullable(),speaker_or_organizer:z.string().trim().max(240).nullable()}).strict();
-const ticketSchema=z.object({name:z.string().trim().min(1).max(180),ticket_kind:z.enum(["individual","team"]),price:z.number().min(0).max(10_000_000),currency:z.literal("NPR"),
+export const ticketSchema=z.object({name:z.string().trim().min(1).max(180),ticket_kind:z.enum(["individual","team","group"]),price:z.number().min(0).max(10_000_000).multipleOf(0.01),currency:z.literal("NPR"),
+  description:z.string().trim().max(2000).nullable().optional(),sales_start_at:z.string().datetime({offset:true}).nullable().optional(),sales_end_at:z.string().datetime({offset:true}).nullable().optional(),
+  eligibility_rules:z.object({benefits:z.array(z.string().trim().min(1).max(200)).max(20)}).strict().optional(),
   total_quantity:z.number().int().min(1).nullable(),min_team_size:z.number().int().min(1).max(100),max_team_size:z.number().int().min(1).max(100),
-  min_per_order:z.number().int().min(1).max(100),max_per_order:z.number().int().min(1).max(100),is_active:z.boolean()}).strict();
+  min_per_order:z.number().int().min(1).max(10),max_per_order:z.number().int().min(1).max(10),is_active:z.boolean()}).strict();
 export async function createNeonAdminEventChild(actor: NeonActor, rawId: string, kind: string, raw: unknown,
   run: Run=withTransaction) {
   requireSuperAdmin(actor);
@@ -333,6 +335,10 @@ export async function createNeonAdminEventChild(actor: NeonActor, rawId: string,
   if (kind === "programs" && new Date(String(value.end_time))<=new Date(String(value.start_time))) validation("end_time","Session end must follow its start.");
   if (kind === "tickets" && (Number(value.max_team_size)<Number(value.min_team_size) || Number(value.max_per_order)<Number(value.min_per_order)))
     validation("max_per_order","Maximum team and order sizes must be at least their minimums.");
+  if (kind === "tickets" && value.sales_start_at && value.sales_end_at && new Date(String(value.sales_end_at))<=new Date(String(value.sales_start_at)))
+    validation("sales_end_at","Sale end must follow sale start.");
+  if (kind === "tickets" && value.ticket_kind !== "individual" && (value.min_per_order !== 1 || value.max_per_order !== 1))
+    validation("max_per_order","Group tickets are priced per whole group; one group per order.");
   return run(async client=> {
     const query: Query=(sql,params)=>client.query(sql,[...params]).then(result=>result.rows);
     await assertAdmin(actor,query,true);

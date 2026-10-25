@@ -26,6 +26,14 @@ beforeEach(() => {
 });
 
 describe("Neon controlled staging email queue", () => {
+  it("reuses the server Resend configuration only when Provider Center has no email row", async () => {
+    const load = vi.fn().mockResolvedValue([]);
+    const configured = { ...environment, RESEND_API_KEY: "unit-only-resend-key", EMAIL_FROM: "MeroTalent <contact@example.test>" };
+    expect((await resolveNeonEmailProvider(load, configured))?.name).toBe("resend");
+    expect(await resolveNeonEmailProvider(load, { ...configured, EMAIL_FROM: "" })).toBeNull();
+    load.mockResolvedValue([{ provider_name: "resend", is_enabled: false }]);
+    expect(await resolveNeonEmailProvider(load, configured)).toBeNull();
+  });
   it("requires independent production opt-in, paired runtime flags, and an explicit UTC cutoff", async () => {
     const production = { ...environment, MEROTALENT_BACKEND_MODE: "neon-production",
       NEXT_PUBLIC_MEROTALENT_BACKEND_MODE: "neon-production" };

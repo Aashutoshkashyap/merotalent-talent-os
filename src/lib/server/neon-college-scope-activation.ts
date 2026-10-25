@@ -20,16 +20,17 @@ export async function activateVerifiedCollegeScope(db: Client, requestId: string
   }
 
   const verified = (await db.query<{ payment_id: string; price: number; duration_days: number | null;
-    billing_interval: string | null; features: Record<string, unknown>; subscription_id: string | null }>(`
+    billing_interval: string | null; features: Record<string, unknown>; subscription_id: string | null;paid_at:Date }>(`
     SELECT payment.id AS payment_id,plan.price::float AS price,plan.duration_days,
-      plan.billing_interval,plan.features,payment.subscription_id
+      plan.billing_interval,plan.features,payment.subscription_id,payment.paid_at
     FROM public.entity_scope_requests r
     JOIN public.payments payment ON payment.id=$2::uuid AND payment.user_id=r.user_id
       AND payment.reference_id=r.id AND payment.payment_type='module_access_request'
-      AND payment.status='success'
+      AND payment.status='success' AND payment.paid_at IS NOT NULL
     JOIN public.packages plan ON plan.id=$3::uuid AND plan.package_kind='paid'
       AND plan.is_active AND plan.deleted_at IS NULL
       AND plan.module_scope @> ARRAY['college']::text[]
+      AND (plan.features->>'exact_module_scope' IS DISTINCT FROM 'true' OR cardinality(plan.module_scope)=1)
     WHERE r.id=$1::uuid AND payment.amount=plan.price
       AND payment.currency=plan.currency
       AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.user_id=r.user_id
@@ -54,7 +55,8 @@ export async function activateVerifiedCollegeScope(db: Client, requestId: string
     SELECT id,expiry_date FROM public.subscriptions WHERE user_id=$1::uuid
       AND entity_type='college' AND entity_id=$2::uuid AND status IN ('active','trialing')
       AND deleted_at IS NULL ORDER BY expiry_date DESC LIMIT 1 FOR UPDATE`, [request.user_id, request.entity_id])).rows[0];
-  const start = existing && new Date(existing.expiry_date).getTime() > Date.now() ? new Date(existing.expiry_date) : new Date();
+  const paidAt = new Date(verified.paid_at);
+  const start = existing && new Date(existing.expiry_date).getTime() > paidAt.getTime() ? new Date(existing.expiry_date) : paidAt;
   const expiry = new Date(start.getTime() + duration * 86_400_000);
   const subscription = existing
     ? (await db.query<{ id: string }>(`
@@ -65,16 +67,16 @@ export async function activateVerifiedCollegeScope(db: Client, requestId: string
     : (await db.query<{ id: string }>(`
       INSERT INTO public.subscriptions(user_id,package_id,entity_type,entity_id,start_date,expiry_date,
         status,payment_status,metadata)
-      VALUES ($1::uuid,$2::uuid,'college',$3::uuid,now(),$4,'active','success',
+      VALUES ($1::uuid,$2::uuid,'college',$3::uuid,$7,$4,'active','success',
         jsonb_build_object('payment_id',$5::uuid,'scope_request_id',$6::uuid)) RETURNING id`,
-      [request.user_id, request.package_id, request.entity_id, expiry, request.payment_id, request.id])).rows[0];
+      [request.user_id, request.package_id, request.entity_id, expiry, request.payment_id, request.id,paidAt])).rows[0];
   const entitlement = (await db.query<{ id: string }>(`
     INSERT INTO public.module_entitlements(user_id,module_key,entity_type,entity_id,package_id,source,status,
       start_at,expires_at,features,payment_id,reason)
-    VALUES ($1::uuid,'college','college',$2::uuid,$3::uuid,'ESEWA_PURCHASE','active',now(),$4,
+    VALUES ($1::uuid,'college','college',$2::uuid,$3::uuid,'ESEWA_PURCHASE','active',$7,$4,
       $5::jsonb,$6::uuid,'Verified eSewa payment for approved College request') RETURNING id`,
     [request.user_id, request.entity_id, request.package_id, expiry,
-      JSON.stringify(verified.features ?? {}), request.payment_id])).rows[0];
+      JSON.stringify(verified.features ?? {}), request.payment_id,paidAt])).rows[0];
   await db.query(`UPDATE public.payments SET subscription_id=$2::uuid,updated_at=now() WHERE id=$1::uuid`,
     [request.payment_id, subscription.id]);
   await db.query(`INSERT INTO public.audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
