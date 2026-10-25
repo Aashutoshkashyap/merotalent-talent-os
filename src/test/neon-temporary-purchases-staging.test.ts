@@ -68,6 +68,10 @@ describe("isolated temporary purchases, governance and group inventory",()=>{
       const workspace=new NeonRoleWorkspaces(run);
       const tier=await workspace.ticketConfiguration(admin,eventId,{name:'Group Booking',ticket_kind:'group',price:10,currency:'NPR',total_quantity:1,
         min_team_size:2,max_team_size:3,min_per_order:1,max_per_order:1,is_active:true,eligibility_rules:{benefits:['Silver access']}}) as {id:string};
+      const publicEvents=new NeonEventsRepository({query:async<T extends import('pg').QueryResultRow>(sql:string,params:readonly unknown[]=[])=>
+        (await db.query<T>(sql,[...params])).rows});
+      expect((await publicEvents.listPublicEvents({search:'Isolated group inventory'})).find(row=>row.id===eventId))
+        .toMatchObject({ticket_pricing:{price:10,currency:'NPR'}});
       const events=new NeonEventsRepository();
       const registration=await events.registerForEvent(actor,{eventId,ticketTypeId:tier.id,ticketQuantity:1,attendeeCount:2,
         teamName:'Isolated group',participants:[{fullName:'Member One'},{fullName:'Member Two'}]},db);

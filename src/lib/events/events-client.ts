@@ -77,6 +77,7 @@ export interface EventDetail {
   registration_deadline?: string | null;
   capacity?: number | null;
   ticket_price: number;
+  ticket_pricing?: { price: number; currency: string } | null;
   currency: string;
   status: string;
   lifecycle_status?: string;

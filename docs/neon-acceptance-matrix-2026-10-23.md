@@ -353,3 +353,10 @@ JSON: **1,081 tests /216 files PASS**, typecheck/build/diff PASS, lint zero erro
 and 35 warnings. These checks do not establish provider settlement or constitute
 approval of any real applicant. The request page remains available for legitimate
 proof upload and operator-completed payment; no new credential is required.
+
+The final browser-driven ticket presentation correction shows active tier
+starting prices instead of falsely advertising free admission from an old base
+price. Its real Neon SQL regression passed in the rollback-only purchase fixture;
+the standard suite now passes **1,086 tests /217 files**. The owner deferred the
+live-wallet test, so settlement, paid approval/assignment, receipt delivery and
+elapsed production renewal/expiry remain unverified, not silently waived.

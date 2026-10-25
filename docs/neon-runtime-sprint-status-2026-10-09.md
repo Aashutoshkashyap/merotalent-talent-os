@@ -3187,3 +3187,12 @@ production configuration change or live payment occurred in this continuation.
   Genuine payment, purchase-receipt delivery, elapsed production expiry/renewal
   and paid approval/assignment acceptance remain unverified until legitimate
   applicant proof and a human-completed wallet transaction exist.
+- Browser review found base event pricing could incorrectly advertise free
+  admission when all active ticket tiers were paid. `price-display.ts`, public
+  event directory/detail and Admin Events now distinguish tier starting prices
+  from base admission. Directory SQL returns the active starting tier; the
+  rollback-only temporary-purchase fixture verifies that actual SQL. Five new
+  display cases cover paid tiers on a free base, inactive/free tiers, base-only
+  pricing and mixed currencies. No stored event price was changed by this fix.
+  Full standard suite: **217 files /1,086 tests PASS**. Operator will perform the
+  real purchase later; that financial acceptance is deliberately still open.

@@ -94,7 +94,11 @@ export class NeonEventsRepository {
       SELECT id, organizer_user_id, organizer_type, organizer_id, title, slug,
              description, event_type, format, location, meeting_url, cover_image_url,
              start_date, end_date, registration_deadline, capacity, ticket_price::float AS ticket_price,
-             currency, status, approval_status, is_active, is_featured, created_at
+             currency, status, approval_status, is_active, is_featured, created_at,
+             (SELECT jsonb_build_object('price',t.price,'currency',t.currency)
+              FROM public.event_ticket_types t WHERE t.event_id=events.id
+                AND t.is_active=true AND t.deleted_at IS NULL
+              ORDER BY t.price,t.id LIMIT 1) AS ticket_pricing
       FROM public.events
       WHERE is_active = true AND status IN ('approved', 'published')
         AND approval_status = 'approved' AND deleted_at IS NULL

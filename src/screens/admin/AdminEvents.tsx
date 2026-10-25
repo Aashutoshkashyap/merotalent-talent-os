@@ -710,8 +710,9 @@ export default function AdminEvents() {
                     <TableCell>
                       <div className="text-xs">
                         <span className="font-bold text-slate-900">
-                          {item.event_type === "free" ? "Free" : `${item.currency} ${item.ticket_price}`}
+                          Base: {Number(item.ticket_price) === 0 ? "Free" : `${item.currency} ${item.ticket_price}`}
                         </span>
+                        <p className="text-[11px] text-slate-500">Ticket tiers may set separate prices.</p>
                         {item.capacity && (
                           <p className="text-[11px] text-slate-400">{item.capacity} seats</p>
                         )}

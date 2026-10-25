@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchPublicEventDetail, type EventDetail } from "@/lib/events/events-client";
 import EventRegistrationModal from "@/components/events/EventRegistrationModal";
+import { displayedEventPrice } from "@/lib/events/price-display";
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -60,7 +61,8 @@ export default function EventDetailPage() {
     setRegisterOpen(true);
   };
 
-  const isFree = event?.event_type === "free" || Number(event?.ticket_price) === 0;
+  const price = displayedEventPrice(event);
+  const isFree = price.isFree;
 
   return (
     <PublicPageLayout activeNavId="events">
@@ -114,7 +116,7 @@ export default function EventDetailPage() {
                   >
                     {isFree
                       ? "Free Registration"
-                      : `${event.currency} ${Number(event.ticket_price).toLocaleString()}`}
+                      : price.label}
                   </span>
                   {event.is_multi_program && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-3 py-1 text-purple-700">
@@ -317,7 +319,7 @@ export default function EventDetailPage() {
                   <div>
                     <span className="text-xs font-bold uppercase text-slate-500">Registration</span>
                     <h3 className="mt-1 text-2xl font-black text-slate-900">
-                      {isFree ? "Free Registration" : `From ${event.currency} ${Number(event.ticket_price).toLocaleString()}`}
+                      {isFree ? "Free Registration" : price.label}
                     </h3>
                   </div>
 

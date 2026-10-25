@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchPublicEvents, fetchEventCategories, type EventDetail, type EventCategory } from "@/lib/events/events-client";
 import EventRegistrationModal from "@/components/events/EventRegistrationModal";
 import DirectoryLoadError from "@/components/landing/DirectoryLoadError";
+import { displayedEventPrice } from "@/lib/events/price-display";
 
 export default function EventsPage() {
   const { session, user } = useAuth();
@@ -49,7 +50,7 @@ export default function EventsPage() {
   const filteredEvents = events.filter((e) => {
     const matchesCategory = selectedCategory === "all" || e.category?.slug === selectedCategory;
     const matchesFormat = selectedFormat === "all" || e.format === selectedFormat;
-    const matchesType = selectedType === "all" || e.event_type === selectedType;
+    const matchesType = selectedType === "all" || (displayedEventPrice(e).isFree ? "free" : "paid") === selectedType;
     const matchesSearch = [
       e.title,
       e.short_description || "",
@@ -187,7 +188,8 @@ export default function EventsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((eventItem) => {
-              const isFreeEvent = eventItem.event_type === "free" || Number(eventItem.ticket_price) === 0;
+              const price = displayedEventPrice(eventItem);
+              const isFreeEvent = price.isFree;
 
               return (
                 <div
@@ -231,7 +233,7 @@ export default function EventsPage() {
                               : "bg-amber-400 text-slate-900"
                           }`}
                         >
-                          {isFreeEvent ? "Free" : `${eventItem.currency} ${Number(eventItem.ticket_price).toLocaleString()}`}
+                          {price.label}
                         </span>
                       </div>
                     </div>
