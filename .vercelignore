@@ -1,0 +1,16 @@
+# Ship application sources, never local builds, migration credentials or captures.
+.git/
+.next/
+.next-neon-staging/
+node_modules/
+.vercel/
+.env
+.env.*
+.migration.env
+.seeds/
+*.log
+*.tsbuildinfo
+.DS_Store
+Education_Directory_Aug2026_With_Descriptions.xlsx
+Edusanjal - Your Guide to Education in Nepal.html
+Edusanjal - Your Guide to Education in Nepal_files/

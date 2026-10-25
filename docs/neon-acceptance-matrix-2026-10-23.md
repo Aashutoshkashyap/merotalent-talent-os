@@ -282,3 +282,6 @@ sandbox credentials/configurations must remain separate.
   **0 errors / 36 pre-existing warnings**. Release evidence follows execution.
   Public enablement requires the owner's
   explicit decision; no real charge or new settlement is claimed by these checks.
+- Stopped the initial CLI upload before a deployment was created: it included a
+  1 GB local staging build cache. Added explicit `.vercelignore` exclusions for
+  local builds, credentials and research captures before retrying the release.
