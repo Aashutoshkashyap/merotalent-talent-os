@@ -134,7 +134,8 @@ export class NeonCheckoutService {
         if (!row || row.user_id !== actor.userId) deny("REGISTRATION_NOT_FOUND", "Registration not found.", 404);
         if (row.status !== "pending" || row.payment_status !== "pending") deny("REGISTRATION_NOT_PAYABLE", "Registration is not awaiting payment.", 409);
         const unit = row.unit_price ?? row.event_price;
-        if (Number(row.total_amount) !== Number(unit) * row.ticket_quantity) deny("PRICE_CHANGED", "The registration price no longer matches its ticket.", 409);
+        if (Math.round(money(row.total_amount)*100) !== Math.round(money(unit)*100)*row.ticket_quantity)
+          deny("PRICE_CHANGED", "The registration price no longer matches its ticket.", 409);
         amount = money(row.total_amount); currency = row.tier_currency ?? row.event_currency;
       } else if(kind==='assigned_scope'){
         if(!selectedPackageId)deny('INVALID_PLAN','Select a valid renewal plan.',400);

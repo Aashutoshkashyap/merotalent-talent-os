@@ -3173,3 +3173,17 @@ production configuration change or live payment occurred in this continuation.
   **unverified**, even though public initiation and email delivery work. A real
   applicant must provide legitimate proof and complete the wallet confirmation;
   no new credential is requested in chat and no charge was initiated by the agent.
+- Competition follow-up `bab6586bdd08c289d1b654b7030f1d5ae0897036` is pushed,
+  CI `40170453932` passed both jobs and production deployment
+  `dpl_Difu3gMuJVCTU4wiZUaDt3xe5XfA` is READY. The authenticated live browser
+  displays the preserved Online MCQ competition through the Neon endpoint and
+  the Events & tickets navigation. No competition record was modified for UAT.
+- Final payment hardening compares event totals in integer paisa rather than
+  binary floating multiplication; three decimal-price regression cases pass.
+  Ticket-configuration writes now use the existing bounded JSON reader and
+  return its explicit validation errors. Final local revision: **216 files /
+  1,081 tests PASS**, typecheck, production build and diff PASS; lint **0 errors /
+  35 warnings**. The legacy SDK build warning remains documented, not suppressed.
+  Genuine payment, purchase-receipt delivery, elapsed production expiry/renewal
+  and paid approval/assignment acceptance remain unverified until legitimate
+  applicant proof and a human-completed wallet transaction exist.

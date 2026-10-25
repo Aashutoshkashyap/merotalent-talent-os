@@ -344,3 +344,12 @@ per-member group passes, inventory release, duplicate callback safety and a
 Existing source/identity acceptance and six dependency advisory findings remain
 open. Full financial acceptance still needs legitimate applicant proof and a
 human-completed wallet transaction, followed by actual request review/assignment.
+
+Follow-up release `bab6586` is READY (`dpl_Difu3gMuJVCTU4wiZUaDt3xe5XfA`),
+with both CI jobs passing (`40170453932`). Live competition administration reads
+the preserved Online MCQ record successfully. The final local payment-hardening
+revision verifies decimal ticket totals in paisa and bounds ticket configuration
+JSON: **1,081 tests /216 files PASS**, typecheck/build/diff PASS, lint zero errors
+and 35 warnings. These checks do not establish provider settlement or constitute
+approval of any real applicant. The request page remains available for legitimate
+proof upload and operator-completed payment; no new credential is required.

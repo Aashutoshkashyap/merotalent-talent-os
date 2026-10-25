@@ -11,6 +11,18 @@ const provider = () => ({ createCheckout:vi.fn(async () => ({ status:"pending",c
   checkoutFields:{ product_code:"test" } })) }) as unknown as EsewaV2PaymentProvider;
 
 describe("Neon checkout authorization and retry", () => {
+  it.each([0.1,1.1,12.34])("compares decimal event totals in minor units (%s × 3)",async unit=>{
+    const adapter=provider(),total=Math.round(unit*100)*3/100;
+    const query=vi.fn(async(sql:string)=>{
+      if(sql.includes('SELECT true AS allowed'))return{rows:[{allowed:true}]};
+      if(sql.includes('SELECT r.user_id,r.total_amount'))return{rows:[{user_id:actor.userId,total_amount:total,ticket_quantity:3,
+        status:'pending',payment_status:'pending',unit_price:unit,tier_currency:'NPR',event_price:0,event_currency:'NPR'}]};
+      if(sql.includes('INSERT INTO public.payment_checkout_sessions'))return{rows:[{id:targetId}]};
+      return{rows:[]};
+    });
+    await new NeonCheckoutService(adapter).initiate(actor,'event_registration',targetId,'http://localhost:3210',{query} as unknown as Pick<PoolClient,'query'>);
+    expect(adapter.createCheckout).toHaveBeenCalledWith(expect.objectContaining({amount:total}));
+  });
   it.each([1.1, 12.34, 1500])('accepts an authoritative two-decimal price %s', async amount => {
     const adapter = provider();
     const query = vi.fn(async (sql: string) => {
