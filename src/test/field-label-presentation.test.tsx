@@ -49,7 +49,7 @@ describe("app-wide input label presentation", () => {
   });
   it("does not steal a field name from a section heading or another label", () => {
     render(<div><Label>Contact information</Label><div><Label>Your name</Label><Input /></div></div>);
-    expect(screen.getByText("Contact information").closest("label")).not.toHaveAttribute("data-input-label");
+    expect(screen.getByText("Contact information").closest("label")).toHaveAttribute("data-input-label","hidden");
     expect(screen.getByRole("textbox",{name:"Your name"})).toHaveAttribute("placeholder","Your name");
   });
   it("preserves explicit accessible names, descriptions and validation", () => {
@@ -96,5 +96,11 @@ describe("app-wide input label presentation", () => {
     render(<SystemPagination currentPage={1} totalPages={2} totalItems={40} pageSize={20} onPageChange={()=>{}} onPageSizeChange={()=>{}} />);
     expect(screen.getByText("Per page:").closest("label")).toHaveAttribute("data-input-label","hidden");
     expect(screen.getByRole("combobox",{name:"Per page:"})).toHaveAttribute("title","Per page:");
+  });
+  it("hides multi-field group captions without hiding or renaming their choices", () => {
+    render(<div><Label>Select modules</Label><div><Label><input type="checkbox" />College</Label><Label><input type="checkbox" />Jobs</Label></div></div>);
+    expect(screen.getByText("Select modules").closest("label")).toHaveAttribute("data-input-label","hidden");
+    expect(screen.getByRole("checkbox",{name:"College"}).closest("label")).not.toHaveAttribute("data-input-label");
+    expect(screen.getByRole("checkbox",{name:"Jobs"}).closest("label")).not.toHaveAttribute("data-input-label");
   });
 });
