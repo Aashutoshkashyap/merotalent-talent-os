@@ -418,13 +418,13 @@ export default function AdminPackages() {
                 <Label>Module Scope</Label>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 rounded-lg border p-3">
                   {MODULE_OPTIONS.map((module) => (
-                    <label key={module.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Label key={module.value} className="flex items-center gap-2 text-sm cursor-pointer">
                       <Switch
                         checked={formData.module_scope.includes(module.value)}
                         onCheckedChange={(checked) => toggleModule(module.value, checked)}
                       />
                       {module.label}
-                    </label>
+                    </Label>
                   ))}
                 </div>
               </div>
@@ -433,34 +433,34 @@ export default function AdminPackages() {
                 <Label>Basic Features</Label>
                 <div className="grid sm:grid-cols-2 gap-2 rounded-lg border p-3">
                   {FEATURE_OPTIONS.map((feature) => (
-                    <label key={feature.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Label key={feature.value} className="flex items-center gap-2 text-sm cursor-pointer">
                       <Switch
                         checked={formData.features[feature.value] === true}
                         onCheckedChange={(checked) => toggleFeature(feature.value, checked)}
                       />
                       {feature.label}
-                    </label>
+                    </Label>
                   ))}
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-3 pt-2">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Switch
                     checked={formData.is_active}
                     onCheckedChange={(v) => setFormData({ ...formData, is_active: v })}
                   />
                   Active package
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                </Label>
+                <Label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Switch
                     checked={formData.is_publicly_selectable}
                     disabled={formData.is_default_free}
                     onCheckedChange={(v) => setFormData({ ...formData, is_publicly_selectable: v })}
                   />
                   Publicly selectable
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                </Label>
+                <Label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Switch
                     checked={formData.is_default_free}
                     onCheckedChange={(v) => setFormData({
@@ -472,7 +472,7 @@ export default function AdminPackages() {
                     })}
                   />
                   Default free tier
-                </label>
+                </Label>
               </div>
             </div>
 

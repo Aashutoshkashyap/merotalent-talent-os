@@ -1,3 +1,4 @@
+import { Label as InputFieldLabel } from "@/components/ui/label";
 import { useEffect, useMemo, useState } from "react";
 import JobApplicantReview from "@/components/jobs/JobApplicantReview";
 import { MentorSessionPipeline } from "@/components/mentors/MentorSessionPipeline";
@@ -662,7 +663,7 @@ const RoleWorkspace = ({ role }: RoleWorkspaceProps) => {
         <main className="space-y-4 p-4 sm:p-6 lg:p-8">
           {useNeonRoleWorkspaces && entityOptions.length > 1 && (
             <div className="space-y-2">
-              <label htmlFor="managed-role-entity" className="text-sm font-semibold">Managed {role === "company" ? "company" : "mentor"}</label>
+              <InputFieldLabel htmlFor="managed-role-entity" className="text-sm font-semibold">Managed {role === "company" ? "company" : "mentor"}</InputFieldLabel>
               <select id="managed-role-entity" className="block w-full max-w-xl rounded-xl border border-[#eadfd7] bg-white p-3" value={selectedEntityId || entityOptions[0]?.id || ""} onChange={event => setSelectedEntityId(event.target.value)}>
                 {entityOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
               </select>

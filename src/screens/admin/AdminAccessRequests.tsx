@@ -1,3 +1,4 @@
+import { Label as InputFieldLabel } from "@/components/ui/label";
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -565,7 +566,7 @@ export default function AdminAccessRequests() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Capability</label>
+              <InputFieldLabel className="text-sm font-semibold">Capability</InputFieldLabel>
               <Select value={scopeModule} onValueChange={setScopeModule}>
                 <SelectTrigger><SelectValue placeholder="Select capability" /></SelectTrigger>
                 <SelectContent>
@@ -576,7 +577,7 @@ export default function AdminAccessRequests() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Entity</label>
+              <InputFieldLabel className="text-sm font-semibold">Entity</InputFieldLabel>
               <Select value={scopeEntityId} onValueChange={setScopeEntityId} disabled={isLoadingScopes || !scopeSource(scopeModule)}>
                 <SelectTrigger><SelectValue placeholder={isLoadingScopes ? "Loading entities…" : "Select an entity"} /></SelectTrigger>
                 <SelectContent>

@@ -1,3 +1,4 @@
+import { Label as InputFieldLabel } from "@/components/ui/label";
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -582,7 +583,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
             {/* Message Input */}
             <div className="p-4 border-t space-y-2">
               <div className="flex gap-2 items-center">
-                <label className="cursor-pointer p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900" aria-label="Attach a file">
+                <InputFieldLabel className="cursor-pointer p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900" aria-label="Attach a file">
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -668,7 +669,7 @@ const MentorMessaging = ({ mentorId, asMentor = false }: MentorMessagingProps) =
                     }}
                   />
                   <ImageIcon className="w-5 h-5" />
-                </label>
+                </InputFieldLabel>
 
                 <Input
                   placeholder="Type a message..."

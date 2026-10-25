@@ -1,3 +1,4 @@
+import { Label as InputFieldLabel } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, Loader2 } from "lucide-react";
@@ -46,7 +47,7 @@ export default function EventsWorkspace() {
         <div className="flex gap-2"><Button asChild variant="outline"><Link to="/dashboard">Student dashboard</Link></Button><Button asChild variant="outline"><Link to="/dashboard/payments">Payments and renewals</Link></Button></div>
       </header>
       {data && data.entityOptions.length > 0 && <div className="space-y-2">
-        <label htmlFor="managed-event" className="text-sm font-semibold">Managed event</label>
+        <InputFieldLabel htmlFor="managed-event" className="text-sm font-semibold">Managed event</InputFieldLabel>
         <select id="managed-event" value={selectedId || data.entityId || ""} disabled={loading} onChange={change => { setSelectedId(change.target.value); setEditOpen(false); }} className="block w-full max-w-2xl rounded-xl border bg-white p-3">
           {data.entityOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
         </select>

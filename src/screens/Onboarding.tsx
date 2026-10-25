@@ -365,7 +365,7 @@ const Onboarding = () => {
                       </Button>
                     </div>
                   ) : (
-                    <label className="cursor-pointer">
+                    <Label className="cursor-pointer">
                       <input
                         type="file"
                         accept={isNeonStaging ? ".pdf,application/pdf" : ".pdf,.doc,.docx"}
@@ -379,7 +379,7 @@ const Onboarding = () => {
                           {isUploading ? "Uploading..." : isNeonStaging ? "Click to upload PDF (max 5MB)" : "Click to upload PDF, DOC (max 5MB)"}
                         </p>
                       </div>
-                    </label>
+                    </Label>
                   )}
                 </div>
               </div>

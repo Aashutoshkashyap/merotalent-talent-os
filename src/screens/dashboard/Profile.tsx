@@ -423,10 +423,10 @@ const Profile = () => {
                 )}
               </div>
               <div className="mt-2 flex justify-center">
-                <label className="cursor-pointer text-xs font-semibold text-primary hover:underline">
+                <Label className="cursor-pointer text-xs font-semibold text-primary hover:underline">
                   Change Photo
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                </label>
+                </Label>
               </div>
               <h3 className="mt-2 font-semibold text-lg">{profile?.full_name || "User"}</h3>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
@@ -591,10 +591,10 @@ const Profile = () => {
                                   toast({ variant: "destructive", title: "Download failed", description: error instanceof Error ? error.message : "Please try again." });
                                 }
                               }}>View PDF</Button>
-                              <label className="cursor-pointer text-xs font-semibold text-primary">
+                              <Label className="cursor-pointer text-xs font-semibold text-primary">
                                 Replace PDF
                                 <input type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleResumeUpload} disabled={isUploading} />
-                              </label>
+                              </Label>
                             </>
                           )}
                           <Button 
@@ -617,7 +617,7 @@ const Profile = () => {
                           </Button>
                         </div>
                       ) : (
-                        <label className="cursor-pointer">
+                        <Label className="cursor-pointer">
                           <input
                             type="file"
                             accept={isStaging ? ".pdf" : ".pdf,.doc,.docx"}
@@ -631,7 +631,7 @@ const Profile = () => {
                               {isUploading ? "Uploading..." : isStaging ? "Click to upload PDF (max 5MB)" : "Click to upload PDF, DOC (max 5MB)"}
                             </p>
                           </div>
-                        </label>
+                        </Label>
                       )}
                     </div>
                   </div>

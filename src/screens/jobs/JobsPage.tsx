@@ -1,4 +1,6 @@
 "use client";
+import { Label as InputFieldLabel } from "@/components/ui/label";
+
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 
 
@@ -192,7 +194,7 @@ export default function JobsPage() {
             <option value="salary">Salary range</option>
           </select>
         </div>
-        <label className="sr-only" htmlFor="job-search">Search jobs</label>
+        <InputFieldLabel className="sr-only" htmlFor="job-search">Search jobs</InputFieldLabel>
         <div className="flex flex-col gap-3 sm:flex-row"><input id="job-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search roles, employers, skills, or location" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0073e6] focus:ring-2 focus:ring-blue-100" /><select aria-label="Filter jobs by work mode" value={workMode} onChange={(event) => setWorkMode(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 outline-none"><option value="all">All work modes</option><option value="remote">Remote</option><option value="onsite">On-site</option></select></div>
 
         {/* Cards grid */}

@@ -1,3 +1,4 @@
+import { Label as InputFieldLabel } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,23 +41,23 @@ export default function EventTicketManager({ eventId }: { eventId:string }) {
     {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-rose-900">{error}</p>}
     <div className="flex flex-wrap gap-2">{["Early Bird","Regular","Group Booking","Silver Tier"].map(name=><Button key={name} variant="outline" size="sm" onClick={()=>{setEditing(null);setForm({...blank(),name,ticket_kind:name==="Group Booking" ? "group" : "individual"});}}>{name}</Button>)}</div>
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="text-sm">Category name<Input value={form.name} onChange={e=>field("name",e.target.value)} /></label>
-      <label className="text-sm">Pricing unit<select value={form.ticket_kind} onChange={e=>field("ticket_kind",e.target.value)} className="block w-full rounded-lg border bg-white p-2"><option value="individual">Per attendee</option><option value="group">Per group</option><option value="team">Per team</option></select></label>
-      <label className="text-sm">Price (NPR)<Input type="number" min="0" step="0.01" value={form.price} onChange={e=>field("price",e.target.value)} /></label>
-      <label className="text-sm">Inventory (groups for group tiers)<Input type="number" min="1" value={form.total_quantity} placeholder="Unlimited" onChange={e=>field("total_quantity",e.target.value)} /></label>
+      <InputFieldLabel className="text-sm">Category name<Input value={form.name} onChange={e=>field("name",e.target.value)} /></InputFieldLabel>
+      <InputFieldLabel className="text-sm">Pricing unit<select value={form.ticket_kind} onChange={e=>field("ticket_kind",e.target.value)} className="block w-full rounded-lg border bg-white p-2"><option value="individual">Per attendee</option><option value="group">Per group</option><option value="team">Per team</option></select></InputFieldLabel>
+      <InputFieldLabel className="text-sm">Price (NPR)<Input type="number" min="0" step="0.01" value={form.price} onChange={e=>field("price",e.target.value)} /></InputFieldLabel>
+      <InputFieldLabel className="text-sm">Inventory (groups for group tiers)<Input type="number" min="1" value={form.total_quantity} placeholder="Unlimited" onChange={e=>field("total_quantity",e.target.value)} /></InputFieldLabel>
       {form.ticket_kind==="individual" ? <>
-        <label className="text-sm">Minimum per order<Input type="number" min="1" max="10" value={form.min_per_order} onChange={e=>field("min_per_order",e.target.value)} /></label>
-        <label className="text-sm">Maximum per order<Input type="number" min="1" max="10" value={form.max_per_order} onChange={e=>field("max_per_order",e.target.value)} /></label>
+        <InputFieldLabel className="text-sm">Minimum per order<Input type="number" min="1" max="10" value={form.min_per_order} onChange={e=>field("min_per_order",e.target.value)} /></InputFieldLabel>
+        <InputFieldLabel className="text-sm">Maximum per order<Input type="number" min="1" max="10" value={form.max_per_order} onChange={e=>field("max_per_order",e.target.value)} /></InputFieldLabel>
       </> : <>
-        <label className="text-sm">Minimum group size<Input type="number" min="1" max="100" value={form.min_team_size} onChange={e=>field("min_team_size",e.target.value)} /></label>
-        <label className="text-sm">Maximum group size<Input type="number" min="1" max="100" value={form.max_team_size} onChange={e=>field("max_team_size",e.target.value)} /></label>
+        <InputFieldLabel className="text-sm">Minimum group size<Input type="number" min="1" max="100" value={form.min_team_size} onChange={e=>field("min_team_size",e.target.value)} /></InputFieldLabel>
+        <InputFieldLabel className="text-sm">Maximum group size<Input type="number" min="1" max="100" value={form.max_team_size} onChange={e=>field("max_team_size",e.target.value)} /></InputFieldLabel>
       </>}
-      <label className="text-sm">Sale starts (local)<Input type="datetime-local" value={form.sales_start_at} onChange={e=>field("sales_start_at",e.target.value)} /></label>
-      <label className="text-sm">Sale ends (local)<Input type="datetime-local" value={form.sales_end_at} onChange={e=>field("sales_end_at",e.target.value)} /></label>
-      <label className="text-sm sm:col-span-2">Description<Textarea value={form.description} onChange={e=>field("description",e.target.value)} /></label>
-      <label className="text-sm sm:col-span-2">Benefits (one per line)<Textarea value={form.benefits} onChange={e=>field("benefits",e.target.value)} /></label>
+      <InputFieldLabel className="text-sm">Sale starts (local)<Input type="datetime-local" value={form.sales_start_at} onChange={e=>field("sales_start_at",e.target.value)} /></InputFieldLabel>
+      <InputFieldLabel className="text-sm">Sale ends (local)<Input type="datetime-local" value={form.sales_end_at} onChange={e=>field("sales_end_at",e.target.value)} /></InputFieldLabel>
+      <InputFieldLabel className="text-sm sm:col-span-2">Description<Textarea value={form.description} onChange={e=>field("description",e.target.value)} /></InputFieldLabel>
+      <InputFieldLabel className="text-sm sm:col-span-2">Benefits (one per line)<Textarea value={form.benefits} onChange={e=>field("benefits",e.target.value)} /></InputFieldLabel>
     </div>
-    <label className="flex gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={e=>field("is_active",e.target.checked)} />On sale</label>
+    <InputFieldLabel className="flex gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={e=>field("is_active",e.target.checked)} />On sale</InputFieldLabel>
     <div className="flex flex-wrap gap-2"><Button disabled={busy || !form.name.trim()} onClick={()=>void save()}>{busy ? "Saving…" : editing ? "Save tier" : "Add tier"}</Button>
       <Button variant="outline" onClick={()=>{field("price","10");field("description",`${form.description ? `${form.description} ` : ""}Temporary NPR 10 payment-testing tier.`);}}>Use temporary NPR 10 test price</Button>
       {editing && <Button variant="ghost" onClick={()=>{setEditing(null);setForm(blank());}}>Cancel edit</Button>}</div>

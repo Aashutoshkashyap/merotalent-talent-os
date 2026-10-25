@@ -1155,16 +1155,16 @@ export default function AdminEvents() {
                     </>
                   )}
                 </div>
-                <label className="block text-sm">Description<Input value={newTicketType.description} onChange={e => setNewTicketType({...newTicketType,description:e.target.value})} /></label>
+                <Label className="block text-sm">Description<Input value={newTicketType.description} onChange={e => setNewTicketType({...newTicketType,description:e.target.value})} /></Label>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="text-sm">Sale starts (local time)<Input type="datetime-local" value={newTicketType.sales_start_at} onChange={e => setNewTicketType({...newTicketType,sales_start_at:e.target.value})} /></label>
-                  <label className="text-sm">Sale ends (local time)<Input type="datetime-local" value={newTicketType.sales_end_at} onChange={e => setNewTicketType({...newTicketType,sales_end_at:e.target.value})} /></label>
+                  <Label className="text-sm">Sale starts (local time)<Input type="datetime-local" value={newTicketType.sales_start_at} onChange={e => setNewTicketType({...newTicketType,sales_start_at:e.target.value})} /></Label>
+                  <Label className="text-sm">Sale ends (local time)<Input type="datetime-local" value={newTicketType.sales_end_at} onChange={e => setNewTicketType({...newTicketType,sales_end_at:e.target.value})} /></Label>
                   {newTicketType.ticket_kind === "individual" && <>
-                    <label className="text-sm">Minimum tickets per order<Input type="number" min="1" max="10" value={newTicketType.min_per_order} onChange={e => setNewTicketType({...newTicketType,min_per_order:e.target.value})} /></label>
-                    <label className="text-sm">Maximum tickets per order<Input type="number" min="1" max="10" value={newTicketType.max_per_order} onChange={e => setNewTicketType({...newTicketType,max_per_order:e.target.value})} /></label>
+                    <Label className="text-sm">Minimum tickets per order<Input type="number" min="1" max="10" value={newTicketType.min_per_order} onChange={e => setNewTicketType({...newTicketType,min_per_order:e.target.value})} /></Label>
+                    <Label className="text-sm">Maximum tickets per order<Input type="number" min="1" max="10" value={newTicketType.max_per_order} onChange={e => setNewTicketType({...newTicketType,max_per_order:e.target.value})} /></Label>
                   </>}
                 </div>
-                <label className="block text-sm">Benefits (one per line)<Textarea value={newTicketType.benefits} onChange={e => setNewTicketType({...newTicketType,benefits:e.target.value})} /></label>
+                <Label className="block text-sm">Benefits (one per line)<Textarea value={newTicketType.benefits} onChange={e => setNewTicketType({...newTicketType,benefits:e.target.value})} /></Label>
                 <Button onClick={handleAddTicketType} size="sm" className="bg-[#0073e6] hover:bg-[#0062c4] text-xs font-bold">
                   <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Ticket Tier
                 </Button>

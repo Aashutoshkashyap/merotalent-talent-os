@@ -1,4 +1,6 @@
 "use client";
+import { Label as InputFieldLabel } from "@/components/ui/label";
+
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 
 
@@ -139,9 +141,9 @@ export default function ContactForm({ settings = {}, section, components = [], c
             {/* Row 1: Name & Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="contact-name" className="text-xs font-bold text-slate-700">
+                <InputFieldLabel htmlFor="contact-name" className="text-xs font-bold text-slate-700">
                   Full Name <span className="text-red-500">*</span>
-                </label>
+                </InputFieldLabel>
                 <input
                   id="contact-name"
                   autoComplete="name"
@@ -155,9 +157,9 @@ export default function ContactForm({ settings = {}, section, components = [], c
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="contact-email" className="text-xs font-bold text-slate-700">
+                <InputFieldLabel htmlFor="contact-email" className="text-xs font-bold text-slate-700">
                   Email Address <span className="text-red-500">*</span>
-                </label>
+                </InputFieldLabel>
                 <input
                   id="contact-email"
                   autoComplete="email"
@@ -173,9 +175,9 @@ export default function ContactForm({ settings = {}, section, components = [], c
 
             {/* Subject */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="contact-subject" className="text-xs font-bold text-slate-700">
+              <InputFieldLabel htmlFor="contact-subject" className="text-xs font-bold text-slate-700">
                 Subject <span className="text-red-500">*</span>
-              </label>
+              </InputFieldLabel>
               <input
                 id="contact-subject"
                 type="text"
@@ -189,9 +191,9 @@ export default function ContactForm({ settings = {}, section, components = [], c
 
             {/* Message */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="contact-message" className="text-xs font-bold text-slate-700">
+              <InputFieldLabel htmlFor="contact-message" className="text-xs font-bold text-slate-700">
                 Your Message <span className="text-red-500">*</span>
-              </label>
+              </InputFieldLabel>
               <textarea
                 id="contact-message"
                 required

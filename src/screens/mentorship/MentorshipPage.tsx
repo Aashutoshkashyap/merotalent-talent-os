@@ -1,4 +1,6 @@
 "use client";
+import { Label as InputFieldLabel } from "@/components/ui/label";
+
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -153,7 +155,7 @@ export default function MentorshipPage() {
             <option value="experience">Experience</option>
           </select>
         </div>
-        <label className="sr-only" htmlFor="mentor-search">Search mentors</label>
+        <InputFieldLabel className="sr-only" htmlFor="mentor-search">Search mentors</InputFieldLabel>
         <input id="mentor-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search mentor name or expertise" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0073e6] focus:ring-2 focus:ring-blue-100" />
 
         {/* Cards grid */}

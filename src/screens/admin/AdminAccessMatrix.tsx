@@ -548,7 +548,7 @@ export default function AdminAccessMatrix() {
                 { label: "Can Manage Courses", value: iaCanManageCourses, set: setIACanManageCourses },
                 { label: "Can Post Notices", value: iaCanPostNotices, set: setIACanPostNotices },
               ].map(({ label, value, set }) => (
-                <label key={label} className="flex items-center justify-between text-xs cursor-pointer">
+                <Label key={label} className="flex items-center justify-between text-xs cursor-pointer">
                   <span className="font-medium text-slate-700">{label}</span>
                   <input
                     type="checkbox"
@@ -556,7 +556,7 @@ export default function AdminAccessMatrix() {
                     onChange={(e) => set(e.target.checked)}
                     className="w-4 h-4 rounded accent-[#071a3d]"
                   />
-                </label>
+                </Label>
               ))}
             </div>
           </div>
