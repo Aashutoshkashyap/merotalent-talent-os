@@ -1,4 +1,4 @@
-/** Local form presentation only: never changes a field's value or validation. */
+/** Keep legacy labels accessible without changing captions, values or validation. */
 const controls = 'input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),textarea,select,[role="combobox"],[role="textbox"],[role="spinbutton"],[role="slider"],[role="checkbox"],[role="radio"],[role="switch"]';
 const choices = 'input[type="checkbox"],input[type="radio"],[role="checkbox"],[role="radio"],[role="switch"],[role="slider"],input[type="range"]';
 
@@ -42,32 +42,25 @@ function labelText(label: HTMLLabelElement): string {
 }
 
 /** Run only on this label's commit. No document-wide observer or recurring scan. */
-export function presentFieldLabel(label: HTMLLabelElement): () => void {
+export function connectFieldLabel(label: HTMLLabelElement): () => void {
   const target = associatedControl(label);
-  if (target?.matches(choices) || label.closest('button,a') || (!target && label.querySelector(`${choices},a,button`))) return () => {};
+  if (!target || target.matches(choices) || label.closest('button,a')) return () => {};
   // These labels are the upload action itself, not a caption above a field.
-  if (target?.matches('input[type="file"]') && (label.contains(target) || label.classList.contains('cursor-pointer'))) return () => {};
+  if (target.matches('input[type="file"]') && (label.contains(target) || label.classList.contains('cursor-pointer'))) return () => {};
   const name = labelText(label);
   if (!name) return () => {};
-  const previousMode = label.getAttribute('data-input-label');
-  label.setAttribute('data-input-label', (target && label.contains(target)) || label.querySelector('a,button') ? 'wrapped' : 'hidden');
   const added: Array<[string, string]> = [];
   const add = (attribute: string, value: string) => {
-    if (target && !target.hasAttribute(attribute)) {
+    if (!target.hasAttribute(attribute)) {
       target.setAttribute(attribute, value);
       added.push([attribute, value]);
     }
   };
-  if (target && !target.hasAttribute('aria-labelledby')) add('aria-label', name);
+  if (!target.hasAttribute('aria-labelledby')) add('aria-label', name);
   add('title', name);
-  if (target?.matches('input:not([type="file"]):not([type="date"]):not([type="datetime-local"]):not([type="time"]):not([type="color"]),textarea')) {
-    add('placeholder', name);
-  }
   return () => {
-    if (previousMode === null) label.removeAttribute('data-input-label');
-    else label.setAttribute('data-input-label', previousMode);
     for (const [attribute, value] of added) {
-      if (target?.getAttribute(attribute) === value) target.removeAttribute(attribute);
+      if (target.getAttribute(attribute) === value) target.removeAttribute(attribute);
     }
   };
 }

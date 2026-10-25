@@ -2,23 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Input captions are screen-reader-only across every workspace. Wrapping
-   labels keep their controls visible; checkbox/switch/upload actions are intact. */
-label[data-input-label="hidden"],
-label[data-input-label="wrapped"] [data-field-label-copy] {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border-width: 0 !important;
-}
-
-label[data-input-label="hidden"] + * {
-  margin-block-start: 0 !important;
+/* Field names stay above their controls. Only empty-field placeholder prompts
+   are suppressed; entered values, selected options and labels stay visible.
+   Retain placeholder metadata for legacy controls' accessible fallback names. */
+input::placeholder,
+textarea::placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
 }
 
 /* Merotalent Design System - Talent Ecosystem Platform */
