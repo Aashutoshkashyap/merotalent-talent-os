@@ -3413,3 +3413,26 @@ production configuration change or live payment occurred in this continuation.
   three unaffected app paths (including UUID course paths). The local server was
   stopped. Post-release browser checks remain separate from this build evidence;
   no claim is made about all external sites, all records or every role/session.
+- Release `9cf4d9d` CI **41372817697 PASS**, production deployment
+  **dpl_Ez1diEnuWcANcKSdu1ZKC4qb8ZSU READY**. Live phone rechecks show Schools
+  and Viewed no longer clipped; the Viewed button was clicked and its selected
+  state verified. Actual main-domain learning URLs return exact 307 redirects
+  without query forwarding; browser reached the partner Store and loaded its
+  real course cards rather than the prior 404. App `/courses` remains 200.
+- Phone homepage scrolled to **scrollY 1,334** while header stayed **top 0**;
+  opening its navigation and following Institutes reached the directory at
+  scrollY 0, header top 0 and document width 375px. Desktop admin checks at
+  1,680px and tablet checks at 768px found no clipped header actions in the
+  selected Event/Package/Job/People surfaces.
+- Inspecting the fully loaded ticket/activity dialog found one further source
+  of horizontal scrolling: visually hidden media inputs inherited full-width
+  dimensions from the shared Input. `SignedMediaUploader.tsx` now explicitly
+  constrains them to one pixel with zero padding and associates unique IDs with
+  their labels. This changes no upload request, storage permission or file type.
+  The unit fixture mocks its network boundary rather than requiring source keys.
+- Final revision: **228 files /1,148 tests PASS**, typecheck, explicit
+  Neon-production build and diff PASS; lint **0 errors /34 existing warnings**.
+  New uploader layout regression checks one-pixel dimensions and independent
+  label associations; existing upload-client regressions also pass. Local
+  browser file access remains off, no actual file was uploaded in this follow-up,
+  no charge was initiated, and production records/configuration were not edited.

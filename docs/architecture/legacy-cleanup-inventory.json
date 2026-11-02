@@ -8,7 +8,7 @@
     "this generated architecture directory"
   ],
   "summary": {
-    "ACTIVE": 85,
+    "ACTIVE": 86,
     "MIGRATION REQUIRED": 131,
     "DEAD": 0,
     "HISTORICAL/RECOVERY": 78,
@@ -3225,6 +3225,13 @@
     },
     {
       "file": "src/test/provider-config-route.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/signed-media-uploader-layout.test.tsx",
       "referenceLines": 1,
       "disposition": "ACTIVE",
       "owner": "Regression suite",

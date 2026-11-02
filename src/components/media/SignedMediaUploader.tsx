@@ -1,5 +1,5 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -322,6 +322,7 @@ export function SignedMediaUploader({
   onUploaded,
 }: SignedMediaUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedCount, setUploadedCount] = useState(0);
@@ -373,15 +374,16 @@ export function SignedMediaUploader({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
         <Input
+          id={inputId}
           ref={inputRef}
           type="file"
           accept={acceptedTypes.join(",")}
           multiple={multiple}
           disabled={disabled || isUploading}
-          className="sr-only"
+          className="sr-only h-px w-px p-0"
           onChange={(event) => void handleFiles(event.target.files)}
         />
         <Button
