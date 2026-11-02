@@ -15,7 +15,7 @@ const relations:Partial<Record<MediaModule,{table:string;module:string;type:Enti
   college_cover:{table:"institutes",module:"college",type:"college",fields:["cover_image_url"]},
   college_gallery:{table:"institutes",module:"college",type:"college",fields:["gallery_urls"]},
   mentor_profile:{table:"mentors",module:"mentor",type:"mentor",fields:["profile_image_url","cover_image_url"]},
-  event_cover:{table:"events",module:"events",type:"event",fields:["cover_image_url"]},
+  event_cover:{table:"events",module:"events",type:"event",fields:["cover_image_url","logo_url","gallery_urls"]},
   event_attachment:{table:"events",module:"events",type:"event",fields:["attachment_path"]},
   course_thumbnail:{table:"courses",module:"courses",type:"course",fields:["thumbnail_url"]},
   advertisement:{table:"advertisements",module:"advertisements",type:"course",fields:["image_url"]},

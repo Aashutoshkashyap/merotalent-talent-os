@@ -38,6 +38,7 @@ const MentorshipPage = lazy(() => import("./screens/mentorship/MentorshipPage"))
 const MentorDetailPage = lazy(() => import("./screens/mentorship/MentorDetailPage"));
 const EventsPage = lazy(() => import("./screens/events/EventsPage"));
 const EventDetailPage = lazy(() => import("./screens/events/EventDetailPage"));
+const VerifyEventCertificate = lazy(() => import("./screens/events/VerifyEventCertificate"));
 
 // Layouts
 const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
@@ -143,6 +144,7 @@ const App = ({ initialCmsSnapshot }: { initialCmsSnapshot?: CmsSnapshot | null }
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/events/:id" element={<EventDetailPage />} />
+              <Route path="/verify/certificates/:number" element={<VerifyEventCertificate />} />
               <Route path="/mentorship" element={<MentorshipPage />} />
               <Route path="/mentorship/:id" element={<MentorDetailPage />} />
               <Route path="/request-access" element={<RequestSubAdminAccess />} />

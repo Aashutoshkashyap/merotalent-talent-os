@@ -10,7 +10,8 @@ const run = async <T>(operation: (client: PoolClient) => Promise<T>): Promise<T>
   transactionStarted(); return operation({ query } as unknown as PoolClient);
 };
 beforeEach(() => { vi.clearAllMocks(); query.mockImplementation(async (sql: string) =>
-  sql.includes("pg_try_advisory_xact_lock") ? { rows: [{ acquired: true }], rowCount: 1 } : { rows: [{ id: "changed" }], rowCount: 1 }); });
+  sql.includes("pg_try_advisory_xact_lock") ? { rows: [{ acquired: true }], rowCount: 1 }
+    : sql.includes("SELECT q.*,a.title,a.results_publish_at") ? { rows: [], rowCount: 0 } : { rows: [{ id: "changed" }], rowCount: 1 }); });
 
 describe("Neon cron maintenance authorization and transaction", () => {
   it("rejects missing/incorrect cron credentials before starting database work", async () => {

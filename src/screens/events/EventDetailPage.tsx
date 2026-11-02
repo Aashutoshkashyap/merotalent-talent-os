@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchPublicEventDetail, type EventDetail } from "@/lib/events/events-client";
 import EventRegistrationModal from "@/components/events/EventRegistrationModal";
 import { displayedEventPrice } from "@/lib/events/price-display";
+import Image from "next/image";
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -88,7 +89,7 @@ export default function EventDetailPage() {
             {/* Main Event Hero Section */}
             <section className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
               {event.cover_image_url ? (
-                <img
+                <Image unoptimized width={1200} height={400}
                   src={event.cover_image_url}
                   alt={event.title}
                   className="h-64 w-full object-cover sm:h-80"
@@ -100,6 +101,7 @@ export default function EventDetailPage() {
               )}
 
               <div className="p-6 sm:p-8">
+                {event.logo_url && <Image unoptimized width={80} height={80} src={event.logo_url} alt={`${event.title} logo`} className="mb-4 h-20 w-20 rounded-xl object-contain" />}
                 <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
                   {event.category && (
                     <Badge className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold">
@@ -215,6 +217,13 @@ export default function EventDetailPage() {
                         </p>
                       </section>
                     )}
+                    {!!event.gallery_urls?.length && <section aria-label="Event gallery" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {event.gallery_urls.map((url, index) => <Image unoptimized width={800} height={480} key={url} src={url} alt={`${event.title} gallery image ${index + 1}`} loading="lazy" className="w-full rounded-2xl object-cover" />)}
+                    </section>}
+                    {(event.contact_email || event.contact_phone) && <section aria-label="Public organizer contact" className="flex flex-wrap gap-4 rounded-2xl border p-6">
+                      {event.contact_email && <a href={`mailto:${event.contact_email}`} className="inline-flex items-center gap-2"><Mail className="h-4 w-4" />{event.contact_email}</a>}
+                      {event.contact_phone && <a href={`tel:${event.contact_phone.replace(/[^+\d]/g, '')}`} className="inline-flex items-center gap-2"><Phone className="h-4 w-4" />{event.contact_phone}</a>}
+                    </section>}
                   </div>
                 )}
 

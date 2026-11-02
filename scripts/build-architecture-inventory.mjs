@@ -3,6 +3,8 @@ import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 
 export function classifyLegacyPath(file) {
+  if (file === "scripts/apply-neon-event-activities-staging.mjs")
+    return { disposition: "HISTORICAL/RECOVERY", owner: "Migration operator", retirement: "Reviewed Event forward migration runner pinned to isolated Neon staging; preserve target guard and provenance." };
   if (file.startsWith("scripts/sql/"))
     return { disposition: "HISTORICAL/RECOVERY", owner: "Migration operator", retirement: "Reviewed isolated staging forward SQL; preserve provenance and target guards." };
   if ([".github/workflows/ci.yml", "scripts/check-schema-drift.mjs", "scripts/ingest-edusanjal-bulk.mjs",

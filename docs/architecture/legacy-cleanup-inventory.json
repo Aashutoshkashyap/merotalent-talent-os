@@ -8,10 +8,10 @@
     "this generated architecture directory"
   ],
   "summary": {
-    "ACTIVE": 83,
-    "MIGRATION REQUIRED": 130,
+    "ACTIVE": 85,
+    "MIGRATION REQUIRED": 131,
     "DEAD": 0,
-    "HISTORICAL/RECOVERY": 77,
+    "HISTORICAL/RECOVERY": 78,
     "UNKNOWN": 0
   },
   "runtimeImportInventory": {
@@ -1908,6 +1908,13 @@
       "retirement": "Reviewed staging/source diagnostic or restoration asset; preserve and obey target guards."
     },
     {
+      "file": "scripts/event-activities-migration.mjs",
+      "referenceLines": 1,
+      "disposition": "HISTORICAL/RECOVERY",
+      "owner": "Migration operator",
+      "retirement": "Retain for recovery and reproducibility; never bulk-delete."
+    },
+    {
       "file": "scripts/execute-real-migration.mjs",
       "referenceLines": 24,
       "disposition": "HISTORICAL/RECOVERY",
@@ -2692,6 +2699,13 @@
       "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
     },
     {
+      "file": "src/lib/server/neon-event-presentation.ts",
+      "referenceLines": 1,
+      "disposition": "MIGRATION REQUIRED",
+      "owner": "Domain runtime",
+      "retirement": "Trace each caller and prove deployed Neon behavior before deleting its legacy branch; no fallback is authorized."
+    },
+    {
       "file": "src/lib/server/neon-identity-link.ts",
       "referenceLines": 4,
       "disposition": "MIGRATION REQUIRED",
@@ -3070,6 +3084,13 @@
       "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
     },
     {
+      "file": "src/test/event-presentation.test.ts",
+      "referenceLines": 1,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
       "file": "src/test/job-applicant-review-route.test.ts",
       "referenceLines": 1,
       "disposition": "ACTIVE",
@@ -3128,6 +3149,13 @@
     {
       "file": "src/test/neon-esewa-return.test.ts",
       "referenceLines": 2,
+      "disposition": "ACTIVE",
+      "owner": "Regression suite",
+      "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."
+    },
+    {
+      "file": "src/test/neon-event-activities-staging.test.ts",
+      "referenceLines": 5,
       "disposition": "ACTIVE",
       "owner": "Regression suite",
       "retirement": "Retain security, denial and compatibility contracts until corresponding workflows retire."

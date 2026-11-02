@@ -14,6 +14,7 @@ import { rehearseRuntimeFoundation } from "./runtime-foundation-rehearsal.mjs";
 import { rehearseCandidatePrecision } from "./candidate-precision-repair.mjs";
 import {committedWriteJournal,replayCommittedWriteJournal} from './committed-write-replay.mjs';
 import {sourceDatabaseWriteFence} from './source-database-write-fence.mjs';
+import { applyEventActivitiesChecked } from './event-activities-migration.mjs';
 import { sha256, tableFingerprintsBatched as tableFingerprints, schemaFingerprints, assertFingerprints, compareRecoveryEvidence, quoteIdentifier as q } from "./recovery-integrity.mjs";
 
 dotenv.config({ path: ".migration.env", quiet: true });
@@ -195,7 +196,14 @@ try {
     candidatePrecisionRehearsal = await rehearseCandidatePrecision(local,
       await readEncryptedSourceSnapshot(baselinePath),await readEncryptedSourceSnapshot(sourcePath));
   }
-  const report = { result: "PASS", target: "existing-production-candidate", artifact, archiveSha256: hash,
+  let eventActivitiesRehearsal = null;
+  if (process.argv.includes('--rehearse-event-activities')) {
+    phase = 'local_event_activities_rehearsal';
+    await local.query('BEGIN');
+    eventActivitiesRehearsal = await applyEventActivitiesChecked(local);
+    await local.query('COMMIT');
+  }
+  const report = { result: "PASS", target: "existing-production-candidate", artifact, archiveSha256: hash, eventActivitiesRehearsal,
     tables: rows.length, rows: rows.reduce((n, r) => n + r.count, 0), encryptedReadbackVerified: true,
     restoredFromEncryptedArchive: true, applicationRowAndSchemaFingerprintsVerified: true,
     remoteWrites: 0, productionCutover: false, portableSchemaRehearsal, runtimeFoundationRehearsal, generatedIdsRehearsal, candidatePrecisionRehearsal,committedWriteReplayRehearsal,sourceDatabaseFenceRehearsal,

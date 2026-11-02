@@ -56,6 +56,9 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: true,
   poweredByHeader: false,
+  // The certificate renderer reads its licensed Unicode font on the server.
+  // public/ is otherwise CDN-only and automatic tracing misses the lazy reader.
+  outputFileTracingIncludes: { "/api/v1/events/**": ["./public/fonts/NotoSansDevanagari.ttf"] },
   async headers() {
     return [
       {

@@ -69,6 +69,9 @@ export interface EventDetail {
   location?: string | null;
   meeting_url?: string | null;
   cover_image_url?: string | null;
+  logo_url?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
   gallery_urls?: string[];
   start_date: string;
   end_date: string;

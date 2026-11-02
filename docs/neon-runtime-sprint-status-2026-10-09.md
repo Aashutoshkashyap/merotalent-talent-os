@@ -3187,6 +3187,101 @@ production configuration change or live payment occurred in this continuation.
   Genuine payment, purchase-receipt delivery, elapsed production expiry/renewal
   and paid approval/assignment acceptance remain unverified until legitimate
   applicant proof and a human-completed wallet transaction exist.
+
+### 2026-11-02 — Event assessments, private submissions and certificates
+
+- Implemented on top of existing Event registrations, scoped module entitlements,
+  payment verification, notifications and storage. New files are
+  `neon-event-activities.ts`, `neon-event-presentation.ts`, the Event activity API
+  routes/components, assessment/activity/certificate contracts and the bounded
+  private-file/PDF renderers. No parallel authentication or payment engine.
+- Five forward migrations (`20261101190000` through `20261101230000`) extend
+  existing quizzes/attempts/registrations/certificates and add scoped activities,
+  question/ticket mappings, private-file metadata, submission/review history and
+  certificate templates. Immutable question, policy and purchased-access snapshots
+  preserve old attempts and enrollments. Legacy course uniqueness is retained;
+  only Event attempts permit configured retakes, with one open attempt enforced.
+- Paid activity access requires the existing matching authoritative successful
+  checkout AND payment ledger, owner, amount, currency, eSewa transaction ID and
+  provider verification marker. Redirects, pending orders and a forged registration
+  status do not grant access. Complimentary enrollment requires scoped organizer
+  authority and a recorded audit; it never becomes a fabricated paid transaction.
+- Event, ticket and activity windows are independent. Server-clock deadlines,
+  autosave, free/forward-only navigation, required-answer policy, decimal/negative
+  scoring and immutable answer keys are enforced. Scores require publication;
+  keys/explanations additionally require explicit review permission after closing.
+- Assignment uploads use actual content validation, configurable policy, a 4 MiB
+  file ceiling, private Neon objects and short-lived authorized downloads. Revisions,
+  late flags, grading, feedback, withheld results and review history are retained.
+  Submitted/attempted/template-referenced files cannot be deleted as unused uploads.
+- Certificates require attendance or completed, published assessments, not payment
+  alone. Editable Unicode PDF templates support background/logo/signature images,
+  text/placeholders, field positions, signatory/organization and published scores.
+  Manual issuance uses the real organizer actor and the same recipient eligibility;
+  it does not impersonate a student or silently waive completion. Unique issuance,
+  private recipient downloads, minimal public verification and revocation are wired.
+- Added scoped, audited spreadsheet-safe CSV exports for participants, enrollments,
+  attempts/scores, submissions, evaluation history and issued certificates (5,000-row
+  bound). No QR bearer tokens, merchant credentials or private signed file URLs.
+- Fixed canonical/imported public Event image resolution through the existing Neon
+  signing boundary. Banner, logo, gallery and organizer contact editing reuse existing
+  managed-media upload intents/ownership checks. Removal of a reference does not
+  delete an object still used elsewhere. No private attachment bucket is made public.
+- Google OAuth branding is **actually live verified**: the existing `merotalent.com`
+  branding was reverified and published in Google Cloud. The actual live Google
+  account chooser now says **continue to merotalent.com** with its correct logo.
+  The required Neon callback domain remains authorized; no OAuth secret was printed.
+- Browser staging evidence: scoped organizer created the ticket, math question,
+  published quiz, assignment and explicit complimentary enrollment; real student
+  session rendered its admission pass and math, autosaved answers, preserved an
+  expired immutable attempt and submitted a newly allowed attempt for **1/1**.
+  Native confirmation was replaced with a nonblocking accessible dialog. A preexisting
+  database uniqueness bug discovered by the retake browser check was fixed forward.
+- Automated evidence so far: **1,123 standard tests**, typecheck, production build,
+  font server tracing and clean `npm ci` pass. Initial **16 actual staging cases**
+  pass; three new retake/manual-issuance/export cases pass separately. Final combined
+  staging/HTTP and release evidence is appended below after execution. Browser PDF
+  upload is not claimed while Chrome's local-file helper permission is unavailable.
+- A fresh encrypted production backup was read back and restored locally:
+  `production-candidate-20261102000413290-1e0170600b9f.aes256gcm.json`, 100 tables /
+  2,343 rows; all original rows/schema fingerprints match. The exact five-file SQL
+  bundle `ed1c31dab931e7597efb04ade9ec95316955f3b2f8ab5962d905f100f0a903d3`
+  was rehearsed twice with original rows unchanged. Remote backup writes: zero.
+- Better Auth/core/passkey are aligned at 1.7.15 to remove the previous critical
+  advisory. `.npmrc` documents deterministic optional-peer installation required by
+  the existing Neon SDK. Current audit: **24 findings: 5 low, 16 moderate, 3 high,
+  zero critical**. The high Zod/Neon-Auth chain requires a separately tested Zod 4
+  upgrade; it is not suppressed or described as resolved. Lint/build retain their
+  documented baseline warnings.
+- Remaining acceptance: genuine paid Event settlement/receipt delivery, production
+  authenticated activity acceptance and the pending native file-upload check. Binary
+  legacy DOC/XLS/PPT are not silently accepted by the OpenXML validator; supported
+  formats are explicitly PDF/DOCX/XLSX/PPTX/PNG/JPEG/WebP/ZIP. No ranking/LMS added.
+  No new charge, provider configuration change, source reconciliation claim or full
+  migration-completion claim is made by this batch.
+- Final combined staging run: **19/19 PASS**, with all SQL changes rolled back and
+  exact disposable objects removed. Final standard revision: **1,123/1,123 PASS**,
+  typecheck and build pass; lint **0 errors /34 existing warnings** (new image
+  warnings removed). The actual authenticated HTTP harness
+  `scripts/verify-neon-event-activities-http.mjs` passed **26/26**: genuine multipart
+  upload, private exact-byte download, anonymous/wrong-uploader rejection, retained
+  submissions, duplicate-safe submission, scoped published grading, exact-once
+  eligible certificate PDF, minimal public verification and authorized CSV export.
+  These are real staging application/storage calls, not provider settlement.
+- Operator explicitly requested keeping Chrome local-file access **off** and using
+  API-upload evidence. No extension permission was broadened; native upload is not
+  misreported as browser-verified. Generated certificate English/Nepali typography
+  and layout were rendered with Poppler and visually inspected successfully.
+- Browser confirmation after the HTTP upload: the authenticated student's dashboard
+  displays revision 1, published grade **80/100**, feedback and its earned completion
+  certificate. Following the actual Verify link renders **Valid certificate**, event,
+  issue date and reference only; no recipient name/email/account ID is exposed.
+- Production forward schema apply **PASS**, `2026-11-02T00:15:06.176Z`, using the
+  fresh private restore report and exact bundle SHA above. Idempotency and original
+  rows unchanged were checked in the production transaction. Source writes, identity
+  changes and payment changes: **zero**. Private evidence:
+  `event-activities-production-20261102-final.json`. Additive rollback: restore the
+  prior application release and retain new schema/records; do not drop new tables.
 - Browser review found base event pricing could incorrectly advertise free
   admission when all active ticket tiers were paid. `price-display.ts`, public
   event directory/detail and Admin Events now distinguish tier starting prices

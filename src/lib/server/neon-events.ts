@@ -14,8 +14,10 @@ import {
 } from "./neon-authorization";
 import { appendNotificationEvent } from "./neon-application-events";
 import { calculateTicketOrder } from "../events/ticket-order";
+import { registrationWindowOpen } from "../events/registration-window";
 import { expireNeonPurchaseHolds } from "./neon-purchase-expiry";
 import { queueNeonReservationEmail } from "./neon-reservation-email";
+import { resolvePublicEventImages } from "./neon-event-presentation";
 
 export interface PublicEventRow extends QueryResultRow {
   id: string;
@@ -30,6 +32,8 @@ export interface PublicEventRow extends QueryResultRow {
   location: string | null;
   meeting_url: string | null;
   cover_image_url: string | null;
+  logo_url?: string | null;
+  gallery_urls?: string[];
   start_date: Date;
   end_date: Date | null;
   registration_deadline: Date | null;
@@ -90,7 +94,7 @@ export class NeonEventsRepository {
     const formatFilter = params.format?.trim() || null;
     const typeFilter = params.eventType?.trim() || null;
 
-    return this.db.query<PublicEventRow>(`
+    const events = await this.db.query<PublicEventRow>(`
       SELECT id, organizer_user_id, organizer_type, organizer_id, title, slug,
              description, event_type, format, location, meeting_url, cover_image_url,
              start_date, end_date, registration_deadline, capacity, ticket_price::float AS ticket_price,
@@ -107,6 +111,7 @@ export class NeonEventsRepository {
         AND ($3::text IS NULL OR event_type = $3)
       ORDER BY is_featured DESC, start_date ASC
       LIMIT $4 OFFSET $5`, [searchFilter, formatFilter, typeFilter, limit, offset]);
+    return Promise.all(events.map(event => resolvePublicEventImages(event)));
   }
 
   async getPublicEvent(id: string): Promise<PublicEventRow | null> {
@@ -119,7 +124,7 @@ export class NeonEventsRepository {
       WHERE id = $1::uuid AND is_active = true AND status IN ('approved', 'published')
         AND approval_status = 'approved' AND deleted_at IS NULL
       LIMIT 1`, [id]);
-    return rows[0] ?? null;
+    return rows[0] ? resolvePublicEventImages(rows[0]) : null;
   }
 
   async registerForEvent(
@@ -136,26 +141,21 @@ export class NeonEventsRepository {
         currency: string | null;
         capacity: number | null;
         registration_deadline: Date | null;
+        registration_open_at: Date | null;
+        registration_close_at: Date | null;
         start_date: Date;
         is_active: boolean;
         approval_status: string;
         status: string;
       }>(`
         SELECT id, title, ticket_price::float AS ticket_price, currency, capacity,
-               registration_deadline, start_date, is_active, approval_status, status
+               registration_deadline, registration_open_at, registration_close_at, start_date, is_active, approval_status, status
         FROM public.events
         WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`, [input.eventId]);
 
       const event = eventRows.rows[0];
       if (!event || !event.is_active || event.approval_status !== "approved" || !["approved", "published"].includes(event.status)) {
         throw new NeonAuthorizationError(403, "EVENT_UNAVAILABLE", "This event is not open for registration.");
-      }
-
-      if (event.registration_deadline && new Date(event.registration_deadline).getTime() < Date.now()) {
-        throw new NeonAuthorizationError(403, "REGISTRATION_CLOSED", "Registration for this event is closed.");
-      }
-      if (new Date(event.start_date).getTime() <= Date.now()) {
-        throw new NeonAuthorizationError(403, "EVENT_STARTED", "Registration is no longer available.");
       }
 
       const ticketQty = input.ticketQuantity ?? 1;
@@ -173,6 +173,8 @@ export class NeonEventsRepository {
           WHERE id=$1::uuid AND event_id=$2::uuid AND is_active=true AND deleted_at IS NULL
           LIMIT 1 FOR UPDATE`, [input.ticketTypeId, event.id]) : { rows: [] };
       const tier = ticketRows.rows[0];
+      if (!registrationWindowOpen(event,tier,Date.now()))
+        throw new NeonAuthorizationError(403,"REGISTRATION_CLOSED","Registration for this event is not open.");
       if (input.ticketTypeId && !tier) throw new NeonAuthorizationError(404, "TICKET_UNAVAILABLE", "Ticket type unavailable.");
       if (!input.ticketTypeId) {
         const publishedTiers = await client.query<{ exists: boolean }>(`
@@ -248,10 +250,12 @@ export class NeonEventsRepository {
       const regInsert = await client.query<EventRegistrationRow>(`
         INSERT INTO public.event_registrations (
           event_id, user_id, ticket_type_id, status, payment_status, ticket_quantity,
-          total_amount, form_data, registered_at,attendee_count,team_name,program_id
+          total_amount, form_data, registered_at,attendee_count,team_name,program_id,activity_access
         ) VALUES (
           $1::uuid, $2::uuid, $3::uuid, $4, $5, $6,
-          $7, $8::jsonb, now(),$9,$10,$11::uuid
+          $7, $8::jsonb, now(),$9,$10,$11::uuid,
+          ARRAY(SELECT a.activity_id FROM public.event_activity_ticket_access a
+            WHERE a.event_id=$1::uuid AND a.ticket_type_id=$3::uuid ORDER BY a.activity_id)
         ) RETURNING id, event_id, user_id, status, payment_status, ticket_quantity,
                     total_amount::float AS total_amount, payment_id, form_data, registered_at`, [
         event.id,
@@ -334,10 +338,10 @@ export class NeonEventsRepository {
     const events = await this.db.query<PublicEventRow & { category_id: string | null }>(`
       SELECT e.id, e.organizer_user_id, e.organizer_type, e.organizer_id, e.title, e.slug,
              e.description, e.event_type, e.format, e.location, e.meeting_url,
-             e.cover_image_url, e.start_date, e.end_date, e.registration_deadline,
+             e.cover_image_url,e.logo_url,e.gallery_urls,e.contact_email,e.contact_phone, e.start_date, e.end_date, e.registration_deadline,
              e.capacity, e.ticket_price::float AS ticket_price, e.currency,
              e.status, e.approval_status, e.is_active, e.is_featured, e.created_at,
-             e.category_id
+             e.category_id,e.short_description,e.registration_open_at,e.registration_close_at,e.terms_and_conditions,e.lifecycle_status
       FROM public.events e
       WHERE ${where} AND e.deleted_at IS NULL AND e.is_active=true
         AND e.approval_status='approved' AND e.status IN ('approved','published')
@@ -389,7 +393,7 @@ export class NeonEventsRepository {
 
     const { category_id: _catId, ...eventData } = event as Record<string, unknown>;
     return {
-      ...eventData,
+      ...await resolvePublicEventImages(eventData),
       category,
       programs,
       ticket_types: ticketTypes,
@@ -415,7 +419,7 @@ export class NeonEventsRepository {
   }
 
   async listOwnDigitalTickets(actor: NeonActor): Promise<Array<Record<string, unknown>>> {
-    return this.db.query<Record<string, unknown>>(`
+    const tickets = await this.db.query<Record<string, unknown>>(`
       SELECT t.id,t.ticket_number,t.attendee_name,t.attendee_email,t.qr_token,t.status,
         t.checked_in_at,t.created_at,
         jsonb_build_object('id',e.id,'title',e.title,'slug',e.slug,'format',e.format,
@@ -431,6 +435,9 @@ export class NeonEventsRepository {
       LEFT JOIN public.event_ticket_types tt ON tt.id=t.ticket_type_id
       WHERE t.user_id=$1::uuid AND r.user_id=$1::uuid AND r.status='confirmed'
       ORDER BY t.created_at DESC LIMIT 100`, [actor.userId]);
+    return Promise.all(tickets.map(async ticket => ({ ...ticket,
+      event: ticket.event ? await resolvePublicEventImages(ticket.event as { cover_image_url?: string | null }) : null,
+    })));
   }
 
   async checkinByQrToken(

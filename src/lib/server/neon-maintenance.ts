@@ -4,6 +4,7 @@ import { getBackendMode, requireNeonBackend } from "./backend-mode";
 import { isValidCronAuthorization } from "./cron-auth";
 import { withTransaction } from "./db";
 import { expireNeonPurchaseHolds } from "./neon-purchase-expiry";
+import { expireEventAttempts } from "./neon-event-activities";
 
 export type NeonMaintenanceTransaction = <T>(operation: (client: PoolClient) => Promise<T>) => Promise<T>;
 export class NeonCronAuthorizationError extends Error {
@@ -60,10 +61,14 @@ export async function runNeonMaintenance(authorization: string | null,
         AND COALESCE(expires_at,application_deadline)<=now() RETURNING id`);
     const completedEvents = await client.query(`UPDATE public.events SET status='completed',is_active=false,updated_at=now()
       WHERE status IN ('approved','published') AND approval_status='approved' AND is_active=true
-        AND deleted_at IS NULL AND end_date<=now() RETURNING id`);
+        AND deleted_at IS NULL AND end_date<=now()
+        AND NOT EXISTS(SELECT 1 FROM public.event_activities a WHERE a.event_id=events.id AND a.status<>'closed' AND a.closes_at>now())
+        AND NOT EXISTS(SELECT 1 FROM public.event_ticket_types t WHERE t.event_id=events.id AND t.is_active AND t.deleted_at IS NULL AND t.sales_end_at>now())
+      RETURNING id`);
     const expiredAds = await client.query(`UPDATE public.advertisements SET status='expired',is_active=false,updated_at=now()
       WHERE status IN ('scheduled','active') AND deleted_at IS NULL AND end_date<=now() RETURNING id`);
     const holds = await expireNeonPurchaseHolds(client);
+    await expireEventAttempts(client);
     await client.query(`INSERT INTO public.notifications(recipient_id,title,message,type,category,channel,status,
       entity_type,entity_id,action_url,email_to,email_delivery_enabled,metadata)
       SELECT e.user_id,'Module access expires soon',concat('Your ',e.module_key,' access expires at ',e.expires_at,

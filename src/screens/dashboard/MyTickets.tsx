@@ -7,12 +7,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchMyTickets, type DigitalTicket } from "@/lib/events/events-client";
 import TicketPassCard from "@/components/events/TicketPassCard";
 import { Button } from "@/components/ui/button";
+import StudentEventActivities from "@/components/events/StudentEventActivities";
 
 export default function MyTickets() {
   const { session, user } = useAuth();
   const [tickets, setTickets] = useState<DigitalTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activityEvent, setActivityEvent] = useState<string | null>(null);
 
   const loadTickets = useCallback(async () => {
     if (!(isNeonClientRuntime() ? user : session?.access_token)) { setTickets([]); setLoading(false); return; }
@@ -77,10 +79,11 @@ export default function MyTickets() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {tickets.map((ticket) => (
-            <TicketPassCard key={ticket.id} ticket={ticket} />
+            <div key={ticket.id} className="space-y-3"><TicketPassCard ticket={ticket} />{ticket.event && <Button variant="outline" onClick={() => setActivityEvent(ticket.event!.id)}>Open event activities</Button>}</div>
           ))}
         </div>
       )}
+      {activityEvent && <StudentEventActivities key={activityEvent} eventId={activityEvent} />}
     </div>
   );
 }

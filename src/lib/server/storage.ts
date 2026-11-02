@@ -53,6 +53,8 @@ function getS3Client(): S3Client {
     region,
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true, // Required for Neon S3-compatible API
+    requestHandler: { connectionTimeout: 5000, requestTimeout: 15000 },
+    maxAttempts: 2,
   });
 
   return _s3Client;
@@ -72,6 +74,15 @@ export async function uploadObject(
     ContentType: contentType,
     ContentLength: bytes.byteLength,
   }));
+}
+
+/** Bounded server read for validated private certificate backgrounds. */
+export async function readObjectBytes(bucket: string, path: string, maxBytes = 20 * 1024 * 1024): Promise<Uint8Array> {
+  const result = await getS3Client().send(new GetObjectCommand({ Bucket: bucket, Key: path }));
+  if (!result.Body || !result.ContentLength || result.ContentLength > maxBytes) throw new Error("Object exceeds the permitted size.");
+  const bytes = await result.Body.transformToByteArray();
+  if (bytes.byteLength > maxBytes) throw new Error("Object exceeds the permitted size.");
+  return bytes;
 }
 
 // ---------------------------------------------------------------------------

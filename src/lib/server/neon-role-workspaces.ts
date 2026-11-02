@@ -79,7 +79,8 @@ const writeSchemas = {
 const fields: Record<string, readonly string[]> = {
   job: ["owner_user_id", "company_id", "title", "description", "location", "job_type", "experience_level", "is_remote", "application_deadline", "expires_at", "status"],
   event: ["organizer_user_id", "organizer_type", "organizer_id", "title", "description", "event_type", "format", "location", "meeting_url", "start_date", "end_date",
-    "registration_deadline", "capacity", "ticket_price", "currency", "status", "attachment_path", "attachment_name", "attachment_mime_type"],
+    "registration_deadline", "registration_open_at", "registration_close_at", "short_description", "terms_and_conditions",
+    "capacity", "ticket_price", "currency", "status", "attachment_path", "attachment_name", "attachment_mime_type"],
   mentor: ["headline", "description", "expertise", "hourly_rate", "years_experience", "is_available", "availability", "profile_image_url", "cover_image_url"],
   company: ["name", "description", "website", "location", "industry", "logo_url"],
 };
@@ -292,6 +293,8 @@ export class NeonRoleWorkspaces {
           }
           const merged = { ...existing, ...values };
           if (new Date(String(merged.end_date)) <= new Date(String(merged.start_date))) fail(400, "INVALID_SCHEDULE", "The event must end after it starts.");
+          if (merged.registration_open_at && merged.registration_close_at && new Date(String(merged.registration_close_at)) <= new Date(String(merged.registration_open_at)))
+            fail(400, "INVALID_SCHEDULE", "Registration must close after it opens.");
           if (merged.event_type === "paid" && Number(merged.ticket_price) <= 0) fail(400, "INVALID_PRICE", "Paid events require a positive ticket price.");
           if (merged.attachment_path && merged.attachment_path !== existing?.attachment_path) {
             if (!id) fail(400, "SAVE_BEFORE_UPLOAD", "Save the event before attaching files.");

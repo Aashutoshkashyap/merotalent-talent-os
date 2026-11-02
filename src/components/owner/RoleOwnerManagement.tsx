@@ -69,6 +69,10 @@ export interface OwnerEventRecord {
   start_date: string;
   end_date: string;
   registration_deadline: string | null;
+  registration_open_at?: string | null;
+  registration_close_at?: string | null;
+  short_description?: string | null;
+  terms_and_conditions?: string | null;
   capacity: number | null;
   ticket_price: number | null;
   currency: string | null;
@@ -219,6 +223,9 @@ export const EventEditor = ({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [registrationDeadline, setRegistrationDeadline] = useState("");
+  const [registrationOpen, setRegistrationOpen] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [terms, setTerms] = useState("");
   const [capacity, setCapacity] = useState("");
   const [ticketPrice, setTicketPrice] = useState("0");
   const [status, setStatus] = useState<"draft" | "pending_approval">("draft");
@@ -236,7 +243,10 @@ export const EventEditor = ({
     setMeetingUrl(event?.meeting_url ?? "");
     setStartDate(toLocalDateTime(event?.start_date) || futureLocalDateTime(24));
     setEndDate(toLocalDateTime(event?.end_date) || futureLocalDateTime(26));
-    setRegistrationDeadline(toLocalDateTime(event?.registration_deadline));
+    setRegistrationDeadline(toLocalDateTime(event?.registration_close_at ?? event?.registration_deadline));
+    setRegistrationOpen(toLocalDateTime(event?.registration_open_at));
+    setShortDescription(event?.short_description ?? "");
+    setTerms(event?.terms_and_conditions ?? "");
     setCapacity(event?.capacity == null ? "" : String(event.capacity));
     setTicketPrice(String(event?.ticket_price ?? 0));
     setStatus(event?.status === "draft" ? "draft" : "pending_approval");
@@ -272,6 +282,10 @@ export const EventEditor = ({
       start_date: startsAt.toISOString(),
       end_date: endsAt.toISOString(),
       registration_deadline: nullableIso(registrationDeadline),
+      registration_open_at: nullableIso(registrationOpen),
+      registration_close_at: nullableIso(registrationDeadline),
+      short_description: shortDescription.trim() || null,
+      terms_and_conditions: terms.trim() || null,
       capacity: capacity ? Number(capacity) : null,
       ticket_price: eventType === "paid" ? Number(ticketPrice) : 0,
       currency: "NPR",
@@ -316,6 +330,8 @@ export const EventEditor = ({
         <Label htmlFor="owner-event-description">Description</Label>
         <Textarea id="owner-event-description" value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClassName} rows={4} />
       </div>
+      <div className="space-y-2"><Label htmlFor="owner-event-summary">Short description</Label><Textarea id="owner-event-summary" value={shortDescription} maxLength={1000} onChange={e => setShortDescription(e.target.value)} className={fieldClassName} /></div>
+      <div className="space-y-2"><Label htmlFor="owner-event-terms">Terms and conditions</Label><Textarea id="owner-event-terms" value={terms} maxLength={20000} onChange={e => setTerms(e.target.value)} className={fieldClassName} /></div>
       {event ? <EntityAIControls module="events" entityType="event" entityId={event.id} title={title} context={`Event format: ${format}\nLocation: ${location}\nCurrent description: ${description}`} onDraft={setDescription} /> : <p className="text-xs text-muted-foreground">Save this event once to enable its entity-scoped AI controls.</p>}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
@@ -372,6 +388,7 @@ export const EventEditor = ({
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2"><Label htmlFor="owner-event-deadline">Registration closes</Label><Input id="owner-event-deadline" type="datetime-local" value={registrationDeadline} onChange={(e) => setRegistrationDeadline(e.target.value)} className={fieldClassName} /></div>
+        <div className="space-y-2"><Label htmlFor="owner-event-opens">Registration opens</Label><Input id="owner-event-opens" type="datetime-local" value={registrationOpen} onChange={e => setRegistrationOpen(e.target.value)} className={fieldClassName} /></div>
         <div className="space-y-2"><Label htmlFor="owner-event-capacity">Capacity</Label><Input id="owner-event-capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} className={fieldClassName} /></div>
         <div className="space-y-2"><Label htmlFor="owner-event-price">Ticket price (NPR)</Label><Input id="owner-event-price" type="number" min={0} step="0.01" disabled={eventType === "free"} value={ticketPrice} onChange={(e) => setTicketPrice(e.target.value)} className={fieldClassName} /></div>
       </div>

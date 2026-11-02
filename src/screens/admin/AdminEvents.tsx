@@ -1,5 +1,6 @@
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 import EventTicketManager from "@/components/events/EventTicketManager";
+import EventActivityManager from "@/components/events/EventActivityManager";
 import { displayedEventLifecycle } from "@/lib/events/lifecycle-display";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -1104,7 +1105,7 @@ export default function AdminEvents() {
               </DialogDescription>
             </DialogHeader>
 
-            {isNeonStaging ? <EventTicketManager eventId={managingTicketsEvent.id} /> : <div className="space-y-4 mt-3">
+            {isNeonStaging ? <div className="space-y-8"><EventTicketManager eventId={managingTicketsEvent.id} /><EventActivityManager eventId={managingTicketsEvent.id} /></div> : <div className="space-y-4 mt-3">
               <div className="rounded-2xl border p-4 bg-slate-50/50 space-y-3">
                 <span className="text-xs font-bold uppercase text-slate-700">Add New Ticket Tier</span>
                 <div className="grid gap-3 sm:grid-cols-2">

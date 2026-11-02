@@ -15,6 +15,7 @@ dist-ssr
 out
 .vercel
 *.tsbuildinfo
+/tmp/pdfs/
 *.local
 .env
 .env.*

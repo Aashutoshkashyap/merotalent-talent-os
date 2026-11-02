@@ -31,7 +31,7 @@ const s3 = new S3Client({ endpoint, region: process.env.AWS_REGION, forcePathSty
 const runId = randomBytes(6).toString("hex"), accounts = [];
 const collegeIds = [randomUUID(), randomUUID()], companyId = randomUUID(), mentorId = randomUUID(), eventId = randomUUID();
 const paymentId = randomUUID(), privateObjects = [];
-const names = { admin: `Synthetic Browser Admin ${runId}`, college: `Synthetic Browser College Admin ${runId}`,
+const names = { admin: `Synthetic Browser Admin ${runId}`, college: `Synthetic Browser College Admin ${runId}`, student: `Synthetic Event Student ${runId}`,
   colleges: [`Synthetic Browser College A ${runId}`, `Synthetic Browser College B ${runId}`],
   company: `Synthetic Browser Company ${runId}`, mentor: `Synthetic Browser Mentor ${runId}`, event: `Synthetic Browser Event ${runId}` };
 let connected = false, ready = false, cleaning;
@@ -85,6 +85,11 @@ const handler = async (req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ready, syntheticAccounts: accounts.length, fixtureNames: names, credentialsPrinted: false })); return;
   }
+  if (url.pathname === "/event-fixture" && ready) {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ eventId, eventName: names.event, studentId: accounts.find(account => account.kind === "student").userId,
+      eventAdminOpenUrl: `http://localhost:${port}/open?role=events`, studentOpenUrl: `http://localhost:${port}/open?role=student`, productionWrites: 0 })); return;
+  }
   if (url.pathname === "/verify-college-access" && ready) {
     const account = accounts.find(value => value.kind === "college");
     const checks = [];
@@ -125,11 +130,11 @@ const handler = async (req, res) => {
     return;
   }
   if (url.pathname !== "/open" || !ready) { res.writeHead(ready ? 404 : 503); res.end("UAT setup is not ready."); return; }
-  const college = url.searchParams.get("role") === "college";
-  const account = accounts.find(value => value.kind === (college ? "college" : "admin"));
+  const role = url.searchParams.get("role");
+  const account = accounts.find(value => value.kind === (role === "student" ? "student" : ["college", "events"].includes(role) ? "college" : "admin"));
   // Browser cookies are port-independent on localhost. These are the authentic
   // HttpOnly cookies returned by the application's own sign-in endpoint.
-  res.writeHead(302, { "Set-Cookie": account.setCookies, Location: `${app}${college ? "/institute" : "/admin"}` });
+  res.writeHead(302, { "Set-Cookie": account.setCookies, Location: `${app}${role === "student" ? "/dashboard/tickets" : role === "events" ? "/event-admin" : role === "college" ? "/institute" : "/admin"}` });
   res.end();
 };
 const server = createServer(handler), ipv6Server = createServer(handler);
@@ -142,6 +147,11 @@ async function cleanup() {
     let success = true;
     if (connected) {
       const ids = accounts.map(account => account.userId), subjects = accounts.map(account => account.subject);
+      const activityObjects = (await db.query("SELECT object_path FROM public.event_activity_files WHERE event_id=$1::uuid AND user_id=ANY($2::uuid[])", [eventId, ids])).rows;
+      for (const object of activityObjects) {
+        check(object.object_path.startsWith(`activities/${eventId}/`) && ids.some(id => object.object_path.startsWith(`activities/${eventId}/${id}/`)), "INVALID_ACTIVITY_CLEANUP_SCOPE");
+        privateObjects.push({ bucket: "event-attachments", key: object.object_path });
+      }
       // Discover only exact object keys under newly generated fixture UUIDs;
       // never remove an imported key or delete an object by wildcard/prefix.
       const buckets = ["resumes", "profile-media", "college-media", "mentor-media", "job-files", "event-media",
@@ -182,6 +192,22 @@ async function cleanup() {
         await db.query("DELETE FROM public.entity_admin_assignments WHERE user_id=ANY($1::uuid[])", [ids]);
         await db.query("DELETE FROM public.user_module_capabilities WHERE user_id=ANY($1::uuid[])", [ids]);
         await db.query("DELETE FROM public.media_upload_intents WHERE user_id=ANY($1::uuid[])", [ids]);
+        await db.query("DELETE FROM public.certificates WHERE event_id=$1::uuid", [eventId]);
+        await db.query(`DELETE FROM public.event_assignment_reviews WHERE submission_id IN(SELECT s.id FROM public.event_assignment_submissions s
+          JOIN public.event_activities a ON a.id=s.activity_id WHERE a.event_id=$1::uuid)`, [eventId]);
+        await db.query("DELETE FROM public.event_assignment_submissions WHERE activity_id IN(SELECT id FROM public.event_activities WHERE event_id=$1::uuid)", [eventId]);
+        await db.query("DELETE FROM public.quiz_attempts WHERE activity_id IN(SELECT id FROM public.event_activities WHERE event_id=$1::uuid)", [eventId]);
+        await db.query("DELETE FROM public.event_activity_ticket_access WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.event_activity_questions WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.quiz_questions WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.event_certificate_templates WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.event_activity_files WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.event_activities WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.quizzes WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.event_tickets WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.event_participants WHERE registration_id IN(SELECT id FROM public.event_registrations WHERE event_id=$1::uuid)", [eventId]);
+        await db.query("DELETE FROM public.event_registrations WHERE event_id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.event_ticket_types WHERE event_id=$1::uuid", [eventId]);
         await db.query("DELETE FROM public.institute_notices WHERE institute_id=ANY($1::uuid[])", [collegeIds]);
         await db.query("DELETE FROM public.college_blogs WHERE institute_id=ANY($1::uuid[])", [collegeIds]);
         await db.query("DELETE FROM public.institutes WHERE id=ANY($1::uuid[])", [collegeIds]);
@@ -222,7 +248,7 @@ try {
   await new Promise((resolve, reject) => { ipv6Server.once("error", reject); ipv6Server.listen({ port, host: "::1", ipv6Only: true }, resolve); });
   await db.connect(); connected = true;
   check((await appRequest(null, "/api/v1/neon-staging/profile")).status === 401, "LOCAL_APPLICATION_NOT_IN_NEON_STAGING");
-  const admin = await createAccount("admin"), college = await createAccount("college");
+  const admin = await createAccount("admin"), college = await createAccount("college"); await createAccount("student");
   await db.query("BEGIN");
   for (const account of accounts) {
     await db.query(`INSERT INTO public.profiles(user_id,email,full_name,phone,location,education,onboarding_completed)
@@ -260,6 +286,16 @@ try {
     VALUES($1::uuid,$2::uuid,'module_subscription',$3::uuid,500,'NPR','pending','manual',$4,'manual',$4,
     jsonb_build_object('module','college','entity_type','college','entity_id',$5::uuid,'start_at',now(),'expires_at',now()+interval '14 days','source','synthetic_browser_uat'))`,
   [paymentId, college.userId, firstAssignment, `SYNTHETIC-BROWSER-${runId}`, collegeIds[0]]);
+  await db.query("COMMIT");
+  await db.query("BEGIN");
+  const eventCapability = (await db.query(`INSERT INTO public.user_module_capabilities(user_id,capability_id,status,granted_by)
+    SELECT $1::uuid,id,'active',$2::uuid FROM public.module_capabilities WHERE module_key='events' AND is_active LIMIT 1 RETURNING id`, [college.userId, admin.userId])).rows[0];
+  check(eventCapability, "EVENT_CAPABILITY_UNAVAILABLE");
+  await db.query(`INSERT INTO public.entity_admin_assignments(user_id,user_capability_id,entity_type,entity_id,status,assigned_by)
+    VALUES($1::uuid,$2::uuid,'event',$3::uuid,'active',$4::uuid)`, [college.userId, eventCapability.id, eventId, admin.userId]);
+  await db.query(`INSERT INTO public.module_entitlements(user_id,module_key,entity_type,entity_id,source,status,start_at,expires_at,features,granted_by,reason)
+    VALUES($1::uuid,'events','event',$2::uuid,'ADMIN_MANUAL','active',now()-interval '1 minute',now()+interval '1 day',
+      '{"event_management":true,"registration_management":true,"media_management":true}'::jsonb,$3::uuid,'Disposable Event browser UAT only')`, [college.userId, eventId, admin.userId]);
   await db.query("COMMIT");
   for (const account of accounts) await applicationSignIn(account);
   const overview = await appRequest(admin, "/api/v1/neon-staging/admin/payments");
