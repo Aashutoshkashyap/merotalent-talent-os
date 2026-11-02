@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import ClientApp from "../client-app";
 import { getAdminClient } from "@/lib/server/supabase";
 import { getBackendMode } from "@/lib/server/backend-mode";
 import { readPublicCms } from "@/lib/server/neon-cms";
 import { readNeonPublicRecord } from "@/lib/server/neon-public-metadata";
 import type { CmsSnapshot, PublicSectionVisibility } from "@/hooks/useSiteCMS";
+import { legacyLearningDestination } from "@/lib/navigation/legacy-learning";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug?: string[] }> };
@@ -83,6 +85,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AppPage({ params }: Props) {
   const slug = (await params).slug;
+  const learningDestination = legacyLearningDestination(slug);
+  if (learningDestination) redirect(learningDestination);
   const [record, homeCmsSnapshot] = await Promise.all([getPublicRecord(slug), getHomeCmsSnapshot(slug)]);
   const safeJson = record ? JSON.stringify(record.jsonLd).replace(/</g, "\\u003c") : null;
   return <>{safeJson && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJson }} />}<ClientApp initialCmsSnapshot={homeCmsSnapshot} /></>;

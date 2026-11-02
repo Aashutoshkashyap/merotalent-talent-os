@@ -7,6 +7,9 @@ export const dashboardInteractiveSurface =
 export const dashboardTabs =
   "h-auto max-w-full justify-start gap-1 overflow-x-auto rounded-2xl border border-[#eee1d7] bg-white p-1.5 shadow-[0_8px_24px_rgba(69,42,21,0.04)]";
 
+export const dashboardFilterGroup =
+  "flex min-w-0 max-w-full flex-wrap items-center [&>button]:max-w-full [&>button]:whitespace-normal";
+
 export const dashboardSearch =
   "h-11 rounded-2xl border-[#ebddd2] bg-white shadow-[0_8px_24px_rgba(69,42,21,0.04)] focus-visible:border-[#c2410c]/50 focus-visible:ring-[#c2410c]/15";
 

@@ -3389,3 +3389,27 @@ production configuration change or live payment occurred in this continuation.
   Live post-release viewport/dialog checks must be distinguished from these
   automated structural checks. Full migration and financial acceptance remain
   separate; this follow-up changes no server-side entitlement or source data.
+- Release `02acca2` CI **41371914855 PASS**, production deployment
+  **dpl_GzJQPQqVVmR9F1pt8wJBULhBvwe5 READY**. Actual production phone review
+  now shows the Event actions fully visible, Package/Competition controls
+  contained, and Job/Event dialogs with content width **341px = client width**
+  (previous Job content width 514px). Tablet checks at 768px show no clipped
+  controls in Events, Packages, Jobs or People. No production form was saved.
+- Continued phone review reached Profile, Jobs, Mentors, Sessions, Event Passes,
+  Payments and Settings. It found two further raw filter groups clipping Schools
+  and Viewed: `dashboardStyles.ts`, `Colleges.tsx` and `ActivityTracker.tsx` now
+  wrap those groups and expose their selected state. No record was modified.
+- Real browser followed the partner site's START LEARNING link to the main-domain
+  `/s/store` and verified the application's 404 screen. Added a narrow server-side
+  `legacyLearningDestination` redirect for public store/contact paths and old
+  learning-provider course slugs ending in a 24-hex identifier. Destination is
+  pinned to the existing learning subdomain; queries are never forwarded, current
+  UUID course paths are preserved, and auth/API/admin paths cannot match.
+  Existing partner destinations all responded 200. No learning CMS was rebuilt.
+- Final follow-up checks: **227 files /1,147 tests PASS**, typecheck, explicit
+  Neon-production build, architecture inventory and diff checks PASS; lint
+  **0 errors /34 existing warnings**. Seven actual HTTP checks against that
+  production build prove four exact 307 redirects without query forwarding and
+  three unaffected app paths (including UUID course paths). The local server was
+  stopped. Post-release browser checks remain separate from this build evidence;
+  no claim is made about all external sites, all records or every role/session.

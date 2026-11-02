@@ -4,9 +4,16 @@ import { describe, expect, it } from "vitest";
 import { Badge } from "@/components/ui/badge";
 import { OperationsPage } from "@/screens/admin/OperationsUI";
 import { Button } from "@/components/ui/button";
+import { dashboardFilterGroup } from "@/components/dashboard/dashboardStyles";
 
 const source = (file: string) => readFileSync(`${process.cwd()}/${file}`, "utf8");
 describe("responsive performance regressions", () => {
+  it("wraps dashboard institution and activity filters instead of clipping the final option", () => {
+    render(<div role="group" aria-label="Institution categories" className={dashboardFilterGroup}><button>Colleges & Universities</button><button>Schools</button></div>);
+    expect(screen.getByRole("group", { name: "Institution categories" })).toHaveClass("min-w-0", "max-w-full", "flex-wrap", "[&>button]:max-w-full", "[&>button]:whitespace-normal");
+    expect(source("src/screens/dashboard/Colleges.tsx")).toContain("${dashboardFilterGroup}");
+    expect(source("src/screens/dashboard/ActivityTracker.tsx")).toContain("${dashboardFilterGroup}");
+  });
   it("contains and wraps admin header actions without shrinking site typography", () => {
     const { container } = render(<OperationsPage><div className="flex items-center justify-between"><div><h1>Event management</h1></div><div className="flex gap-2"><Button>Live Check-in Scanner</Button><Button>Create Event</Button></div></div></OperationsPage>);
     expect(container.firstChild).toHaveClass(

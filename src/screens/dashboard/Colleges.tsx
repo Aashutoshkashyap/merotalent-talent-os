@@ -48,6 +48,7 @@ import {
 import { ExternalLink, Globe2 } from "lucide-react";
 import { isNeonClientRuntime } from "@/lib/backend-selection";
 import { invalidateStudentActivityCache } from "@/lib/student/activity-cache";
+import { dashboardFilterGroup } from "@/components/dashboard/dashboardStyles";
 
 type Level = "+2" | "Bachelors" | "Masters";
 const PAGE_SIZE = 6;
@@ -249,7 +250,7 @@ export default function Colleges() {
 
       {/* Category Tabs */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2 bg-slate-100/80 p-1 rounded-2xl">
+        <div role="group" aria-label="Institution categories" className={`${dashboardFilterGroup} gap-2 bg-slate-100/80 p-1 rounded-2xl`}>
           {[
             { id: "all", label: "All Institutions" },
             { id: "college", label: "Colleges & Universities" },
@@ -258,6 +259,7 @@ export default function Colleges() {
           ].map((cat) => (
             <button
               key={cat.id}
+              aria-pressed={category === cat.id}
               onClick={() => {
                 setCategory(cat.id as InstituteCategory);
                 setPage(1);

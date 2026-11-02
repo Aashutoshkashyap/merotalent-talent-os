@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useStudentActivity } from "@/hooks/useStudentActivity";
 import { getLoggedActivities } from "@/lib/activityLogger";
+import { dashboardFilterGroup } from "@/components/dashboard/dashboardStyles";
 
 type Tab = "applied" | "bookmarked" | "viewed";
 
@@ -191,8 +192,9 @@ export default function ActivityTracker() {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl">
+        <div role="group" aria-label="Activity history filters" className={`${dashboardFilterGroup} gap-1 bg-slate-100 p-1.5 rounded-2xl`}>
           <button
+            aria-pressed={activeTab === "applied"}
             onClick={() => setActiveTab("applied")}
             className={`px-4 py-2 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === "applied" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
@@ -202,6 +204,7 @@ export default function ActivityTracker() {
             Applied ({appliedItems.length})
           </button>
           <button
+            aria-pressed={activeTab === "bookmarked"}
             onClick={() => setActiveTab("bookmarked")}
             className={`px-4 py-2 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === "bookmarked" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
@@ -211,6 +214,7 @@ export default function ActivityTracker() {
             Bookmarked ({bookmarkedItems.length})
           </button>
           <button
+            aria-pressed={activeTab === "viewed"}
             onClick={() => setActiveTab("viewed")}
             className={`px-4 py-2 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === "viewed" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
