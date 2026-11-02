@@ -15,7 +15,7 @@ import { AssessmentContent, AssessmentImage } from "./AssessmentContent";
 import { eventExportKinds } from "@/lib/events/export";
 
 type Activity = z.infer<typeof activitySchema> & { id: string };
-type Data = { activities: Activity[]; questions: AssessmentQuestion[]; tickets: Array<{ id: string; name: string }> };
+type Data = { activities: Activity[]; questions: AssessmentQuestion[]; tickets: Array<{ id: string; name: string; ticket_kind: string }> };
 const dateInput = (value: string) => new Date(new Date(value).getTime() - new Date(value).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const blank = (): Omit<Activity, "id"> => ({ kind: "quiz", title: "", instructions: "", status: "draft",
   opens_at: new Date().toISOString(), closes_at: new Date(Date.now() + 86400000).toISOString(), duration_seconds: 1800,
@@ -146,7 +146,8 @@ export default function EventActivityManager({ eventId, onEnrollmentChanged }: {
         <h3 className="font-semibold">Manual enrollment of an existing student</h3>
         <p className="text-sm text-muted-foreground">An explicit complimentary enrollment is audited; it is never recorded as a successful payment.</p>
         <Label>Existing student account ID<Input required value={studentId} onChange={event => { setStudentId(event.target.value); setEnrollKey(crypto.randomUUID()); }} /></Label>
-        <Label>Ticket category<select className="block w-full rounded-lg border p-2" value={enrollTicket} onChange={event => { setEnrollTicket(event.target.value); setEnrollKey(crypto.randomUUID()); }}><option value="">Complimentary general admission</option>{data.tickets.map(ticket => <option key={ticket.id} value={ticket.id}>{ticket.name}</option>)}</select></Label>
+        <Label>Ticket category<select className="block w-full rounded-lg border p-2" value={enrollTicket} onChange={event => { setEnrollTicket(event.target.value); setEnrollKey(crypto.randomUUID()); }}><option value="">Complimentary general admission</option>{data.tickets.filter(ticket => ticket.ticket_kind === "individual").map(ticket => <option key={ticket.id} value={ticket.id}>{ticket.name}</option>)}</select></Label>
+        <p className="text-sm text-muted-foreground">Manual enrollment adds one existing student at a time. Group and team purchases use the normal ticket checkout.</p>
         <Label>Access expiry (optional)<Input type="datetime-local" value={enrollExpiry} onChange={event => { setEnrollExpiry(event.target.value); setEnrollKey(crypto.randomUUID()); }} /></Label>
         <fieldset><legend className="font-semibold">Explicit activity access</legend>{data.activities.map(activity => <Label key={activity.id} className="flex gap-2"><input type="checkbox" checked={enrollActivities.includes(activity.id)} onChange={() => { setEnrollActivities(previous => previous.includes(activity.id) ? previous.filter(id => id !== activity.id) : [...previous, activity.id]); setEnrollKey(crypto.randomUUID()); }} />{activity.title}</Label>)}</fieldset>
         <Label>Reason for complimentary access<Textarea required minLength={10} value={reason} onChange={event => { setReason(event.target.value); setEnrollKey(crypto.randomUUID()); }} /></Label>

@@ -3282,6 +3282,33 @@ production configuration change or live payment occurred in this continuation.
   changes and payment changes: **zero**. Private evidence:
   `event-activities-production-20261102-final.json`. Additive rollback: restore the
   prior application release and retain new schema/records; do not drop new tables.
+- Implementation release **`97c4b7ac811597e6d0635edc523c0faf31e42890`** is pushed.
+  CI **41366265398** passed both jobs; Vercel **`dpl_HPitbSNNnGwxWd8NWvcnYGtEhxAV`**
+  is READY and serves the canonical `www.merotalent.com` alias. Live HTTP checks:
+  Events API/page 200, unauthenticated activity access 401 with no-store, unknown
+  certificate 404 with no-store. The authenticated real owner opened existing
+  Event Admin ticket, activity, presentation, assignment, export and certificate
+  panels successfully. No production event, enrollment, grade or certificate was
+  created/changed by this browser inspection. Public discovery is correctly empty:
+  existing events shown in admin are pending approval or completed, not published.
+- Cleanup of the long-lived browser helper encountered its stale idle connection.
+  The helper now reconnects before cleanup. The guarded recovery tool
+  `cleanup-neon-event-browser-fixture.mjs` required the exact synthetic nonce,
+  synthetic identity proofs and known entity names, refused real financial/media
+  records, then removed only this fixture. **PASS: 3 synthetic Auth/application
+  accounts and 2 private objects removed**, exact-object HEAD absence verified.
+  An independent fresh read confirmed zero fixture profiles, Auth subjects, event
+  rows or private-file metadata. Local staging server stopped; production untouched
+  by cleanup. No backup, source account or rollback asset was removed.
+- A small follow-up filters manual single-student ticket choices to individual
+  tiers, matching the existing server rule. Group/team activity mappings remain
+  available and group purchases retain their normal checkout. Targeted UI regression
+  passes; this does not alter inventory, payment, capacity or authorization rules.
+- Follow-up final local verification: **225 files /1,124 tests PASS**, typecheck,
+  production build, targeted lint and diff check PASS. CI's old Supabase drift job
+  is explicitly **skipped because its legacy secrets are unset**; its green job is
+  not Neon/source parity evidence. The new schema's production transaction checks
+  and restored-backup rehearsal above are the actual target evidence for this release.
 - Browser review found base event pricing could incorrectly advertise free
   admission when all active ticket tiers were paid. `price-display.ts`, public
   event directory/detail and Admin Events now distinguish tier starting prices

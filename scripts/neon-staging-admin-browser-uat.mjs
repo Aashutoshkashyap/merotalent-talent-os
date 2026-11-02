@@ -146,6 +146,9 @@ async function cleanup() {
     await Promise.all([server, ipv6Server].map(value => new Promise(resolve => value.close(resolve))));
     let success = true;
     if (connected) {
+      // A browser handoff can last hours; never begin cleanup on its idle client.
+      await db.end().catch(() => undefined);
+      db = createClient(); await db.connect();
       const ids = accounts.map(account => account.userId), subjects = accounts.map(account => account.subject);
       const activityObjects = (await db.query("SELECT object_path FROM public.event_activity_files WHERE event_id=$1::uuid AND user_id=ANY($2::uuid[])", [eventId, ids])).rows;
       for (const object of activityObjects) {

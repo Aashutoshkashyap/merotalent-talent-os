@@ -453,7 +453,7 @@ export class NeonEventActivities {
         FROM public.event_activities a WHERE event_id=$1::uuid ORDER BY opens_at,id`, [eventId])).rows;
       const questions = (await db.query(`SELECT id,question,question_type,options,correct_answer,COALESCE(event_points,points)::float AS points,
         answer_rules,media_file_id,status FROM public.quiz_questions WHERE event_id=$1::uuid ORDER BY created_at,id`, [eventId])).rows;
-      const tickets = (await db.query(`SELECT id,name FROM public.event_ticket_types WHERE event_id=$1::uuid AND deleted_at IS NULL ORDER BY name`, [eventId])).rows;
+      const tickets = (await db.query(`SELECT id,name,ticket_kind FROM public.event_ticket_types WHERE event_id=$1::uuid AND deleted_at IS NULL ORDER BY name`, [eventId])).rows;
       return { activities, questions, tickets };
     });
   }
