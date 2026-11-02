@@ -3363,3 +3363,29 @@ production configuration change or live payment occurred in this continuation.
   pricing and mixed currencies. No stored event price was changed by this fix.
   Full standard suite: **217 files /1,086 tests PASS**. Operator will perform the
   real purchase later; that financial acceptance is deliberately still open.
+
+#### Responsive controls and navigation follow-up — 2026-11-02
+
+- Live phone inspection at 375px confirmed clipped Event actions (Create Event
+  right edge 422px), Package actions and Create Competition. The mobile job dialog
+  was 341px wide but its content expanded to 514px because a long AI action set
+  the grid's automatic minimum. Document width alone had concealed these defects.
+- `OperationsUI.tsx` now wraps header copy/actions and contains long buttons;
+  `dialog.tsx` constrains grid children, wraps long actions, separates footer
+  buttons and reserves heading space for the close control. `button.tsx` marks
+  real action buttons so dialog rules do not resize checkboxes or the close icon.
+  Global typography, permissions, data and payment settings are unchanged.
+- Expanded `application-route-links.test.ts` from literal attributes to parsed
+  navigation calls, JSX expressions, conditional links and template route shapes.
+  Dynamic record existence and external destinations still require live checks;
+  passing route-shape tests is not an assertion that every possible URL works.
+- Real phone navigation reached Jobs, Institutions, Mentors, Packages,
+  Competitions, Payments, Access Requests, Applications, Bookings, Reports,
+  Support, Featured, Notifications, CMS and Settings without a missing-route
+  screen. All were read-only; no form, purchase or configuration was submitted.
+- Local final revision: **226 files /1,128 tests PASS**, typecheck and production
+  build PASS, lint **0 errors /34 existing warnings**, diff check PASS. New
+  regressions cover admin action wrapping and intrinsic dialog-grid sizing.
+  Live post-release viewport/dialog checks must be distinguished from these
+  automated structural checks. Full migration and financial acceptance remain
+  separate; this follow-up changes no server-side entitlement or source data.

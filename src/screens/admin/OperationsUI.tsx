@@ -13,6 +13,10 @@ export const operationsPageClass = cn(
   "[&>div:first-child]:rounded-[24px] [&>div:first-child]:border [&>div:first-child]:border-[#e2e8f0]",
   "[&>div:first-child]:gap-4 [&>div:first-child]:bg-[#f8fafc] [&>div:first-child]:p-4 sm:[&>div:first-child]:p-5 md:[&>div:first-child]:p-6",
   "[&>div:first-child]:shadow-[0_12px_30px_rgba(0,0,0,0.04)]",
+  // Header copy and action groups must wrap, not disappear behind layout clipping.
+  "[&>div:first-child]:flex-wrap max-sm:[&>div:first-child]:flex-col max-sm:[&>div:first-child]:items-stretch",
+  "[&>div:first-child>div]:min-w-0 [&>div:first-child>div]:max-w-full [&>div:first-child>div.flex]:flex-wrap",
+  "[&>div:first-child_button]:max-w-full [&>div:first-child_button]:whitespace-normal [&>div:first-child_button]:h-auto [&>div:first-child_button]:min-h-10",
   "[&_h1]:tracking-[-0.025em] [&_h1]:text-[#0f172a] [&_h1]:text-xl sm:[&_h1]:text-2xl font-bold",
   "[&_.bg-card]:overflow-hidden [&_.bg-card]:rounded-[22px] [&_.bg-card]:border-[#e2e8f0] [&_.bg-card]:bg-[#f8fafc]",
   "[&_.bg-card]:shadow-[0_10px_28px_rgba(0,0,0,0.03)]",
