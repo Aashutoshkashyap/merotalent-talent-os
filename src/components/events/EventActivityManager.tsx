@@ -21,6 +21,10 @@ const blank = (): Omit<Activity, "id"> => ({ kind: "quiz", title: "", instructio
   opens_at: new Date().toISOString(), closes_at: new Date(Date.now() + 86400000).toISOString(), duration_seconds: 1800,
   max_attempts: 1, max_marks: 100, results_publish_at: null, review_answers: false, ticket_type_ids: [], question_ids: [], settings: activitySettingsSchema.parse({}) });
 export default function EventActivityManager({ eventId, onEnrollmentChanged }: { eventId: string; onEnrollmentChanged?: () => void }) {
+  // Scope changes must discard drafts, selections and late responses from the old event.
+  return <EventActivityEditor key={eventId} eventId={eventId} onEnrollmentChanged={onEnrollmentChanged} />;
+}
+function EventActivityEditor({ eventId, onEnrollmentChanged }: { eventId: string; onEnrollmentChanged?: () => void }) {
   const [data, setData] = useState<Data | null>(null), [form, setForm] = useState(blank), [editing, setEditing] = useState<string>();
   const [error, setError] = useState(""), [busy, setBusy] = useState(false), [notice, setNotice] = useState("");
   const [question, setQuestion] = useState(""), [options, setOptions] = useState(""), [correct, setCorrect] = useState("");

@@ -3309,6 +3309,51 @@ production configuration change or live payment occurred in this continuation.
   is explicitly **skipped because its legacy secrets are unset**; its green job is
   not Neon/source parity evidence. The new schema's production transaction checks
   and restored-backup rehearsal above are the actual target evidence for this release.
+
+### 2026-11-02 — Same-event and separate-event quiz/upload acceptance
+
+- Resumed from deployed `d1ac89ae34eca588c5334517b089ad3a08af402c`, CI
+  **41367394606 PASS**, canonical deployment **dpl_3ZrH5zoTfY2rZ4Mrdc4oqTDRtDbB**.
+  The existing model already supports independent quiz and assignment activities;
+  neither kind requires the other, and every activity/file/result belongs to one
+  event. No parallel event system or new schema was introduced for this follow-up.
+- Hardened `EventActivityManager` with an event-keyed editor so changing events
+  discards unsaved activity/question/enrollment/certificate drafts and ignores old
+  event responses. Ticket editors are keyed in both Event Admin and Super Admin;
+  diagram previews reset when their event/file changes. The student view now names
+  the selected event and marks its pass button, while retaining per-event keys.
+- Two new actual staging SQL cases passed: combined quiz+assignment access,
+  upload-only access in another event, separate enrollment, wrong-event attempts,
+  cross-event certificate criteria and file reuse rejection. A file cannot be
+  reused for a sibling assignment in the same event or an assignment in another
+  event, even by the same student who is enrolled in both.
+- `verify-neon-multi-event-http.mjs` passed **30/30 real HTTP checks** using two
+  disposable events, legitimate staging sessions and real private object writes:
+  Event A quiz plus upload, Event B standalone upload, separate enrollment, wrong
+  path/file/grade rejection, marks **80 vs 60**, independent certificates, and exact
+  SHA256 download bytes. Provider calls, charges and production writes: **zero**.
+- Browser evidence: assigned organizer sees both event choices. Switching from
+  Event A's unsaved draft to B clears the title and excludes A's quiz/question bank.
+  Student A displays its quiz, assignment grade 80 and its own certificate; B
+  displays only its assignment grade 60 and a different certificate. The selected
+  B event label is correct and A quiz heading count is zero. Chrome local-file
+  access remains off, as explicitly requested; uploads are HTTP-verified, not
+  falsely described as native browser uploads.
+- Browser helper/recovery cleanup supports both exact synthetic event IDs. The
+  normal cleanup passed after this run: **3 synthetic accounts and 4 private
+  objects removed**, no production writes. No historical account, source record,
+  merchant setting, price or payment state was changed. Existing backup/rollback
+  artifacts remain intact.
+- Final local standard suite: **225 files /1,126 tests PASS**, production build,
+  typecheck and diff pass; lint **0 errors /34 existing warnings**. Focused UI
+  regressions cover draft reset, delayed previous-event responses, selection labels
+  and background autosave. Combined 21-case staging and release evidence follows
+  after execution; no financial settlement or full migration acceptance is claimed.
+- Final combined staging regression: **21/21 PASS**, including same-event sibling
+  assignment rejection and cross-event isolation. All transaction fixtures rolled
+  back and exact test objects removed. No additional production migration is needed
+  for this UI/state isolation update. Existing approval, entitlement and payment
+  checks remain unchanged.
 - Browser review found base event pricing could incorrectly advertise free
   admission when all active ticket tiers were paid. `price-display.ts`, public
   event directory/detail and Admin Events now distinguish tier starting prices

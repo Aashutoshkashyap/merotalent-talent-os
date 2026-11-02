@@ -14,7 +14,7 @@ interface Attempt { id: string; state: string; started_at: string; deadline_at: 
   answers: Record<string, StudentAnswer>; questions: Array<ReturnType<typeof publicQuestion>>; server_time: string;
   score: number | null; total_marks: number | null; review: Array<{ id: string; correct_answer: string; explanation: string }> | null }
 interface AttemptPolicy { question_count?: number; question_index?: number; navigation?: "free" | "forward_only"; require_all_answers?: boolean }
-export default function StudentEventActivities({ eventId }: { eventId: string }) {
+export default function StudentEventActivities({ eventId, eventTitle }: { eventId: string; eventTitle?: string }) {
   const [activities, setActivities] = useState<Activity[]>([]), [selected, setSelected] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState<(Attempt & AttemptPolicy) | null>(null), [answers, setAnswers] = useState<Record<string, StudentAnswer>>({});
@@ -61,6 +61,7 @@ export default function StudentEventActivities({ eventId }: { eventId: string })
   };
   return <section className="space-y-4 rounded-xl border p-4" aria-label="My event activities">
     <h2 className="text-xl font-semibold">My event activities</h2>
+    {eventTitle && <p className="font-medium" aria-label="Selected event">{eventTitle}</p>}
     <StudentEventCertificates eventId={eventId} />
     {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-900">{error}<Button variant="outline" onClick={() => void (attempt ? save() : load())}>Retry</Button></p>}
     {loading ? <p role="status">Loading your event activities…</p> : !selected ? activities.length ? activities.map(activity => <article key={activity.id} className="space-y-2 rounded-lg border p-3">

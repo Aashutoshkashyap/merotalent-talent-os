@@ -19,6 +19,7 @@ export function AssessmentContent({ text }: { text: string }) {
 export function AssessmentImage({ eventId, fileId, management = false }: { eventId: string; fileId?: string | null; management?: boolean }) {
   const [url, setUrl] = useState<string | null>(null), [failed, setFailed] = useState(false);
   useEffect(() => {
+    setUrl(null); setFailed(false);
     if (!fileId) return;
     let live = true;
     const refresh = () => void requestRoleWorkspace(`/api/v1/events/${eventId}/activities/files?fileId=${fileId}${management ? "&management=true" : ""}`)

@@ -73,7 +73,7 @@ describe("actual Neon Event activity runtime (all writes rolled back)", () => {
   }, 90000);
   afterEach(async () => {
     for (const path of stored) {
-      if (!path.startsWith(`activities/${eventId}/`)) throw new Error("Unexpected staging cleanup target.");
+      if (![eventId, otherEventId].some(id => path.startsWith(`activities/${id}/`))) throw new Error("Unexpected staging cleanup target.");
       await deleteObject("event-attachments", path); stored.delete(path);
     }
     await db.query("ROLLBACK TO SAVEPOINT test_case");
@@ -264,6 +264,43 @@ describe("actual Neon Event activity runtime (all writes rolled back)", () => {
     const unused = await service.uploadFile(student, eventId, { purpose: "assignment", activityId: assignmentId, fileName: "unused.pdf", bytes: await pdf.save() });
     expect(await service.deleteUnusedFile(student, eventId, unused.id)).toMatchObject({ deleted: true });
     await expect(service.fileUrl(student, eventId, unused.id)).rejects.toMatchObject({ code: "FILE_UNAVAILABLE" });
+  }, 90000);
+  it("supports combined quiz/upload events and independent upload-only events without enrollment or result bleed", async () => {
+    const combinedAssignment = (await service.saveActivity(owner, eventId, { ...payload(), kind: "assignment", question_ids: [] })).id;
+    const separateAssignment = (await service.saveActivity(owner, otherEventId, { ...payload(), kind: "assignment", title: "Separate event upload", question_ids: [], ticket_type_ids: [] })).id;
+    const registration = await enroll();
+    await service.enrollments(owner, eventId, { id: registration.id, activity_ids: [activityId, combinedAssignment], access_suspended: false,
+      access_expires_at: null, reason: "Explicit combined quiz and upload scope" });
+    expect((await service.studentActivities(student, eventId)).map(row => row.kind).sort()).toEqual(["assignment", "quiz"]);
+    await expect(service.studentActivities(student, otherEventId)).rejects.toMatchObject({ code: "EVENT_ENROLLMENT_REQUIRED" });
+    await service.manualEnroll(owner, otherEventId, { user_id: student.userId, ticket_type_id: null, activity_ids: [separateAssignment],
+      access_expires_at: null, reason: "Separate explicit event enrollment", idempotency_key: randomUUID() });
+    expect((await service.studentActivities(student, otherEventId)).map(row => row.id)).toEqual([separateAssignment]);
+    await expect(service.attempt(student, otherEventId, activityId)).rejects.toMatchObject({ code: "ACTIVITY_UNAVAILABLE" });
+    await expect(service.assignment(student, eventId, separateAssignment)).rejects.toMatchObject({ code: "ACTIVITY_UNAVAILABLE" });
+    await expect(service.certificateTemplates(owner, otherEventId, { title: "No cross-event completion", kind: "completion", background_file_id: null,
+      layout: defaultCertificateLayout, auto_issue: true, is_active: true, eligibility: { require_attendance: false, activity_ids: [activityId], minimum_percent: 50 } }))
+      .rejects.toMatchObject({ code: "INVALID_CERTIFICATE_SCOPE" });
+  });
+  it("never reuses an uploaded document across activities or events, even when the same student is enrolled in both", async () => {
+    const same = (await service.saveActivity(owner, eventId, { ...payload(), kind: "assignment", question_ids: [] })).id;
+    const sibling = (await service.saveActivity(owner, eventId, { ...payload(), kind: "assignment", title: "Another upload in the same event", question_ids: [] })).id;
+    const second = (await service.saveActivity(owner, otherEventId, { ...payload(), kind: "assignment", question_ids: [], ticket_type_ids: [] })).id;
+    const registration = await enroll();
+    await service.enrollments(owner, eventId, { id: registration.id, activity_ids: [activityId, same, sibling], access_suspended: false,
+      access_expires_at: null, reason: "Include combined event assignment" });
+    await service.manualEnroll(owner, otherEventId, { user_id: student.userId, ticket_type_id: null, activity_ids: [second],
+      access_expires_at: null, reason: "Independent upload-only event access", idempotency_key: randomUUID() });
+    const pdf = await PDFDocument.create(); pdf.addPage(); const bytes = await pdf.save();
+    const file = await service.uploadFile(student, eventId, { purpose: "assignment", activityId: same, fileName: "combined-event.pdf", bytes });
+    await expect(service.assignment(student, eventId, sibling, { file_ids: [file.id] })).rejects.toMatchObject({ code: "INVALID_SUBMISSION_FILES" });
+    await expect(service.fileUrl(student, otherEventId, file.id)).rejects.toMatchObject({ code: "FILE_UNAVAILABLE" });
+    await expect(service.assignment(student, otherEventId, second, { file_ids: [file.id], comments: "Wrong event" })).rejects.toMatchObject({ code: "INVALID_SUBMISSION_FILES" });
+    await expect(service.uploadFile(student, otherEventId, { purpose: "assignment", activityId: same, fileName: "wrong-scope.pdf", bytes })).rejects.toMatchObject({ code: "ACTIVITY_UNAVAILABLE" });
+    const own = await service.uploadFile(student, otherEventId, { purpose: "assignment", activityId: second, fileName: "separate-event.pdf", bytes });
+    await expect(service.assignment(student, eventId, same, { file_ids: [own.id] })).rejects.toMatchObject({ code: "INVALID_SUBMISSION_FILES" });
+    expect(await service.assignment(student, eventId, same, { file_ids: [file.id] })).toHaveProperty("id");
+    expect(await service.assignment(student, otherEventId, second, { file_ids: [own.id] })).toHaveProperty("id");
   }, 90000);
   it("issues a real eligible PDF exactly once, preserves privacy and honors revocation", async () => {
     await enroll();

@@ -79,11 +79,11 @@ export default function MyTickets() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {tickets.map((ticket) => (
-            <div key={ticket.id} className="space-y-3"><TicketPassCard ticket={ticket} />{ticket.event && <Button variant="outline" onClick={() => setActivityEvent(ticket.event!.id)}>Open event activities</Button>}</div>
+            <div key={ticket.id} className="space-y-3"><TicketPassCard ticket={ticket} />{ticket.event && <Button variant={activityEvent === ticket.event.id ? "default" : "outline"} aria-pressed={activityEvent === ticket.event.id} onClick={() => setActivityEvent(ticket.event!.id)}>Open event activities</Button>}</div>
           ))}
         </div>
       )}
-      {activityEvent && <StudentEventActivities key={activityEvent} eventId={activityEvent} />}
+      {activityEvent && <StudentEventActivities key={activityEvent} eventId={activityEvent} eventTitle={tickets.find(ticket => ticket.event?.id === activityEvent)?.event?.title} />}
     </div>
   );
 }

@@ -29,11 +29,12 @@ let db = createClient();
 const s3 = new S3Client({ endpoint, region: process.env.AWS_REGION, forcePathStyle: true,
   credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY } });
 const runId = randomBytes(6).toString("hex"), accounts = [];
-const collegeIds = [randomUUID(), randomUUID()], companyId = randomUUID(), mentorId = randomUUID(), eventId = randomUUID();
+const collegeIds = [randomUUID(), randomUUID()], companyId = randomUUID(), mentorId = randomUUID(), eventId = randomUUID(), secondEventId = randomUUID();
+const eventIds = [eventId, secondEventId];
 const paymentId = randomUUID(), privateObjects = [];
 const names = { admin: `Synthetic Browser Admin ${runId}`, college: `Synthetic Browser College Admin ${runId}`, student: `Synthetic Event Student ${runId}`,
   colleges: [`Synthetic Browser College A ${runId}`, `Synthetic Browser College B ${runId}`],
-  company: `Synthetic Browser Company ${runId}`, mentor: `Synthetic Browser Mentor ${runId}`, event: `Synthetic Browser Event ${runId}` };
+  company: `Synthetic Browser Company ${runId}`, mentor: `Synthetic Browser Mentor ${runId}`, event: `Synthetic Browser Event ${runId}`, secondEvent: `Synthetic Browser Event B ${runId}` };
 let connected = false, ready = false, cleaning;
 const check = (condition, code) => { if (!condition) throw new Error(code); };
 const cookieOf = response => response.headers.getSetCookie().map(value => value.split(";", 1)[0]).join("; ");
@@ -87,7 +88,7 @@ const handler = async (req, res) => {
   }
   if (url.pathname === "/event-fixture" && ready) {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ eventId, eventName: names.event, studentId: accounts.find(account => account.kind === "student").userId,
+    res.end(JSON.stringify({ eventId, secondEventId, eventName: names.event, secondEventName: names.secondEvent, studentId: accounts.find(account => account.kind === "student").userId,
       eventAdminOpenUrl: `http://localhost:${port}/open?role=events`, studentOpenUrl: `http://localhost:${port}/open?role=student`, productionWrites: 0 })); return;
   }
   if (url.pathname === "/verify-college-access" && ready) {
@@ -150,9 +151,9 @@ async function cleanup() {
       await db.end().catch(() => undefined);
       db = createClient(); await db.connect();
       const ids = accounts.map(account => account.userId), subjects = accounts.map(account => account.subject);
-      const activityObjects = (await db.query("SELECT object_path FROM public.event_activity_files WHERE event_id=$1::uuid AND user_id=ANY($2::uuid[])", [eventId, ids])).rows;
+      const activityObjects = (await db.query("SELECT object_path FROM public.event_activity_files WHERE event_id=ANY($1::uuid[]) AND user_id=ANY($2::uuid[])", [eventIds, ids])).rows;
       for (const object of activityObjects) {
-        check(object.object_path.startsWith(`activities/${eventId}/`) && ids.some(id => object.object_path.startsWith(`activities/${eventId}/${id}/`)), "INVALID_ACTIVITY_CLEANUP_SCOPE");
+        check(eventIds.some(event => ids.some(id => object.object_path.startsWith(`activities/${event}/${id}/`))), "INVALID_ACTIVITY_CLEANUP_SCOPE");
         privateObjects.push({ bucket: "event-attachments", key: object.object_path });
       }
       // Discover only exact object keys under newly generated fixture UUIDs;
@@ -195,6 +196,9 @@ async function cleanup() {
         await db.query("DELETE FROM public.entity_admin_assignments WHERE user_id=ANY($1::uuid[])", [ids]);
         await db.query("DELETE FROM public.user_module_capabilities WHERE user_id=ANY($1::uuid[])", [ids]);
         await db.query("DELETE FROM public.media_upload_intents WHERE user_id=ANY($1::uuid[])", [ids]);
+        for (const eventId of eventIds) {
+        await db.query(`DELETE FROM public.audit_logs WHERE entity_type='quiz_attempts' AND entity_id IN(
+          SELECT q.id::text FROM public.quiz_attempts q JOIN public.event_activities a ON a.id=q.activity_id WHERE a.event_id=$1::uuid)`, [eventId]);
         await db.query("DELETE FROM public.certificates WHERE event_id=$1::uuid", [eventId]);
         await db.query(`DELETE FROM public.event_assignment_reviews WHERE submission_id IN(SELECT s.id FROM public.event_assignment_submissions s
           JOIN public.event_activities a ON a.id=s.activity_id WHERE a.event_id=$1::uuid)`, [eventId]);
@@ -211,12 +215,13 @@ async function cleanup() {
         await db.query("DELETE FROM public.event_participants WHERE registration_id IN(SELECT id FROM public.event_registrations WHERE event_id=$1::uuid)", [eventId]);
         await db.query("DELETE FROM public.event_registrations WHERE event_id=$1::uuid", [eventId]);
         await db.query("DELETE FROM public.event_ticket_types WHERE event_id=$1::uuid", [eventId]);
+        }
         await db.query("DELETE FROM public.institute_notices WHERE institute_id=ANY($1::uuid[])", [collegeIds]);
         await db.query("DELETE FROM public.college_blogs WHERE institute_id=ANY($1::uuid[])", [collegeIds]);
         await db.query("DELETE FROM public.institutes WHERE id=ANY($1::uuid[])", [collegeIds]);
         await db.query("DELETE FROM public.companies WHERE id=$1::uuid", [companyId]);
         await db.query("DELETE FROM public.mentors WHERE id=$1::uuid", [mentorId]);
-        await db.query("DELETE FROM public.events WHERE id=$1::uuid", [eventId]);
+        await db.query("DELETE FROM public.events WHERE id=ANY($1::uuid[])", [eventIds]);
         await db.query("DELETE FROM public.audit_logs WHERE actor_user_id=ANY($1::uuid[])", [ids]);
         await db.query("DELETE FROM public.user_roles WHERE user_id=ANY($1::uuid[])", [ids]);
         await db.query("DELETE FROM public.neon_identity_links WHERE neon_auth_user_id=ANY($1::uuid[])", [subjects]);
@@ -269,9 +274,9 @@ try {
   await db.query("INSERT INTO public.companies(id,user_id,name) VALUES($1::uuid,$2::uuid,$3)", [companyId, college.userId, names.company]);
   await db.query(`INSERT INTO public.mentors(id,user_id,headline,description,expertise,hourly_rate,is_available,approval_status,availability)
     VALUES($1::uuid,$2::uuid,$3,'Disposable browser UAT mentor',ARRAY['Career'],100,true,'approved','{}')`, [mentorId, college.userId, names.mentor]);
-  await db.query(`INSERT INTO public.events(id,organizer_user_id,organizer_type,title,event_type,format,start_date,end_date,
+  for (const [index, id] of eventIds.entries()) await db.query(`INSERT INTO public.events(id,organizer_user_id,organizer_type,title,event_type,format,start_date,end_date,
     capacity,ticket_price,currency,is_active,status,approval_status) VALUES($1::uuid,$2::uuid,'user',$3,'free','online',
-    now()+interval '10 days',now()+interval '11 days',5,0,'NPR',true,'published','approved')`, [eventId, college.userId, names.event]);
+    now()+interval '10 days',now()+interval '11 days',5,0,'NPR',true,'published','approved')`, [id, college.userId, index ? names.secondEvent : names.event]);
   const capability = (await db.query(`INSERT INTO public.user_module_capabilities(user_id,capability_id,status,granted_by)
     SELECT $1::uuid,id,'active',$2::uuid FROM public.module_capabilities WHERE module_key='college' AND is_active RETURNING id`, [college.userId, admin.userId])).rows[0];
   check(capability, "COLLEGE_CAPABILITY_UNAVAILABLE");
@@ -294,11 +299,13 @@ try {
   const eventCapability = (await db.query(`INSERT INTO public.user_module_capabilities(user_id,capability_id,status,granted_by)
     SELECT $1::uuid,id,'active',$2::uuid FROM public.module_capabilities WHERE module_key='events' AND is_active LIMIT 1 RETURNING id`, [college.userId, admin.userId])).rows[0];
   check(eventCapability, "EVENT_CAPABILITY_UNAVAILABLE");
+  for (const eventId of eventIds) {
   await db.query(`INSERT INTO public.entity_admin_assignments(user_id,user_capability_id,entity_type,entity_id,status,assigned_by)
     VALUES($1::uuid,$2::uuid,'event',$3::uuid,'active',$4::uuid)`, [college.userId, eventCapability.id, eventId, admin.userId]);
   await db.query(`INSERT INTO public.module_entitlements(user_id,module_key,entity_type,entity_id,source,status,start_at,expires_at,features,granted_by,reason)
     VALUES($1::uuid,'events','event',$2::uuid,'ADMIN_MANUAL','active',now()-interval '1 minute',now()+interval '1 day',
       '{"event_management":true,"registration_management":true,"media_management":true}'::jsonb,$3::uuid,'Disposable Event browser UAT only')`, [college.userId, eventId, admin.userId]);
+  }
   await db.query("COMMIT");
   for (const account of accounts) await applicationSignIn(account);
   const overview = await appRequest(admin, "/api/v1/neon-staging/admin/payments");

@@ -9,7 +9,8 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); });
 describe("student Event activity interaction", () => {
   it("does not falsely claim an enrollment has no activities while it is loading", () => {
     request.mockImplementation(() => new Promise(() => {}));
-    render(<StudentEventActivities eventId="fixture-event" />);
+    render(<StudentEventActivities eventId="fixture-event" eventTitle="Selected Event B" />);
+    expect(screen.getByLabelText("Selected event")).toHaveTextContent("Selected Event B");
     expect(screen.getByRole("status")).toHaveTextContent("Loading your event activities");
     expect(screen.queryByText("No published activities are included in this enrollment yet.")).not.toBeInTheDocument();
   });
