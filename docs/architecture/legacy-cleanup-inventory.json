@@ -1748,7 +1748,7 @@
     },
     {
       "file": "docs/neon-runtime-sprint-status-2026-10-09.md",
-      "referenceLines": 143,
+      "referenceLines": 144,
       "disposition": "HISTORICAL/RECOVERY",
       "owner": "Migration operator",
       "retirement": "Historical evidence, not authority to replay old production SQL."
