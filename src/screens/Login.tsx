@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, Chrome } from "lucide-react";
+import { Loader2, Mail, Lock, Chrome, Eye, EyeOff } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { signIn, signInWithOAuth } = useAuth();
@@ -126,13 +127,25 @@ const Login = () => {
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 id="password"
-                type="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
+                className="pl-10 pr-12 h-11 rounded-xl border-slate-200 focus-visible:border-[#0073e6] focus-visible:ring-[#0073e6]/10"
                 required
               />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-controls="password"
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:text-[#0073e6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0073e6]"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+              </button>
             </div>
           </div>
 
